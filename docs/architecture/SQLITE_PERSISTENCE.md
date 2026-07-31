@@ -1,25 +1,21 @@
 # SQLite Persistence
 
-`@offline-web-archive/persistence-sqlite` implements the `ProjectStoragePort` owned by Archive Core. Application Service orchestrates it; Desktop and CLI use only contracts/service. Archive Core and Project Format remain free of SQLite, Electron, CLI, and Node filesystem imports.
+SQLite schema 4 extends the Project/Profile foundation with `scope_decisions`, `page_jobs`, `job_attempts`, `job_transitions`, `job_discoveries`, and `queue_operations`. Migration `004_add_persistent_page_queue` is forward-only and leaves migrations 001–003 unchanged.
 
-The adapter uses Node 24 `node:sqlite`; Electron 43 supplies the same Node major. It opens `database/crawl.db` with extensions disabled and defensive mode enabled. Writer pragmas are:
+`@offline-web-archive/persistence-sqlite` implements Project, Profile, and Queue ports. Application Service orchestrates it; Desktop and CLI use only contract 1.3.0. Archive Core, Queue pure policy, Scope Engine, and Project Format remain free of SQLite/Electron imports.
 
-| Pragma | Value | Reason |
-|---|---|---|
-| `foreign_keys` | `ON` | Enforce Revision/Run references |
-| `journal_mode` | `WAL` | Consistent readers and durable writer recovery |
-| `synchronous` | `FULL` | Favor Project integrity over write throughput in the foundation |
-| `busy_timeout` | `5000` | Bounded contention handling, never indefinite wait |
-| `trusted_schema` | `OFF` | Do not trust schema expressions to invoke unsafe application functions |
+The adapter uses Node 24 `node:sqlite`, extensions disabled, defensive mode, `foreign_keys=ON`, `journal_mode=WAL`, `synchronous=FULL`, `busy_timeout=5000`, and `trusted_schema=OFF`. Validation connections add `query_only=ON`; close checkpoints WAL; backup/export use the SQLite backup API.
 
-Validation connections add `query_only=ON`. Close checkpoints WAL with `TRUNCATE`; export and migration backups use the SQLite backup API, not a raw copy of an open database. A Project lock enforces the application single-writer rule.
+## Queue integrity
 
-Phase 4 schema owns exactly five tables:
+- `page_jobs` stores Project/Run/Profile/revision/engine/identity ownership, closed state vocabulary, bounded priority/attempt/depth fields, durable eligibility/order sequence, claim data, redacted failure data, and bounded result summaries.
+- A database unique constraint on Project, Run, Profile revision, normalization engine, identity hash, and Job type is the final duplicate-enqueue authority.
+- Composite ownership foreign keys prevent a Scope decision, Job, attempt, transition, discovery, or operation from crossing Project/Run identity.
+- `job_attempts` has unique attempt numbers per Job and retains token/outcome/times.
+- `job_transitions` and `job_discoveries` use monotonic insertion sequences for deterministic histories.
+- `queue_operations` stores Project-scoped command/key, canonical business request hash, and safe committed result for idempotent replay/conflict detection.
+- Eligibility/order/state/operation/discovery indexes support bounded Queue queries and statistics.
 
-- `schema_migrations`: immutable ordered migration ledger.
-- `project_metadata`: one row that mirrors stable manifest identity/version facts.
-- `project_revisions`: initial durable Revision identity and sequence.
-- `runs`: initial durable Run identity and Revision reference.
-- `project_events`: sanitized lifecycle/migration/export events.
+Enqueue, claim, completion, failure, retry schedule/release, skip, block, and clear-pending mutations use short `BEGIN IMMEDIATE` transactions. Claim selects one due `pending` Job in total order, performs a guarded update, assigns a UUID token, increments the attempt, and records attempt/transition atomically. Database uniqueness resolves concurrent duplicates without an unprotected select/insert assumption.
 
-No queue, page, asset, proxy, authentication, API-capture, worker, lease, or crawl table is allowed before its assigned phase. `npm run migrations:validate` checks this schema foundation.
+The queue survives close/reopen and bounded export/import snapshots. Clearing pending work writes terminal `skipped` transitions and never deletes Jobs or histories. There is no Lease, Heartbeat, Checkpoint, expiry, stale-processing repair, browser, Asset, proxy, authentication, API-capture, or crawler table in schema 4.

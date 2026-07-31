@@ -22,9 +22,9 @@ validation, [fixture category](../testing/TEST_FIXTURE_STRATEGY.md), and
 | FR-SCOPE-001 | AC-SCOPE-001 | P5 → P5, P25 | Versioned URL corpus; FX-011 | R-008, R-027 |
 | FR-SCOPE-002 | AC-SCOPE-002 | P5 → P20, P24 | FX-013, FX-048; request spy | R-026, R-027 |
 | FR-SCOPE-003 | AC-SCOPE-003 | P5, P8 → P20 | FX-047, FX-048 | R-027, R-036 |
-| FR-QUEUE-001 | AC-QUEUE-001 | P6 → P17 | FX-037, FX-038 | R-012, R-014 |
-| FR-QUEUE-002 | AC-QUEUE-002 | P6 → P17 | Concurrent duplicate-discovery fixture | R-014 |
-| FR-QUEUE-003 | AC-QUEUE-003, AC-RECOVERY-002 | P6 → P17 | Fixed clock, commit-boundary faults, FX-037 | R-014, R-015 |
+| FR-QUEUE-001 | AC-QUEUE-001, AC-P06-001..003, AC-P06-009..012, AC-P06-029..032 | P6 verified; scale/recovery extends P7/P17 | Schema 4, lifecycle/reopen/history/statistics integration | R-012, R-014, R-056, R-062, R-066 |
+| FR-QUEUE-002 | AC-QUEUE-002, AC-P06-004..008, AC-P06-010, AC-P06-021..022 | P6 verified; discovery integration extends P8 | Database uniqueness, idempotency, multi-parent and concurrent duplicate fixtures | R-014, R-056, R-059, R-060, R-063 |
+| FR-QUEUE-003 | AC-QUEUE-003, AC-P06-013..028, AC-P06-033..035, AC-RECOVERY-002 | P6 state/claim/retry verified; Lease/Crash Recovery planned P7 | State-pair validator, token/attempt integration, real SQLite concurrency, CLI/Electron/security | R-014, R-015, R-057, R-058, R-059, R-061, R-064, R-065 |
 | FR-RECOVERY-001 | AC-RECOVERY-001, AC-RECOVERY-003 | P17 → P17, P24 | FX-036, FX-037, FX-038; TS-011..013 | R-011, R-015, R-017 |
 | FR-RECOVERY-002 | AC-RECOVERY-004, AC-RECOVERY-005 | P9, P17 → P17, P24 | FX-039, FX-040; TS-014 | R-016, R-034 |
 | FR-RENDER-001 | AC-RENDER-001 | P7 → P7 | FX-001, FX-002 | R-002, R-011 |
@@ -129,11 +129,23 @@ the production mappings above.
 | FR-PROJECT-001 | AC-P04-001..004,014..015 | P4 | format/atomic unit and lifecycle integration | Manifest 1.0.0, portable paths, stable IDs, atomic promotion | R-013, R-031 | OD-014 | OKF-DOM-008 |
 | FR-PROJECT-002 | AC-P04-005,008,021..022 | P4 | Node/Electron SQLite, identity and lock tests | Reopen/current/close and single writer through storage port | R-012, R-046 | OD-013 | OKF-DOM-009 |
 | FR-PROJECT-003 | AC-P04-006..013 | P4 | migration validator, rollback, legacy backup/upgrade, corruption corpus | Schema 2, immutable history, SQLite API backup, fail-closed integrity | R-012, R-013 | OD-013, OD-023 | OKF-DOM-010 |
+
 | FR-PROJECT-004 | AC-P04-016..020 | P4 | ZIP inventory/round-trip/attack/limit/cleanup tests | Container 1.0.0 preserves identity and excludes transient/secret roots | R-031, R-045 | OD-014 | OKF-DOM-011 |
 | FR-CLI-001 | AC-P04-024 | P4 | built CLI all-operation smoke | Human/JSON Project operations and stable exits through service | R-036 | OD-009 | OKF-DOM-007 |
 | NFR-SEC-003 | AC-P04-019,020,025 | P4 | hostile ZIP plus real Electron smoke/security gate | Approved path grants, isolated renderer, staged bounded import | R-045, R-046 | OD-009, OD-014 | OKF-DOM-029 |
 | NFR-TEST-001 | AC-P04-027 | P4 | full unit/integration/CLI/Electron/OKF suite | Real filesystem/SQLite/process evidence without crawl mocks | R-012, R-013, R-045 | OD-013, OD-014 | OKF-DOM-031 |
 | NFR-KNOW-001..004 | AC-P04-028..029 | P4 | docs and OKF validators | ADR-009..014, implementation/security/phase records and registries | RISK-KNOW-001 | OD-026 | OKF-DOM-038..041 |
+
+## Product Phase 5 Profile and Scope evidence map
+
+| Requirement | Acceptance | Phase | Test/evidence | Implemented control | Risks | Decisions | OKF domain/node |
+|---|---|---|---|---|---|---|---|
+| FR-AUTHZ-001 | AC-P05-001..004; AC-AUTHZ-001 remains defined for future Run start | P5 | profile lifecycle, CLI/Electron smoke | Strict secret-free profile, approval completeness, immutable Project/Profile revisions; no network path exists | R-053, R-055 | OD-028 | OKF-DOM-042 / OKF-NODE-P05-PROFILE-1 |
+| FR-SCOPE-001 | AC-P05-005,011..014,017..022,027..031; AC-SCOPE-001 | P5 | scope unit and normalization golden | Engine 1 deterministic normalized/identity URL and SHA-256 | R-047, R-048, R-050 | OD-029, OD-031, OD-034 | OKF-DOM-043 / OKF-NODE-P05-SCOPE-1 |
+| FR-SCOPE-002 | AC-P05-008..010,015..016,023..025,027 | P5 | scope/canonical/redirect tests | Exact/subdomain and exact/prefix rules, deny precedence, local relationship classification | R-049, R-051, R-054 | OD-030, OD-032, OD-033 | OKF-DOM-043 / OKF-NODE-P05-SCOPE-1 |
+| FR-SCOPE-003 | AC-P05-006..007,020,026,034; AC-SCOPE-003 remains defined for future browser/request paths | P5 | adversarial URL/IP tests and security gate | HTTP(S) only, credential/sensitive denial, address preflight, downgrade denial, no network | R-052 | OD-035 | OKF-DOM-029 / OKF-NODE-P05-SECURITY |
+| NFR-MAINT-001 | AC-P05-032..033 | P5 | contract/architecture/CLI/Electron tests | Contract 1.2.0 and dedicated package boundaries | R-041, R-042 | OD-034 | OKF-DOM-005..007 / OKF-NODE-P05-CONTRACT-1-2 |
+| NFR-KNOW-001..004 | AC-P05-035 | P5 | docs and OKF validation | Phase/change/evidence/decision/risk/relationship synchronization | RISK-KNOW-001 | OD-026 | OKF-PHASE-005 |
 
 ## OKF traceability dimensions
 

@@ -1,26 +1,28 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a planned portable desktop application for creating authorized, navigable offline archives of modern websites. Product Phase 4 is complete: the production monorepo now implements a versioned portable Project directory, SQLite identity/lifecycle foundation, forward migrations and backup, atomic file promotion, bounded secure ZIP transfer, Project contracts, CLI commands, minimal Desktop flows, and synchronized canonical OKF.
+Offline Web Archive Builder is a planned portable desktop application for creating authorized, navigable offline archives of modern websites. Product Phase 6 is complete: the production monorepo now combines the portable Project/SQLite foundation, versioned Site Profile and Scope Engine, and a durable Page Job queue with deterministic identity, ordering, atomic claims, token-fenced terminal writes, retries, history, statistics, CLI operations, Desktop inspection, and canonical OKF evidence.
 
-Implemented commands are `system.describe` and `project.create/open/close/validate/export/import/info`. These are local filesystem operations only. URL normalization, authorization/scope policy, queues, crawling, browser rendering, authentication/OTP/session storage, proxies, captured content, rewriting, offline serving, final UX, release packaging, and target validation are not implemented. The exact next phase is **Product Phase 5 — Profile, Scope, and URL Normalization**.
+The application/workspaces are `0.6.0`, transport contract is `1.3.0`, Project format is `1.1.0`, SQLite schema is `4`, Site Profile/Scope Engine are `1`, and Queue state/priority policies are `1`. Queue persistence does not mean pages are crawled: there is no website request, DNS dispatch, browser rendering, link discovery, Lease, Heartbeat, Checkpoint, stale-processing recovery, or real crawler.
 
 ## Safety and authorization
 
-Use is limited to websites the user is authorized to archive or for which another valid legal basis exists. The product will not bypass access controls, CAPTCHA/WAF challenges, rate limits, or `Retry-After`; forge fingerprints; intercept SMS; or collect public proxies. Phase 4 performs no website request. Project/ZIP input is untrusted and bounded; exported Projects exclude secret-reserved directories by default.
+Use is limited to websites the user is authorized to archive or for which another valid legal basis exists. The product does not bypass access controls, challenges, or rate limits. Project, ZIP, Profile, URL, Queue, and result input is untrusted and bounded. Credential-bearing URLs fail closed; sensitive URL/error/result values are redacted; SQL stays behind parameterized repository methods; and Project/Run/Profile plus claim-token ownership is enforced.
 
-## Production workspace
+## Workspace
 
 ```text
 apps/
-  desktop/              Secure Electron Project UI and IPC/path-grant adapter
-  cli/                  Internal Project/diagnostic CLI
+  desktop/              Isolated Electron Project/Profile/Scope/Queue UI
+  cli/                  Internal Project/Profile/Scope/Queue CLI
 packages/
-  archive-core/         GUI/transport/SQLite-independent domain and Project port
+  archive-core/         GUI/platform-independent models and repository ports
+  scope-engine/         Profile schema and pure URL/scope policy
+  queue/                Pure state, priority, retry, idempotency, redaction policy
   project-format/       Portable manifest/version/path contract
-  persistence-sqlite/   Node SQLite, migrations, backups, atomic files, ZIP, locks
-  application-service/ Use-case orchestration and error translation
-  contracts/            Runtime-validated transport contract 1.1.0
-  platform/             Minimal platform/configuration adapter
+  persistence-sqlite/   SQLite schema 4, migrations, repositories, files/ZIP/locks
+  application-service/ Use-case and ownership orchestration
+  contracts/            Runtime-validated transport contract 1.3.0
+  platform/             Platform/configuration adapter
   observability/        Structured logging and redaction
   test-support/         Test-only deterministic fixtures
 ```
@@ -31,11 +33,19 @@ Use Node 24 and npm 11:
 npm install
 npm run typecheck
 npm run build
-npm test
+npm run lint
+npm run test
+npm run test:unit
+npm run test:integration
+npm run test:concurrency
 npm run test:architecture
 npm run contracts:check
 npm run project-format:validate
 npm run migrations:validate
+npm run scope:validate
+npm run scope:golden
+npm run queue:validate
+npm run queue:state-machine
 npm run security:check
 npm run docs:validate
 npm run okf:validate
@@ -45,26 +55,27 @@ CLI examples:
 
 ```text
 npm run project -- project create D:\Archives\example --name "Example" --slug example
-npm run project -- project validate D:\Archives\example --json
-npm run project -- project export D:\Archives\example D:\Archives\example.zip
+npm run project -- profile create D:\Archives\example --name "Example scope" --seed https://example.com/
+npm run project -- scope explain D:\Archives\example https://example.com/docs --json
+npm run project -- queue enqueue D:\Archives\example https://example.com/docs --run <run-uuid> --profile-revision <profile-revision-uuid> --idempotency-key enqueue-docs-001
+npm run project -- queue list D:\Archives\example --run <run-uuid> --state pending --json
+npm run project -- queue stats D:\Archives\example --run <run-uuid>
 ```
 
-`npm run dev:desktop` opens the local Project UI. Desktop paths come from main-process native selection grants; renderer receives no filesystem or SQLite primitive. The Phase 2 spike at `spikes/phase-02-feasibility/` remains historical evidence and is not a production dependency.
+Run `npm run project -- queue --help` for all Queue commands and limits. `npm run dev:desktop` opens the local UI. Desktop paths come from main-process native selection grants; the renderer receives no filesystem or SQLite primitive. Controlled Queue actions simulate future workers but never crawl a target.
 
 ## Documentation
 
 - [Production architecture](docs/architecture/README.md)
-- [Project format](docs/architecture/PROJECT_FORMAT.md)
-- [SQLite and migrations](docs/architecture/SQLITE_PERSISTENCE.md)
-- [Project lifecycle](docs/architecture/PROJECT_LIFECYCLE.md)
-- [Import/export security](docs/architecture/PROJECT_IMPORT_EXPORT.md)
-- [Phase 4 security review](docs/architecture/PHASE_04_SECURITY_REVIEW.md)
-- [Phase 4 implementation report](docs/project/PHASE_04_IMPLEMENTATION_REPORT.md)
-- [Scope and acceptance](docs/product/PROJECT_SCOPE.md)
+- [Persistent Queue](docs/architecture/PERSISTENT_QUEUE.md)
+- [Job state machine](docs/architecture/JOB_STATE_MACHINE.md)
+- [Queue persistence](docs/architecture/QUEUE_PERSISTENCE.md)
+- [Phase 6 security review](docs/architecture/PHASE_06_SECURITY_REVIEW.md)
+- [Phase 6 implementation report](docs/project/PHASE_06_IMPLEMENTATION_REPORT.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
 - [Phase plan](docs/project/PHASE_PLAN.md)
 - [Risks and decisions](docs/project/RISK_REGISTER.md)
 - [Canonical OKF](okf/README.md)
 - [Current handoff](HANDOFF.md)
 
-Canonical `okf/` is active and synchronized through Product Phase 4. `okf-bootstrap/` is preserved as historical governance/migration evidence. Every later phase must update source authorities, risks/decisions, evidence, relationships, phase/change records, and pass `npm run okf:validate`.
+Canonical `okf/` is synchronized through Product Phase 6. `okf-bootstrap/` remains historical governance/migration evidence. The exact next phase is **Product Phase 7 — Checkpoint, Lease, and Crash Recovery**; it must preserve Phase 6 idempotency and state invariants.

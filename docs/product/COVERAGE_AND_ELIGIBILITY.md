@@ -1,5 +1,11 @@
 # Coverage and Eligibility
 
+## Product Phase 5 policy input
+
+Coverage remains a later measured outcome, but every future candidate classification must retain Scope Engine version, Profile revision, normalized/identity URL hash, structured matched rule ID/type/action/match data, and reason codes. Denied, invalid, duplicate-equivalent, depth-limited, and page-limited candidates must not disappear from the denominator merely because they are ineligible. Phase 5 supplies deterministic classifications only; it does not create a candidate ledger or calculate a target coverage percentage.
+
+Tracking/ignored query policy, canonical aliases, redirects, and profile revisions are denominator-affecting inputs and must be disclosed in future reports. Sensitive values remain redacted. Any identity-engine change requires a new version and an audited before/after denominator comparison.
+
 **Document status:** Proposed baseline  
 **Owner / decision authority:** QA Lead; target denominator approved by Target Site Owner  
 **Related requirements:** FR-SCOPE-001..003, FR-REPORT-002, FR-VALIDATE-001, NFR-QUAL-001  
@@ -147,6 +153,8 @@ but the report must show the adjustment.
 | Policy/authorization skip | Visible in its separate state and evidence. If discovered inside the approved inventory after Run start, it cannot silently reduce the denominator. |
 
 ## Primary formula
+
+Product Phase 6 Queue statistics are operational counts, not coverage evidence. `pending`, `processing`, `retrying`, `completed`, `failed`, `skipped`, and `blocked` counts, discovery rows, Queue depth, or an empty Queue cannot establish `E`, `S`, archive success, or the 95% gate. Coverage begins only when later discovery/render/store/validation phases create the audited candidate and Revision evidence defined below.
 
 Let:
 

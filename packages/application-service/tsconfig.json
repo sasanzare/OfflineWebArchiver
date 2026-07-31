@@ -6,6 +6,8 @@
     { "path": "../archive-core" },
     { "path": "../contracts" },
     { "path": "../observability" },
-    { "path": "../persistence-sqlite" }
+    { "path": "../persistence-sqlite" },
+    { "path": "../queue" },
+    { "path": "../scope-engine" }
   ]
 }

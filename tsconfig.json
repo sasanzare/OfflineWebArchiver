@@ -3,6 +3,8 @@
   "references": [
     { "path": "packages/contracts" },
     { "path": "packages/archive-core" },
+    { "path": "packages/queue" },
+    { "path": "packages/scope-engine" },
     { "path": "packages/project-format" },
     { "path": "packages/persistence-sqlite" },
     { "path": "packages/observability" },

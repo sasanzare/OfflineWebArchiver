@@ -1,5 +1,7 @@
 # Configuration Model
 
-Build-owned values are application `0.4.0`, contract `1.1.0`, Project format `1.0.0`, and SQLite schema 2. Runtime/platform facts expose only normalized Node version, OS family, and architecture. The sole environment override remains `OWAB_LOG_LEVEL=debug|info|warn|error`.
+Build-owned Phase 6 values are application `0.6.0`, contract `1.3.0`, Project format `1.1.0`, SQLite schema `4`, Site Profile schema `1`, Scope Engine `1`, Queue state machine `1`, and priority policy `1`. Site Profile policy lives inside the Project and is never read from environment variables. `OWAB_LOG_LEVEL` remains the sole environment override.
 
-Archive safety limits and SQLite pragmas are adapter constants, not untrusted renderer/environment settings. Project locations are per-command local values selected by CLI arguments or granted native Desktop dialogs; they are never persisted inside the Project. Target scope, credentials, proxy settings, browser paths, queues, crawl configuration, and secret stores remain absent.
+Runtime/platform facts expose only normalized Node version, OS family, and architecture.
+
+Archive/Profile/Scope/Queue safety limits, priority categories, retry bounds, pagination, and SQLite pragmas are code/profile constants, not untrusted renderer/environment settings. Project locations are per-command local values selected by CLI arguments or granted native Desktop dialogs; they are never persisted inside the Project. Queue state is Project-local SQLite data. Credentials, proxy settings, browser paths, crawler settings, Lease timers, and secret stores remain absent.

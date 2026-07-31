@@ -1,3 +1,5 @@
 # Database Knowledge
 
-Verified Phase 4 database authority is `docs/architecture/SQLITE_PERSISTENCE.md` and `packages/persistence-sqlite`. SQLite schema 2 has only migration, metadata, Revision, Run, and Project event tables. Queue/content/auth/proxy schemas remain planned.
+SQLite schema 4 adds normalized Scope Decision, Page Job, attempt, transition, discovery, and operation-idempotency ledgers through immutable migration 004. Database constraints enforce logical Job uniqueness, closed states, bounded values, attempt uniqueness, and Project/Run ownership. Eligibility and ordered-history indexes support deterministic bounded queries.
+
+Authority is `docs/architecture/SQLITE_PERSISTENCE.md` and `packages/persistence-sqlite`. Schema 3 Profile tables remain intact. Lease, Heartbeat, Checkpoint, content, Asset, auth, and proxy schemas remain planned.

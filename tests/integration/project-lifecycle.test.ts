@@ -18,7 +18,7 @@ test("create, validate, open, close, move, export, and import preserve Project i
   const archivePath = path.join(temporary.root, "project.zip");
   const importedPath = path.join(temporary.root, "imported");
   const movedPath = path.join(temporary.root, "moved");
-  const storage = createSqliteProjectStorage({ applicationVersion: "0.4.0" });
+  const storage = createSqliteProjectStorage({ applicationVersion: "0.5.0" });
   try {
     const created = await storage.create({ destinationPath: projectPath, name: "Lifecycle", slug: "lifecycle" });
     assert.equal(created.state, "closed");
@@ -27,7 +27,7 @@ test("create, validate, open, close, move, export, and import preserve Project i
     assert.equal(opened.projectId, created.projectId);
     assert.equal(opened.state, "ready");
     await assert.rejects(
-      () => createSqliteProjectStorage({ applicationVersion: "0.4.0" }).open(projectPath),
+      () => createSqliteProjectStorage({ applicationVersion: "0.5.0" }).open(projectPath),
       (error) => error instanceof ProjectOperationError && error.code === "PROJECT_LOCKED",
     );
     const closed = await storage.close();
@@ -58,12 +58,12 @@ test("create, validate, open, close, move, export, and import preserve Project i
 test("opening schema version 1 creates a verified backup and migrates forward", async () => {
   const temporary = await workspace();
   const projectPath = path.join(temporary.root, "legacy");
-  const storage = createSqliteProjectStorage({ applicationVersion: "0.4.0" });
+  const storage = createSqliteProjectStorage({ applicationVersion: "0.5.0" });
   try {
     await storage.create({ destinationPath: projectPath, name: "Legacy", slug: "legacy" });
     const databasePath = path.join(projectPath, "database", "crawl.db");
     const database = new DatabaseSync(databasePath);
-    database.exec("DROP INDEX project_events_project_time; DROP TABLE project_events; DELETE FROM schema_migrations WHERE sequence = 2; PRAGMA user_version = 1; UPDATE project_metadata SET schema_version = 1");
+    database.exec("DROP TABLE queue_operations; DROP TABLE job_discoveries; DROP TABLE job_transitions; DROP TABLE job_attempts; DROP TABLE page_jobs; DROP TABLE scope_decisions; DROP INDEX site_profile_revisions_profile_sequence; DROP TABLE scope_rules; DROP TABLE site_profile_revisions; DROP TABLE site_profiles; DROP INDEX project_events_project_time; DROP TABLE project_events; DELETE FROM schema_migrations WHERE sequence > 1; PRAGMA user_version = 1; UPDATE project_metadata SET schema_version = 1");
     database.close();
     const manifestPath = path.join(projectPath, "project.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
@@ -74,7 +74,7 @@ test("opening schema version 1 creates a verified backup and migrates forward", 
     assert.equal(before.compatibility.requiresMigration, true);
     const opened = await storage.open(projectPath);
     assert.equal(opened.migrationStatus, "migrated");
-    assert.equal(opened.schemaVersion, 2);
+    assert.equal(opened.schemaVersion, 4);
     await storage.close();
     const backups = await readdir(path.join(projectPath, "database", "backups"));
     assert.equal(backups.some((name) => name.endsWith(".db")), true);
@@ -90,7 +90,7 @@ test("checksum drift, metadata mismatch, corruption, and bad imports fail withou
   const checksumPath = path.join(temporary.root, "checksum");
   const metadataPath = path.join(temporary.root, "metadata");
   const corruptPath = path.join(temporary.root, "corrupt");
-  const storage = createSqliteProjectStorage({ applicationVersion: "0.4.0" });
+  const storage = createSqliteProjectStorage({ applicationVersion: "0.5.0" });
   try {
     await storage.create({ destinationPath: checksumPath, name: "Checksum", slug: "checksum" });
     const checksumDb = new DatabaseSync(path.join(checksumPath, "database", "crawl.db"));

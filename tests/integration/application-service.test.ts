@@ -12,7 +12,7 @@ function serviceFixture() {
   return {
     logger,
     service: createApplicationService({
-      configuration: { applicationName: "Offline Web Archive Builder", applicationVersion: "0.4.0", contractVersion: CONTRACT_VERSION, logLevel: "info" },
+      configuration: { applicationName: "Offline Web Archive Builder", applicationVersion: "0.5.0", contractVersion: CONTRACT_VERSION, logLevel: "info" },
       runtime: { name: "Node.js", version: "24.0.0" },
       platform: { operatingSystem: "windows", architecture: "x64" },
       logger,
@@ -32,7 +32,18 @@ test("application service carries versioned system and Project commands", async 
     });
     const created = await service.execute(command, { transport: "cli", authorized: true });
     assert.equal(created.status, "success");
+    const projectPath = path.join(temporary, "project");
+    const profile = await service.execute(createProjectCommand("profile.create", { projectPath, name: "Service Profile", seedUrl: "https://example.com/" }, { commandId: "command-profile-1", correlationId: "correlation-profile-1", timestamp: "2026-07-31T12:00:00.000Z" }), { transport: "cli", authorized: true });
+    assert.equal(profile.status, "success");
+    const scoped = await service.execute(createProjectCommand("scope.evaluate", { projectPath, input: { url: "https://example.com/?utm_source=test" } }, { commandId: "command-scope-1", correlationId: "correlation-scope-1", timestamp: "2026-07-31T12:00:00.000Z" }), { transport: "cli", authorized: true });
+    assert.equal(scoped.status, "success");
+    if (scoped.status === "success" && scoped.result.resultType === "scope.decision") assert.equal(scoped.result.decision.identityUrl, "https://example.com/");
     assert.ok(logger.events.some((event) => event.eventName === "project.created"));
+    const scopeLog = logger.events.find((event) => event.eventName === "command.completed" && event.correlationId === "correlation-scope-1");
+    assert.deepEqual(scopeLog?.metadata?.["reasonCodes"], ["URL_ACCEPTED", "PROFILE_AUTHORIZATION_INCOMPLETE"]);
+    assert.deepEqual(scopeLog?.metadata?.["matchedRules"], [{ ruleId: "seed-host", ruleType: "domain", ruleAction: "allow", ruleMatch: "exact" }, { ruleId: "utm_source", ruleType: "query", ruleAction: "tracking", ruleMatch: "key" }]);
+    assert.ok(!JSON.stringify(scopeLog).includes("https://"));
+    assert.ok(!JSON.stringify(scopeLog).includes("=test"));
     assert.ok(logger.events.every((event) => !JSON.stringify(event).includes(temporary)));
   } finally {
     await rm(temporary, { recursive: true, force: true });

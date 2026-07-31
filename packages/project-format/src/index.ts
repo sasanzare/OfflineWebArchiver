@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const PROJECT_FORMAT_NAME = "offline-web-archive-project" as const;
-export const PROJECT_FORMAT_VERSION = "1.0.0" as const;
-export const PROJECT_SCHEMA_VERSION = 2 as const;
-export const MINIMUM_APPLICATION_VERSION = "0.4.0" as const;
+export const PROJECT_FORMAT_VERSION = "1.1.0" as const;
+export const PROJECT_SCHEMA_VERSION = 4 as const;
+export const MINIMUM_APPLICATION_VERSION = "0.6.0" as const;
 export const PROJECT_MANIFEST_FILE = "project.json" as const;
 export const PROJECT_DATABASE_PATH = "database/crawl.db" as const;
 export const PROJECT_LOCK_FILE = ".project.lock" as const;
@@ -104,8 +104,8 @@ export const ProjectManifestSchema = z
       .strict(),
     features: z
       .object({
-        scopePolicy: z.literal(false),
-        crawlQueue: z.literal(false),
+        scopePolicy: z.boolean(),
+        crawlQueue: z.boolean(),
         browserRendering: z.literal(false),
         authentication: z.literal(false),
         proxies: z.literal(false),
@@ -183,7 +183,7 @@ export function isSupportedProjectFormatVersion(version: string): boolean {
   const [major, minor, patch, extra] = version.split(".").map((value) => Number(value));
   if (extra !== undefined || major === undefined || minor === undefined || patch === undefined) return false;
   if (![major, minor, patch].every(Number.isSafeInteger)) return false;
-  return major === 1 && minor === 0 && patch === 0;
+  return major === 1 && (minor === 0 || minor === 1) && patch === 0;
 }
 
 export function parseProjectManifest(value: unknown): ProjectManifest {
@@ -243,13 +243,33 @@ export function createProjectManifest(input: {
     },
     features: {
       scopePolicy: false,
-      crawlQueue: false,
+      crawlQueue: true,
       browserRendering: false,
       authentication: false,
       proxies: false,
       archiveGeneration: false,
     },
     lifecycle: { state: "ready", lastValidatedAt: input.createdAt },
+    compatibility: { minimumApplicationVersion: MINIMUM_APPLICATION_VERSION },
+  });
+}
+
+export function enableScopePolicy(manifest: ProjectManifest, input: {
+  applicationVersion: string;
+  baseUrl: string;
+  revisionId: string;
+  schemaVersion: number;
+  timestamp: string;
+}): ProjectManifest {
+  return parseProjectManifest({
+    ...manifest,
+    format: { ...manifest.format, version: PROJECT_FORMAT_VERSION },
+    application: { version: input.applicationVersion },
+    source: { baseUrl: input.baseUrl },
+    current: { ...manifest.current, revisionId: input.revisionId },
+    database: { ...manifest.database, schemaVersion: input.schemaVersion },
+    features: { ...manifest.features, scopePolicy: true },
+    lifecycle: { ...manifest.lifecycle, lastValidatedAt: input.timestamp },
     compatibility: { minimumApplicationVersion: MINIMUM_APPLICATION_VERSION },
   });
 }

@@ -8,6 +8,9 @@ const files = {
   preload: await readFile(path.join(repositoryRoot, "apps/desktop/src/preload/index.ts"), "utf8"),
   renderer: await readFile(path.join(repositoryRoot, "apps/desktop/src/renderer/index.html"), "utf8"),
 };
+const scopeEngine = await readFile(path.join(repositoryRoot, "packages/scope-engine/src/index.ts"), "utf8");
+const queueDomain = await readFile(path.join(repositoryRoot, "packages/queue/src/index.ts"), "utf8");
+const queuePersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/queue.ts"), "utf8");
 const required = [
   [files.main, "contextIsolation: true", "context isolation"],
   [files.main, "nodeIntegration: false", "disabled Node integration"],
@@ -27,6 +30,22 @@ const errors = required
   .map(([, , description]) => `Missing desktop control: ${description}`);
 if (/https?:\/\//.test(files.main) || /https?:\/\//.test(files.preload)) {
   errors.push("Desktop privileged code contains a remote URL");
+}
+if (/node:(?:http|https|net|tls|dns)|\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b/.test(scopeEngine)) {
+  errors.push("Scope Engine contains a network-capable API");
+}
+if (/\b(?:eval|Function)\s*\(|new\s+RegExp\s*\(/.test(scopeEngine)) {
+  errors.push("Scope Engine contains dynamic evaluation or regular-expression construction");
+}
+if (/node:(?:http|https|net|tls|dns|child_process)|\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\b(?:eval|Function)\s*\(/.test(queueDomain + queuePersistence)) {
+  errors.push("Queue production code contains a forbidden network, process, or dynamic-evaluation API");
+}
+for (const token of ["resultMetadataBytes", "safeMessageLength", "idempotencyKeyLength", "QUEUE_PAGINATION_LIMIT_EXCEEDED", "QUEUE_CLAIM_TOKEN_INVALID", "BEGIN IMMEDIATE"]) {
+  if (!(queueDomain + queuePersistence).includes(token)) errors.push(`Queue security control is missing: ${token}`);
+}
+if (/database\.exec\s*\(\s*input|prepare\s*\(\s*input/.test(queuePersistence)) errors.push("Queue persistence accepts caller-provided SQL");
+for (const token of ["URL_CREDENTIALS_FORBIDDEN", "SENSITIVE_QUERY_REMOVED", "PRIVATE_NETWORK_NOT_ALLOWED", "SCOPE_BATCH_LIMIT_EXCEEDED"]) {
+  if (!scopeEngine.includes(token)) errors.push(`Scope Engine is missing security decision ${token}`);
 }
 const productionFiles = await readTextFiles(new Set([".ts", ".js", ".mjs", ".cjs", ".json", ".md", ".html"]));
 const secretPatterns = [

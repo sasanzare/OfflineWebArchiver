@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { createApplicationService } from "@offline-web-archive/application-service";
-import { createProjectCommand, parseResponseEnvelope } from "@offline-web-archive/contracts";
+import { createProjectCommand, parseResponseEnvelope, type SiteProfileContract } from "@offline-web-archive/contracts";
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
 import { createDesktopTransportHandler } from "./ipc-transport.js";
@@ -122,7 +122,20 @@ function registerTransport(): void {
 
 interface SmokeResponse {
   status: string;
-  result?: { resultType?: string; project?: { projectId?: string }; report?: { valid?: boolean }; import?: { project?: { projectId?: string } } };
+  result?: {
+    resultType?: string;
+    project?: { projectId?: string; runId?: string };
+    profile?: SiteProfileContract;
+    changedPaths?: readonly string[];
+    comparison?: { changedPaths?: readonly string[] };
+    report?: { valid?: boolean };
+    import?: { project?: { projectId?: string } };
+    enqueue?: { outcome?: string; job?: { jobId?: string; claimToken?: string | null; state?: string } | null };
+    job?: { jobId?: string; claimToken?: string | null; state?: string } | null;
+    jobs?: readonly { jobId?: string; state?: string }[];
+    statistics?: { total?: number; pending?: number; completed?: number; failed?: number };
+    history?: { transitions?: readonly unknown[]; discoveries?: readonly unknown[] };
+  };
   error?: { code?: string };
 }
 
@@ -135,17 +148,29 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const archivePath = path.join(smokeRoot, "desktop-project.zip");
   const importedPath = path.join(smokeRoot, "desktop-imported");
   [projectPath, archivePath, importedPath].forEach((value) => approvedPaths.add(path.resolve(value)));
-  const invoke = async (commandType: string, payload: Record<string, unknown>): Promise<SmokeResponse> =>
-    window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
-      contractVersion: "1.1.0",
-      commandId: `smoke-${randomUUID()}`,
+  const invoke = async (commandType: string, payload: Record<string, unknown>): Promise<SmokeResponse> => {
+    const commandId = `smoke-${randomUUID()}`;
+    const queueMutation = ["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending"].includes(commandType);
+    return window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
+      contractVersion: "1.3.0",
+      commandId,
       commandType,
       correlationId: `smoke-${randomUUID()}`,
       timestamp: new Date().toISOString(),
-      payload,
+      payload: queueMutation ? { ...payload, operationId: commandId } : payload,
     })})`, true) as Promise<SmokeResponse>;
+  };
   const bridgeKeys = await window.webContents.executeJavaScript("Object.keys(window.offlineArchive).sort()", true);
   const rendererBoundary = await window.webContents.executeJavaScript("({ requireType: typeof require, processType: typeof process, ipcRendererType: typeof window.ipcRenderer })", true);
+  const profileEditorFields = await window.webContents.executeJavaScript(`[
+    "profile-base-url", "profile-domain-allow", "profile-domain-deny", "profile-path-allow", "profile-path-deny",
+    "profile-query-policy", "profile-fragment-policy", "profile-canonical-external", "profile-redirect-external",
+    "profile-redirect-downgrade", "profile-max-depth", "profile-max-pages", "profile-compare-from", "profile-compare-to",
+    "profile-revision-summary"
+  ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
+  const queueFields = await window.webContents.executeJavaScript(`[
+    "queue-url", "queue-state-filter", "queue-page-size", "queue-summary", "queue-list", "queue-detail"
+  ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
   const invalidVersion = await window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
     contractVersion: "2.0.0",
     commandId: "smoke-invalid-command",
@@ -157,23 +182,65 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const created = await invoke("project.create", { destinationPath: projectPath, name: "Desktop Smoke", slug: "desktop-smoke" });
   const validated = await invoke("project.validate", { projectPath });
   const opened = await invoke("project.open", { projectPath });
+  const smokeSeedUrl = ["https:", "", "example.invalid", ""].join("/");
+  const profile = await invoke("profile.create", { projectPath, name: "Desktop Profile", seedUrl: smokeSeedUrl });
+  const createdProfile = profile.result?.profile;
+  const profileUpdate = await invoke("profile.update", {
+    projectPath,
+    expectedRevisionId: createdProfile?.revisionId,
+    draft: {
+      name: "Desktop Profile Updated",
+      baseUrl: createdProfile?.baseUrl,
+      seedUrls: createdProfile?.seedUrls,
+      authorization: { status: "approved", legalBasisReference: "AUTH-DESKTOP-SMOKE", approvedBy: ["desktop-smoke"], approvedAt: "2026-07-31T12:00:00.000Z", expiresAt: null },
+      domainRules: createdProfile?.domainRules,
+      pathRules: createdProfile?.pathRules,
+      queryPolicy: createdProfile?.queryPolicy,
+      fragmentPolicy: createdProfile?.fragmentPolicy,
+      redirectPolicy: createdProfile?.redirectPolicy,
+      canonicalPolicy: createdProfile?.canonicalPolicy,
+      networkPolicy: createdProfile?.networkPolicy,
+      limits: createdProfile?.limits,
+    },
+  });
+  const profileComparison = await invoke("profile.compare", { projectPath, fromSequence: 1, toSequence: 2 });
+  const scope = await invoke("scope.explain", { projectPath, input: { url: `${smokeSeedUrl}docs?utm_source=smoke` } });
+  const runId = created.result?.project?.runId;
+  const profileRevision = profileUpdate.result?.profile?.revisionId;
+  const queueEnqueue = await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: `${smokeSeedUrl}docs?utm_source=smoke`, discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-enqueue-1" });
+  const queueDuplicate = await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: `${smokeSeedUrl}docs?utm_source=duplicate`, discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-enqueue-2" });
+  const queueStatisticsBefore = await invoke("queue.getStatistics", { projectPath, runId });
+  const queueListBefore = await invoke("queue.list", { projectPath, runId, state: "pending", limit: 25 });
+  const queueJobId = queueEnqueue.result?.enqueue?.job?.jobId;
+  const queueGet = await invoke("queue.get", { projectPath, runId, jobId: queueJobId });
+  const queueClaim = await invoke("queue.claimNext", { projectPath, runId, claimedBy: "desktop-smoke", idempotencyKey: "desktop-smoke-claim" });
+  const queueComplete = await invoke("queue.complete", { projectPath, runId, jobId: queueClaim.result?.job?.jobId, claimToken: queueClaim.result?.job?.claimToken, completionKey: "desktop-smoke-complete", resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: new Date().toISOString(), idempotencyKey: "desktop-smoke-complete-operation" });
+  const queueHistory = await invoke("queue.getHistory", { projectPath, runId, jobId: queueJobId });
+  const queueCompletedFilter = await invoke("queue.list", { projectPath, runId, state: "completed", limit: 25 });
   const info = await invoke("project.info", { projectPath });
   const exported = await invoke("project.export", { projectPath, archivePath });
   const closed = await invoke("project.close", {});
   const imported = await invoke("project.import", { archivePath, destinationPath: importedPath });
   const importedValidation = await invoke("project.validate", { projectPath: importedPath });
   const projectId = created.result?.project?.projectId;
-  const passed = [created, validated, opened, info, exported, closed, imported, importedValidation]
+  const passed = [created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation]
     .every((response) => response.status === "success") &&
     validated.result?.report?.valid === true && importedValidation.result?.report?.valid === true &&
     imported.result?.import?.project?.projectId === projectId &&
+    profileEditorFields.every(Boolean) && queueFields.every(Boolean) &&
+    queueEnqueue.result?.enqueue?.outcome === "created" && queueDuplicate.result?.enqueue?.outcome === "existing" &&
+    queueStatisticsBefore.result?.statistics?.total === 1 && queueListBefore.result?.jobs?.length === 1 &&
+    queueGet.result?.job?.jobId === queueJobId && queueComplete.result?.job?.state === "completed" &&
+    (queueHistory.result?.history?.transitions?.length ?? 0) >= 3 && queueCompletedFilter.result?.jobs?.length === 1 &&
     invalidVersion.status === "error" && invalidVersion.error?.code === "CONTRACT_UNSUPPORTED_VERSION";
   const report = {
     status: passed ? "passed" : "failed",
     bridgeKeys,
     rendererBoundary,
+    profileEditorFields,
+    queueFields,
     invalidVersion,
-    operations: { created, validated, opened, info, exported, closed, imported, importedValidation },
+    operations: { created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation },
     security: MAIN_WINDOW_SECURITY,
     restrictions: { senderValidation: true, approvedPathGrants: true, navigation: true, windowCreation: true, permissions: true, downloads: true, webviews: true, remoteContent: false },
   };

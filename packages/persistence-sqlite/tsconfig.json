@@ -8,6 +8,8 @@
   "references": [
     { "path": "../archive-core" },
     { "path": "../observability" },
-    { "path": "../project-format" }
+    { "path": "../project-format" },
+    { "path": "../queue" },
+    { "path": "../scope-engine" }
   ]
 }

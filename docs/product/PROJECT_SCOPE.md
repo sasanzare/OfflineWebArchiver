@@ -3,7 +3,7 @@
 **Project:** Offline Web Archive Builder  
 **Document status:** Proposed baseline  
 **Owner / decision authority:** Product Owner, except where another owner is named  
-**Current product phase:** Product Phase 4 complete; Product Phase 5 is next
+**Current product phase:** Product Phase 6 complete; Product Phase 7 — Checkpoint, Lease, and Crash Recovery is next
 **Last updated:** 2026-07-31
 
 This is the authoritative product-scope and requirements document. Measurement
@@ -14,9 +14,9 @@ in the [Open Decision Register](../project/OPEN_DECISIONS.md).
 
 ## Current production capability boundary
 
-Product Phases 3–4 establish npm workspaces, versioned contracts, GUI-independent Archive Core, one Application Service, secure Electron/CLI adapters, canonical OKF, portable Project format 1.0.0, SQLite schema/migrations/backups, atomic lifecycle operations, single-writer locking, and bounded secret-free ZIP transfer. Implemented commands are `system.describe` and `project.create/open/close/validate/export/import/info`.
+Product Phases 3–6 establish npm workspaces, versioned contracts, GUI-independent Archive Core, one Application Service, secure Electron/CLI adapters, canonical OKF, portable Project format `1.1.0`, SQLite schema `4`, Site Profile/Scope Engine `1`, and persistent Page Job Queue state/priority policy `1`. Implemented local commands cover system description, Project lifecycle/transfer, Profile revisions, Scope evaluation/normalization, and Queue enqueue/batch/claim/complete/fail/retry/release/skip/block/get/list/statistics/history/clear-pending.
 
-The production repository does **not** yet implement URL normalization, authorization/scope policy, persistent queues, crawling, browser automation/rendering, authentication/OTP/session storage, proxies, captured content, archive rewriting, offline serving, final UX, release packaging, or target-site validation. Interfaces and planned names are not implementation claims. Exact next phase is Product Phase 5 — Profile, Scope, and URL Normalization.
+The Queue durably stores synthetic Page Job identity, state, attempts, transitions, discoveries, idempotency, and statistics. It does **not** fetch or render those URLs. The production repository does not implement Worker Lease expiration, Heartbeats, stale-processing recovery, Checkpoints, automatic Resume, browser rendering, link discovery, authentication/OTP/session storage, proxies, captured content, downloads, archive rewriting, offline serving, final UX, release packaging, or target-site validation. Interfaces and planned names are not implementation claims. Exact next phase is Product Phase 7 — Checkpoint, Lease, and Crash Recovery.
 
 ## Vision and problem
 

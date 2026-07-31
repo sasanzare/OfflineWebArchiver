@@ -28,7 +28,29 @@ const required = [
   "docs/architecture/PORTABLE_PATH_RULES.md",
   "docs/architecture/PROJECT_LIFECYCLE.md",
   "docs/architecture/PHASE_04_SECURITY_REVIEW.md",
+  "docs/architecture/SITE_PROFILE.md",
+  "docs/architecture/URL_NORMALIZATION.md",
+  "docs/architecture/SCOPE_ENGINE.md",
+  "docs/architecture/DOMAIN_AND_ORIGIN_POLICY.md",
+  "docs/architecture/PATH_SCOPE_RULES.md",
+  "docs/architecture/QUERY_AND_FRAGMENT_POLICY.md",
+  "docs/architecture/CANONICAL_AND_REDIRECT_POLICY.md",
+  "docs/architecture/URL_IDENTITY_AND_DEDUPLICATION.md",
+  "docs/architecture/SSRF_PREPARATION.md",
+  "docs/architecture/PHASE_05_SECURITY_REVIEW.md",
+  "docs/architecture/PERSISTENT_QUEUE.md",
+  "docs/architecture/JOB_STATE_MACHINE.md",
+  "docs/architecture/JOB_IDENTITY_AND_DEDUPLICATION.md",
+  "docs/architecture/QUEUE_ORDERING_AND_PRIORITY.md",
+  "docs/architecture/JOB_ATTEMPTS_AND_RETRY.md",
+  "docs/architecture/QUEUE_IDEMPOTENCY.md",
+  "docs/architecture/QUEUE_CONCURRENCY.md",
+  "docs/architecture/DISCOVERY_RELATIONSHIPS.md",
+  "docs/architecture/QUEUE_PERSISTENCE.md",
+  "docs/architecture/PHASE_06_SECURITY_REVIEW.md",
   "docs/project/PHASE_04_IMPLEMENTATION_REPORT.md",
+  "docs/project/PHASE_05_IMPLEMENTATION_REPORT.md",
+  "docs/project/PHASE_06_IMPLEMENTATION_REPORT.md",
   "docs/project/adr/ADR-001-monorepo-and-workspace-strategy.md",
   "docs/project/adr/ADR-002-production-package-boundaries.md",
   "docs/project/adr/ADR-003-local-application-service-transport-boundary.md",
@@ -43,8 +65,28 @@ const required = [
   "docs/project/adr/ADR-012-atomic-project-file-replacement.md",
   "docs/project/adr/ADR-013-bounded-zip-project-export.md",
   "docs/project/adr/ADR-014-single-writer-project-lock.md",
+  "docs/project/adr/ADR-015-portable-site-profile-authority.md",
+  "docs/project/adr/ADR-016-versioned-url-normalization-and-identity.md",
+  "docs/project/adr/ADR-017-domain-matching-and-public-suffix.md",
+  "docs/project/adr/ADR-018-query-and-fragment-classification.md",
+  "docs/project/adr/ADR-019-scope-precedence-and-limits.md",
+  "docs/project/adr/ADR-020-canonical-and-redirect-classification.md",
+  "docs/project/adr/ADR-021-scope-engine-versioning.md",
+  "docs/project/adr/ADR-022-private-network-preflight.md",
+  "docs/project/adr/ADR-023-page-job-logical-identity.md",
+  "docs/project/adr/ADR-024-persistent-queue-schema.md",
+  "docs/project/adr/ADR-025-job-state-machine.md",
+  "docs/project/adr/ADR-026-atomic-sqlite-job-claim.md",
+  "docs/project/adr/ADR-027-queue-ordering-and-priority.md",
+  "docs/project/adr/ADR-028-queue-idempotency-strategy.md",
+  "docs/project/adr/ADR-029-attempt-and-retry-foundation.md",
+  "docs/project/adr/ADR-030-discovery-relationship-storage.md",
   "okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md",
   "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md",
+  "okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md",
+  "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md",
+  "okf/knowledge/queue/README.md",
+  "okf/knowledge/job-state-machine/README.md",
 ];
 const errors = [];
 let checkedLinks = 0;
@@ -57,10 +99,34 @@ for (const name of required) {
 }
 
 const adrSections = ["## Status", "## Context", "## Decision", "## Consequences", "## Alternatives", "## Security Impact", "## Portability Impact", "## Testing Impact", "## Migration Impact", "## Evidence", "## Phase Impact", "## Traceability"];
+const phaseFiveAdrSections = ["## Persistence Impact", "## Related Requirements", "## Related Acceptance Criteria", "## Related Risks", "## Related Open Decisions", "## Related OKF Domains"];
+const phaseSixAdrSections = [
+  "## Status",
+  "## Context",
+  "## Decision",
+  "## Alternatives",
+  "## Consequences",
+  "## Security Impact",
+  "## Reliability Impact",
+  "## Concurrency Impact",
+  "## Persistence Impact",
+  "## Migration Impact",
+  "## Testing Impact",
+  "## Related Requirements",
+  "## Related Acceptance Criteria",
+  "## Related Risks",
+  "## Related Open Decisions",
+  "## Related OKF Domains",
+];
 for (const name of required.filter((value) => value.includes("/ADR-"))) {
   try {
     const text = await readFile(path.join(repositoryRoot, name), "utf8");
-    for (const heading of adrSections) {
+    const headings = /^docs\/project\/adr\/ADR-0(?:23|24|25|26|27|28|29|30)-/.test(name)
+      ? phaseSixAdrSections
+      : /^docs\/project\/adr\/ADR-0(?:15|16|17|18|19|20|21|22)-/.test(name)
+        ? [...adrSections, ...phaseFiveAdrSections]
+        : adrSections;
+    for (const heading of headings) {
       if (!text.includes(heading)) errors.push(`${name}: missing ${heading}`);
     }
   } catch {}

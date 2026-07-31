@@ -1,0 +1,9 @@
+# Scope Engine
+
+`@offline-web-archive/scope-engine` is a deterministic computation package. It has no filesystem, database, clock, random source, DNS, request, redirect fetch, browser, queue, or crawler capability. Inputs are an immutable Site Profile plus explicit `rawUrl` (with legacy `url` alias), `sourceUrl`/`baseUrl`, `sourceDepth`, `discoveryType`, `profileRevision`, page-count, and known-identity context; output is a stable structured decision. Exactly one URL field is accepted. Resolution precedence is `sourceUrl`, request `baseUrl`, then Profile `baseUrl`; a stale profile revision fails closed as `PROFILE_REVISION_MISMATCH`.
+
+Evaluation precedence is raw safety, parse/scheme/credentials, host classification, deny-domain, allow-domain, deny-path, allow-path, query denial, network-address policy, depth, page limit, and authorization readiness. Deny wins. `eligible` describes scope; `shouldQueue` additionally requires a complete authorization record, but Phase 5 never queues anything.
+
+`sourceDepth` is explicit caller context and does not affect URL identity. Seed, sitemap, and manual-seed facts use depth `0`; DOM, JSON, navigation-action, history-route, pagination, and infinite-scroll discoveries use parent depth plus one; redirect and canonical facts inherit source content depth. Future discovery components compute those values, while Engine 1 only validates the supplied non-negative bounded integer. Lower-depth duplicate reconciliation belongs to Product Phase 6.
+
+Commands are `scope.evaluate`, `evaluateBatch`, `explain`, `previewNormalization`, and `getEngineInfo`. Batch size is bounded by both profile and engine limits. Reasons, compatible matched-rule IDs, and structured rule ID/type/action/match records are stable. Engine version changes are required for an identity-affecting semantic change.

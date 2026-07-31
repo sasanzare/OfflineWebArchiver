@@ -178,7 +178,7 @@ export function sha256(data: string | Uint8Array): string {
 export function exportPathIsAllowed(relativePath: string): boolean {
   if (relativePath === "project.json" || relativePath === "database/crawl.db") return true;
   if (EXPORT_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) return false;
-  return ["pages/", "assets/", "api/", "runtime/", "reports/"].some((prefix) => relativePath.startsWith(prefix));
+  return ["profile/", "pages/", "assets/", "api/", "runtime/", "reports/"].some((prefix) => relativePath.startsWith(prefix));
 }
 
 async function collectFiles(root: string, current = ""): Promise<Map<string, Uint8Array>> {

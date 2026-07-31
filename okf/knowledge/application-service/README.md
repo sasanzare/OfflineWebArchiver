@@ -1,3 +1,3 @@
 # Application Service Knowledge
 
-The local application service validates transport-neutral commands, authorizes the local transport context, orchestrates Archive Core Project ports and the SQLite adapter, translates stable errors, and preserves correlation identifiers. Product Phase 4 exposes local Project use cases but no network/crawl use case.
+The local Application Service validates contract 1.3.0, authorizes local transports, orchestrates Project/Profile persistence and Scope Engine 1, revalidates Queue ownership/revisions/Scope identity, calls the Queue repository port, translates stable errors, emits safe events, and preserves correlation/operation identifiers. Queue use cases are local durable state operations; they do not dispatch network or crawl work.

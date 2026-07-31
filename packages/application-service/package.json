@@ -1,6 +1,6 @@
 {
   "name": "@offline-web-archive/application-service",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -14,9 +14,11 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:application-service" },
   "dependencies": {
-    "@offline-web-archive/archive-core": "0.4.0",
-    "@offline-web-archive/contracts": "0.4.0",
-    "@offline-web-archive/observability": "0.4.0",
-    "@offline-web-archive/persistence-sqlite": "0.4.0"
+    "@offline-web-archive/archive-core": "0.6.0",
+    "@offline-web-archive/contracts": "0.6.0",
+    "@offline-web-archive/observability": "0.6.0",
+    "@offline-web-archive/persistence-sqlite": "0.6.0",
+    "@offline-web-archive/queue": "0.6.0",
+    "@offline-web-archive/scope-engine": "0.6.0"
   }
 }

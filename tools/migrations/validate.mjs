@@ -11,11 +11,14 @@ import {
 validateMigrationDefinitions();
 const database = new DatabaseSync(":memory:", { allowExtension: false, defensive: true });
 configureDatabase(database);
-applyPendingMigrations(database, "0.4.0", () => "2026-07-31T12:00:00.000Z");
+applyPendingMigrations(database, "0.6.0", () => "2026-07-31T12:00:00.000Z");
 const state = inspectMigrationState(database);
 const tables = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map((row) => row.name);
-for (const required of ["schema_migrations", "project_metadata", "project_revisions", "runs", "project_events"]) {
+for (const required of ["schema_migrations", "project_metadata", "project_revisions", "runs", "project_events", "site_profiles", "site_profile_revisions", "scope_rules", "scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations"]) {
   if (!tables.includes(required)) throw new Error(`Missing migration table ${required}`);
+}
+for (const forbidden of ["leases", "heartbeats", "checkpoints", "workers"]) {
+  if (tables.includes(forbidden)) throw new Error(`Product Phase 7 table ${forbidden} must not exist`);
 }
 if (state.applied !== CURRENT_SCHEMA_VERSION || state.pending.length !== 0 || MIGRATIONS.length !== CURRENT_SCHEMA_VERSION) {
   throw new Error("Migration version constants are inconsistent");

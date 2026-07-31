@@ -4,16 +4,31 @@ import { lstat, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import {
   ProjectOperationError,
+  QueueOperationError,
   type ProjectCompatibility,
   type ProjectOperationErrorCode,
   type ProjectStoragePort,
   type ProjectSummary,
   type ProjectValidationIssue,
   type ProjectValidationReport,
+  type QueueRepositoryPort,
 } from "@offline-web-archive/archive-core";
+import {
+  normalizeSiteProfileDraft,
+  parseSiteProfile,
+  ScopeEngineError,
+  serializeSiteProfile,
+  validateSiteProfile,
+  type ProfileStoragePort,
+  type SiteProfile,
+  type SiteProfileComparison,
+  type SiteProfileDraft,
+} from "@offline-web-archive/scope-engine";
 import { createSilentLogger, type Logger } from "@offline-web-archive/observability";
 import {
   createProjectManifest,
+  enableScopePolicy,
+  isSupportedProjectFormatVersion,
   parseProjectManifest,
   ProjectFormatError,
   PROJECT_DATABASE_PATH,
@@ -32,6 +47,7 @@ import {
   type ArchiveLimits,
 } from "./archive.js";
 import { acquireProjectLock, type ProjectLock } from "./locking.js";
+import { createSqliteQueueRepository } from "./queue.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -44,6 +60,7 @@ import {
 export { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists } from "./atomic.js";
 export { DEFAULT_ARCHIVE_LIMITS, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
 export { acquireProjectLock } from "./locking.js";
+export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -73,12 +90,38 @@ interface CurrentProject {
   summary: ProjectSummary;
 }
 
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort;
+
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
   logger?: Logger;
   now?: () => string;
   id?: () => string;
   archiveLimits?: ArchiveLimits;
+  profileCommitFault?: "after-database" | "after-profile-file" | "after-manifest-file";
+}
+
+function profileDraftFrom(profile: SiteProfile): SiteProfileDraft {
+  const {
+    schemaVersion: _schemaVersion,
+    engineVersion: _engineVersion,
+    profileId: _profileId,
+    projectId: _projectId,
+    revisionId: _revisionId,
+    sequence: _sequence,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...draft
+  } = profile;
+  return normalizeSiteProfileDraft(draft);
+}
+
+function changedProfilePaths(left: unknown, right: unknown, prefix = ""): string[] {
+  if (JSON.stringify(left) === JSON.stringify(right)) return [];
+  if (typeof left !== "object" || left === null || typeof right !== "object" || right === null || Array.isArray(left) || Array.isArray(right)) return [prefix || "profile"];
+  return [...new Set([...Object.keys(left), ...Object.keys(right)])]
+    .sort()
+    .flatMap((key) => changedProfilePaths((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key], prefix === "" ? key : `${prefix}.${key}`));
 }
 
 function issue(
@@ -214,7 +257,7 @@ function compatibilityFor(
   appliedSchema: number | null,
   reason: string | null = null,
 ): ProjectCompatibility {
-  const formatSupported = manifest?.format.version === PROJECT_FORMAT_VERSION;
+  const formatSupported = manifest !== null && isSupportedProjectFormatVersion(manifest.format.version);
   const schemaSupported = appliedSchema !== null && appliedSchema <= CURRENT_SCHEMA_VERSION && appliedSchema > 0;
   return {
     compatible: formatSupported && schemaSupported && reason === null,
@@ -290,6 +333,24 @@ async function validateProjectAt(root: string, now: () => string): Promise<Proje
       }
       if (metadata.schema_version !== appliedSchema || manifest.database.schemaVersion !== appliedSchema) {
         issues.push(issue("PROJECT_SCHEMA_VERSION_MISMATCH", "identity", "Manifest, metadata, and migration schema versions differ"));
+      }
+    }
+    if (manifest.features.scopePolicy) {
+      const profilePath = path.join(root, "profile", "config.json");
+      try {
+        await assertNotSymlink(profilePath);
+        const serialized = await readFile(profilePath, "utf8");
+        const profile = parseSiteProfile(JSON.parse(serialized));
+        const profileRow = database.prepare("SELECT project_id, current_profile_revision_id, profile_hash FROM site_profiles WHERE profile_id = ?")
+          .get(profile.profileId) as { project_id: string; current_profile_revision_id: string; profile_hash: string } | undefined;
+        if (profileRow === undefined || profileRow.project_id !== manifest.project.id || profileRow.current_profile_revision_id !== profile.revisionId || profileRow.profile_hash !== sha256(serializeSiteProfile(profile))) {
+          issues.push(issue("PROFILE_INTEGRITY_MISMATCH", "identity", "Site Profile file and SQLite revision ledger differ", "profile/config.json"));
+        }
+        if (manifest.source.baseUrl !== profile.baseUrl) {
+          issues.push(issue("PROFILE_INTEGRITY_MISMATCH", "identity", "Project manifest and Site Profile Base URL differ", "profile/config.json"));
+        }
+      } catch (error) {
+        issues.push(issue(error instanceof ScopeEngineError ? error.code : "PROFILE_INVALID", "security", error instanceof Error ? error.message : "Site Profile validation failed", "profile/config.json"));
       }
     }
   } catch (error) {
@@ -373,11 +434,12 @@ function updateManifestForOpen(manifest: ProjectManifest, timestamp: string, sch
     application: { version: manifest.application.version },
     project: { ...manifest.project, lastOpenedAt: timestamp },
     database: { ...manifest.database, schemaVersion },
+    features: { ...manifest.features, crawlQueue: schemaVersion >= 4 },
     lifecycle: { state: "ready", lastValidatedAt: timestamp },
   });
 }
 
-export function createSqliteProjectStorage(options: SqliteProjectStorageOptions): ProjectStoragePort {
+export function createSqliteProjectStorage(options: SqliteProjectStorageOptions): SqliteProjectStorage {
   const logger = options.logger ?? createSilentLogger();
   const now = options.now ?? (() => new Date().toISOString());
   const id = options.id ?? randomUUID;
@@ -386,6 +448,123 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
   const log = (eventName: string, projectId: string, metadata: Readonly<Record<string, unknown>> = {}): void => {
     logger.log({ timestamp: now(), level: "info", component: "persistence-sqlite", correlationId: projectId, eventName, metadata });
+  };
+
+  const requireCurrent = (projectPath: string): CurrentProject => {
+    const root = path.resolve(projectPath);
+    if (current === null || current.root !== root) {
+      throw new ProjectOperationError("PROJECT_NOT_OPEN", "Open the selected Project before using its Site Profile");
+    }
+    return current;
+  };
+
+  const queueForCurrent = (): QueueRepositoryPort => {
+    if (current === null) throw new QueueOperationError("QUEUE_PROJECT_NOT_OPEN", "Open the selected Project before using its queue");
+    return createSqliteQueueRepository(current.database, {
+      now,
+      id,
+      onEvent: (eventName, metadata) => log(eventName, current!.manifest.project.id, metadata),
+    });
+  };
+
+  const readCurrentProfile = async (active: CurrentProject): Promise<SiteProfile> => {
+    const profilePath = path.join(active.root, "profile", "config.json");
+    try {
+      await assertNotSymlink(profilePath);
+      const serialized = await readFile(profilePath, "utf8");
+      const profile = parseSiteProfile(JSON.parse(serialized));
+      const row = active.database.prepare(`
+        SELECT profile_id, current_profile_revision_id, profile_hash
+        FROM site_profiles WHERE project_id = ?
+      `).get(active.manifest.project.id) as { profile_id: string; current_profile_revision_id: string; profile_hash: string } | undefined;
+      if (row === undefined) throw new ScopeEngineError("PROFILE_NOT_FOUND", "The Project does not have a Site Profile");
+      if (row.profile_id !== profile.profileId || row.current_profile_revision_id !== profile.revisionId || row.profile_hash !== sha256(serializeSiteProfile(profile))) {
+        throw new ScopeEngineError("PROFILE_INTEGRITY_MISMATCH", "The portable Site Profile and SQLite revision ledger differ");
+      }
+      if (active.manifest.source.baseUrl !== profile.baseUrl) throw new ScopeEngineError("PROFILE_INTEGRITY_MISMATCH", "The Project manifest and Site Profile Base URL differ");
+      return profile;
+    } catch (error) {
+      if (error instanceof ScopeEngineError) throw error;
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+        throw new ScopeEngineError("PROFILE_NOT_FOUND", "The Project does not have a Site Profile");
+      }
+      throw new ScopeEngineError("PROFILE_INVALID", error instanceof Error ? error.message : "The Site Profile is invalid");
+    }
+  };
+
+  const persistProfileRevision = async (active: CurrentProject, profile: SiteProfile, create: boolean): Promise<SiteProfile> => {
+    const profileDirectory = path.join(active.root, "profile");
+    const profilePath = path.join(profileDirectory, "config.json");
+    const manifestPath = path.join(active.root, PROJECT_MANIFEST_FILE);
+    const serialized = serializeSiteProfile(profile);
+    const profileHash = sha256(serialized);
+    const oldManifestBytes = await readFile(manifestPath);
+    const oldProfileBytes = create ? null : await readFile(profilePath);
+    const nextManifest = enableScopePolicy(active.manifest, {
+      applicationVersion: options.applicationVersion,
+      baseUrl: profile.baseUrl,
+      revisionId: profile.revisionId,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      timestamp: profile.updatedAt,
+    });
+    try {
+      await mkdir(profileDirectory, { recursive: true });
+      active.database.exec("BEGIN IMMEDIATE");
+      const projectSequence = (active.database.prepare("SELECT COALESCE(MAX(sequence), 0) + 1 AS value FROM project_revisions WHERE project_id = ?").get(profile.projectId) as { value: number }).value;
+      active.database.prepare(`
+        INSERT INTO project_revisions (revision_id, project_id, sequence, created_at, status)
+        VALUES (?, ?, ?, ?, 'initialized')
+      `).run(profile.revisionId, profile.projectId, projectSequence, profile.updatedAt);
+      if (create) {
+        active.database.prepare(`
+          INSERT INTO site_profiles
+            (profile_id, project_id, current_profile_revision_id, current_sequence, created_at, updated_at, profile_hash)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(profile.profileId, profile.projectId, profile.revisionId, profile.sequence, profile.createdAt, profile.updatedAt, profileHash);
+      } else {
+        active.database.prepare(`
+          UPDATE site_profiles SET current_profile_revision_id = ?, current_sequence = ?, updated_at = ?, profile_hash = ?
+          WHERE profile_id = ? AND project_id = ?
+        `).run(profile.revisionId, profile.sequence, profile.updatedAt, profileHash, profile.profileId, profile.projectId);
+      }
+      active.database.prepare(`
+        INSERT INTO site_profile_revisions
+          (profile_revision_id, profile_id, sequence, created_at, canonical_json, profile_hash)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(profile.revisionId, profile.profileId, profile.sequence, profile.updatedAt, serialized, profileHash);
+      const insertRule = active.database.prepare(`
+        INSERT INTO scope_rules (profile_revision_id, rule_kind, rule_id, effect, match_type, canonical_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const rule of profile.domainRules) insertRule.run(profile.revisionId, "domain", rule.ruleId, rule.effect, rule.match, JSON.stringify(rule));
+      for (const rule of profile.pathRules) insertRule.run(profile.revisionId, "path", rule.ruleId, rule.effect, rule.match, JSON.stringify(rule));
+      for (const rule of profile.queryPolicy.rules) insertRule.run(profile.revisionId, "query", rule.key, rule.classification, rule.sensitive ? "sensitive" : "plain", JSON.stringify(rule));
+      active.database.prepare("UPDATE project_metadata SET format_version = ?, schema_version = ?, current_revision_id = ? WHERE singleton_id = 1")
+        .run(nextManifest.format.version, CURRENT_SCHEMA_VERSION, profile.revisionId);
+      recordEvent(active.database, id, profile.projectId, create ? "profile.created" : "profile.updated", profile.updatedAt, { profileId: profile.profileId, profileRevisionId: profile.revisionId, sequence: profile.sequence, profileHash });
+      if (options.profileCommitFault === "after-database") throw new Error("Injected Profile commit fault after database changes");
+      await atomicWriteFile(profilePath, serialized, { overwrite: !create });
+      if (options.profileCommitFault === "after-profile-file") throw new Error("Injected Profile commit fault after Profile file replacement");
+      await atomicWriteFile(manifestPath, serializeProjectManifest(nextManifest), { overwrite: true });
+      if (options.profileCommitFault === "after-manifest-file") throw new Error("Injected Profile commit fault after manifest replacement");
+      const verifiedProfile = parseSiteProfile(JSON.parse(await readFile(profilePath, "utf8")));
+      const verifiedManifest = parseProjectManifest(JSON.parse(await readFile(manifestPath, "utf8")));
+      const verifiedRow = active.database.prepare("SELECT current_profile_revision_id, profile_hash FROM site_profiles WHERE profile_id = ?").get(profile.profileId) as { current_profile_revision_id: string; profile_hash: string } | undefined;
+      if (verifiedProfile.revisionId !== profile.revisionId || verifiedManifest.current.revisionId !== profile.revisionId || verifiedManifest.source.baseUrl !== profile.baseUrl || verifiedRow === undefined || verifiedRow.current_profile_revision_id !== profile.revisionId || verifiedRow.profile_hash !== profileHash) {
+        throw new ScopeEngineError("PROFILE_INTEGRITY_MISMATCH", "The proposed Site Profile commit did not validate");
+      }
+      active.database.exec("COMMIT");
+      active.manifest = nextManifest;
+      active.summary = summaryFromManifest(active.root, nextManifest, active.summary.migrationStatus);
+      log(create ? "profile.created" : "profile.updated", profile.projectId, { profileRevisionId: profile.revisionId, sequence: profile.sequence, profileHash });
+      return verifiedProfile;
+    } catch (error) {
+      if (active.database.isTransaction) active.database.exec("ROLLBACK");
+      await atomicWriteFile(manifestPath, oldManifestBytes, { overwrite: true }).catch(() => undefined);
+      if (oldProfileBytes === null) await rm(profilePath, { force: true }).catch(() => undefined);
+      else await atomicWriteFile(profilePath, oldProfileBytes, { overwrite: true }).catch(() => undefined);
+      throw error;
+    }
   };
 
   return Object.freeze({
@@ -623,6 +802,144 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
       }
     },
 
+    async createProfile(input) {
+      const active = requireCurrent(input.projectPath);
+      const existing = active.database.prepare("SELECT profile_id FROM site_profiles WHERE project_id = ?").get(active.manifest.project.id);
+      if (existing !== undefined) throw new ScopeEngineError("PROFILE_ALREADY_EXISTS", "The Project already has a Site Profile");
+      if (await pathExists(path.join(active.root, "profile", "config.json"))) throw new ScopeEngineError("PROFILE_INTEGRITY_MISMATCH", "A Profile file exists without a matching database ledger");
+      const draft = normalizeSiteProfileDraft(input.draft);
+      const createdAt = now();
+      const profile = parseSiteProfile({
+        schemaVersion: 1,
+        engineVersion: 1,
+        profileId: id(),
+        projectId: active.manifest.project.id,
+        revisionId: id(),
+        sequence: 1,
+        createdAt,
+        updatedAt: createdAt,
+        ...draft,
+      });
+      return persistProfileRevision(active, profile, true);
+    },
+
+    async getProfile(projectPath) {
+      return readCurrentProfile(requireCurrent(projectPath));
+    },
+
+    async updateProfile(input) {
+      const active = requireCurrent(input.projectPath);
+      const previous = await readCurrentProfile(active);
+      if (previous.revisionId !== input.expectedRevisionId) {
+        throw new ScopeEngineError("PROFILE_REVISION_CONFLICT", "The Site Profile changed after it was read");
+      }
+      const draft = normalizeSiteProfileDraft(input.draft);
+      const changedPaths = changedProfilePaths(profileDraftFrom(previous), draft);
+      if (changedPaths.length === 0) {
+        throw new ScopeEngineError("PROFILE_NO_CHANGES", "The proposed Site Profile has no semantic changes");
+      }
+      const profile = parseSiteProfile({
+        ...previous,
+        ...draft,
+        revisionId: id(),
+        sequence: previous.sequence + 1,
+        updatedAt: now(),
+      });
+      return { profile: await persistProfileRevision(active, profile, false), changedPaths };
+    },
+
+    async validateStoredProfile(projectPath) {
+      const active = requireCurrent(projectPath);
+      try {
+        return validateSiteProfile(await readCurrentProfile(active));
+      } catch (error) {
+        return {
+          valid: false,
+          errors: [{ code: error instanceof ScopeEngineError ? error.code : "PROFILE_INVALID", path: "profile/config.json", message: error instanceof Error ? error.message : "The Site Profile is invalid" }],
+          warnings: [],
+        };
+      }
+    },
+
+    async compareProfiles(input) {
+      const active = requireCurrent(input.projectPath);
+      const rows = active.database.prepare(`
+        SELECT sequence, profile_revision_id, canonical_json FROM site_profile_revisions
+        WHERE profile_id = (SELECT profile_id FROM site_profiles WHERE project_id = ?)
+          AND sequence IN (?, ?)
+        ORDER BY sequence
+      `).all(active.manifest.project.id, input.fromSequence, input.toSequence) as unknown as { sequence: number; profile_revision_id: string; canonical_json: string }[];
+      const from = rows.find((row) => row.sequence === input.fromSequence);
+      const to = rows.find((row) => row.sequence === input.toSequence);
+      if (from === undefined || to === undefined) throw new ScopeEngineError("PROFILE_NOT_FOUND", "One or both requested Site Profile revisions do not exist");
+      const changedPaths = changedProfilePaths(profileDraftFrom(parseSiteProfile(JSON.parse(from.canonical_json))), profileDraftFrom(parseSiteProfile(JSON.parse(to.canonical_json))));
+      return { fromRevisionId: from.profile_revision_id, toRevisionId: to.profile_revision_id, changedPaths } satisfies SiteProfileComparison;
+    },
+
+    async enqueue(input) {
+      return queueForCurrent().enqueue(input);
+    },
+
+    async enqueueBatch(inputs) {
+      return queueForCurrent().enqueueBatch(inputs);
+    },
+
+    async hasIdentity(input) {
+      return queueForCurrent().hasIdentity(input);
+    },
+
+    async countIdentities(input) {
+      return queueForCurrent().countIdentities(input);
+    },
+
+    async claimNext(input) {
+      return queueForCurrent().claimNext(input);
+    },
+
+    async complete(input) {
+      return queueForCurrent().complete(input);
+    },
+
+    async fail(input) {
+      return queueForCurrent().fail(input);
+    },
+
+    async scheduleRetry(input) {
+      return queueForCurrent().scheduleRetry(input);
+    },
+
+    async releaseDueRetries(input) {
+      return queueForCurrent().releaseDueRetries(input);
+    },
+
+    async skip(input) {
+      return queueForCurrent().skip(input);
+    },
+
+    async block(input) {
+      return queueForCurrent().block(input);
+    },
+
+    async get(input) {
+      return queueForCurrent().get(input);
+    },
+
+    async list(input) {
+      return queueForCurrent().list(input);
+    },
+
+    async getStatistics(input) {
+      return queueForCurrent().getStatistics(input);
+    },
+
+    async getHistory(input) {
+      return queueForCurrent().getHistory(input);
+    },
+
+    async clearPending(input) {
+      return queueForCurrent().clearPending(input);
+    },
+
     async getCompatibility(projectPath) {
       return (await validateProjectAt(path.resolve(projectPath), now)).compatibility;
     },
@@ -630,7 +947,7 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
     getCurrent() {
       return current?.summary ?? null;
     },
-  } satisfies ProjectStoragePort);
+  } satisfies SqliteProjectStorage);
 }
 
 validateMigrationDefinitions(MIGRATIONS);

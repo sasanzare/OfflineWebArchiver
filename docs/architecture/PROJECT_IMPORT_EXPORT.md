@@ -1,5 +1,7 @@
 # Project Import and Export
 
+Product Phase 6 includes the validated secret-free `profile/config.json`, Profile revision ledger, and schema-4 Queue/Scope/attempt/transition/discovery/idempotency ledgers in the bounded Project archive. `auth/` and `proxies/` remain excluded. Import validates Profile file/ledger hash, Project/Run/Profile ownership, migration history, integrity, and Project revision identity before promotion. A Project may be imported with `processing` Jobs; no stale-processing recovery is inferred.
+
 The working Project remains a directory. Portable export is bounded ZIP container `1.0.0` using pure-JavaScript `fflate@0.8.3`.
 
 Export validates the source, holds/reuses its writer lock, records a lifecycle event, obtains a consistent SQLite backup snapshot, inventories approved files, and writes `.offline-archive-export.json`. Inventory entries contain only relative path, byte length, and SHA-256. ZIP entry time is fixed for reproducibility. The output is atomically written and never overwrites.

@@ -9,9 +9,9 @@
   </head>
   <body>
     <main>
-      <p class="eyebrow">Product Phase 4</p>
-      <h1>Project foundation</h1>
-      <p class="lede">Create, open, validate, export, and import a portable local Project. Crawling and network access are not available in this phase.</p>
+      <p class="eyebrow">Product Phase 6</p>
+      <h1>Profile, scope, and persistent queue</h1>
+      <p class="lede">Inspect and test the durable Page Job queue. Crawling, browser rendering, automatic processing, Workers, Leases, and recovery are not implemented.</p>
 
       <section aria-labelledby="create-heading">
         <h2 id="create-heading">Create Project</h2>
@@ -20,6 +20,97 @@
           <label>Slug <input id="project-slug" value="my-archive" pattern="[a-z0-9]+(?:-[a-z0-9]+)*"></label>
         </div>
         <button data-action="create" type="button">Choose destination and create</button>
+      </section>
+
+      <section aria-labelledby="profile-heading">
+        <h2 id="profile-heading">Site Profile</h2>
+        <div class="fields">
+          <label>Profile name <input id="profile-name" value="Default site profile" maxlength="120"></label>
+          <label>Seed URL <input id="profile-seed" value="https://example.com/" maxlength="8192"></label>
+          <label>Base URL <input id="profile-base-url" value="https://example.com/" maxlength="8192"></label>
+          <label>Fragment policy
+            <select id="profile-fragment-policy">
+              <option value="ignore-all">Ignore all</option>
+              <option value="preserve-hash-routes">Preserve hash routes</option>
+              <option value="preserve-all">Preserve all</option>
+            </select>
+          </label>
+          <label>External canonical policy
+            <select id="profile-canonical-external">
+              <option value="ignore">Ignore external</option>
+              <option value="reject">Reject external</option>
+            </select>
+          </label>
+          <label>Max Depth <input id="profile-max-depth" type="number" min="0" max="1000" value="10"></label>
+          <label>Max Pages <input id="profile-max-pages" type="number" min="0" max="10000000" value="100000"></label>
+        </div>
+        <div class="policy-editors">
+          <label>Allowed domains (JSON rules; rule IDs remain visible)<textarea id="profile-domain-allow" rows="5">[]</textarea></label>
+          <label>Denied domains (JSON rules; rule IDs remain visible)<textarea id="profile-domain-deny" rows="5">[]</textarea></label>
+          <label>Allowed paths (JSON rules)<textarea id="profile-path-allow" rows="5">[]</textarea></label>
+          <label>Denied paths (JSON rules)<textarea id="profile-path-deny" rows="5">[]</textarea></label>
+          <label>Query policy (JSON)<textarea id="profile-query-policy" rows="7">{&quot;unknown&quot;:&quot;identity&quot;,&quot;rules&quot;:[]}</textarea></label>
+        </div>
+        <div class="fields">
+          <label class="check-field"><input id="profile-redirect-external" type="checkbox"> Allow approved external redirects</label>
+          <label class="check-field"><input id="profile-redirect-downgrade" type="checkbox"> Allow HTTPS downgrade</label>
+          <label>Compare from revision <input id="profile-compare-from" type="number" min="1" value="1"></label>
+          <label>Compare to revision <input id="profile-compare-to" type="number" min="1" value="1"></label>
+        </div>
+        <p id="profile-revision-summary">No Profile revision loaded.</p>
+        <p>Changing Base URL requires confirmation and creates a new immutable Profile and Project revision.</p>
+        <div class="actions">
+          <button data-action="profile-create" type="button">Create profile</button>
+          <button data-action="profile-show" type="button">Show profile</button>
+          <button data-action="profile-update" type="button">Save profile policy</button>
+          <button data-action="profile-validate" type="button">Validate profile</button>
+          <button data-action="profile-compare" type="button">Compare revisions</button>
+        </div>
+      </section>
+
+      <section aria-labelledby="scope-heading">
+        <h2 id="scope-heading">Scope preview</h2>
+        <label>URL <input id="scope-url" value="https://example.com/docs/?utm_source=preview" maxlength="8192"></label>
+        <div class="actions">
+          <button data-action="scope-evaluate" type="button">Evaluate</button>
+          <button data-action="scope-explain" type="button">Explain</button>
+          <button data-action="scope-normalize" type="button">Normalize</button>
+        </div>
+      </section>
+
+      <section aria-labelledby="queue-heading">
+        <h2 id="queue-heading">Persistent Page Job queue</h2>
+        <p>These controls simulate queue management only. They never contact a website or create archived page output.</p>
+        <div class="fields">
+          <label>Test URL <input id="queue-url" value="https://example.com/docs/?utm_source=queue-test" maxlength="8192"></label>
+          <label>State filter
+            <select id="queue-state-filter">
+              <option value="">All states</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="retrying">Retrying</option>
+              <option value="skipped">Skipped</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </label>
+          <label>Page size <input id="queue-page-size" type="number" min="1" max="200" value="25"></label>
+        </div>
+        <div class="actions">
+          <button data-action="queue-enqueue" type="button">Enqueue test URL</button>
+          <button data-action="queue-refresh" type="button">Refresh queue</button>
+          <button data-action="queue-next" type="button">Next page</button>
+          <button data-action="queue-claim" type="button">Claim next (test)</button>
+          <button data-action="queue-complete" type="button">Complete selected (test)</button>
+          <button data-action="queue-fail" type="button">Fail selected (test)</button>
+        </div>
+        <h3>Queue summary</h3>
+        <dl id="queue-summary"><div><dt>Total</dt><dd>0</dd></div></dl>
+        <h3>Jobs</h3>
+        <div id="queue-list" class="queue-list" role="list">No Jobs loaded.</div>
+        <h3>Selected Job detail and history</h3>
+        <dl id="queue-detail"><div><dt>Selection</dt><dd>No Job selected.</dd></div></dl>
       </section>
 
       <section aria-labelledby="operations-heading">

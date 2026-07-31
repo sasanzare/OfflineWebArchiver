@@ -1,5 +1,11 @@
 # Project-Wide Definition of Done
 
+## Product Phase 6 gate
+
+Product Phase 6 is done only when Page Job identity and database uniqueness, schema-4 forward migration, closed state machine, deterministic ordering, transactional enqueue/claim/terminal/retry operations, token fencing, attempt/discovery/history/idempotency persistence, Queue statistics, CLI/Desktop paths, real separate-connection races, architecture/security/docs/OKF validation, and explicit absence of Lease/Heartbeat/Checkpoint/recovery/network capability all pass. Any duplicate logical Job, double claim, partial transition, invalid terminal reopen, ownership/redaction escape, fake concurrency evidence, missing OKF record, or Product Phase 7 recovery behavior fails the gate.
+
+Product Phase 5 remains a completed inherited gate: Site Profile revisions, Scope Engine identity/policy, migration 003, contract 1.2.0, and no-network evidence must continue passing.
+
 **Document status:** Proposed baseline  
 **Owner / approval authority:** Product Owner and QA Lead; Security Owner for security gates  
 **Applies to:** every phase, feature, defect fix, release artifact, and Project-format change  

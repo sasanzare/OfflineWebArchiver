@@ -1,0 +1,20 @@
+{
+  "name": "@offline-web-archive/scope-engine",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:scope-engine" },
+  "dependencies": {
+    "tldts": "7.4.9",
+    "zod": "4.4.3"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "profile": {
+    "name": "Golden profile",
+    "seedUrl": "https://example.com/"
+  },
+  "cases": [
+    {
+      "name": "tracking removed from identity and duplicates preserved",
+      "input": "HTTPS://EXAMPLE.COM:443/a/../articles?utm_source=news&id=3&id=2#section",
+      "normalizedUrl": "https://example.com/articles?id=2&id=3&utm_source=news",
+      "identityUrl": "https://example.com/articles?id=2&id=3",
+      "identityHash": "c8f13eccf1b610a727dcf8540f0f20b749641f41868805fac200ac20c4f4f0fb",
+      "eligible": true
+    },
+    {
+      "name": "relative URL resolves against an explicit base",
+      "input": "../b?lang=en",
+      "baseUrl": "https://example.com/a/c",
+      "normalizedUrl": "https://example.com/b?lang=en",
+      "identityUrl": "https://example.com/b?lang=en",
+      "eligible": true
+    }
+  ]
+}

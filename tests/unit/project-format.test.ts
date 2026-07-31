@@ -39,9 +39,10 @@ test("manifest serialization is deterministic, strict, versioned, and secret-fre
   }));
 });
 
-test("format compatibility policy accepts only the implemented version", () => {
+test("format compatibility policy accepts the supported 1.0 and 1.1 lines", () => {
   assert.equal(isSupportedProjectFormatVersion("1.0.0"), true);
-  assert.equal(isSupportedProjectFormatVersion("1.1.0"), false);
+  assert.equal(isSupportedProjectFormatVersion("1.1.0"), true);
+  assert.equal(isSupportedProjectFormatVersion("1.2.0"), false);
   assert.equal(isSupportedProjectFormatVersion("2.0.0"), false);
   assert.equal(isSupportedProjectFormatVersion("1.0"), false);
 });

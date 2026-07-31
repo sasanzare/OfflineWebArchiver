@@ -1,3 +1,3 @@
 # Decision Knowledge
 
-`okf/registry/decisions.json` indexes project and bootstrap decisions. Product Phase 3 resolved OD-009, OD-010, OD-011, and OD-026. Product Phase 4 resolves OD-013 and the bounded-container portion of OD-014; OD-023 is partial because retention/restore remains Product Phase 17.
+`okf/registry/decisions.json` is authoritative for status and paths. Product Phase 6 resolves OD-036..043 through Accepted ADR-023..030: Job identity, schema, state machine, atomic claim, order/priority, idempotency, attempts/retry, and discovery storage. Lease/Heartbeat/Checkpoint recovery and retention/scale/starvation policy remain future decisions; earlier statuses are preserved.

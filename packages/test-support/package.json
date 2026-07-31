@@ -1,6 +1,6 @@
 {
   "name": "@offline-web-archive/test-support",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +14,7 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:test-support" },
   "dependencies": {
-    "@offline-web-archive/contracts": "0.4.0",
-    "@offline-web-archive/observability": "0.4.0"
+    "@offline-web-archive/contracts": "0.6.0",
+    "@offline-web-archive/observability": "0.6.0"
   }
 }

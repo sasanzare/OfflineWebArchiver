@@ -114,6 +114,88 @@ These executable criteria cover only local Project format/persistence/lifecycle 
 | AC-P04-028 | NFR-KNOW-003 | Docs/ADR/security synchronization | Docs validator and review | Required architecture docs, ADR-009..014, report/security review agree | Documentation output | High | passed |
 | AC-P04-029 | NFR-KNOW-001 | Canonical OKF synchronization | OKF validator | Phase 4 record/change/domains/nodes/evidence/relations/decisions/risks valid | OKF output | Critical | passed |
 
+## Product Phase 5 Profile, Scope, and URL gate
+
+These criteria prove deterministic local policy only. They do not claim DNS, request dispatch, queueing, crawling, browser automation, or target-site execution.
+
+| Acceptance ID | Requirement ID | Capability | Verification | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P05-001 | FR-AUTHZ-001 | Site Profile creation | Storage/service/CLI/Electron tests | Strict schema-1 profile created in selected Project | Profile integration and smoke tests | Critical | passed |
+| AC-P05-002 | FR-AUTHZ-001 | Site Profile persistence | Close/reopen/export/import | Canonical JSON and SQLite ledger survive | `profile-lifecycle.test.ts` | Critical | passed |
+| AC-P05-003 | FR-AUTHZ-001 | Profile validation | Valid, unknown, conflict, tamper cases | Strict failure and safe issues | Unit/integration tests | Critical | passed |
+| AC-P05-004 | FR-AUTHZ-001 | Profile revision history | Create/update/compare/stale/no-op/Base URL update | Immutable sequences; no-op rejected; semantic change updates manifest | Profile integration test | Critical | passed |
+| AC-P05-005 | FR-SCOPE-001 | Base URL normalization | Unit/golden relative/absolute corpus | Profile/manifest share one normalized authority and fallback | Unit, integration, and golden evidence | Critical | passed |
+| AC-P05-006 | FR-SCOPE-003 | Allowed schemes | HTTP/HTTPS inputs | Both parse under explicit domain rules | Scope unit tests | High | passed |
+| AC-P05-007 | FR-SCOPE-003 | Unsupported schemes | JavaScript/custom scheme corpus | Stable rejection before policy | Scope unit tests | Critical | passed |
+| AC-P05-008 | FR-SCOPE-002 | Domain allowlist | Exact/subdomain inputs | Only explicit rule matches | Scope unit tests | Critical | passed |
+| AC-P05-009 | FR-SCOPE-002 | Domain denylist | Conflicting matched target | Deny wins with rule ID | Scope unit tests | Critical | passed |
+| AC-P05-010 | FR-SCOPE-002 | Subdomain behavior | `example.com` and suffix-confusion corpus | Label boundary is enforced | Scope unit tests | Critical | passed |
+| AC-P05-011 | FR-SCOPE-001 | Origin relation | Seed/port/scheme/domain corpus | Same-origin/host/site/external classified | Scope Engine tests/source | High | passed |
+| AC-P05-012 | FR-SCOPE-001 | Default-port removal | HTTP 80 / HTTPS 443 | Default port omitted | Golden fixture | High | passed |
+| AC-P05-013 | FR-SCOPE-002 | IDN handling | Unicode/canonical hostname path | ASCII/Punycode lowercase comparison | Engine validation/source tests | Critical | passed |
+| AC-P05-014 | FR-SCOPE-001 | Path normalization | Dot/encoded/repeated/case corpus | URL semantics, no filesystem semantics | Unit/golden tests | Critical | passed |
+| AC-P05-015 | FR-SCOPE-002 | Path allowlist | Exact/prefix boundaries | Only matched paths eligible | Scope unit tests | Critical | passed |
+| AC-P05-016 | FR-SCOPE-002 | Path denylist | Denied nested path | Deny precedes allow | Scope unit tests | Critical | passed |
+| AC-P05-017 | FR-SCOPE-001 | Query normalization | Reordered duplicate pairs | Stable ordering, duplicates retained | Golden fixture | Critical | passed |
+| AC-P05-018 | FR-SCOPE-001 | Tracking removal | Default tracking keys | Normalized retains; identity omits | Unit/golden tests | High | passed |
+| AC-P05-019 | FR-SCOPE-001 | Functional query preservation | Functional/identity keys | Values distinguish identity | Scope unit tests | Critical | passed |
+| AC-P05-020 | FR-SCOPE-003 | Sensitive URL redaction | Token/password query and fragment keys | Values absent from decision/log/persistence | Unit/security checks | Critical | passed |
+| AC-P05-021 | FR-SCOPE-001 | Fragment policy | Ignore/preserve profiles | Explicit fragment behavior | Scope Engine unit tests | High | passed |
+| AC-P05-022 | FR-SCOPE-001 | Hash-router policy | `#/route` and ordinary fragment | Only hash route preserved | Scope Engine unit tests | High | passed |
+| AC-P05-023 | FR-SCOPE-002 | Canonical classification | Same/new/external/conflict/cycle cases | Finite local classification; supplied cycles detected; no fetch | Scope unit tests | Critical | passed |
+| AC-P05-024 | FR-SCOPE-002 | Redirect classification | Supplied redirect facts | Finite local classification; no fetch | Scope unit tests | Critical | passed |
+| AC-P05-025 | FR-SCOPE-002 | Redirect loop | Repeated chain identity | Stable stop-loop | Scope unit tests | Critical | passed |
+| AC-P05-026 | FR-SCOPE-003 | HTTPS downgrade | HTTPS source to HTTP target | Denied unless explicitly approved | Scope unit tests/source | Critical | passed |
+| AC-P05-027 | FR-SCOPE-002 | Max Depth | Seed depth zero/beyond limit | Beyond limit is ineligible | Scope unit tests | High | passed |
+| AC-P05-028 | FR-SCOPE-001 | Max Pages | Zero/null/count/known identity | Known ID not counted; bound deterministic | Scope unit tests | Critical | passed |
+| AC-P05-029 | FR-SCOPE-001 | Stable URL identity | Golden URL twice | Exact identity URL/hash repeats | Golden tool | Critical | passed |
+| AC-P05-030 | FR-SCOPE-001 | Equivalent deduplication | Tracking/order variants | Equivalent inputs share identity | Golden/unit tests | Critical | passed |
+| AC-P05-031 | FR-SCOPE-001 | Deterministic reasons | Repeat same explicit inputs | Same decision ID/reason order | Unit/golden tests | Critical | passed |
+| AC-P05-032 | FR-CLI-001 | CLI profile/scope | Built CLI smoke and parser tests | Profile lifecycle plus contextual/revision-aware Scope paths work in human/JSON modes | CLI smoke/unit tests | Critical | passed |
+| AC-P05-033 | NFR-SEC-003 | Desktop profile/scope | Real Electron smoke | Sandboxed editor fields, Profile update/compare, and Scope explanation work through bridge | Electron smoke | Critical | passed |
+| AC-P05-034 | FR-SCOPE-003 | Security edge cases | Unsafe syntax, IP classes, limits, redaction | Fail closed without network or secret echo | Unit/security/architecture gates | Critical | passed |
+| AC-P05-035 | NFR-KNOW-001 | OKF synchronization | Canonical validator | Phase/changes/domains/nodes/evidence/relations/decisions/risks agree | `npm run okf:validate` | Critical | passed |
+
+## Product Phase 6 completion criteria
+
+| Acceptance ID | Requirement ID | Capability | Direct scenario | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P06-001 | FR-QUEUE-001, FR-PROJECT-003 | Queue schema migration | Apply schema 4 from current and legacy Projects | Additive checked migration, backup, rollback and integrity pass; no Lease/Heartbeat tables | Migration/unit/lifecycle tests | Critical | passed |
+| AC-P06-002 | FR-QUEUE-001 | Eligible enqueue | Enqueue approved in-scope Scope Decision | One durable pending Page Job and creation history | Queue lifecycle integration | Critical | passed |
+| AC-P06-003 | FR-QUEUE-001 | Rejected decision | Enqueue external/non-queueable decision | Structured rejected/blocked result and no Job | Queue lifecycle integration | Critical | passed |
+| AC-P06-004 | FR-QUEUE-002 | Duplicate identity | Tracking/fragment equivalent URLs | Structured existing result references original Job | Queue lifecycle integration | Critical | passed |
+| AC-P06-005 | FR-QUEUE-002 | Concurrent duplicate | Race separate SQLite connections | One logical Job; constraint/integrity remain valid | Queue concurrency test | Critical | passed |
+| AC-P06-006 | FR-QUEUE-002 | Stable identity scope | Reopen and repeat equivalent identity | Same Run/Profile/engine/hash/Job association | Integration and schema assertion | Critical | passed |
+| AC-P06-007 | FR-QUEUE-002 | Profile isolation | Validate stored Profile revision before enqueue | Mismatched/current revisions cannot mix | Repository/service checks | Critical | passed |
+| AC-P06-008 | FR-QUEUE-002 | Engine isolation | Compare Scope decision and Profile engine | Mismatch rejected; engine is uniqueness axis | Repository/schema tests | Critical | passed |
+| AC-P06-009 | FR-QUEUE-001 | Parent persistence | Enqueue synthetic child from parent | Parent Job reference survives reopen | Queue lifecycle integration | High | passed |
+| AC-P06-010 | FR-QUEUE-002 | Multiple discoveries | Discover child from two parents | One Job, both provenance rows | Queue lifecycle integration | Critical | passed |
+| AC-P06-011 | FR-QUEUE-001 | Depth persistence | Store source/effective depth | Job and relationship depths persist | Queue lifecycle integration | High | passed |
+| AC-P06-012 | FR-QUEUE-002 | Lower-depth rediscovery | Rediscover at depth 2 after depth 5 | Effective depth becomes 2; both histories remain | Queue lifecycle integration | Critical | passed |
+| AC-P06-013 | FR-QUEUE-003 | Priority order | Mix explicit/default priorities and ties | Exact documented total order selects next | Unit/integration tests | Critical | passed |
+| AC-P06-014 | FR-QUEUE-003 | Attempt counting | Claim and retry twice | Counts start zero and increment only on successful claim | Integration/concurrency tests | Critical | passed |
+| AC-P06-015 | FR-QUEUE-003 | Maximum attempts | Fail retryable on final attempt | Terminal failed; no further retry claim | Queue lifecycle integration | Critical | passed |
+| AC-P06-016 | FR-QUEUE-003 | Atomic claim | Claim one due pending Job | State/token/attempt/transition commit together | Queue lifecycle integration | Critical | passed |
+| AC-P06-017 | FR-QUEUE-003 | Concurrent claim | Race separate SQLite connections | Exactly one active claim and attempt | Queue concurrency test | Critical | passed |
+| AC-P06-018 | FR-QUEUE-003 | Claim-token ownership | Complete/fail with wrong token | Stable rejection and no state mutation | Integration/security tests | Critical | passed |
+| AC-P06-019 | FR-QUEUE-003 | Valid transitions | Exercise all allowed state edges | Every allowed edge validates and histories persist | State-machine/unit/integration tests | Critical | passed |
+| AC-P06-020 | FR-QUEUE-003 | Invalid transitions | Exhaust all disallowed state pairs | All 39 reject; terminal states never reopen | State-machine/unit tests | Critical | passed |
+| AC-P06-021 | FR-QUEUE-002 | Idempotent completion | Repeat same completion across operations | One result, transition, and finalized attempt | Integration/concurrency tests | Critical | passed |
+| AC-P06-022 | FR-QUEUE-002 | Conflicting completion | Change result/token under completed Job | `QUEUE_COMPLETION_CONFLICT` and original result retained | Queue lifecycle integration | Critical | passed |
+| AC-P06-023 | FR-QUEUE-003 | Retryable failure | Fail owned Job with attempts remaining | Attempt finalizes and Job enters retrying | Queue lifecycle integration | Critical | passed |
+| AC-P06-024 | FR-QUEUE-003 | Terminal failure | Non-retryable or exhausted failure | Job enters durable terminal failed | Queue lifecycle integration | Critical | passed |
+| AC-P06-025 | FR-QUEUE-003 | Retry scheduling | Change retry due time idempotently | Stored time/reason operation survives reopen | Queue lifecycle integration | High | passed |
+| AC-P06-026 | FR-QUEUE-003 | Retry release | Release before/at due time | Premature set is empty; due Job alone returns pending | Integration/concurrency tests | Critical | passed |
+| AC-P06-027 | FR-QUEUE-003 | Skip | Explicitly skip pending/owned processing Job | Terminal visible state and history | Queue lifecycle integration | High | passed |
+| AC-P06-028 | FR-QUEUE-003 | Block | Explicitly block pending/owned processing Job | Terminal visible state and reason | Queue lifecycle integration | Critical | passed |
+| AC-P06-029 | FR-QUEUE-001 | Reopen persistence | Close and reopen mixed queue | Jobs, attempts, transitions, discovery, retry and idempotency survive | Integration/concurrency tests | Critical | passed |
+| AC-P06-030 | FR-QUEUE-001 | Queue statistics | Query mixed states/discoveries | All documented counts/depth/times are accurate and not coverage | Queue lifecycle integration | High | passed |
+| AC-P06-031 | FR-QUEUE-001 | Transition history | Read completed/retried Job | Ordered durable transitions and reasons returned | Queue lifecycle integration | Critical | passed |
+| AC-P06-032 | FR-QUEUE-001 | Attempt history | Read retried Job | Consecutive attempt outcomes returned | Integration/concurrency tests | Critical | passed |
+| AC-P06-033 | FR-CLI-001 | Queue CLI | Help/enqueue/duplicate/list/show/claim/complete/fail/retry/stats in human/JSON modes | Built CLI commands and stable exit codes work | CLI unit/smoke tests | Critical | passed |
+| AC-P06-034 | NFR-SEC-003 | Queue Desktop | Summary/filter/list/detail/history and controlled operations | Real sandboxed Electron uses approved bridge only | Electron smoke/architecture tests | Critical | passed |
+| AC-P06-035 | NFR-KNOW-001, NFR-TEST-001 | Security, docs, and OKF gate | Run adversarial limits, all validators, docs, and canonical OKF | No secret/SQL/ownership escape; Phase 6 records reconcile with no false Phase 7 claim | Security/full suite/docs/OKF validators | Critical | passed |
+
 ## Project, policy, and persistence
 
 | Acceptance ID | Requirement ID | Feature or capability | Scenario | Preconditions | Test procedure | Expected result | Evidence or artifact | Planned implementation phase | Planned validation phase | Priority | Status | Decision owner | Notes |

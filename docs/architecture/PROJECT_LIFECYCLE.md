@@ -1,5 +1,7 @@
 # Project Lifecycle
 
+After Project creation/open, Profile commands maintain immutable revisions. Scope commands compute local decisions. Queue commands validate the current Project/Run/Profile/revision/engine and mutate the schema-4 ledger through the same bounded open/close orchestration. A Queue command does not start a network request or real crawler.
+
 ## Create
 
 Refuse an existing final destination; create a unique sibling staging directory; build approved directories; generate UUID Project/Revision/Run identities and UTC time; create/migrate SQLite; insert consistent metadata/Revision/Run/event rows; checkpoint/close; atomically write strict manifest; fully validate; atomically promote. Failure removes staging and never overwrites.
@@ -22,4 +24,4 @@ See [Project Import and Export](PROJECT_IMPORT_EXPORT.md). Identity and relative
 
 ## Interfaces
 
-Contracts `1.1.0` expose `project.create`, `open`, `close`, `validate`, `export`, `import`, and `info`. Application Service is the only orchestration entry point. Desktop uses sender/frame/URL-authorized IPC plus main-process path grants from native dialogs. CLI exposes human/JSON output and stable exit codes. None of these commands starts a crawl or network request.
+Contract `1.3.0` retains Project/Profile/Scope operations and adds Queue operations. Application Service is the only orchestration entry point. Desktop uses sender/frame/URL-authorized IPC plus main-process path grants from native dialogs. CLI exposes human/JSON output and stable exit codes. Queue claims are controlled state simulations; none of these commands performs a crawl or network request. Close/reopen preserves processing Jobs without recovering them.

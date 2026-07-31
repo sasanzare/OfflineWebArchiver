@@ -1,9 +1,13 @@
 # Migration Strategy
 
-SQLite migrations are forward-only, ordered, and immutable. Current schema version is 2:
+Current SQLite schema is 4. Additive immutable migration `004_add_persistent_page_queue` creates normalized Scope Decision, Page Job, attempt, transition, discovery, and Queue operation tables plus supporting constraints/indexes. Applied migrations 001–003 are unchanged. Opening any supported older schema creates a verified SQLite backup before advancing.
+
+SQLite migrations are forward-only, ordered, and immutable:
 
 1. `001_initialize_project_schema` creates migration history, metadata, Revision, and Run tables.
 2. `002_add_project_events` adds the lifecycle event ledger and its index.
+3. `003_add_site_profiles` adds current/immutable Profile revisions, normalized scope rules, and a revision index.
+4. `004_add_persistent_page_queue` adds the durable Page Job Queue and history/idempotency ledgers without Lease, Heartbeat, or Checkpoint tables.
 
 Each definition has a stable ID, contiguous sequence, SQL text, and computed SHA-256. The database stores ID/sequence/checksum, applied UTC time, application version, and elapsed milliseconds. Startup rejects unknown, duplicated, reordered, missing, or checksum-modified history and rejects a `PRAGMA user_version` mismatch.
 
@@ -11,4 +15,4 @@ Open first validates without mutation and acquires the Project writer lock. If m
 
 Migration logs contain IDs, sequences, versions, duration, and status—not SQL data, Project paths, or secrets. Backup retention/restore UX remains open for Product Phase 17.
 
-Tests cover definition validation, recorded checksum alteration, unknown/mismatched state, injected failure rollback, real schema-1 upgrade, backup presence/metadata, and post-upgrade integrity.
+Tests cover definition validation, recorded checksum alteration, unknown/mismatched state, injected failure rollback, real legacy upgrades through schema 4, backup presence/metadata, Queue tables/indexes/constraints, absence of Product Phase 7 tables, and post-upgrade integrity.
