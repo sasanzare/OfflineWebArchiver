@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.renderer.json",
+  "compilerOptions": {
+    "rootDir": "src/renderer",
+    "outDir": "dist/tsc-renderer"
+  },
+  "include": ["src/renderer/**/*.ts"],
+  "references": [{ "path": "../../packages/contracts" }]
+}
+

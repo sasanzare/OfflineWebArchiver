@@ -1,0 +1,20 @@
+{
+  "name": "@offline-web-archive/test-support",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:test-support" },
+  "dependencies": {
+    "@offline-web-archive/contracts": "0.3.0",
+    "@offline-web-archive/observability": "0.3.0"
+  }
+}

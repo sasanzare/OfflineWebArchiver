@@ -1,0 +1,38 @@
+{
+  "name": "offline-web-archive-builder-phase-02-spike",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Experimental Product Phase 2 Electron and Playwright feasibility spike",
+  "license": "UNLICENSED",
+  "main": "build/src/main/index.js",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "dependencies:install": "npm ci",
+    "browser-install": "node scripts/install-browser.mjs",
+    "development": "npm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc && node scripts/copy-static.mjs",
+    "test": "npm run build && node scripts/run-tests.mjs all",
+    "test:unit": "npm run build && node scripts/run-tests.mjs unit",
+    "test:integration": "npm run build && node scripts/run-tests.mjs integration",
+    "test:electron": "npm run build && node scripts/electron-smoke.mjs",
+    "package": "npm run package:windows",
+    "package:windows": "npm run build && node scripts/assert-browser.mjs && electron-builder --win --x64 --dir",
+    "verify:package": "node scripts/verify-package.mjs",
+    "verify:packaged-run": "node scripts/run-packaged-smoke.mjs",
+    "dependencies:report": "node scripts/generate-dependency-report.mjs",
+    "security:audit": "npm audit --omit=dev",
+    "clean": "node scripts/clean.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.56.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3",
+    "typescript": "7.0.2"
+  }
+}

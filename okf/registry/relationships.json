@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0.0",
+  "items": [
+    { "id": "OKF-REL-001", "name": "architecture satisfies maintainability", "status": "VERIFIED", "sourceId": "OKF-NODE-P03-ARCHITECTURE", "targetId": "NFR-MAINT-001", "type": "satisfies" },
+    { "id": "OKF-REL-002", "name": "architecture evidenced by tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P03-ARCHITECTURE", "targetId": "OKF-EV-P03-TESTS", "type": "evidenced-by" },
+    { "id": "OKF-REL-003", "name": "desktop uses contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P03-CONTRACT-V1", "type": "depends-on" },
+    { "id": "OKF-REL-004", "name": "CLI uses contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P03-CONTRACT-V1", "type": "depends-on" },
+    { "id": "OKF-REL-005", "name": "service owns smoke orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P03-SYSTEM-DESCRIBE", "type": "owns" },
+    { "id": "OKF-REL-006", "name": "Phase 4 follows Phase 3", "status": "PLANNED", "sourceId": "OKF-PHASE-004", "targetId": "OKF-PHASE-003", "type": "depends-on" }
+  ]
+}

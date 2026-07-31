@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "items": [
+    { "id": "OKF-NODE-P03-ARCHITECTURE", "name": "Production architecture foundation", "status": "VERIFIED", "evidenceIds": ["OKF-EV-P03-SOURCE", "OKF-EV-P03-TESTS", "OKF-EV-P03-BUILD"], "requirementIds": ["NFR-MAINT-001", "NFR-TEST-001"], "acceptanceIds": ["AC-MAINT-001", "AC-TEST-001"], "riskIds": ["R-002", "R-031"], "decisionIds": ["OD-009", "OD-010", "OD-011"] },
+    { "id": "OKF-NODE-P03-SYSTEM-DESCRIBE", "name": "system.describe architecture smoke", "status": "VERIFIED", "evidenceIds": ["OKF-EV-P03-TESTS", "OKF-EV-P03-RUNTIME"], "requirementIds": ["FR-CLI-001", "NFR-MAINT-001"], "acceptanceIds": ["AC-CLI-001", "AC-MAINT-001"], "riskIds": ["R-029"], "decisionIds": ["OD-009"] },
+    { "id": "OKF-NODE-P03-CONTRACT-V1", "name": "Transport-neutral contract 1.0.0", "status": "VERIFIED", "evidenceIds": ["OKF-EV-P03-SOURCE", "OKF-EV-P03-TESTS"], "requirementIds": ["NFR-MAINT-001"], "acceptanceIds": ["AC-MAINT-001"], "riskIds": ["R-002"], "decisionIds": ["OD-009"] },
+    { "id": "OKF-NODE-P04-PERSISTENCE", "name": "Portable Project and SQLite foundation", "status": "PLANNED", "evidenceIds": [], "requirementIds": ["FR-PROJECT-001", "FR-PROJECT-002", "FR-PROJECT-003", "FR-PROJECT-004"], "acceptanceIds": ["AC-PROJECT-001", "AC-PROJECT-002", "AC-PROJECT-003", "AC-PROJECT-004", "AC-PROJECT-005"], "riskIds": ["R-012", "R-013"], "decisionIds": ["OD-013", "OD-014"] },
+    { "id": "OKF-NODE-FUTURE-CAPABILITIES", "name": "Crawler, authentication, proxy, and archive capabilities", "status": "PLANNED", "evidenceIds": [], "requirementIds": ["FR-RENDER-001", "FR-AUTH-001", "FR-PROXY-001", "FR-ARCHIVE-001"], "acceptanceIds": ["AC-RENDER-001", "AC-AUTH-001", "AC-PROXY-001", "AC-REWRITE-001"], "riskIds": ["R-002", "R-021", "R-022", "R-029"], "decisionIds": ["OD-012", "OD-027"] }
+  ]
+}

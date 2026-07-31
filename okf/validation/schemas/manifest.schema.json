@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:offline-web-archive:okf:manifest:1.0.0",
+  "type": "object",
+  "required": ["schemaVersion", "frameworkVersion", "product", "status", "activatedPhase", "registries"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "frameworkVersion": { "const": "1.0.0" },
+    "product": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["VERIFIED", "PLANNED", "PARTIAL", "UNKNOWN", "NEEDS_OWNER_CONFIRMATION", "DOCUMENTATION_CODE_CONFLICT", "DEPRECATED", "BLOCKED", "NOT_APPLICABLE"] },
+    "activatedPhase": { "const": 3 },
+    "activatedAt": { "type": "string" },
+    "authority": { "type": "string" },
+    "bootstrapHistory": { "type": "string" },
+    "registries": { "type": "object", "minProperties": 8 }
+  }
+}

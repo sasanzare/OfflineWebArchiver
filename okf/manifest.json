@@ -1,0 +1,21 @@
+{
+  "$schema": "./validation/schemas/manifest.schema.json",
+  "schemaVersion": "1.0.0",
+  "frameworkVersion": "1.0.0",
+  "product": "Offline Web Archive Builder",
+  "status": "VERIFIED",
+  "activatedPhase": 3,
+  "activatedAt": "2026-07-31",
+  "authority": "okf/README.md",
+  "bootstrapHistory": "okf-bootstrap/README.md",
+  "registries": {
+    "domains": "okf/registry/domains.json",
+    "nodes": "okf/registry/nodes.json",
+    "evidence": "okf/registry/evidence.json",
+    "relationships": "okf/registry/relationships.json",
+    "phases": "okf/registry/phases.json",
+    "decisions": "okf/registry/decisions.json",
+    "risks": "okf/registry/risks.json",
+    "changes": "okf/registry/changes.json"
+  }
+}

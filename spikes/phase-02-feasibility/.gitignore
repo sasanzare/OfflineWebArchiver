@@ -1,0 +1,9 @@
+.playwright-browsers/
+build/
+dist/
+node_modules/
+output/
+coverage/
+*.log
+*.tmp
+

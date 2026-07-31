@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.library.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../archive-core" },
+    { "path": "../contracts" },
+    { "path": "../observability" }
+  ]
+}

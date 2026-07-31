@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "items": [
+    { "id": "OKF-DOM-001", "name": "product", "status": "VERIFIED", "knowledgePath": "okf/knowledge/product/README.md", "requirementIds": ["NFR-MAINT-001", "NFR-KNOW-001"], "acceptanceIds": ["AC-MAINT-001", "AC-OKF-001"], "riskIds": ["RISK-KNOW-001"], "decisionIds": ["OD-026"] },
+    { "id": "OKF-DOM-004", "name": "architecture", "status": "VERIFIED", "knowledgePath": "okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md", "requirementIds": ["NFR-MAINT-001", "NFR-KNOW-002"], "acceptanceIds": ["AC-MAINT-001", "AC-OKF-006"], "riskIds": ["R-002", "R-031", "RISK-KNOW-001"], "decisionIds": ["OD-009", "OD-010", "OD-011"] },
+    { "id": "OKF-DOM-005", "name": "application-service", "status": "PARTIAL", "knowledgePath": "okf/knowledge/application-service/README.md", "requirementIds": ["NFR-MAINT-001", "FR-CLI-001"], "acceptanceIds": ["AC-MAINT-001", "AC-CLI-001"], "riskIds": ["R-002", "R-029"], "decisionIds": ["OD-009"] },
+    { "id": "OKF-DOM-006", "name": "desktop-interface", "status": "PARTIAL", "knowledgePath": "okf/knowledge/desktop-interface/README.md", "requirementIds": ["NFR-MAINT-001"], "acceptanceIds": ["AC-MAINT-001"], "riskIds": ["R-002", "R-036"], "decisionIds": ["OD-009"] },
+    { "id": "OKF-DOM-007", "name": "cli", "status": "PARTIAL", "knowledgePath": "okf/knowledge/cli/README.md", "requirementIds": ["FR-CLI-001", "NFR-MAINT-001"], "acceptanceIds": ["AC-CLI-001", "AC-MAINT-001"], "riskIds": ["R-027", "R-036"], "decisionIds": ["OD-009", "OD-010"] },
+    { "id": "OKF-DOM-029", "name": "security", "status": "PARTIAL", "knowledgePath": "okf/knowledge/security/README.md", "requirementIds": ["NFR-SEC-003"], "acceptanceIds": ["AC-SECURITY-003"], "riskIds": ["R-029", "R-039"], "decisionIds": ["OD-009", "OD-027"] },
+    { "id": "OKF-DOM-031", "name": "testing", "status": "PARTIAL", "knowledgePath": "okf/knowledge/testing/README.md", "requirementIds": ["NFR-TEST-001", "NFR-KNOW-002"], "acceptanceIds": ["AC-TEST-001", "AC-OKF-004"], "riskIds": ["R-002", "RISK-KNOW-001"], "decisionIds": ["OD-024"] },
+    { "id": "OKF-DOM-032", "name": "packaging", "status": "PARTIAL", "knowledgePath": "okf/knowledge/packaging/README.md", "requirementIds": ["NFR-PORT-001"], "acceptanceIds": ["AC-PORT-001"], "riskIds": ["R-003", "R-033", "R-039"], "decisionIds": ["OD-027"] },
+    { "id": "OKF-DOM-038", "name": "risks", "status": "VERIFIED", "knowledgePath": "okf/knowledge/product/RISKS.md", "requirementIds": ["NFR-KNOW-003"], "acceptanceIds": ["AC-OKF-003"], "riskIds": ["RISK-KNOW-001"], "decisionIds": ["OD-026"] },
+    { "id": "OKF-DOM-039", "name": "decisions", "status": "VERIFIED", "knowledgePath": "okf/knowledge/product/DECISIONS.md", "requirementIds": ["NFR-KNOW-003"], "acceptanceIds": ["AC-OKF-003"], "riskIds": ["RISK-KNOW-001"], "decisionIds": ["OD-026"] },
+    { "id": "OKF-DOM-040", "name": "phases", "status": "VERIFIED", "knowledgePath": "okf/knowledge/product/PHASES.md", "requirementIds": ["NFR-KNOW-003", "NFR-KNOW-004"], "acceptanceIds": ["AC-OKF-003", "AC-OKF-005"], "riskIds": ["RISK-KNOW-001"], "decisionIds": ["OD-026"] },
+    { "id": "OKF-DOM-041", "name": "evidence", "status": "VERIFIED", "knowledgePath": "okf/knowledge/product/EVIDENCE.md", "requirementIds": ["NFR-KNOW-001", "NFR-KNOW-002", "NFR-KNOW-003", "NFR-KNOW-004"], "acceptanceIds": ["AC-OKF-001", "AC-OKF-002", "AC-OKF-003", "AC-OKF-004", "AC-OKF-005", "AC-OKF-006"], "riskIds": ["RISK-KNOW-001"], "decisionIds": ["OD-026"] }
+  ]
+}

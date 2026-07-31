@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "1.0.0",
+  "items": [
+    { "id": "OKF-CHG-P03-001", "name": "Activate canonical OKF and production architecture", "status": "VERIFIED", "effectiveDate": "2026-07-31", "recordPath": "okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md", "reportPath": "okf/validation/reports/PHASE_03_OKF_MIGRATION_REPORT.md", "requirementIds": ["NFR-MAINT-001", "NFR-TEST-001", "NFR-KNOW-001", "NFR-KNOW-002", "NFR-KNOW-003", "NFR-KNOW-004"], "acceptanceIds": ["AC-P03-001", "AC-P03-024"], "riskIds": ["R-002", "R-029", "R-031", "R-038", "R-039", "R-041", "R-042", "R-043", "R-044", "RISK-KNOW-001"], "decisionIds": ["OD-009", "OD-010", "OD-011", "OD-026"] }
+  ]
+}

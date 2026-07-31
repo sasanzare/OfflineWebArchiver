@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="fixture" content="phase-02-synthetic-spa">
+    <title>Phase 2 Fixture</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body data-render-state="loading" data-lazy-state="waiting">
+    <header>
+      <p class="eyebrow">Synthetic local fixture</p>
+      <h1>Phase 2 SPA fixture</h1>
+      <nav aria-label="Fixture routes">
+        <a href="/" data-route="/">Home</a>
+        <a href="/products" data-route="/products">Products</a>
+        <a href="/products/example-item" data-route="/products/example-item">Example item</a>
+      </nav>
+    </header>
+    <main id="route-view" tabindex="-1" aria-live="polite"></main>
+    <aside class="status-panel" aria-label="Render evidence">
+      <p id="catalog-status">Catalog loading</p>
+      <p id="delayed-component">Delayed component pending</p>
+    </aside>
+    <section id="lazy-zone" aria-label="Lazy content">
+      <p>Scroll-triggered content zone</p>
+      <div id="lazy-target"></div>
+    </section>
+    <script src="/app.js"></script>
+  </body>
+</html>
+

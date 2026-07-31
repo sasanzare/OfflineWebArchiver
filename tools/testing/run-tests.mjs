@@ -1,0 +1,59 @@
+import { readdir, rm } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { repositoryRoot, runTypeScriptBuild } from "../build/typescript.mjs";
+
+const suite = process.argv[2] ?? "all";
+const suites = new Set(["all", "unit", "integration", "electron", "cli", "okf"]);
+const packageTests = new Map([
+  ["package:contracts", ["unit/contracts.test.js"]],
+  ["package:archive-core", ["unit/archive-core.test.js"]],
+  ["package:observability", ["unit/observability.test.js"]],
+  ["package:platform", ["unit/platform.test.js"]],
+  ["package:application-service", ["integration/application-service.test.js"]],
+  ["package:test-support", ["unit/test-support.test.js"]],
+  ["package:cli", ["unit/cli.test.js", "cli/cli-smoke.test.js"]],
+  ["package:desktop", ["integration/desktop-transport.test.js", "electron/desktop-smoke.test.js"]],
+]);
+if (!suites.has(suite) && !packageTests.has(suite)) {
+  process.stderr.write(`Unknown test suite: ${suite}\n`);
+  process.exit(2);
+}
+
+runTypeScriptBuild();
+await import("../build/build-desktop.mjs");
+await rm(path.join(repositoryRoot, ".build-tests"), { recursive: true, force: true });
+runTypeScriptBuild(["tsconfig.test.json"]);
+
+async function collect(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...(await collect(target)));
+    if (entry.isFile() && entry.name.endsWith(".test.js")) files.push(target);
+  }
+  return files;
+}
+
+const testRoot = path.join(repositoryRoot, ".build-tests", "tests");
+const selected = suite === "all"
+  ? await collect(testRoot)
+  : packageTests.has(suite)
+    ? packageTests.get(suite).map((name) => path.join(testRoot, name))
+    : await collect(path.join(testRoot, suite));
+selected.sort();
+if (selected.length === 0) {
+  process.stderr.write(`No compiled tests found for suite ${suite}.\n`);
+  process.exit(2);
+}
+const result = spawnSync(
+  process.execPath,
+  ["--test", "--test-isolation=none", ...selected],
+  {
+    cwd: repositoryRoot,
+    stdio: "inherit",
+    env: { ...process.env, OWAB_LOG_LEVEL: "error" },
+  },
+);
+if (result.error !== undefined) throw result.error;
+process.exit(result.status ?? 1);

@@ -1,0 +1,31 @@
+appId: org.example.offlinewebarchivebuilder.phase02spike
+productName: Offline Web Archive Builder Phase 2 Spike
+asar: true
+npmRebuild: false
+directories:
+  output: dist
+files:
+  - build/src/main/**/*
+  - build/src/preload/**/*
+  - build/src/renderer/**/*
+  - build/src/shared/**/*
+  - build/src/spike/**/*
+  - package.json
+  - THIRD_PARTY_NOTICES.md
+  - node_modules/playwright/**/*
+  - node_modules/playwright-core/**/*
+extraResources:
+  - from: .playwright-browsers
+    to: playwright-browsers
+    filter:
+      - '**/*'
+  - from: fixtures/spa
+    to: phase-02-fixture
+    filter:
+      - '**/*'
+  - from: THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
+win:
+  executableName: OfflineWebArchiveBuilderPhase02Spike
+  signAndEditExecutable: false
+

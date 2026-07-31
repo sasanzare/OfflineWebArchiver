@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:offline-web-archive:okf:registry:1.0.0",
+  "type": "object",
+  "required": ["schemaVersion", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["VERIFIED", "PLANNED", "PARTIAL", "UNKNOWN", "NEEDS_OWNER_CONFIRMATION", "DOCUMENTATION_CODE_CONFLICT", "DEPRECATED", "BLOCKED", "NOT_APPLICABLE"] }
+        }
+      }
+    }
+  }
+}

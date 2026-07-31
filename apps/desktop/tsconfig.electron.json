@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.electron.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist/tsc-electron"
+  },
+  "include": ["src/main/**/*.ts", "src/preload/**/*.ts"],
+  "references": [
+    { "path": "../../packages/application-service" },
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/observability" },
+    { "path": "../../packages/platform" }
+  ]
+}
+

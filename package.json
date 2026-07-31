@@ -1,0 +1,47 @@
+{
+  "name": "offline-web-archive-builder",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Production monorepo foundation for Offline Web Archive Builder",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "npm": ">=11.0.0 <12"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "node tools/build/build.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "test": "node tools/testing/run-tests.mjs all",
+    "test:unit": "node tools/testing/run-tests.mjs unit",
+    "test:integration": "node tools/testing/run-tests.mjs integration",
+    "test:architecture": "node tools/architecture/validate.mjs",
+    "test:electron": "node tools/testing/run-tests.mjs electron",
+    "test:cli": "node tools/testing/run-tests.mjs cli",
+    "test:okf": "node tools/testing/run-tests.mjs okf",
+    "lint": "node tools/quality/lint.mjs",
+    "format:check": "node tools/quality/format-check.mjs",
+    "contracts:check": "node tools/contracts/check.mjs",
+    "okf:migrate": "node tools/okf/migrate.mjs",
+    "okf:validate": "node tools/okf/validate.mjs",
+    "docs:validate": "node tools/docs/validate.mjs",
+    "security:check": "node tools/security/check.mjs",
+    "clean": "node tools/build/clean.mjs",
+    "dev:desktop": "npm run build && electron apps/desktop",
+    "dev:cli": "npm run build && node apps/cli/dist/index.js system describe"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "electron": "43.2.0",
+    "esbuild": "0.28.1",
+    "typescript": "7.0.2"
+  },
+  "allowScripts": {
+    "electron@43.2.0": true,
+    "esbuild@0.28.1": true
+  }
+}

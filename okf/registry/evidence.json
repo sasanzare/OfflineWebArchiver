@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "items": [
+    { "id": "OKF-EV-P01-SCOPE", "name": "Product Phase 1 scope authority", "status": "VERIFIED", "path": "docs/product/PROJECT_SCOPE.md", "method": "document review" },
+    { "id": "OKF-EV-P01-ACCEPTANCE", "name": "Product Phase 1 acceptance authority", "status": "VERIFIED", "path": "docs/product/ACCEPTANCE_MATRIX.md", "method": "document review" },
+    { "id": "OKF-EV-P02-RECORD", "name": "Product Phase 2 feasibility evidence", "status": "VERIFIED", "path": "docs/project/PHASE_02_FEASIBILITY_REPORT.md", "method": "record and artifact review" },
+    { "id": "OKF-EV-P02-SPIKE", "name": "Preserved Product Phase 2 spike", "status": "PARTIAL", "path": "spikes/phase-02-feasibility/README.md", "method": "historical source review" },
+    { "id": "OKF-EV-P03-SOURCE", "name": "Product Phase 3 production source", "status": "VERIFIED", "path": "packages/application-service/src/index.ts", "method": "source and boundary validation" },
+    { "id": "OKF-EV-P03-TESTS", "name": "Product Phase 3 automated tests", "status": "VERIFIED", "path": "tests/integration/application-service.test.ts", "method": "npm test" },
+    { "id": "OKF-EV-P03-BUILD", "name": "Product Phase 3 build definition", "status": "VERIFIED", "path": "tools/build/build.mjs", "method": "npm run build" },
+    { "id": "OKF-EV-P03-RUNTIME", "name": "Product Phase 3 Electron smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:electron" },
+    { "id": "OKF-EV-P03-DECISIONS", "name": "Product Phase 3 ADR set", "status": "VERIFIED", "path": "docs/project/adr/ADR-001-monorepo-and-workspace-strategy.md", "method": "ADR and documentation validation" },
+    { "id": "OKF-EV-P03-OKF", "name": "Canonical OKF validator", "status": "VERIFIED", "path": "tools/okf/validate.mjs", "method": "npm run okf:validate" }
+  ]
+}

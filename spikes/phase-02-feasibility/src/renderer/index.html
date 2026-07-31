@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>Offline Web Archive Builder — Phase 2 Spike</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Product Phase 2 · Experimental</p>
+          <h1>Render → Save → Serve</h1>
+          <p class="lede">A disposable feasibility proof for bundled Chromium and offline Electron preview.</p>
+        </div>
+        <span class="status-chip" id="runtime-chip">Checking runtime</span>
+      </header>
+
+      <section class="warning" aria-label="Experimental limitation">
+        This is a technical spike, not the production crawler or final architecture.
+        It uses only a synthetic local fixture and stores no credentials.
+      </section>
+
+      <section class="control-card" aria-labelledby="run-heading">
+        <div>
+          <p class="eyebrow">Vertical slice</p>
+          <h2 id="run-heading">One bounded feasibility run</h2>
+          <p>Electron launches Playwright Chromium, exercises the SPA, saves the rendered DOM, stops the fixture, and opens the archive through loopback.</p>
+        </div>
+        <button id="run-button" type="button">Run feasibility proof</button>
+      </section>
+
+      <section class="progress-card" aria-labelledby="progress-heading">
+        <div class="section-heading">
+          <h2 id="progress-heading">Progress</h2>
+          <span id="outcome" class="outcome" role="status" aria-live="polite">Ready</span>
+        </div>
+        <ol id="progress-list" class="progress-list"></ol>
+      </section>
+
+      <section id="result-card" class="result-card" aria-labelledby="result-heading" hidden>
+        <p class="eyebrow">Evidence</p>
+        <h2 id="result-heading">Run completed</h2>
+        <dl id="result-details"></dl>
+        <div class="actions">
+          <button id="preview-button" type="button">Open offline preview</button>
+          <button id="output-button" type="button" class="secondary">Open evidence directory</button>
+        </div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
+
