@@ -10,6 +10,14 @@
     { "id": "OKF-EV-P03-BUILD", "name": "Product Phase 3 build definition", "status": "VERIFIED", "path": "tools/build/build.mjs", "method": "npm run build" },
     { "id": "OKF-EV-P03-RUNTIME", "name": "Product Phase 3 Electron smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:electron" },
     { "id": "OKF-EV-P03-DECISIONS", "name": "Product Phase 3 ADR set", "status": "VERIFIED", "path": "docs/project/adr/ADR-001-monorepo-and-workspace-strategy.md", "method": "ADR and documentation validation" },
-    { "id": "OKF-EV-P03-OKF", "name": "Canonical OKF validator", "status": "VERIFIED", "path": "tools/okf/validate.mjs", "method": "npm run okf:validate" }
+    { "id": "OKF-EV-P03-OKF", "name": "Canonical OKF validator", "status": "VERIFIED", "path": "tools/okf/validate.mjs", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P04-FORMAT", "name": "Project format and contract source", "status": "VERIFIED", "path": "packages/project-format/src/index.ts", "method": "source, typecheck, contract and format validation" },
+    { "id": "OKF-EV-P04-PERSISTENCE", "name": "SQLite persistence source", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/index.ts", "method": "source, architecture, migration and security validation" },
+    { "id": "OKF-EV-P04-TESTS", "name": "Product Phase 4 lifecycle and adversarial tests", "status": "VERIFIED", "path": "tests/integration/project-lifecycle.test.ts", "method": "npm test" },
+    { "id": "OKF-EV-P04-CLI", "name": "Product Phase 4 built CLI smoke", "status": "VERIFIED", "path": "tests/cli/cli-smoke.test.ts", "method": "npm run test:cli" },
+    { "id": "OKF-EV-P04-DESKTOP", "name": "Product Phase 4 real Electron lifecycle smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:electron" },
+    { "id": "OKF-EV-P04-DOCS", "name": "Product Phase 4 implementation and ADR records", "status": "VERIFIED", "path": "docs/project/PHASE_04_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
+    { "id": "OKF-EV-P04-SECURITY", "name": "Product Phase 4 security review", "status": "VERIFIED", "path": "docs/architecture/PHASE_04_SECURITY_REVIEW.md", "method": "security gate and adversarial test review" },
+    { "id": "OKF-EV-P04-RECORD", "name": "Product Phase 4 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md", "method": "npm run okf:validate" }
   ]
 }

@@ -5,6 +5,7 @@
   "references": [
     { "path": "../archive-core" },
     { "path": "../contracts" },
-    { "path": "../observability" }
+    { "path": "../observability" },
+    { "path": "../persistence-sqlite" }
   ]
 }

@@ -9,7 +9,7 @@ test("desktop adapter preserves contracts and enforces sender authorization", as
   const service = createApplicationService({
     configuration: {
       applicationName: "Offline Web Archive Builder",
-      applicationVersion: "0.3.0",
+      applicationVersion: "0.4.0",
       contractVersion: CONTRACT_VERSION,
       logLevel: "error",
     },

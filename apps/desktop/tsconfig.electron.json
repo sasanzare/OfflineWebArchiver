@@ -4,7 +4,7 @@
     "rootDir": "src",
     "outDir": "dist/tsc-electron"
   },
-  "include": ["src/main/**/*.ts", "src/preload/**/*.ts"],
+  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "src/shared/**/*.ts"],
   "references": [
     { "path": "../../packages/application-service" },
     { "path": "../../packages/contracts" },
@@ -12,4 +12,3 @@
     { "path": "../../packages/platform" }
   ]
 }
-

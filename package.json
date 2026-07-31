@@ -1,6 +1,6 @@
 {
   "name": "offline-web-archive-builder",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Production monorepo foundation for Offline Web Archive Builder",
   "license": "UNLICENSED",
@@ -26,19 +26,23 @@
     "lint": "node tools/quality/lint.mjs",
     "format:check": "node tools/quality/format-check.mjs",
     "contracts:check": "node tools/contracts/check.mjs",
+    "project-format:validate": "node tools/project-format/validate.mjs",
+    "migrations:validate": "node tools/migrations/validate.mjs",
     "okf:migrate": "node tools/okf/migrate.mjs",
     "okf:validate": "node tools/okf/validate.mjs",
     "docs:validate": "node tools/docs/validate.mjs",
     "security:check": "node tools/security/check.mjs",
     "clean": "node tools/build/clean.mjs",
     "dev:desktop": "npm run build && electron apps/desktop",
-    "dev:cli": "npm run build && node apps/cli/dist/index.js system describe"
+    "dev:cli": "npm run build && node apps/cli/dist/index.js --help",
+    "project": "npm run build && node apps/cli/dist/index.js"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
     "electron": "43.2.0",
     "esbuild": "0.28.1",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "fflate": "0.8.3"
   },
   "allowScripts": {
     "electron@43.2.0": true,

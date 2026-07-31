@@ -1,31 +1,31 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a planned portable desktop application for creating navigable offline archives of authorized modern, JavaScript-rendered websites. Product Phase 3 is complete: the production monorepo, package boundaries, versioned contracts, secure Electron shell, CLI shell, architecture smoke, enforcement tooling, and canonical OKF now exist.
+Offline Web Archive Builder is a planned portable desktop application for creating authorized, navigable offline archives of modern websites. Product Phase 4 is complete: the production monorepo now implements a versioned portable Project directory, SQLite identity/lifecycle foundation, forward migrations and backup, atomic file promotion, bounded secure ZIP transfer, Project contracts, CLI commands, minimal Desktop flows, and synchronized canonical OKF.
 
-The only implemented production capability is `system.describe`. It traverses Desktop or CLI -> Local Application Service -> Archive Core and reports minimal non-sensitive architecture/runtime facts. Crawling, Project/database persistence, browser automation/rendering, authentication/OTP/session storage, proxies, archive generation/rewriting, offline archive serving, final UI, and release packaging are not implemented. The exact next phase is Product Phase 4 — Portable Project and SQLite Foundation.
-
-The initial delivery target remains portable Windows. Linux and macOS packages and a cross-platform versioned Project format remain planned and must be proven in their assigned phases. All application UI, reports, validation output, errors, and bundled user documentation are English.
+Implemented commands are `system.describe` and `project.create/open/close/validate/export/import/info`. These are local filesystem operations only. URL normalization, authorization/scope policy, queues, crawling, browser rendering, authentication/OTP/session storage, proxies, captured content, rewriting, offline serving, final UX, release packaging, and target validation are not implemented. The exact next phase is **Product Phase 5 — Profile, Scope, and URL Normalization**.
 
 ## Safety and authorization
 
-Use is limited to websites the user is authorized to archive or for which another valid legal basis exists. The product will not bypass access controls, CAPTCHA, WAF challenges, rate limits, or `Retry-After`; forge browser fingerprints; intercept SMS; or collect public proxy lists. Proxies must be user-owned or authorized and must not be used to evade restrictions. Passwords and OTP values must never be persisted.
+Use is limited to websites the user is authorized to archive or for which another valid legal basis exists. The product will not bypass access controls, CAPTCHA/WAF challenges, rate limits, or `Retry-After`; forge fingerprints; intercept SMS; or collect public proxies. Phase 4 performs no website request. Project/ZIP input is untrusted and bounded; exported Projects exclude secret-reserved directories by default.
 
 ## Production workspace
 
 ```text
 apps/
-  desktop/              Secure Electron shell and IPC adapter
-  cli/                  Internal diagnostic CLI
+  desktop/              Secure Electron Project UI and IPC/path-grant adapter
+  cli/                  Internal Project/diagnostic CLI
 packages/
-  archive-core/         GUI/transport-independent domain boundary
+  archive-core/         GUI/transport/SQLite-independent domain and Project port
+  project-format/       Portable manifest/version/path contract
+  persistence-sqlite/   Node SQLite, migrations, backups, atomic files, ZIP, locks
   application-service/ Use-case orchestration and error translation
-  contracts/            Runtime-validated contract 1.0.0
+  contracts/            Runtime-validated transport contract 1.1.0
   platform/             Minimal platform/configuration adapter
   observability/        Structured logging and redaction
   test-support/         Test-only deterministic fixtures
 ```
 
-Install and validate with Node 24 and npm 11:
+Use Node 24 and npm 11:
 
 ```text
 npm install
@@ -34,33 +34,37 @@ npm run build
 npm test
 npm run test:architecture
 npm run contracts:check
+npm run project-format:validate
+npm run migrations:validate
 npm run security:check
 npm run docs:validate
 npm run okf:validate
 ```
 
-Use `npm run dev:cli` for the CLI smoke and `npm run dev:desktop` for the local desktop shell. The Phase 2 spike under `spikes/phase-02-feasibility/` has its own historical instructions and is not a production dependency.
+CLI examples:
+
+```text
+npm run project -- project create D:\Archives\example --name "Example" --slug example
+npm run project -- project validate D:\Archives\example --json
+npm run project -- project export D:\Archives\example D:\Archives\example.zip
+```
+
+`npm run dev:desktop` opens the local Project UI. Desktop paths come from main-process native selection grants; renderer receives no filesystem or SQLite primitive. The Phase 2 spike at `spikes/phase-02-feasibility/` remains historical evidence and is not a production dependency.
 
 ## Documentation
 
 - [Production architecture](docs/architecture/README.md)
-- [Project scope and requirements](docs/product/PROJECT_SCOPE.md)
+- [Project format](docs/architecture/PROJECT_FORMAT.md)
+- [SQLite and migrations](docs/architecture/SQLITE_PERSISTENCE.md)
+- [Project lifecycle](docs/architecture/PROJECT_LIFECYCLE.md)
+- [Import/export security](docs/architecture/PROJECT_IMPORT_EXPORT.md)
+- [Phase 4 security review](docs/architecture/PHASE_04_SECURITY_REVIEW.md)
+- [Phase 4 implementation report](docs/project/PHASE_04_IMPLEMENTATION_REPORT.md)
+- [Scope and acceptance](docs/product/PROJECT_SCOPE.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
-- [25-phase plan](docs/project/PHASE_PLAN.md)
-- [Traceability](docs/project/TRACEABILITY.md)
-- [Risk register](docs/project/RISK_REGISTER.md)
-- [Open decisions](docs/project/OPEN_DECISIONS.md)
-- [Project-wide Definition of Done](docs/project/DEFINITION_OF_DONE.md)
-- [Product Phase 2 feasibility report](docs/project/PHASE_02_FEASIBILITY_REPORT.md)
-- [Product Phase 3 architecture record](okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md)
+- [Phase plan](docs/project/PHASE_PLAN.md)
+- [Risks and decisions](docs/project/RISK_REGISTER.md)
+- [Canonical OKF](okf/README.md)
 - [Current handoff](HANDOFF.md)
 
-## Open Knowledge Format
-
-[Canonical OKF](okf/README.md) is active as of Product Phase 3. It contains the versioned manifest, eight machine-readable registries, knowledge/phase/evidence/map records, schemas, semantic rules, and migration report. `npm run okf:validate` fails on invalid JSON/schema shape, duplicate IDs, statuses, mappings, paths, references, phases, unsupported absolute paths, unproven verified nodes, critical requirement orphans, or a missing Phase 3 change.
-
-[OKF Phase 0 bootstrap](okf-bootstrap/README.md) is preserved as historical governance and migration evidence. Its proposed current structure is superseded, not deleted. Every Product Phase 4–25 must keep canonical OKF synchronized with source, configuration, schemas, contracts, security behavior, tests, builds, platform support, operations, risks, decisions, and evidence.
-
-## Phase 2 evidence
-
-Product Phase 2 — Technical Spike and Feasibility Proof — remains intact under [spikes/phase-02-feasibility](spikes/phase-02-feasibility/README.md). It demonstrated a bounded packaged Windows `Render -> Save -> Serve` slice under controlled local conditions. Clean-machine proof remained partial, and its Playwright/browser/runtime/packaging choices are not production architecture. The [promotion review](docs/architecture/SPIKE_PROMOTION_REVIEW.md) records every disposition.
+Canonical `okf/` is active and synchronized through Product Phase 4. `okf-bootstrap/` is preserved as historical governance/migration evidence. Every later phase must update source authorities, risks/decisions, evidence, relationships, phase/change records, and pass `npm run okf:validate`.

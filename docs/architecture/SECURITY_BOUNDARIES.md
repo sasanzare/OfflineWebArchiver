@@ -1,21 +1,18 @@
 # Security Boundaries
 
-Electron main is privileged; preload is a narrow capability boundary; renderer is untrusted. BrowserWindow uses context isolation, no Node integration, sandbox, and web security. Main denies permission requests/checks, downloads, new windows, webviews, and unexpected navigation. It loads only a bundled local file with a restrictive CSP and no remote resources.
+Electron main is privileged; preload is a narrow capability boundary; renderer is untrusted. Context isolation, disabled Node integration, sandbox, web security, local restrictive CSP, denied permissions/downloads/windows/webviews/navigation, exact sender/frame/URL authorization, and contract validation remain mandatory.
 
-IPC exposes one channel and authorizes exact webContents ID, main frame, and expected file URL. Contracts validate both directions. The smoke response contains no sensitive environment values. This baseline does not yet cover hostile archived content, target networking, credential stores, proxies, signing, or update delivery.
+Phase 4 adds main-owned native path grants; renderer can request only an exact Project/archive operation, not filesystem APIs. Application Service is the orchestration boundary. Persistence owns all filesystem/SQLite/ZIP activity. Project/ZIP is untrusted local input and must pass strict path, schema, migration, integrity, identity, resource, checksum, and staging rules before mutation/promotion.
 
-## Focused Review
-
-| Boundary/topic | State | Product Phase 3 finding |
+| Boundary | Current control | Explicit limitation |
 |---|---|---|
-| Renderer isolation and raw IPC | Implemented | Sandbox/context isolation/web security enabled; Node integration off; `require`, `process`, and raw `ipcRenderer` absent in the real smoke |
-| Preload and IPC sender | Implemented | One `systemDescribe` method/channel; sender webContents, main frame, and exact local file URL required |
-| Contract validation and errors | Implemented | Strict schemas on both directions; unsupported input fails; user errors expose no stack or raw exception |
-| Logging redaction | Implemented | Structured correlation; recursive secret-like key redaction; no persistent/external sink |
-| Paths, shell, network service | Implemented absence | Phase 3 public contracts accept no path or shell command; apps/packages invoke no child process and open no server |
-| Navigation and external content | Implemented | New windows, navigation, webviews, permissions, and downloads denied; local assets only; CSP present |
-| Dependency/workspace boundary | Implemented | Exact versions, one lockfile, exact install-script allowlist, public exports, import/cycle/runtime-dependency checks |
-| Future secrets | Planned | Authentication/session/proxy/signing storage requires protected-store decisions and leakage tests; no Phase 11 secret store is claimed |
-| Future untrusted archive content | Planned | Separate origin/CSP/scripting/service-worker/download/network containment threat model is required before P11/P19 |
-| Cross-platform sandbox behavior | Unknown | Linux/macOS runtime/security behavior is not executed in Phase 3 |
-| Remote telemetry/update/service | Deferred | No telemetry, updater, loopback Application Service, or remote service is introduced; owner/release decisions remain open |
+| Renderer to main | Two bridge capabilities, sender/frame/URL/path-grant checks | Renderer compromise can request granted operations only |
+| Project paths | Relative portable contract, symlink caution, atomic exact targets | Hostile local writer/network FS not contained |
+| SQLite | No extensions, defensive/trusted-schema, prepared data, integrity/migration checks | Recovery/large-scale policy continues in P17 |
+| ZIP import | Central preinspection, collision/special/limit/checksum/inventory checks, staging | Bounded in-memory; no ZIP64/encryption/authenticity |
+| Single writer | Owned lock plus SQLite immediate transaction | Coordination, not access control; PID/network-FS limitations |
+| Secrets | No secret schema; auth/proxy/log/temp/backups excluded from export | Future secret storage needs P12/P14/P20 reviews |
+| Network/browser | Implemented absence | Scope/network policy begins P5; browser begins P7 |
+| Cross-platform | Portable path corpus | Packaged Linux/macOS/cross-OS execution remains unverified |
+
+The detailed review is [Product Phase 4 Security Review](PHASE_04_SECURITY_REVIEW.md).

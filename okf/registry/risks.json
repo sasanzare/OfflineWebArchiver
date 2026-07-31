@@ -45,6 +45,8 @@
     { "id": "R-042", "name": "Contract incompatibility", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-043", "name": "Desktop privilege boundary regression", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-044", "name": "Validation ownership drift", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-045", "name": "Hostile or resource-exhausting Project archive", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-046", "name": "Advisory lock and shared-filesystem limits", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "RISK-KNOW-001", "name": "Knowledge governance drift", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" }
   ]
 }

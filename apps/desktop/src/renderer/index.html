@@ -9,18 +9,36 @@
   </head>
   <body>
     <main>
-      <p class="eyebrow">Product Phase 3</p>
-      <h1>Offline Web Archive Builder</h1>
-      <p class="lede">Production architecture shell. Crawling, persistence, authentication, proxies, and archive generation are not implemented.</p>
+      <p class="eyebrow">Product Phase 4</p>
+      <h1>Project foundation</h1>
+      <p class="lede">Create, open, validate, export, and import a portable local Project. Crawling and network access are not available in this phase.</p>
 
-      <section aria-labelledby="architecture-heading">
-        <h2 id="architecture-heading">Architecture status</h2>
-        <p id="status" role="status" aria-live="polite">Ready to verify the local architecture path.</p>
-        <button id="describe-button" type="button">Describe system</button>
+      <section aria-labelledby="create-heading">
+        <h2 id="create-heading">Create Project</h2>
+        <div class="fields">
+          <label>Name <input id="project-name" value="My Archive" maxlength="120"></label>
+          <label>Slug <input id="project-slug" value="my-archive" pattern="[a-z0-9]+(?:-[a-z0-9]+)*"></label>
+        </div>
+        <button data-action="create" type="button">Choose destination and create</button>
+      </section>
+
+      <section aria-labelledby="operations-heading">
+        <h2 id="operations-heading">Project operations</h2>
+        <div class="actions">
+          <button data-action="open" type="button">Open</button>
+          <button data-action="validate" type="button">Validate</button>
+          <button data-action="export" type="button">Export ZIP</button>
+          <button data-action="import" type="button">Import ZIP</button>
+          <button data-action="close" type="button">Close</button>
+        </div>
+      </section>
+
+      <section aria-labelledby="status-heading">
+        <h2 id="status-heading">Current status</h2>
+        <p id="status" role="status" aria-live="polite">No Project selected.</p>
         <dl id="result"></dl>
       </section>
     </main>
     <script src="./renderer.js"></script>
   </body>
 </html>
-

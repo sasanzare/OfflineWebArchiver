@@ -1,0 +1,636 @@
+import { randomUUID } from "node:crypto";
+import { backup, DatabaseSync } from "node:sqlite";
+import { lstat, mkdir, readFile, rm } from "node:fs/promises";
+import path from "node:path";
+import {
+  ProjectOperationError,
+  type ProjectCompatibility,
+  type ProjectOperationErrorCode,
+  type ProjectStoragePort,
+  type ProjectSummary,
+  type ProjectValidationIssue,
+  type ProjectValidationReport,
+} from "@offline-web-archive/archive-core";
+import { createSilentLogger, type Logger } from "@offline-web-archive/observability";
+import {
+  createProjectManifest,
+  parseProjectManifest,
+  ProjectFormatError,
+  PROJECT_DATABASE_PATH,
+  PROJECT_FORMAT_VERSION,
+  PROJECT_MANIFEST_FILE,
+  REQUIRED_PROJECT_DIRECTORIES,
+  serializeProjectManifest,
+  type ProjectManifest,
+} from "@offline-web-archive/project-format";
+import { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists } from "./atomic.js";
+import {
+  createProjectArchive,
+  DEFAULT_ARCHIVE_LIMITS,
+  extractAndVerifyProjectArchive,
+  sha256,
+  type ArchiveLimits,
+} from "./archive.js";
+import { acquireProjectLock, type ProjectLock } from "./locking.js";
+import {
+  applyPendingMigrations,
+  configureDatabase,
+  CURRENT_SCHEMA_VERSION,
+  inspectMigrationState,
+  MIGRATIONS,
+  validateMigrationDefinitions,
+} from "./migrations.js";
+
+export { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists } from "./atomic.js";
+export { DEFAULT_ARCHIVE_LIMITS, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
+export { acquireProjectLock } from "./locking.js";
+export {
+  applyPendingMigrations,
+  configureDatabase,
+  CURRENT_SCHEMA_VERSION,
+  inspectMigrationState,
+  MIGRATIONS,
+  validateMigrationDefinitions,
+} from "./migrations.js";
+
+interface ProjectMetadataRow {
+  project_id: string;
+  project_name: string;
+  project_slug: string;
+  format_version: string;
+  schema_version: number;
+  created_at: string;
+  last_opened_at: string;
+  current_revision_id: string;
+  current_run_id: string;
+}
+
+interface CurrentProject {
+  root: string;
+  manifest: ProjectManifest;
+  database: DatabaseSync;
+  lock: ProjectLock;
+  summary: ProjectSummary;
+}
+
+export interface SqliteProjectStorageOptions {
+  applicationVersion: string;
+  logger?: Logger;
+  now?: () => string;
+  id?: () => string;
+  archiveLimits?: ArchiveLimits;
+}
+
+function issue(
+  code: string,
+  category: ProjectValidationIssue["category"],
+  message: string,
+  relativePath?: string,
+  severity: ProjectValidationIssue["severity"] = "error",
+): ProjectValidationIssue {
+  return relativePath === undefined
+    ? { code, category, message, severity }
+    : { code, category, message, relativePath, severity };
+}
+
+function summaryFromManifest(
+  root: string,
+  manifest: ProjectManifest,
+  migrationStatus: ProjectSummary["migrationStatus"],
+): ProjectSummary {
+  return {
+    projectPath: root,
+    projectId: manifest.project.id,
+    name: manifest.project.name,
+    slug: manifest.project.slug,
+    formatVersion: manifest.format.version,
+    schemaVersion: manifest.database.schemaVersion,
+    revisionId: manifest.current.revisionId,
+    runId: manifest.current.runId,
+    createdAt: manifest.project.createdAt,
+    lastOpenedAt: manifest.project.lastOpenedAt,
+    state: manifest.lifecycle.state,
+    migrationStatus,
+  };
+}
+
+function validationFailure(report: ProjectValidationReport): ProjectOperationError {
+  const first = report.issues.find((entry) => entry.severity === "error");
+  const stableCodes = new Set<string>([
+    "PROJECT_NOT_FOUND",
+    "PROJECT_MANIFEST_INVALID",
+    "PROJECT_FORMAT_UNSUPPORTED",
+    "PROJECT_DATABASE_INVALID",
+    "PROJECT_DATABASE_INTEGRITY_FAILED",
+    "PROJECT_SCHEMA_UNSUPPORTED",
+    "PROJECT_MIGRATION_REQUIRED",
+    "PROJECT_MIGRATION_FAILED",
+    "PROJECT_MIGRATION_CHECKSUM_MISMATCH",
+    "PROJECT_LOCK_INVALID",
+    "PROJECT_VALIDATION_FAILED",
+  ]);
+  return new ProjectOperationError(
+    first !== undefined && stableCodes.has(first.code)
+      ? first.code as ProjectOperationErrorCode
+      : "PROJECT_VALIDATION_FAILED",
+    report.issues.map((entry) => entry.message).join("; ") || "Project validation failed",
+  );
+}
+
+async function assertProjectRoot(root: string): Promise<void> {
+  let stat;
+  try {
+    stat = await lstat(root);
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      throw new ProjectOperationError("PROJECT_NOT_FOUND", "The Project directory does not exist");
+    }
+    throw error;
+  }
+  if (!stat.isDirectory() || stat.isSymbolicLink()) {
+    throw new ProjectOperationError("PROJECT_NOT_FOUND", "The Project root must be a real directory");
+  }
+}
+
+async function readManifest(root: string): Promise<ProjectManifest> {
+  const manifestPath = path.join(root, PROJECT_MANIFEST_FILE);
+  try {
+    await assertNotSymlink(manifestPath);
+    return parseProjectManifest(JSON.parse(await readFile(manifestPath, "utf8")));
+  } catch (error) {
+    if (error instanceof ProjectOperationError) throw error;
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      throw new ProjectOperationError("PROJECT_MANIFEST_INVALID", "The Project manifest is missing");
+    }
+    if (error instanceof ProjectFormatError) {
+      throw new ProjectOperationError(error.code, error.message);
+    }
+    throw new ProjectOperationError(
+      "PROJECT_MANIFEST_INVALID",
+      error instanceof Error ? error.message : "The Project manifest is invalid",
+    );
+  }
+}
+
+function openDatabase(databasePath: string, readOnly = false): DatabaseSync {
+  try {
+    const database = new DatabaseSync(databasePath, {
+      readOnly,
+      timeout: 5_000,
+      allowExtension: false,
+      defensive: true,
+    });
+    if (readOnly) {
+      database.exec("PRAGMA query_only = ON");
+      database.exec("PRAGMA foreign_keys = ON");
+      database.exec("PRAGMA busy_timeout = 5000");
+      database.exec("PRAGMA trusted_schema = OFF");
+    } else {
+      configureDatabase(database);
+    }
+    return database;
+  } catch (error) {
+    throw new ProjectOperationError(
+      "PROJECT_DATABASE_INVALID",
+      error instanceof Error ? error.message : "The Project database could not be opened",
+    );
+  }
+}
+
+function readMetadata(database: DatabaseSync): ProjectMetadataRow | null {
+  try {
+    return (database.prepare(`
+      SELECT project_id, project_name, project_slug, format_version, schema_version,
+             created_at, last_opened_at, current_revision_id, current_run_id
+      FROM project_metadata WHERE singleton_id = 1
+    `).get() as ProjectMetadataRow | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function compatibilityFor(
+  manifest: ProjectManifest | null,
+  appliedSchema: number | null,
+  reason: string | null = null,
+): ProjectCompatibility {
+  const formatSupported = manifest?.format.version === PROJECT_FORMAT_VERSION;
+  const schemaSupported = appliedSchema !== null && appliedSchema <= CURRENT_SCHEMA_VERSION && appliedSchema > 0;
+  return {
+    compatible: formatSupported && schemaSupported && reason === null,
+    formatVersion: manifest?.format.version ?? null,
+    schemaVersion: appliedSchema,
+    currentSchemaVersion: CURRENT_SCHEMA_VERSION,
+    requiresMigration: schemaSupported && appliedSchema < CURRENT_SCHEMA_VERSION,
+    reason: reason ?? (!formatSupported ? "Unsupported Project format" : !schemaSupported ? "Unsupported database schema" : null),
+  };
+}
+
+async function validateProjectAt(root: string, now: () => string): Promise<ProjectValidationReport> {
+  const issues: ProjectValidationIssue[] = [];
+  let manifest: ProjectManifest | null = null;
+  let compatibility = compatibilityFor(null, null, "Project has not been inspected");
+  try {
+    await assertProjectRoot(root);
+  } catch (error) {
+    issues.push(issue("PROJECT_NOT_FOUND", "filesystem", error instanceof Error ? error.message : "Project not found"));
+    return { valid: false, projectPath: root, checkedAt: now(), compatibility, issues, project: null };
+  }
+  try {
+    manifest = await readManifest(root);
+  } catch (error) {
+    const code = error instanceof ProjectOperationError ? error.code : "PROJECT_MANIFEST_INVALID";
+    issues.push(issue(code, code === "PROJECT_FORMAT_UNSUPPORTED" ? "compatibility" : "manifest", error instanceof Error ? error.message : "Invalid manifest", PROJECT_MANIFEST_FILE));
+    compatibility = compatibilityFor(null, null, error instanceof Error ? error.message : "Invalid manifest");
+    return { valid: false, projectPath: root, checkedAt: now(), compatibility, issues, project: null };
+  }
+  for (const relative of REQUIRED_PROJECT_DIRECTORIES) {
+    const target = path.join(root, ...relative.split("/"));
+    try {
+      const stat = await lstat(target);
+      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("not a real directory");
+    } catch {
+      issues.push(issue("PROJECT_DIRECTORY_INVALID", "filesystem", "Required Project directory is missing or unsafe", relative));
+    }
+  }
+  const databasePath = path.join(root, ...PROJECT_DATABASE_PATH.split("/"));
+  let database: DatabaseSync | null = null;
+  let appliedSchema: number | null = null;
+  try {
+    const stat = await lstat(databasePath);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("Database is not a regular file");
+    database = openDatabase(databasePath, true);
+    const integrity = database.prepare("PRAGMA integrity_check").all() as unknown as { integrity_check: string }[];
+    if (integrity.length !== 1 || integrity[0]?.integrity_check !== "ok") {
+      issues.push(issue("PROJECT_DATABASE_INTEGRITY_FAILED", "database", "SQLite integrity_check did not return ok", PROJECT_DATABASE_PATH));
+    }
+    const migrationState = inspectMigrationState(database);
+    appliedSchema = migrationState.applied;
+    if (migrationState.pending.length > 0) {
+      issues.push(issue("PROJECT_MIGRATION_REQUIRED", "migration", `${migrationState.pending.length} migration(s) are pending`, PROJECT_DATABASE_PATH, "warning"));
+    }
+    const userVersion = (database.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
+    if (userVersion !== appliedSchema) {
+      issues.push(issue("PROJECT_SCHEMA_VERSION_MISMATCH", "migration", "SQLite user_version does not match migration history", PROJECT_DATABASE_PATH));
+    }
+    const metadata = readMetadata(database);
+    if (metadata === null) {
+      issues.push(issue("PROJECT_METADATA_MISSING", "identity", "Project database metadata is missing", PROJECT_DATABASE_PATH));
+    } else {
+      const mismatches = [
+        [metadata.project_id, manifest.project.id, "project ID"],
+        [metadata.project_name, manifest.project.name, "project name"],
+        [metadata.project_slug, manifest.project.slug, "project slug"],
+        [metadata.format_version, manifest.format.version, "format version"],
+        [metadata.current_revision_id, manifest.current.revisionId, "revision ID"],
+        [metadata.current_run_id, manifest.current.runId, "run ID"],
+      ] as const;
+      for (const [databaseValue, manifestValue, label] of mismatches) {
+        if (databaseValue !== manifestValue) issues.push(issue("PROJECT_IDENTITY_MISMATCH", "identity", `Manifest and database ${label} differ`));
+      }
+      if (metadata.schema_version !== appliedSchema || manifest.database.schemaVersion !== appliedSchema) {
+        issues.push(issue("PROJECT_SCHEMA_VERSION_MISMATCH", "identity", "Manifest, metadata, and migration schema versions differ"));
+      }
+    }
+  } catch (error) {
+    const code = error instanceof ProjectOperationError ? error.code : "PROJECT_DATABASE_INVALID";
+    issues.push(issue(code, code.includes("MIGRATION") || code.includes("SCHEMA") ? "migration" : "database", error instanceof Error ? error.message : "Invalid Project database", PROJECT_DATABASE_PATH));
+  } finally {
+    if (database?.isOpen) database.close();
+  }
+  compatibility = compatibilityFor(manifest, appliedSchema);
+  if (!compatibility.compatible) {
+    issues.push(issue("PROJECT_SCHEMA_UNSUPPORTED", "compatibility", compatibility.reason ?? "The Project is incompatible"));
+  }
+  const valid = issues.every((entry) => entry.severity !== "error") && compatibility.compatible;
+  return {
+    valid,
+    projectPath: root,
+    checkedAt: now(),
+    compatibility,
+    issues,
+    project: valid ? summaryFromManifest(root, manifest, "current") : null,
+  };
+}
+
+function recordEvent(
+  database: DatabaseSync,
+  id: () => string,
+  projectId: string,
+  eventType: string,
+  timestamp: string,
+  details: Readonly<Record<string, unknown>> = {},
+): void {
+  database.prepare(`
+    INSERT INTO project_events (event_id, project_id, event_type, occurred_at, correlation_id, details_json)
+    VALUES (?, ?, ?, ?, NULL, ?)
+  `).run(id(), projectId, eventType, timestamp, JSON.stringify(details));
+}
+
+async function createMigrationBackup(input: {
+  root: string;
+  database: DatabaseSync;
+  fromSchema: number;
+  toSchema: number;
+  applicationVersion: string;
+  now: () => string;
+  id: () => string;
+}): Promise<string> {
+  const backupDirectory = path.join(input.root, "database", "backups");
+  await mkdir(backupDirectory, { recursive: true });
+  const stamp = input.now().replace(/[:.]/g, "-");
+  const basename = `pre-migration-v${input.fromSchema}-to-v${input.toSchema}-${stamp}-${input.id()}`;
+  const temporary = path.join(backupDirectory, `.${basename}.db.tmp`);
+  const finalPath = path.join(backupDirectory, `${basename}.db`);
+  try {
+    await backup(input.database, temporary, { rate: 100 });
+    const bytes = await readFile(temporary);
+    await atomicWriteFile(finalPath, bytes);
+    await rm(temporary, { force: true });
+    await atomicWriteFile(
+      path.join(backupDirectory, `${basename}.json`),
+      `${JSON.stringify({
+        version: 1,
+        createdAt: input.now(),
+        fromSchema: input.fromSchema,
+        toSchema: input.toSchema,
+        applicationVersion: input.applicationVersion,
+        databaseFile: `${basename}.db`,
+        bytes: bytes.byteLength,
+        sha256: sha256(bytes),
+      }, null, 2)}\n`,
+    );
+    return `database/backups/${basename}.db`;
+  } catch (error) {
+    await rm(temporary, { force: true }).catch(() => undefined);
+    throw new ProjectOperationError("PROJECT_BACKUP_FAILED", error instanceof Error ? error.message : "Migration backup failed");
+  }
+}
+
+function updateManifestForOpen(manifest: ProjectManifest, timestamp: string, schemaVersion: number): ProjectManifest {
+  return parseProjectManifest({
+    ...manifest,
+    application: { version: manifest.application.version },
+    project: { ...manifest.project, lastOpenedAt: timestamp },
+    database: { ...manifest.database, schemaVersion },
+    lifecycle: { state: "ready", lastValidatedAt: timestamp },
+  });
+}
+
+export function createSqliteProjectStorage(options: SqliteProjectStorageOptions): ProjectStoragePort {
+  const logger = options.logger ?? createSilentLogger();
+  const now = options.now ?? (() => new Date().toISOString());
+  const id = options.id ?? randomUUID;
+  const archiveLimits = options.archiveLimits ?? DEFAULT_ARCHIVE_LIMITS;
+  let current: CurrentProject | null = null;
+
+  const log = (eventName: string, projectId: string, metadata: Readonly<Record<string, unknown>> = {}): void => {
+    logger.log({ timestamp: now(), level: "info", component: "persistence-sqlite", correlationId: projectId, eventName, metadata });
+  };
+
+  return Object.freeze({
+    async create(input) {
+      const destination = path.resolve(input.destinationPath);
+      const parent = path.dirname(destination);
+      await mkdir(parent, { recursive: true });
+      if (await pathExists(destination)) throw new ProjectOperationError("PROJECT_ALREADY_EXISTS", "The Project destination already exists");
+      const staging = path.join(parent, `.${path.basename(destination)}.creating-${id()}`);
+      const timestamp = now();
+      const manifest = createProjectManifest({
+        applicationVersion: options.applicationVersion,
+        projectId: id(),
+        name: input.name,
+        slug: input.slug,
+        createdAt: timestamp,
+        revisionId: id(),
+        runId: id(),
+        ...(input.baseUrl === undefined ? {} : { baseUrl: input.baseUrl }),
+      });
+      try {
+        await mkdir(staging, { recursive: false });
+        await Promise.all(REQUIRED_PROJECT_DIRECTORIES.map((relative) => mkdir(path.join(staging, ...relative.split("/")), { recursive: true })));
+        const databasePath = path.join(staging, ...PROJECT_DATABASE_PATH.split("/"));
+        const database = openDatabase(databasePath);
+        try {
+          applyPendingMigrations(database, options.applicationVersion, now, (migration, durationMs) => {
+            log("migration.applied", manifest.project.id, { migrationId: migration.id, sequence: migration.sequence, durationMs });
+          });
+          database.exec("BEGIN IMMEDIATE");
+          database.prepare(`
+            INSERT INTO project_metadata
+              (singleton_id, project_id, project_name, project_slug, format_version, schema_version,
+               created_at, last_opened_at, current_revision_id, current_run_id)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            manifest.project.id, manifest.project.name, manifest.project.slug, manifest.format.version,
+            CURRENT_SCHEMA_VERSION, timestamp, timestamp, manifest.current.revisionId, manifest.current.runId,
+          );
+          database.prepare(`
+            INSERT INTO project_revisions (revision_id, project_id, sequence, created_at, status)
+            VALUES (?, ?, 1, ?, 'initialized')
+          `).run(manifest.current.revisionId, manifest.project.id, timestamp);
+          database.prepare(`
+            INSERT INTO runs (run_id, project_id, revision_id, sequence, created_at, status)
+            VALUES (?, ?, ?, 1, ?, 'initialized')
+          `).run(manifest.current.runId, manifest.project.id, manifest.current.revisionId, timestamp);
+          recordEvent(database, id, manifest.project.id, "project.created", timestamp, { schemaVersion: CURRENT_SCHEMA_VERSION });
+          database.exec("COMMIT");
+          database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+        } catch (error) {
+          if (database.isTransaction) database.exec("ROLLBACK");
+          throw error;
+        } finally {
+          if (database.isOpen) database.close();
+        }
+        const closedManifest = parseProjectManifest({ ...manifest, lifecycle: { ...manifest.lifecycle, state: "closed" } });
+        await atomicWriteFile(path.join(staging, PROJECT_MANIFEST_FILE), serializeProjectManifest(closedManifest));
+        const report = await validateProjectAt(staging, now);
+        if (!report.valid || report.project === null) {
+          throw new ProjectOperationError("PROJECT_VALIDATION_FAILED", report.issues.map((entry) => entry.message).join("; "));
+        }
+        await atomicPromoteDirectory(staging, destination);
+        log("project.created", manifest.project.id, { schemaVersion: CURRENT_SCHEMA_VERSION });
+        return summaryFromManifest(destination, closedManifest, "current");
+      } catch (error) {
+        await rm(staging, { recursive: true, force: true }).catch(() => undefined);
+        throw error;
+      }
+    },
+
+    async open(projectPath) {
+      const root = path.resolve(projectPath);
+      if (current !== null) {
+        if (current.root === root) return current.summary;
+        throw new ProjectOperationError("PROJECT_LOCKED", "Close the current Project before opening another one");
+      }
+      const initialReport = await validateProjectAt(root, now);
+      if (!initialReport.valid || initialReport.project === null) {
+        throw validationFailure(initialReport);
+      }
+      const lock = await acquireProjectLock(root, "open", now);
+      let database: DatabaseSync | null = null;
+      try {
+        const originalManifest = await readManifest(root);
+        database = openDatabase(path.join(root, ...PROJECT_DATABASE_PATH.split("/")));
+        const migrationState = inspectMigrationState(database);
+        let migrationStatus: ProjectSummary["migrationStatus"] = "current";
+        if (migrationState.pending.length > 0) {
+          const backupPath = await createMigrationBackup({
+            root,
+            database,
+            fromSchema: migrationState.applied,
+            toSchema: CURRENT_SCHEMA_VERSION,
+            applicationVersion: options.applicationVersion,
+            now,
+            id,
+          });
+          log("migration.backup.created", originalManifest.project.id, { fromSchema: migrationState.applied, toSchema: CURRENT_SCHEMA_VERSION, backupPath });
+          applyPendingMigrations(database, options.applicationVersion, now, (migration, durationMs) => {
+            log("migration.applied", originalManifest.project.id, { migrationId: migration.id, sequence: migration.sequence, durationMs });
+          });
+          migrationStatus = "migrated";
+        }
+        const timestamp = now();
+        database.prepare("UPDATE project_metadata SET schema_version = ?, last_opened_at = ? WHERE singleton_id = 1")
+          .run(CURRENT_SCHEMA_VERSION, timestamp);
+        recordEvent(database, id, originalManifest.project.id, "project.opened", timestamp, { migrated: migrationStatus === "migrated" });
+        const manifest = updateManifestForOpen(originalManifest, timestamp, CURRENT_SCHEMA_VERSION);
+        await atomicWriteFile(path.join(root, PROJECT_MANIFEST_FILE), serializeProjectManifest(manifest), { overwrite: true });
+        const summary = summaryFromManifest(root, manifest, migrationStatus);
+        current = { root, manifest, database, lock, summary };
+        log("project.opened", manifest.project.id, { migrationStatus, schemaVersion: CURRENT_SCHEMA_VERSION });
+        return summary;
+      } catch (error) {
+        if (database?.isOpen) database.close();
+        await lock.release().catch(() => undefined);
+        throw error;
+      }
+    },
+
+    async close() {
+      if (current === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "No Project is currently open");
+      const active = current;
+      current = null;
+      const timestamp = now();
+      const manifest = parseProjectManifest({
+        ...active.manifest,
+        lifecycle: { state: "closed", lastValidatedAt: timestamp },
+      });
+      let closeError: unknown;
+      try {
+        recordEvent(active.database, id, manifest.project.id, "project.closed", timestamp);
+        active.database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+        await atomicWriteFile(path.join(active.root, PROJECT_MANIFEST_FILE), serializeProjectManifest(manifest), { overwrite: true });
+      } catch (error) {
+        closeError = error;
+      } finally {
+        if (active.database.isOpen) active.database.close();
+        try {
+          await active.lock.release();
+        } catch (error) {
+          closeError ??= error;
+        }
+      }
+      if (closeError !== undefined) throw closeError;
+      const summary = { ...summaryFromManifest(active.root, manifest, active.summary.migrationStatus), state: "closed" as const };
+      log("project.closed", manifest.project.id);
+      return summary;
+    },
+
+    async validate(projectPath) {
+      const report = await validateProjectAt(path.resolve(projectPath), now);
+      if (report.project !== null) log("project.validated", report.project.projectId, { valid: report.valid, issueCount: report.issues.length });
+      return report;
+    },
+
+    async exportProject(input) {
+      const root = path.resolve(input.projectPath);
+      const archivePath = path.resolve(input.archivePath);
+      if (await pathExists(archivePath)) throw new ProjectOperationError("PROJECT_ALREADY_EXISTS", "The export destination already exists");
+      const report = await validateProjectAt(root, now);
+      if (!report.valid || report.project === null) {
+        const failure = validationFailure(report);
+        throw new ProjectOperationError("PROJECT_EXPORT_FAILED", `${failure.code}: ${failure.message}`);
+      }
+      const usesCurrent = current?.root === root;
+      let lock: ProjectLock | null = null;
+      let database: DatabaseSync | null = null;
+      const snapshotPath = path.join(root, "temp", `.export-${id()}.db`);
+      try {
+        if (usesCurrent) {
+          database = current!.database;
+        } else {
+          lock = await acquireProjectLock(root, "export", now);
+          database = openDatabase(path.join(root, ...PROJECT_DATABASE_PATH.split("/")));
+        }
+        recordEvent(database, id, report.project.projectId, "project.exported", now());
+        await backup(database, snapshotPath, { rate: 100 });
+        const databaseSnapshot = new Uint8Array(await readFile(snapshotPath));
+        const archive = await createProjectArchive({
+          projectRoot: root,
+          projectId: report.project.projectId,
+          exportedAt: now(),
+          databaseSnapshot,
+          limits: archiveLimits,
+        });
+        await atomicWriteFile(archivePath, archive.data);
+        const result = {
+          archivePath,
+          projectId: report.project.projectId,
+          entryCount: archive.entryCount,
+          expandedBytes: archive.expandedBytes,
+          sha256: sha256(archive.data),
+        };
+        log("project.export.completed", result.projectId, { entryCount: result.entryCount, expandedBytes: result.expandedBytes, sha256: result.sha256 });
+        return result;
+      } catch (error) {
+        if (error instanceof ProjectOperationError) throw error;
+        throw new ProjectOperationError("PROJECT_EXPORT_FAILED", error instanceof Error ? error.message : "Project export failed");
+      } finally {
+        await rm(snapshotPath, { force: true }).catch(() => undefined);
+        if (!usesCurrent && database?.isOpen) database.close();
+        await lock?.release().catch(() => undefined);
+      }
+    },
+
+    async importProject(input) {
+      const archivePath = path.resolve(input.archivePath);
+      const destination = path.resolve(input.destinationPath);
+      if (await pathExists(destination)) throw new ProjectOperationError("PROJECT_ALREADY_EXISTS", "The import destination already exists");
+      const parent = path.dirname(destination);
+      await mkdir(parent, { recursive: true });
+      const staging = path.join(parent, `.${path.basename(destination)}.importing-${id()}`);
+      try {
+        const archiveData = new Uint8Array(await readFile(archivePath));
+        const extracted = extractAndVerifyProjectArchive(archiveData, archiveLimits);
+        await mkdir(staging, { recursive: false });
+        for (const [relative, data] of extracted.files) {
+          await atomicWriteFile(path.join(staging, ...relative.split("/")), data);
+        }
+        await Promise.all(REQUIRED_PROJECT_DIRECTORIES.map((relative) => mkdir(path.join(staging, ...relative.split("/")), { recursive: true })));
+        const report = await validateProjectAt(staging, now);
+        if (!report.valid || report.project === null || report.project.projectId !== extracted.projectId) {
+          throw new ProjectOperationError("PROJECT_IMPORT_FAILED", report.issues.map((entry) => entry.message).join("; ") || "Export identity mismatch");
+        }
+        await atomicPromoteDirectory(staging, destination);
+        const project = { ...report.project, projectPath: destination };
+        log("project.import.completed", project.projectId, { entryCount: extracted.entryCount, archiveSha256: sha256(archiveData) });
+        return { project, archiveSha256: sha256(archiveData), entryCount: extracted.entryCount };
+      } catch (error) {
+        await rm(staging, { recursive: true, force: true }).catch(() => undefined);
+        if (error instanceof ProjectOperationError) throw error;
+        throw new ProjectOperationError("PROJECT_IMPORT_FAILED", error instanceof Error ? error.message : "Project import failed");
+      }
+    },
+
+    async getCompatibility(projectPath) {
+      return (await validateProjectAt(path.resolve(projectPath), now)).compatibility;
+    },
+
+    getCurrent() {
+      return current?.summary ?? null;
+    },
+  } satisfies ProjectStoragePort);
+}
+
+validateMigrationDefinitions(MIGRATIONS);

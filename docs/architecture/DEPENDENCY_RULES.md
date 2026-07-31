@@ -1,14 +1,14 @@
 # Dependency Rules
 
-Allowed direction is:
-
 ```text
 desktop / cli -> application-service -> archive-core
-      |                  |
-      +-> contracts <----+
-      +-> platform
-      +-> observability
+                       |
+                       +-> persistence-sqlite -> archive-core
+                       |          |
+                       |          +-> project-format
+                       +-> contracts / observability
+apps -> contracts / platform / observability
 tests -> public entries + test-support
 ```
 
-Forbidden: Core importing apps/service/Electron/Node/platform; packages importing apps; renderer importing Node/Electron/service/Core; apps deep-importing another package source; production importing tests or `spikes/`; circular workspace dependencies. `npm run test:architecture` enforces import allowlists, manifest direction, cycle absence, public entry points, and desktop security settings.
+`archive-core` imports no app, service, Node, SQLite, path, ZIP, Electron, CLI, platform, test, or spike module. `project-format` is portable validation only. Apps cannot import persistence directly; renderer cannot import Node/Electron/service/Core. Packages cannot import apps; public deep source imports, cycles, runtime test support, and production spike dependencies are forbidden. `npm run test:architecture` enforces allowlists, manifests, cycles, entries, Core purity, and Desktop settings.

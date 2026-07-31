@@ -1,7 +1,7 @@
 # Process and Transport Model
 
-Desktop path: renderer creates a strict command -> preload exposes `systemDescribe` -> one allowlisted `ipcMain.handle` validates sender/frame/local URL -> Application Service validates/orchestrates -> Core owns domain result -> response schema validates -> renderer validates and displays.
+Desktop renderer creates a strict contract command. Preload exposes only `execute` and `selectPath`. Main grants exact native-dialog-selected paths, verifies sender webContents/main frame/local URL and path grant, then invokes the same Application Service used by CLI. Renderer validates the returned envelope. No raw IPC, filesystem, SQLite, shell, or environment API crosses preload.
 
-CLI path: argument parser -> local in-process adapter -> the same Application Service -> Core -> response validator -> human or JSON formatter. Logs remain on stderr; structured data remains on stdout.
+CLI parses bounded commands, constructs contract `1.1.0`, invokes Application Service in process, writes logs to stderr, and returns human or JSON data on stdout. `project open` and export close their session before the one-shot process exits.
 
-Correlation and command IDs pass unchanged end to end. There is no Phase 3 HTTP boundary. A future out-of-process service must retain contract compatibility, authenticate its transport, and receive an ADR/threat review.
+Correlation/command IDs remain unchanged. No HTTP boundary exists. A future process/service split must retain contracts, authenticate the transport, and receive an ADR/threat review.

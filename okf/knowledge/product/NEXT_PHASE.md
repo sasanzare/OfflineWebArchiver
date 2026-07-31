@@ -1,3 +1,3 @@
 # Next Product Phase
 
-Product Phase 4 — Portable Project and SQLite Foundation — must select and validate the persistence implementation, define the portable project format, implement atomic lifecycle and migration foundations, and preserve the Phase 3 boundaries. It must not silently begin crawling or other later capabilities.
+Product Phase 5 — Profile, Scope, and URL Normalization — must define the versioned profile/config contract, authorization and approved scope inputs, deterministic URL identity, allow/deny precedence, redirect reevaluation, safe methods, and a decision ledger before network dispatch. It must preserve the Phase 4 Project format and must not silently begin persistent queues, crawling, or browser work.

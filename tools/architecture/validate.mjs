@@ -11,12 +11,26 @@ const errors = [];
 const packageRules = new Map([
   ["packages/contracts/", new Set(["zod"])],
   ["packages/archive-core/", new Set()],
+  ["packages/project-format/", new Set(["zod"])],
+  ["packages/persistence-sqlite/", new Set([
+    "node:crypto",
+    "node:fs",
+    "node:fs/promises",
+    "node:os",
+    "node:path",
+    "node:sqlite",
+    "@offline-web-archive/archive-core",
+    "@offline-web-archive/observability",
+    "@offline-web-archive/project-format",
+    "fflate",
+  ])],
   ["packages/observability/", new Set()],
   ["packages/platform/", new Set(["@offline-web-archive/contracts"])],
   ["packages/application-service/", new Set([
     "@offline-web-archive/archive-core",
     "@offline-web-archive/contracts",
     "@offline-web-archive/observability",
+    "@offline-web-archive/persistence-sqlite",
   ])],
   ["packages/test-support/", new Set([
     "@offline-web-archive/contracts",
@@ -36,6 +50,7 @@ const packageRules = new Map([
     "@offline-web-archive/contracts",
   ])],
   ["apps/desktop/src/main/", new Set([
+    "node:crypto",
     "node:path",
     "node:url",
     "electron",
@@ -75,6 +90,8 @@ for (const file of sourceFiles) {
 const manifests = [
   "packages/contracts/package.json",
   "packages/archive-core/package.json",
+  "packages/project-format/package.json",
+  "packages/persistence-sqlite/package.json",
   "packages/observability/package.json",
   "packages/platform/package.json",
   "packages/application-service/package.json",

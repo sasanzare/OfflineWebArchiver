@@ -125,7 +125,7 @@ export async function validateOkf(root = repositoryRoot) {
   }
   if (!OKF_STATUSES.has(manifest.status)) errors.push(`okf/manifest.json: unknown status '${manifest.status}'`);
   if (typeof manifest.product !== "string" || manifest.product.length === 0) errors.push("okf/manifest.json: missing required product string");
-  if (manifest.activatedPhase !== 3) errors.push("okf/manifest.json: activatedPhase must be 3");
+  if (manifest.activatedPhase !== 4) errors.push("okf/manifest.json: activatedPhase must be 4");
 
   const authorities = await markdownAuthorityIds(root);
   const registries = new Map();
@@ -200,11 +200,14 @@ export async function validateOkf(root = repositoryRoot) {
       errors.push(`${item.id}: invalid phase number '${item.phaseNumber}'`);
     } else phaseNumbers.add(item.phaseNumber);
   }
-  for (const required of [1, 2, 3]) {
+  for (const required of [1, 2, 3, 4]) {
     if (!phaseNumbers.has(required)) errors.push(`Missing canonical phase record for Product Phase ${required}`);
   }
   if (!(registries.get("changes") ?? []).some((item) => item.id === "OKF-CHG-P03-001")) {
     errors.push("Missing Product Phase 3 change record OKF-CHG-P03-001");
+  }
+  if (!(registries.get("changes") ?? []).some((item) => item.id === "OKF-CHG-P04-001")) {
+    errors.push("Missing Product Phase 4 change record OKF-CHG-P04-001");
   }
 
   const criticalRequirements = [
@@ -214,6 +217,12 @@ export async function validateOkf(root = repositoryRoot) {
     "NFR-KNOW-002",
     "NFR-KNOW-003",
     "NFR-KNOW-004",
+    "FR-PROJECT-001",
+    "FR-PROJECT-002",
+    "FR-PROJECT-003",
+    "FR-PROJECT-004",
+    "NFR-REL-002",
+    "NFR-PORT-002",
   ];
   const mappedRequirements = new Set();
   for (const items of registries.values()) {
@@ -234,6 +243,7 @@ export async function validateOkf(root = repositoryRoot) {
     "okf/phases/phase-01/PHASE_01_RECORD.md",
     "okf/phases/phase-02/PHASE_02_RECORD.md",
     "okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md",
+    "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md",
   ]) {
     if (!(await exists(path.join(root, required)))) errors.push(`Missing canonical OKF artifact '${required}'`);
   }

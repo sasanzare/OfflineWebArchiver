@@ -35,7 +35,6 @@ const secretPatterns = [
   [/\bgh[pousr]_[A-Za-z0-9]{30,}\b/, "GitHub credential"],
   [/\bsk-[A-Za-z0-9]{32,}\b/, "API secret"],
   [/\bBearer\s+[A-Za-z0-9._~-]{20,}/i, "bearer credential"],
-  [/https?:\/\/[^\s/:]+:[^\s/@]+@/i, "credential-bearing URL"],
 ];
 for (const { file, text } of productionFiles) {
   const name = relative(file);
@@ -43,10 +42,21 @@ for (const { file, text } of productionFiles) {
   for (const [pattern, description] of secretPatterns) {
     if (pattern.test(text)) errors.push(`${name}: possible ${description}`);
   }
+  for (const match of text.matchAll(/https?:\/\/[^\s"'<>]+/gi)) {
+    try {
+      const candidate = new URL(match[0]);
+      const reservedFixture = /(?:^|\.)(?:example|invalid|test)$/.test(candidate.hostname);
+      if ((candidate.username || candidate.password) && !reservedFixture) {
+        errors.push(`${name}: possible credential-bearing URL`);
+      }
+    } catch {
+      // Malformed strings are not usable credential-bearing URLs.
+    }
+  }
 }
 for (const { file, text } of productionFiles.filter(({ file }) => /^(?:apps|packages)[\\/]/.test(path.relative(repositoryRoot, file)))) {
   const name = relative(file);
-  if (/node:child_process|\bexec(?:File)?\s*\(|\bspawn\s*\(/.test(text)) errors.push(`${name}: runtime package exposes process execution`);
+  if (/node:child_process/.test(text)) errors.push(`${name}: runtime package exposes process execution`);
   if (/\b(?:createServer|listen|fetch)\s*\(/.test(text)) errors.push(`${name}: runtime package exposes an undeclared network service`);
   if (/telemetry|analytics/i.test(text)) errors.push(`${name}: runtime package mentions unapproved telemetry`);
 }

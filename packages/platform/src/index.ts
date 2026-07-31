@@ -10,7 +10,7 @@ import {
 
 const DEFAULT_CONFIGURATION: ApplicationConfiguration = Object.freeze({
   applicationName: "Offline Web Archive Builder",
-  applicationVersion: "0.3.0",
+  applicationVersion: "0.4.0",
   contractVersion: CONTRACT_VERSION,
   logLevel: "info",
 });
@@ -66,4 +66,3 @@ export function readEnvironmentConfiguration(
     logLevel === undefined ? {} : { logLevel },
   );
 }
-

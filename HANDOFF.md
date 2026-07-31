@@ -1,13 +1,48 @@
 # Handoff
 
-**Document status:** Product Phase 3 completion handoff  
-**Current branch:** `main`  
-**Product phase:** Product Phase 3 — Architecture, Monorepo, and Layer Contracts (`complete`)  
-**OKF phase:** Canonical OKF activated in Product Phase 3 (`verified`)  
-**Next product phase:** Product Phase 4 — Portable Project and SQLite Foundation (`not started`)  
+**Document status:** Product Phase 4 completion handoff
+**Current branch:** `main`
+**Product phase:** Product Phase 4 — Project Format, SQLite, and Migration (`complete`)
+**OKF phase:** Canonical OKF synchronized through Product Phase 4 (`verified`)
+**Next product phase:** Product Phase 5 — Profile, Scope, and URL Normalization (`not started`)
 **Last updated:** 2026-07-31
 
-## Product Phase 3 result
+## Product Phase 4 result
+
+Project format `1.0.0`, SQLite schema 2, contract `1.1.0`, and application/workspace version `0.4.0` are implemented. The production lifecycle supports create, validation/compatibility, open, forward migration with SQLite API backup, clean close/checkpoint, bounded secret-free ZIP export/import, info, stable Project/Revision/Run identities, atomic staging/promotion, and a conservative single-writer lock.
+
+New production packages are `project-format` and `persistence-sqlite`. Archive Core owns the storage port/types but imports no Node, SQLite, filesystem/path, ZIP, Electron, or CLI API. Application Service composes the adapter and translates errors. Desktop and CLI do not import persistence directly. The only new third-party dependency is exact pure-JavaScript `fflate@0.8.3`; SQLite is built into Node 24 and was exercised inside Electron 43.
+
+SQLite owns exactly `schema_migrations`, `project_metadata`, `project_revisions`, `runs`, and `project_events`. Migrations `001_initialize_project_schema` and `002_add_project_events` are checksum-verified, forward-only, and transactional. The tested schema-1 path creates a verified backup before upgrade. Applied checksum drift, integrity corruption, identity mismatch, newer/unknown history, and failed migration all fail closed.
+
+ZIP import is untrusted: central inspection rejects unsafe/absolute/traversing/backslash/reserved/colliding/invalid UTF-8/symlink/special/duplicate/encrypted/unsupported/multi-disk/ZIP64 entries and enforces count/compressed/expanded/single-file/ratio limits before staging. Inventory checksums and Project validation precede atomic promotion. Exports exclude locks, WAL/SHM, temp, logs, backups, auth, proxies, unknown roots, and secrets.
+
+Contract commands are `system.describe` and Project `create/open/close/validate/export/import/info`. CLI exposes all requested one-shot workflows with human/JSON output and stable exit codes. The real Electron smoke executes the complete local Project round trip through a sandboxed renderer, narrow bridge, sender/frame/URL authorization, and main-owned exact path grants.
+
+ADRs 009–014 accept the format, Node SQLite adapter, migrations/backups, atomic replacement, bounded ZIP, and locking. OD-013 is resolved; OD-014 is resolved for the bounded Phase 4 container but streaming ZIP64/large-archive policy remains before P25; OD-023 is partially resolved for mandatory pre-migration backup while retention/restore remains P17. R-045/R-046 track hostile archive/resource and advisory-lock/shared-filesystem limits.
+
+Canonical OKF records verified Phase 4 format, database, migration, persistence, lifecycle, import/export, atomic, locking, contract, CLI, Desktop, security, test, and documentation evidence. Product Phase 5 remains planned. The Phase 2 spike and Phase 3 boundaries/history remain intact.
+
+## Product Phase 4 validation summary
+
+- Root install/lockfile update completed with zero npm audit findings.
+- Typecheck, clean production build, all workspace builds, lint, formatting, architecture, contracts, format, migrations, security, documentation, OKF, and Git whitespace gates passed.
+- `npm test` passed 29 tests with no skip, including built CLI and real Electron all-operation lifecycle smokes.
+- Branch remains `main`. Codex created no commit, push, tag, release, deployment, stash, reset, or clean operation.
+
+## Product Phase 4 known limitations
+
+- ZIP is bounded and in-memory: no ZIP64, streaming, encryption, authenticity signature, or files above documented limits.
+- Locking is coordination, not access control, and does not claim hostile-local-writer, PID-reuse, or network-filesystem safety.
+- Backup retention, restore UX, rolling checkpoints, low-disk behavior, and broad recovery remain Product Phase 17.
+- Cross-OS path rules are tested as a corpus; packaged Linux/macOS and all-pairs transfer remain Product Phase 25.
+- No URL policy, scope, queue, crawler, browser, authentication, proxy, capture, rewrite, runtime server, or release behavior exists.
+
+## Exact next product phase
+
+**Product Phase 5 — Profile, Scope, and URL Normalization.** Define a versioned profile/config contract, authorization and approved scope inputs, deterministic URL identity/canonicalization, allow/deny precedence, redirect reevaluation, safe request-method policy, and a decision ledger before any network dispatch. Do not begin persistent queues or browser crawling.
+
+## Historical Product Phase 3 result
 
 The production npm/TypeScript monorepo is operational. Desktop and CLI both send strict contract 1.0.0 `system.describe` commands through the Local Application Service to GUI-independent Archive Core. The real Electron smoke verifies sandbox/context isolation, one preload method, sender/frame/URL validation, and the versioned response. The built CLI verifies help, version, human, JSON, and usage-error behavior. Architecture, contract, security, docs, and OKF gates fail closed.
 

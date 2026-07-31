@@ -1,5 +1,5 @@
 # Logging and Observability
 
-One structured JSON event contains timestamp, level, component, correlation ID, optional command ID, event name, optional metadata, and optional error code. Application Service emits start/completed/failed events. The CLI and desktop currently write logs to stderr.
+Structured JSON events contain UTC time, level, component, correlation ID, optional command ID, event name, bounded metadata, and optional error code. Service emits command start/completed/failed. Persistence emits Project lifecycle, validation, migration duration, backup, export/import count/bytes/checksum, and lock-relevant outcomes.
 
-Metadata keys matching authorization, cookie, credential, OTP, password, proxy password, secret, session, or token are recursively redacted; circular values are bounded. No durable telemetry, analytics, retention, or external sink is authorized in Phase 3.
+Logs never include Project host path, manifest/database content, SQL data, archive payload, or secrets. Secret-like metadata keys are recursively redacted and circular values bounded. CLI/Desktop write development logs to stderr. No Project log sink, remote telemetry, analytics, retention, or external service is approved in Phase 4.

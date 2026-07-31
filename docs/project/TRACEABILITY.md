@@ -15,10 +15,10 @@ validation, [fixture category](../testing/TEST_FIXTURE_STRATEGY.md), and
 | Requirement | Acceptance criteria | Planned implementation → validation | Test category / activity | Principal risks |
 |---|---|---|---|---|
 | FR-AUTHZ-001 | AC-AUTHZ-001 | P5 → P20, P24 | FX-048; TS authorization preflight | R-026, R-027, R-037 |
-| FR-PROJECT-001 | AC-PROJECT-001 | P4 → P4, P25 | FX-041; Project manifest contract | R-013, R-031 |
-| FR-PROJECT-002 | AC-PROJECT-002 | P4 → P17, P25 | Golden Project reopen | R-012, R-013 |
-| FR-PROJECT-003 | AC-PROJECT-004, AC-PROJECT-005 | P4 → P17, P25 | Migration interruption/corruption; FX-037 | R-012, R-013 |
-| FR-PROJECT-004 | AC-PROJECT-003, AC-CROSSPLATFORM-001 | P4, P25 → P11, P25 | FX-041; cross-platform transfer matrix | R-006, R-031 |
+| FR-PROJECT-001 | AC-PROJECT-001, AC-P04-001..004, AC-P04-014..015 | P4 → P4, P25 | Strict manifest/path/atomic lifecycle and FX-041 | R-013, R-031 |
+| FR-PROJECT-002 | AC-PROJECT-002, AC-P04-005, AC-P04-008, AC-P04-021..022 | P4 → P17, P25 | Real SQLite reopen/identity/lock tests | R-012, R-013, R-046 |
+| FR-PROJECT-003 | AC-PROJECT-004, AC-PROJECT-005, AC-P04-006..013 | P4 → P17, P25 | Migration backup/rollback/checksum/corruption; FX-037 | R-012, R-013, R-046 |
+| FR-PROJECT-004 | AC-PROJECT-003, AC-P04-016..020, AC-CROSSPLATFORM-001 | P4, P25 → P11, P25 | Bounded hostile ZIP round-trip/move; FX-041 | R-006, R-031, R-045 |
 | FR-SCOPE-001 | AC-SCOPE-001 | P5 → P5, P25 | Versioned URL corpus; FX-011 | R-008, R-027 |
 | FR-SCOPE-002 | AC-SCOPE-002 | P5 → P20, P24 | FX-013, FX-048; request spy | R-026, R-027 |
 | FR-SCOPE-003 | AC-SCOPE-003 | P5, P8 → P20 | FX-047, FX-048 | R-027, R-036 |
@@ -121,6 +121,19 @@ the production mappings above.
 | NFR-KNOW-002 | AC-P03-020 | P3 | OKF semantic validation and negative probes | Verified nodes have repository-relative evidence; future capabilities remain planned | RISK-KNOW-001, R-044 | OD-026 | OKF-DOM-031, OKF-DOM-041 |
 | NFR-KNOW-003 | AC-P03-019, AC-P03-024 | P3 | migration prerequisite self-tests and promotion review | Phase/change/migration records; preserved bootstrap/spike | RISK-KNOW-001 | OD-026 | OKF-DOM-039..041 |
 | NFR-KNOW-004 | AC-OKF-005 | P3 policy / continuous | Status/schema support; controlled history test remains future when first conflict exists | Conflict status/rules exist; no current conflict fabricated | RISK-KNOW-001 | OD-026 | OKF-DOM-041 |
+
+## Product Phase 4 Project foundation evidence map
+
+| Requirement | Phase 4 acceptance | Product phase | Executed test or check | Production evidence | Risk | Decision | OKF domain |
+|---|---|---|---|---|---|---|---|
+| FR-PROJECT-001 | AC-P04-001..004,014..015 | P4 | format/atomic unit and lifecycle integration | Manifest 1.0.0, portable paths, stable IDs, atomic promotion | R-013, R-031 | OD-014 | OKF-DOM-008 |
+| FR-PROJECT-002 | AC-P04-005,008,021..022 | P4 | Node/Electron SQLite, identity and lock tests | Reopen/current/close and single writer through storage port | R-012, R-046 | OD-013 | OKF-DOM-009 |
+| FR-PROJECT-003 | AC-P04-006..013 | P4 | migration validator, rollback, legacy backup/upgrade, corruption corpus | Schema 2, immutable history, SQLite API backup, fail-closed integrity | R-012, R-013 | OD-013, OD-023 | OKF-DOM-010 |
+| FR-PROJECT-004 | AC-P04-016..020 | P4 | ZIP inventory/round-trip/attack/limit/cleanup tests | Container 1.0.0 preserves identity and excludes transient/secret roots | R-031, R-045 | OD-014 | OKF-DOM-011 |
+| FR-CLI-001 | AC-P04-024 | P4 | built CLI all-operation smoke | Human/JSON Project operations and stable exits through service | R-036 | OD-009 | OKF-DOM-007 |
+| NFR-SEC-003 | AC-P04-019,020,025 | P4 | hostile ZIP plus real Electron smoke/security gate | Approved path grants, isolated renderer, staged bounded import | R-045, R-046 | OD-009, OD-014 | OKF-DOM-029 |
+| NFR-TEST-001 | AC-P04-027 | P4 | full unit/integration/CLI/Electron/OKF suite | Real filesystem/SQLite/process evidence without crawl mocks | R-012, R-013, R-045 | OD-013, OD-014 | OKF-DOM-031 |
+| NFR-KNOW-001..004 | AC-P04-028..029 | P4 | docs and OKF validators | ADR-009..014, implementation/security/phase records and registries | RISK-KNOW-001 | OD-026 | OKF-DOM-038..041 |
 
 ## OKF traceability dimensions
 

@@ -1,20 +1,13 @@
-import type {
-  ResponseEnvelope,
-  SystemDescribeCommand,
-} from "@offline-web-archive/contracts";
+import type { CommandEnvelope, ResponseEnvelope } from "@offline-web-archive/contracts";
+import type { SelectionPurpose } from "../shared/bridge-contract.js";
 
 declare global {
   interface Window {
     offlineArchive: {
-      systemDescribe(command: SystemDescribeCommand): Promise<ResponseEnvelope>;
-    };
-    __architectureSmoke: {
-      completed: boolean;
-      response: ResponseEnvelope | null;
-      error: string | null;
+      execute(command: CommandEnvelope): Promise<ResponseEnvelope>;
+      selectPath(purpose: SelectionPurpose): Promise<string | null>;
     };
   }
 }
 
 export {};
-

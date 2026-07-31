@@ -1,18 +1,21 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type {
-  ResponseEnvelope,
-  SystemDescribeCommand,
-} from "@offline-web-archive/contracts";
+import type { CommandEnvelope, ResponseEnvelope } from "@offline-web-archive/contracts";
+import type { SelectionPurpose } from "../shared/bridge-contract.js";
 
-const DESCRIBE_CHANNEL = "offline-archive:system-describe";
+const EXECUTE_CHANNEL = "offline-archive:execute";
+const SELECT_PATH_CHANNEL = "offline-archive:select-path";
 
 export interface DesktopBridge {
-  systemDescribe(command: SystemDescribeCommand): Promise<ResponseEnvelope>;
+  execute(command: CommandEnvelope): Promise<ResponseEnvelope>;
+  selectPath(purpose: SelectionPurpose): Promise<string | null>;
 }
 
 const bridge: DesktopBridge = Object.freeze({
-  systemDescribe(command: SystemDescribeCommand) {
-    return ipcRenderer.invoke(DESCRIBE_CHANNEL, command) as Promise<ResponseEnvelope>;
+  execute(command: CommandEnvelope) {
+    return ipcRenderer.invoke(EXECUTE_CHANNEL, command) as Promise<ResponseEnvelope>;
+  },
+  selectPath(purpose: SelectionPurpose) {
+    return ipcRenderer.invoke(SELECT_PATH_CHANNEL, purpose) as Promise<string | null>;
   },
 });
 

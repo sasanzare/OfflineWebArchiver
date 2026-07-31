@@ -2,10 +2,11 @@
 
 | Runtime container | Process | Responsibility | Trust level |
 |---|---|---|---|
-| Electron main | Desktop process | Compose service, create secure window, authorize IPC | Privileged local |
-| Electron preload | Sandboxed renderer preload | Expose one typed method | Narrow bridge |
-| Electron renderer | Sandboxed Chromium frame | English architecture status UI | Unprivileged |
-| CLI | Node process | Parse args, compose service, format output/exit | Privileged local terminal |
-| Application packages | Same caller process | Validate, orchestrate, describe Core | No direct external I/O |
+| Electron main | Desktop process | Compose service/storage, native path grants, authorize IPC, own Project session | Privileged local |
+| Electron preload | Sandboxed renderer preload | Expose validated execute and native-selection capabilities | Narrow bridge |
+| Electron renderer | Sandboxed Chromium frame | English Project lifecycle UI | Unprivileged |
+| CLI | Node process | Parse Project commands, compose service, format output/exits; open is one-shot | Privileged terminal |
+| Application Service | Caller process | Validate/orchestrate/translate contracts | No UI |
+| SQLite adapter | Caller main/CLI process | Project filesystem, SQLite, migrations, ZIP, locks | Local I/O boundary |
 
-Desktop and CLI do not communicate with each other. No loopback service, database process, browser automation process, or worker pool exists in production Phase 3.
+Desktop and CLI do not communicate. No loopback service, database daemon, browser automation process, network client, or worker pool exists. A future utility process requires a new ADR and contract-preserving threat review.

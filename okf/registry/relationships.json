@@ -3,9 +3,17 @@
   "items": [
     { "id": "OKF-REL-001", "name": "architecture satisfies maintainability", "status": "VERIFIED", "sourceId": "OKF-NODE-P03-ARCHITECTURE", "targetId": "NFR-MAINT-001", "type": "satisfies" },
     { "id": "OKF-REL-002", "name": "architecture evidenced by tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P03-ARCHITECTURE", "targetId": "OKF-EV-P03-TESTS", "type": "evidenced-by" },
-    { "id": "OKF-REL-003", "name": "desktop uses contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P03-CONTRACT-V1", "type": "depends-on" },
-    { "id": "OKF-REL-004", "name": "CLI uses contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P03-CONTRACT-V1", "type": "depends-on" },
-    { "id": "OKF-REL-005", "name": "service owns smoke orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P03-SYSTEM-DESCRIBE", "type": "owns" },
-    { "id": "OKF-REL-006", "name": "Phase 4 follows Phase 3", "status": "PLANNED", "sourceId": "OKF-PHASE-004", "targetId": "OKF-PHASE-003", "type": "depends-on" }
+    { "id": "OKF-REL-003", "name": "desktop uses Project contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P04-CONTRACT-1-1", "type": "depends-on" },
+    { "id": "OKF-REL-004", "name": "CLI uses Project contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P04-CONTRACT-1-1", "type": "depends-on" },
+    { "id": "OKF-REL-005", "name": "service owns Project orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P04-PERSISTENCE", "type": "owns" },
+    { "id": "OKF-REL-006", "name": "Phase 4 follows Phase 3", "status": "VERIFIED", "sourceId": "OKF-PHASE-004", "targetId": "OKF-PHASE-003", "type": "depends-on" },
+    { "id": "OKF-REL-007", "name": "Project foundation satisfies creation", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-PERSISTENCE", "targetId": "FR-PROJECT-001", "type": "satisfies" },
+    { "id": "OKF-REL-008", "name": "Project foundation satisfies reopen", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-PERSISTENCE", "targetId": "FR-PROJECT-002", "type": "satisfies" },
+    { "id": "OKF-REL-009", "name": "SQLite migration satisfies schema evolution", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-SQLITE-2", "targetId": "FR-PROJECT-003", "type": "satisfies" },
+    { "id": "OKF-REL-010", "name": "ZIP container satisfies bounded transfer", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-ZIP-1", "targetId": "FR-PROJECT-004", "type": "satisfies" },
+    { "id": "OKF-REL-011", "name": "Project format evidenced by source", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-FORMAT-1", "targetId": "OKF-EV-P04-FORMAT", "type": "evidenced-by" },
+    { "id": "OKF-REL-012", "name": "SQLite evidenced by lifecycle tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-SQLITE-2", "targetId": "OKF-EV-P04-TESTS", "type": "evidenced-by" },
+    { "id": "OKF-REL-013", "name": "ZIP evidenced by security review", "status": "VERIFIED", "sourceId": "OKF-NODE-P04-ZIP-1", "targetId": "OKF-EV-P04-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-014", "name": "Phase 5 depends on Project foundation", "status": "PLANNED", "sourceId": "OKF-NODE-P05-PROFILE-SCOPE-URL", "targetId": "OKF-NODE-P04-PERSISTENCE", "type": "depends-on" }
   ]
 }

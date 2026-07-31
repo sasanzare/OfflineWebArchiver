@@ -3,7 +3,7 @@
 **Project:** Offline Web Archive Builder  
 **Document status:** Proposed baseline  
 **Owner / decision authority:** Product Owner, except where another owner is named  
-**Current product phase:** Product Phase 3 complete; Product Phase 4 is next  
+**Current product phase:** Product Phase 4 complete; Product Phase 5 is next
 **Last updated:** 2026-07-31
 
 This is the authoritative product-scope and requirements document. Measurement
@@ -14,9 +14,9 @@ in the [Open Decision Register](../project/OPEN_DECISIONS.md).
 
 ## Current production capability boundary
 
-Product Phase 3 establishes npm workspaces, versioned contracts, GUI-independent Archive Core, a local Application Service, secure Electron shell, internal CLI shell, platform/observability adapters, architecture enforcement, and canonical OKF. The only implemented production command is `system.describe`; it returns minimal non-sensitive architecture/runtime facts through either the Desktop or CLI path.
+Product Phases 3–4 establish npm workspaces, versioned contracts, GUI-independent Archive Core, one Application Service, secure Electron/CLI adapters, canonical OKF, portable Project format 1.0.0, SQLite schema/migrations/backups, atomic lifecycle operations, single-writer locking, and bounded secret-free ZIP transfer. Implemented commands are `system.describe` and `project.create/open/close/validate/export/import/info`.
 
-The production repository does **not** yet implement crawling, Project/database persistence, browser automation/rendering, authentication/OTP/session storage, proxies, archive generation/rewriting, offline archive serving, final desktop workflows, release packaging, or target-site validation. Interfaces and planned capability names are not implementation claims. Exact next phase is Product Phase 4 — Portable Project and SQLite Foundation.
+The production repository does **not** yet implement URL normalization, authorization/scope policy, persistent queues, crawling, browser automation/rendering, authentication/OTP/session storage, proxies, captured content, archive rewriting, offline serving, final UX, release packaging, or target-site validation. Interfaces and planned names are not implementation claims. Exact next phase is Product Phase 5 — Profile, Scope, and URL Normalization.
 
 ## Vision and problem
 
@@ -335,11 +335,10 @@ A Project archive succeeds only when:
 
 ### OKF maintainability and governance
 
-[OKF Bootstrap](../../okf-bootstrap/README.md) is the current structured
-knowledge entry point. It complements these authoritative requirements rather
-than replacing them. Canonical `okf/` activation is planned for Product Phase 3
-after the [migration gate](../../okf-bootstrap/MIGRATION_AND_ACTIVATION_PLAN.md)
-passes.
+Canonical [`okf/`](../../okf/README.md) is the current structured knowledge
+entry point. It complements these authoritative requirements rather than
+replacing them. The historical [OKF Bootstrap](../../okf-bootstrap/README.md)
+records the migration and activation path completed in Product Phase 3.
 
 Every Product Phase 2–25 must follow the
 [OKF Phase Evolution Contract](../../okf-bootstrap/PHASE_EVOLUTION_CONTRACT.md).

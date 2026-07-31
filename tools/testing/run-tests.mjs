@@ -8,6 +8,8 @@ const suites = new Set(["all", "unit", "integration", "electron", "cli", "okf"])
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
   ["package:archive-core", ["unit/archive-core.test.js"]],
+  ["package:project-format", ["unit/project-format.test.js"]],
+  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js"]],
   ["package:observability", ["unit/observability.test.js"]],
   ["package:platform", ["unit/platform.test.js"]],
   ["package:application-service", ["integration/application-service.test.js"]],

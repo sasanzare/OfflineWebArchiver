@@ -78,6 +78,42 @@ These criteria cover only the production architecture foundation and `system.des
 | AC-P03-023 | NFR-MAINT-001 | Production ADR coverage | `npm run docs:validate` | ADR-001..008 exist with required impacts, evidence, phase, and traceability sections | ADR set and output | High | passed |
 | AC-P03-024 | NFR-KNOW-003 | Spike promotion review | Inspect `SPIKE_PROMOTION_REVIEW.md` and dependency checks | Every spike category has disposition; historical tree intact; zero production dependency | Review and architecture output | Critical | passed |
 
+## Product Phase 4 Project and persistence gate
+
+These executable criteria cover only local Project format/persistence/lifecycle transfer. They do not pass Profile/scope, queue, crawl, browser, auth, proxy, rewrite, runtime, release, or target-site criteria.
+
+| Acceptance ID | Requirement ID | Capability | Verification | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P04-001 | FR-PROJECT-001 | Strict manifest | Format unit/tool validation | Format 1.0.0, UUID/UTC/version/feature fields validate; unknowns fail | Project Format source/tests | Critical | passed |
+| AC-P04-002 | FR-PROJECT-001 | Deterministic serialization | Repeat serialize/parse | Identical two-space UTF-8 JSON plus LF; no host path/secret | Unit output | High | passed |
+| AC-P04-003 | FR-PROJECT-001 | Portable paths | Cross-platform adversarial corpus | Traversal, absolute, drive, UNC, backslash, reserved, alias, non-NFC reject | Unit/tool output | Critical | passed |
+| AC-P04-004 | FR-PROJECT-001 | Stable identities | Create/open/export/import/move integration | Project/Revision/Run UUIDs remain identical | Lifecycle test | Critical | passed |
+| AC-P04-005 | FR-PROJECT-002 | SQLite adapter | Node and real Electron lifecycle | Built-in SQLite works in CLI and embedded Electron without addon | CLI/Electron smoke | Critical | passed |
+| AC-P04-006 | FR-PROJECT-003 | SQLite security pragmas | Source/schema integration | Foreign keys, WAL, FULL sync, busy timeout, trusted schema off, extensions off | Persistence source/tests | Critical | passed |
+| AC-P04-007 | FR-PROJECT-003 | Phase-bounded schema | Migration validator/table inspection | Exactly five Phase 4 tables; no future queue/content/auth/proxy tables | Migration output | Critical | passed |
+| AC-P04-008 | FR-PROJECT-002 | Identity consistency | Manifest/metadata mismatch fixture | Structured invalid report; no mutation | Integration output | Critical | passed |
+| AC-P04-009 | FR-PROJECT-003 | Immutable migration definitions | Order/duplicate/checksum tests | Stable contiguous IDs/checksums; altered definition/history fails | Unit/tool output | Critical | passed |
+| AC-P04-010 | FR-PROJECT-003 | Transaction rollback | Inject failure during second migration | New table/history insertion roll back together | Unit output | Critical | passed |
+| AC-P04-011 | FR-PROJECT-003 | Pre-migration backup | Open real schema-1 Project | SQLite backup and checksum metadata exist before upgrade | Integration output | Critical | passed |
+| AC-P04-012 | FR-PROJECT-003 | Forward upgrade | Schema-1 open/close/revalidate | Migrates once to schema 2, data/identity preserved | Integration output | Critical | passed |
+| AC-P04-013 | FR-PROJECT-003 | Unsupported/corrupt database | Checksum/integrity/version fixtures | Fail closed with categorized issue and no downgrade/repair | Integration output | Critical | passed |
+| AC-P04-014 | FR-PROJECT-001 | Atomic file replacement | Non-overwrite/replacement/temp test | Prior content preserved on refusal; no temp sibling remains | Unit output | Critical | passed |
+| AC-P04-015 | FR-PROJECT-001 | Atomic directory promotion | Create/import failures and success | Final directory appears only after full validation; no overwrite | Lifecycle output | Critical | passed |
+| AC-P04-016 | FR-PROJECT-004 | Portable ZIP export | Export and inspect inventory | Manifest, SQLite snapshot, approved files/checksums present | Lifecycle output | Critical | passed |
+| AC-P04-017 | FR-PROJECT-004 | Secret/transient exclusions | Add logs/temp and migration backup, export | Logs/temp/locks/WAL/SHM/backups/auth/proxy excluded | Archive inventory assertion | Critical | passed |
+| AC-P04-018 | FR-PROJECT-004 | Safe import | Round-trip archive into absent destination | Checksums/identity/database validate before promotion | Lifecycle output | Critical | passed |
+| AC-P04-019 | FR-PROJECT-004 | Hostile archive defense | Traversal/alias/corrupt parser corpus | Unsafe/special/duplicate/ambiguous/corrupt archive rejected | Unit output | Critical | passed |
+| AC-P04-020 | FR-PROJECT-004 | Resource limits | Oversized entry/expanded/ratio fixtures | Stable limit error before unsafe extraction; failed import leaves no final | Unit/integration output | Critical | passed |
+| AC-P04-021 | FR-PROJECT-002 | Single writer | Two adapters open one Project | Second writer gets stable lock conflict | Integration output | Critical | passed |
+| AC-P04-022 | FR-PROJECT-002 | Stale lock policy | Active and provably dead same-host PID fixtures | Active refuses; owned stale lock recovers; release checks ownership | Unit output | High | passed |
+| AC-P04-023 | NFR-MAINT-001 | Project contracts | Contract tool/unit tests | Eight strict commands/results/errors/events at 1.1.0 validate | Contract output | Critical | passed |
+| AC-P04-024 | FR-CLI-001 | CLI Project workflows | Built-process all-operation smoke | create/open/validate/info/export/import human/JSON/exits operate through service | CLI smoke | Critical | passed |
+| AC-P04-025 | NFR-SEC-003 | Desktop Project workflows | Real Electron lifecycle smoke | Sandboxed renderer completes all Project operations via authorized path grants | Electron smoke | Critical | passed |
+| AC-P04-026 | NFR-MAINT-001 | Architecture boundaries | Architecture validator | Core/format purity, adapter ownership, no app direct persistence, no cycles | Architecture output | Critical | passed |
+| AC-P04-027 | NFR-TEST-001 | Comprehensive Phase 4 suite | `npm test` and semantic gates | All unit/integration/CLI/Electron/OKF tests pass with no skip | Test output | Critical | passed |
+| AC-P04-028 | NFR-KNOW-003 | Docs/ADR/security synchronization | Docs validator and review | Required architecture docs, ADR-009..014, report/security review agree | Documentation output | High | passed |
+| AC-P04-029 | NFR-KNOW-001 | Canonical OKF synchronization | OKF validator | Phase 4 record/change/domains/nodes/evidence/relations/decisions/risks valid | OKF output | Critical | passed |
+
 ## Project, policy, and persistence
 
 | Acceptance ID | Requirement ID | Feature or capability | Scenario | Preconditions | Test procedure | Expected result | Evidence or artifact | Planned implementation phase | Planned validation phase | Priority | Status | Decision owner | Notes |
