@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import test from "node:test";
 
@@ -15,7 +16,7 @@ function run(arguments_: readonly string[]) {
   });
 }
 
-test("built CLI executes Project, Profile, Scope, and persistent Queue operations", () => {
+test("built CLI executes Project, Profile, Scope, Queue, and Recovery operations", () => {
   const root = mkdtempSync(path.join(tmpdir(), "owa-cli-"));
   const project = path.join(root, "project");
   const archive = path.join(root, "project.zip");
@@ -24,10 +25,10 @@ test("built CLI executes Project, Profile, Scope, and persistent Queue operation
     const help = run(["--help"]);
     assert.equal(help.status, 0);
     assert.match(help.stdout, /project create/);
-    assert.equal(run(["--version"]).stdout.trim(), "0.6.0");
+    assert.equal(run(["--version"]).stdout.trim(), "0.7.0");
     const describe = run(["system", "describe", "--json"]);
     assert.equal(describe.status, 0, describe.stderr);
-    assert.equal(JSON.parse(describe.stdout).result.coreStatus, "queue-foundation-ready");
+    assert.equal(JSON.parse(describe.stdout).result.coreStatus, "recovery-foundation-ready");
     const create = run(["project", "create", project, "--name", "CLI Project", "--slug", "cli-project", "--json"]);
     assert.equal(create.status, 0, create.stderr);
     const createdProject = JSON.parse(create.stdout).result.project;
@@ -66,7 +67,11 @@ test("built CLI executes Project, Profile, Scope, and persistent Queue operation
     const claim = run(["queue", "claim-next", project, "--run", runId, "--claimed-by", "cli-smoke", "--idempotency-key", "cli-claim-001", "--json"]);
     assert.equal(claim.status, 0, claim.stderr);
     const claimed = JSON.parse(claim.stdout).result.job;
-    const complete = run(["queue", "complete", project, claimed.jobId, "--run", runId, "--claim-token", claimed.claimToken, "--completion-key", "cli-complete-001", "--idempotency-key", "cli-complete-operation-001", "--json"]);
+    assert.equal(claimed.claimToken, "[redacted]");
+    let database = new DatabaseSync(path.join(project, "database", "crawl.db"), { readOnly: true });
+    const claimedOwner = database.prepare("SELECT claim_token, fencing_generation FROM page_jobs WHERE job_id = ?").get(claimed.jobId) as { claim_token: string; fencing_generation: number };
+    database.close();
+    const complete = run(["queue", "complete", project, claimed.jobId, "--run", runId, "--claim-token", claimedOwner.claim_token, "--owner", "cli-smoke", "--generation", String(claimedOwner.fencing_generation), "--completion-key", "cli-complete-001", "--idempotency-key", "cli-complete-operation-001", "--json"]);
     assert.equal(complete.status, 0, complete.stderr);
     assert.equal(JSON.parse(complete.stdout).result.job.state, "completed");
     const stats = run(["queue", "stats", project, "--run", runId, "--json"]);
@@ -80,7 +85,11 @@ test("built CLI executes Project, Profile, Scope, and persistent Queue operation
     const retryClaimResult = run(["queue", "claim-next", project, "--run", runId, "--claimed-by", "cli-smoke", "--idempotency-key", "cli-claim-retry", "--json"]);
     assert.equal(retryClaimResult.status, 0, retryClaimResult.stderr);
     const retryClaim = JSON.parse(retryClaimResult.stdout).result.job;
-    const fail = run(["queue", "fail", project, retryClaim.jobId, "--run", runId, "--claim-token", retryClaim.claimToken, "--failure-key", "cli-failure-001", "--failure-code", "CLI_TEST_RETRY", "--failure-category", "platform", "--message", "controlled-cli-test", "--retryable", "--next-eligible-at", "2026-07-31T12:10:00.000Z", "--idempotency-key", "cli-fail-operation", "--json"]);
+    assert.equal(retryClaim.claimToken, "[redacted]");
+    database = new DatabaseSync(path.join(project, "database", "crawl.db"), { readOnly: true });
+    const retryOwner = database.prepare("SELECT claim_token, fencing_generation FROM page_jobs WHERE job_id = ?").get(retryClaim.jobId) as { claim_token: string; fencing_generation: number };
+    database.close();
+    const fail = run(["queue", "fail", project, retryClaim.jobId, "--run", runId, "--claim-token", retryOwner.claim_token, "--owner", "cli-smoke", "--generation", String(retryOwner.fencing_generation), "--failure-key", "cli-failure-001", "--failure-code", "CLI_TEST_RETRY", "--failure-category", "platform", "--message", "controlled-cli-test", "--retryable", "--next-eligible-at", "2026-07-31T12:10:00.000Z", "--idempotency-key", "cli-fail-operation", "--json"]);
     assert.equal(fail.status, 0, fail.stderr);
     assert.equal(JSON.parse(fail.stdout).result.job.state, "retrying");
     const retry = run(["queue", "retry", project, retryClaim.jobId, "--run", runId, "--next-eligible-at", "2026-07-31T12:20:00.000Z", "--reason", "CLI_TEST_DELAY", "--idempotency-key", "cli-retry-operation", "--json"]);
@@ -91,6 +100,26 @@ test("built CLI executes Project, Profile, Scope, and persistent Queue operation
     const humanStats = run(["queue", "stats", project, "--run", runId]);
     assert.equal(humanStats.status, 0, humanStats.stderr);
     assert.match(humanStats.stdout, /Queue Jobs:/);
+    const evaluationTime = new Date().toISOString();
+    const recoveryInspect = run(["recovery", "inspect", project, "--run", runId, "--at", evaluationTime, "--limit", "25", "--json"]);
+    assert.equal(recoveryInspect.status, 0, recoveryInspect.stderr);
+    assert.equal(JSON.parse(recoveryInspect.stdout).result.report.dryRun, true);
+    const recoveryApply = run(["recovery", "recover", project, "--run", runId, "--at", evaluationTime, "--limit", "25", "--confirm", "APPLY-RECOVERY", "--idempotency-key", "cli-recovery-apply", "--json"]);
+    assert.equal(recoveryApply.status, 0, recoveryApply.stderr);
+    const recoveryOperationId = JSON.parse(recoveryApply.stdout).result.report.recoveryOperationId;
+    assert.equal(run(["recovery", "report", project, recoveryOperationId, "--run", runId, "--json"]).status, 0);
+    const runPause = run(["run", "pause", project, "--run", runId, "--json"]);
+    assert.equal(runPause.status, 0, runPause.stderr);
+    assert.equal(JSON.parse(runPause.stdout).result.run.controlState, "paused");
+    assert.equal(run(["run", "state", project, "--run", runId, "--json"]).status, 0);
+    assert.equal(run(["run", "resume", project, "--run", runId, "--json"]).status, 0);
+    const leases = run(["lease", "list", project, "--run", runId, "--limit", "20", "--json"]);
+    assert.equal(leases.status, 0, leases.stderr);
+    assert.equal(leases.stdout.includes("claimToken"), false);
+    assert.equal(leases.stdout.includes("leaseToken"), false);
+    assert.equal(run(["lease", "show", project, claimed.jobId, "--run", runId, "--json"]).status, 0);
+    assert.equal(run(["checkpoint", "list", project, claimed.jobId, "--run", runId, "--limit", "20", "--json"]).status, 0);
+    assert.equal(run(["checkpoint", "show", project, claimed.jobId, "--run", runId, "--json"]).status, 0);
     const invalidFilter = run(["queue", "list", project, "--run", runId, "--state", "leased", "--limit", "10"]);
     assert.equal(invalidFilter.status, 3);
     const open = run(["project", "open", project, "--json"]);

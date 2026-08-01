@@ -1,6 +1,6 @@
 {
   "name": "@offline-web-archive/cli",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -17,9 +17,9 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:cli" },
   "dependencies": {
-    "@offline-web-archive/application-service": "0.6.0",
-    "@offline-web-archive/contracts": "0.6.0",
-    "@offline-web-archive/observability": "0.6.0",
-    "@offline-web-archive/platform": "0.6.0"
+    "@offline-web-archive/application-service": "0.7.0",
+    "@offline-web-archive/contracts": "0.7.0",
+    "@offline-web-archive/observability": "0.7.0",
+    "@offline-web-archive/platform": "0.7.0"
   }
 }

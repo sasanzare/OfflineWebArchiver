@@ -36,6 +36,19 @@
     { "id": "OKF-REL-033", "name": "Application Service owns Queue orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P06-QUEUE", "type": "owns" },
     { "id": "OKF-REL-034", "name": "Desktop uses Queue contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P06-CONTRACT-1-3", "type": "depends-on" },
     { "id": "OKF-REL-035", "name": "CLI uses Queue contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P06-CONTRACT-1-3", "type": "depends-on" },
-    { "id": "OKF-REL-036", "name": "Product Phase 7 recovery depends on Phase 6 queue", "status": "PLANNED", "sourceId": "OKF-NODE-P07-RECOVERY", "targetId": "OKF-NODE-P06-QUEUE", "type": "depends-on" }
+    { "id": "OKF-REL-036", "name": "Product Phase 7 recovery depends on Phase 6 queue", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-RECOVERY", "targetId": "OKF-NODE-P06-QUEUE", "type": "depends-on" },
+    { "id": "OKF-REL-037", "name": "Recovery satisfies recoverable Runs", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-RECOVERY", "targetId": "FR-RECOVERY-001", "type": "satisfies" },
+    { "id": "OKF-REL-038", "name": "Leases evidence concurrency", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-LEASES", "targetId": "OKF-EV-P07-CONCURRENCY", "type": "evidenced-by" },
+    { "id": "OKF-REL-039", "name": "Recovery evidence process termination", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-RECOVERY", "targetId": "OKF-EV-P07-PROCESS-KILL", "type": "evidenced-by" },
+    { "id": "OKF-REL-040", "name": "Checkpoints evidence lifecycle", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-CHECKPOINTS", "targetId": "OKF-EV-P07-LIFECYCLE", "type": "evidenced-by" },
+    { "id": "OKF-REL-041", "name": "Run control depends on Checkpoints", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-RUN-CONTROL", "targetId": "OKF-NODE-P07-CHECKPOINTS", "type": "depends-on" },
+    { "id": "OKF-REL-042", "name": "Output integrity evidence Range fixture", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-OUTPUT", "targetId": "OKF-EV-P07-RANGE", "type": "evidenced-by" },
+    { "id": "OKF-REL-043", "name": "SQLite schema 5 implements recovery", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-SQLITE-5", "targetId": "OKF-NODE-P07-RECOVERY", "type": "implements" },
+    { "id": "OKF-REL-044", "name": "Contract exposes recovery", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-CONTRACT-1-4", "targetId": "OKF-NODE-P07-RECOVERY", "type": "exposes" },
+    { "id": "OKF-REL-045", "name": "Interfaces depend on recovery contract", "status": "VERIFIED", "sourceId": "OKF-NODE-P07-INTERFACES", "targetId": "OKF-NODE-P07-CONTRACT-1-4", "type": "depends-on" },
+    { "id": "OKF-REL-046", "name": "Application Service owns recovery orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P07-RECOVERY", "type": "owns" },
+    { "id": "OKF-REL-047", "name": "Desktop uses recovery contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P07-CONTRACT-1-4", "type": "depends-on" },
+    { "id": "OKF-REL-048", "name": "CLI uses recovery contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P07-CONTRACT-1-4", "type": "depends-on" },
+    { "id": "OKF-REL-049", "name": "Phase 7 evidenced by canonical record", "status": "VERIFIED", "sourceId": "OKF-PHASE-007", "targetId": "OKF-EV-P07-RECORD", "type": "evidenced-by" }
   ]
 }

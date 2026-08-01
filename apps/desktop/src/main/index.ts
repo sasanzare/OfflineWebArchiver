@@ -131,7 +131,7 @@ interface SmokeResponse {
     report?: { valid?: boolean };
     import?: { project?: { projectId?: string } };
     enqueue?: { outcome?: string; job?: { jobId?: string; claimToken?: string | null; state?: string } | null };
-    job?: { jobId?: string; claimToken?: string | null; state?: string } | null;
+    job?: { jobId?: string; claimToken?: string | null; state?: string; fencingGeneration?: number } | null;
     jobs?: readonly { jobId?: string; state?: string }[];
     statistics?: { total?: number; pending?: number; completed?: number; failed?: number };
     history?: { transitions?: readonly unknown[]; discoveries?: readonly unknown[] };
@@ -150,9 +150,9 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   [projectPath, archivePath, importedPath].forEach((value) => approvedPaths.add(path.resolve(value)));
   const invoke = async (commandType: string, payload: Record<string, unknown>): Promise<SmokeResponse> => {
     const commandId = `smoke-${randomUUID()}`;
-    const queueMutation = ["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending"].includes(commandType);
+    const queueMutation = ["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume"].includes(commandType);
     return window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
-      contractVersion: "1.3.0",
+      contractVersion: "1.4.0",
       commandId,
       commandType,
       correlationId: `smoke-${randomUUID()}`,
@@ -170,6 +170,9 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
   const queueFields = await window.webContents.executeJavaScript(`[
     "queue-url", "queue-state-filter", "queue-page-size", "queue-summary", "queue-list", "queue-detail"
+  ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
+  const recoveryFields = await window.webContents.executeJavaScript(`[
+    "recovery-limit", "recovery-summary", "recovery-report", "checkpoint-history"
   ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
   const invalidVersion = await window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
     contractVersion: "2.0.0",
@@ -214,7 +217,13 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const queueJobId = queueEnqueue.result?.enqueue?.job?.jobId;
   const queueGet = await invoke("queue.get", { projectPath, runId, jobId: queueJobId });
   const queueClaim = await invoke("queue.claimNext", { projectPath, runId, claimedBy: "desktop-smoke", idempotencyKey: "desktop-smoke-claim" });
-  const queueComplete = await invoke("queue.complete", { projectPath, runId, jobId: queueClaim.result?.job?.jobId, claimToken: queueClaim.result?.job?.claimToken, completionKey: "desktop-smoke-complete", resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: new Date().toISOString(), idempotencyKey: "desktop-smoke-complete-operation" });
+  const queueComplete = await invoke("queue.complete", { projectPath, runId, jobId: queueClaim.result?.job?.jobId, claimToken: queueClaim.result?.job?.claimToken, ownerId: "desktop-smoke", fencingGeneration: queueClaim.result?.job?.fencingGeneration, completionKey: "desktop-smoke-complete", resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: new Date().toISOString(), idempotencyKey: "desktop-smoke-complete-operation" });
+  const recoveryInspect = await invoke("recovery.inspect", { projectPath, runId, evaluationTime: new Date().toISOString(), limit: 25 });
+  const recoveryApply = await invoke("recovery.recover", { projectPath, runId, evaluationTime: new Date().toISOString(), limit: 25, confirmation: "APPLY-RECOVERY", idempotencyKey: "desktop-smoke-recovery" });
+  const runPause = await invoke("run.requestPause", { projectPath, runId });
+  const runState = await invoke("run.getControlState", { projectPath, runId });
+  const runResume = await invoke("run.resume", { projectPath, runId });
+  const checkpointHistory = await invoke("checkpoint.list", { projectPath, runId, jobId: queueJobId, limit: 25 });
   const queueHistory = await invoke("queue.getHistory", { projectPath, runId, jobId: queueJobId });
   const queueCompletedFilter = await invoke("queue.list", { projectPath, runId, state: "completed", limit: 25 });
   const info = await invoke("project.info", { projectPath });
@@ -223,14 +232,14 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const imported = await invoke("project.import", { archivePath, destinationPath: importedPath });
   const importedValidation = await invoke("project.validate", { projectPath: importedPath });
   const projectId = created.result?.project?.projectId;
-  const passed = [created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation]
+  const passed = [created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation]
     .every((response) => response.status === "success") &&
     validated.result?.report?.valid === true && importedValidation.result?.report?.valid === true &&
     imported.result?.import?.project?.projectId === projectId &&
-    profileEditorFields.every(Boolean) && queueFields.every(Boolean) &&
+    profileEditorFields.every(Boolean) && queueFields.every(Boolean) && recoveryFields.every(Boolean) &&
     queueEnqueue.result?.enqueue?.outcome === "created" && queueDuplicate.result?.enqueue?.outcome === "existing" &&
     queueStatisticsBefore.result?.statistics?.total === 1 && queueListBefore.result?.jobs?.length === 1 &&
-    queueGet.result?.job?.jobId === queueJobId && queueComplete.result?.job?.state === "completed" &&
+    queueGet.result?.job?.jobId === queueJobId && queueComplete.result?.job?.state === "completed" && runResume.status === "success" &&
     (queueHistory.result?.history?.transitions?.length ?? 0) >= 3 && queueCompletedFilter.result?.jobs?.length === 1 &&
     invalidVersion.status === "error" && invalidVersion.error?.code === "CONTRACT_UNSUPPORTED_VERSION";
   const report = {
@@ -239,8 +248,9 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
     rendererBoundary,
     profileEditorFields,
     queueFields,
+    recoveryFields,
     invalidVersion,
-    operations: { created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation },
+    operations: { created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation },
     security: MAIN_WINDOW_SECURITY,
     restrictions: { senderValidation: true, approvedPathGrants: true, navigation: true, windowCreation: true, permissions: true, downloads: true, webviews: true, remoteContent: false },
   };

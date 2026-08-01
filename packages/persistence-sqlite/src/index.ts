@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import { backup, DatabaseSync } from "node:sqlite";
 import { lstat, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { hostname } from "node:os";
 import {
   ProjectOperationError,
   QueueOperationError,
+  RecoveryOperationError,
   type ProjectCompatibility,
   type ProjectOperationErrorCode,
   type ProjectStoragePort,
@@ -12,6 +14,7 @@ import {
   type ProjectValidationIssue,
   type ProjectValidationReport,
   type QueueRepositoryPort,
+  type RecoveryRepositoryPort,
 } from "@offline-web-archive/archive-core";
 import {
   normalizeSiteProfileDraft,
@@ -48,6 +51,7 @@ import {
 } from "./archive.js";
 import { acquireProjectLock, type ProjectLock } from "./locking.js";
 import { createSqliteQueueRepository } from "./queue.js";
+import { createSqliteRecoveryRepository } from "./recovery.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -61,6 +65,7 @@ export { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists }
 export { DEFAULT_ARCHIVE_LIMITS, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
 export { acquireProjectLock } from "./locking.js";
 export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
+export { createSqliteRecoveryRepository, type RecoveryFaultPoint, type SqliteRecoveryRepositoryOptions } from "./recovery.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -88,9 +93,10 @@ interface CurrentProject {
   database: DatabaseSync;
   lock: ProjectLock;
   summary: ProjectSummary;
+  sessionId: string;
 }
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -154,7 +160,38 @@ function summaryFromManifest(
     lastOpenedAt: manifest.project.lastOpenedAt,
     state: manifest.lifecycle.state,
     migrationStatus,
+    recoveryStatus: "clean",
+    recoverySummary: { processingJobs: 0, activeLeases: 0, expiredLeases: 0, abandonedJobs: 0, outputIssues: 0, uncleanSessions: 0 },
   };
+}
+
+function inspectProjectRecovery(database: DatabaseSync, projectId: string, runId: string, evaluationTime: string): Pick<ProjectSummary, "recoveryStatus" | "recoverySummary"> {
+  const row = database.prepare(`
+    SELECT
+      SUM(CASE WHEN pj.state = 'processing' AND pj.recovery_state IS NULL THEN 1 ELSE 0 END) AS processing_jobs,
+      SUM(CASE WHEN pj.state = 'processing' AND pj.recovery_state IS NULL AND jl.lease_id IS NULL THEN 1 ELSE 0 END) AS abandoned_jobs,
+      (SELECT COUNT(*) FROM job_leases WHERE project_id = ? AND run_id = ? AND status = 'active' AND expires_at > ?) AS active_leases,
+      (SELECT COUNT(*) FROM job_leases WHERE project_id = ? AND run_id = ? AND status = 'active' AND expires_at <= ?) AS expired_leases,
+      (SELECT COUNT(*) FROM completed_outputs co JOIN page_jobs completed_job ON completed_job.job_id = co.job_id WHERE completed_job.project_id = ? AND completed_job.run_id = ? AND co.verification_status <> 'valid') AS output_issues,
+      (SELECT COUNT(*) FROM execution_sessions WHERE project_id = ? AND run_id = ? AND close_kind = 'unclean-detected') AS unclean_sessions
+    FROM page_jobs pj
+    LEFT JOIN job_leases jl ON jl.job_id = pj.job_id AND jl.status = 'active'
+    WHERE pj.project_id = ? AND pj.run_id = ?
+  `).get(projectId, runId, evaluationTime, projectId, runId, evaluationTime, projectId, runId, projectId, runId, projectId, runId) as Record<string, number | null>;
+  const recoverySummary = {
+    processingJobs: Number(row["processing_jobs"] ?? 0),
+    activeLeases: Number(row["active_leases"] ?? 0),
+    expiredLeases: Number(row["expired_leases"] ?? 0),
+    abandonedJobs: Number(row["abandoned_jobs"] ?? 0),
+    outputIssues: Number(row["output_issues"] ?? 0),
+    uncleanSessions: Number(row["unclean_sessions"] ?? 0),
+  };
+  const recoveryStatus: ProjectSummary["recoveryStatus"] = recoverySummary.expiredLeases > 0 || recoverySummary.abandonedJobs > 0
+    ? "recovery-required"
+    : recoverySummary.uncleanSessions > 0 || recoverySummary.outputIssues > 0 || recoverySummary.processingJobs > 0
+      ? "recovery-available"
+      : "clean";
+  return { recoveryStatus, recoverySummary };
 }
 
 function validationFailure(report: ProjectValidationReport): ProjectOperationError {
@@ -467,6 +504,15 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
     });
   };
 
+  const recoveryForCurrent = (): RecoveryRepositoryPort => {
+    if (current === null) throw new RecoveryOperationError("RECOVERY_INPUT_INVALID", "Open the selected Project before using recovery operations");
+    return createSqliteRecoveryRepository(current.database, {
+      now,
+      id,
+      onEvent: (eventName, metadata) => log(eventName, current!.manifest.project.id, metadata),
+    });
+  };
+
   const readCurrentProfile = async (active: CurrentProject): Promise<SiteProfile> => {
     const profilePath = path.join(active.root, "profile", "config.json");
     try {
@@ -612,6 +658,10 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
             INSERT INTO runs (run_id, project_id, revision_id, sequence, created_at, status)
             VALUES (?, ?, ?, 1, ?, 'initialized')
           `).run(manifest.current.runId, manifest.project.id, manifest.current.revisionId, timestamp);
+          database.prepare(`
+            INSERT INTO run_control (project_id, run_id, control_state, updated_at, operation_id)
+            VALUES (?, ?, 'active', ?, 'project-create')
+          `).run(manifest.project.id, manifest.current.runId, timestamp);
           recordEvent(database, id, manifest.project.id, "project.created", timestamp, { schemaVersion: CURRENT_SCHEMA_VERSION });
           database.exec("COMMIT");
           database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
@@ -675,9 +725,16 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
         recordEvent(database, id, originalManifest.project.id, "project.opened", timestamp, { migrated: migrationStatus === "migrated" });
         const manifest = updateManifestForOpen(originalManifest, timestamp, CURRENT_SCHEMA_VERSION);
         await atomicWriteFile(path.join(root, PROJECT_MANIFEST_FILE), serializeProjectManifest(manifest), { overwrite: true });
-        const summary = summaryFromManifest(root, manifest, migrationStatus);
-        current = { root, manifest, database, lock, summary };
-        log("project.opened", manifest.project.id, { migrationStatus, schemaVersion: CURRENT_SCHEMA_VERSION });
+        const sessionId = await createSqliteRecoveryRepository(database, { now, id }).beginExecutionSession({
+          projectId: manifest.project.id,
+          runId: manifest.current.runId,
+          processId: process.pid,
+          hostId: hostname(),
+        });
+        const recovery = inspectProjectRecovery(database, manifest.project.id, manifest.current.runId, timestamp);
+        const summary = { ...summaryFromManifest(root, manifest, migrationStatus), ...recovery, state: "ready" as const };
+        current = { root, manifest, database, lock, summary, sessionId };
+        log("project.opened", manifest.project.id, { migrationStatus, schemaVersion: CURRENT_SCHEMA_VERSION, recoveryStatus: recovery.recoveryStatus, ...recovery.recoverySummary });
         return summary;
       } catch (error) {
         if (database?.isOpen) database.close();
@@ -695,8 +752,14 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
         ...active.manifest,
         lifecycle: { state: "closed", lastValidatedAt: timestamp },
       });
+      const recovery = inspectProjectRecovery(active.database, active.manifest.project.id, active.manifest.current.runId, timestamp);
       let closeError: unknown;
       try {
+        await createSqliteRecoveryRepository(active.database, { now, id }).endExecutionSession({
+          projectId: active.manifest.project.id,
+          runId: active.manifest.current.runId,
+          sessionId: active.sessionId,
+        });
         recordEvent(active.database, id, manifest.project.id, "project.closed", timestamp);
         active.database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
         await atomicWriteFile(path.join(active.root, PROJECT_MANIFEST_FILE), serializeProjectManifest(manifest), { overwrite: true });
@@ -711,7 +774,7 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
         }
       }
       if (closeError !== undefined) throw closeError;
-      const summary = { ...summaryFromManifest(active.root, manifest, active.summary.migrationStatus), state: "closed" as const };
+      const summary = { ...summaryFromManifest(active.root, manifest, active.summary.migrationStatus), ...recovery, state: "closed" as const };
       log("project.closed", manifest.project.id);
       return summary;
     },
@@ -938,6 +1001,98 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async clearPending(input) {
       return queueForCurrent().clearPending(input);
+    },
+
+    async claimNextWithLease(input) {
+      return recoveryForCurrent().claimNextWithLease(input);
+    },
+
+    async heartbeatLease(input) {
+      return recoveryForCurrent().heartbeatLease(input);
+    },
+
+    async renewLease(input) {
+      return recoveryForCurrent().renewLease(input);
+    },
+
+    async releaseLease(input) {
+      return recoveryForCurrent().releaseLease(input);
+    },
+
+    async listLeases(input) {
+      return recoveryForCurrent().listLeases(input);
+    },
+
+    async getLease(input) {
+      return recoveryForCurrent().getLease(input);
+    },
+
+    async saveJobCheckpoint(input) {
+      return recoveryForCurrent().saveJobCheckpoint(input);
+    },
+
+    async getLatestJobCheckpoint(input) {
+      return recoveryForCurrent().getLatestJobCheckpoint(input);
+    },
+
+    async listJobCheckpoints(input) {
+      return recoveryForCurrent().listJobCheckpoints(input);
+    },
+
+    async saveArtifactCheckpoint(input) {
+      return recoveryForCurrent().saveArtifactCheckpoint(input);
+    },
+
+    async validateArtifactCheckpoint(input) {
+      return recoveryForCurrent().validateArtifactCheckpoint(input);
+    },
+
+    async saveCompletedOutputs(input) {
+      return recoveryForCurrent().saveCompletedOutputs(input);
+    },
+
+    async inspectRecovery(input) {
+      return recoveryForCurrent().inspectRecovery(input);
+    },
+
+    async recover(input) {
+      return recoveryForCurrent().recover(input);
+    },
+
+    async getRecoveryReport(input) {
+      return recoveryForCurrent().getRecoveryReport(input);
+    },
+
+    async requestPause(input) {
+      return recoveryForCurrent().requestPause(input);
+    },
+
+    async getPauseStatus(input) {
+      return recoveryForCurrent().getPauseStatus(input);
+    },
+
+    async acknowledgePause(input) {
+      return recoveryForCurrent().acknowledgePause(input);
+    },
+
+    async resumeRun(input) {
+      return recoveryForCurrent().resumeRun(input);
+    },
+
+    async getRunControlState(input) {
+      return recoveryForCurrent().getRunControlState(input);
+    },
+
+    async verifyCompletedOutput(input) {
+      return recoveryForCurrent().verifyCompletedOutput(input);
+    },
+
+    async beginExecutionSession(input) {
+      return recoveryForCurrent().beginExecutionSession(input);
+    },
+
+    async endExecutionSession(input) {
+      return recoveryForCurrent().endExecutionSession(input);
     },
 
     async getCompatibility(projectPath) {

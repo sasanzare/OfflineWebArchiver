@@ -10,6 +10,7 @@
     { "path": "../observability" },
     { "path": "../project-format" },
     { "path": "../queue" },
+    { "path": "../recovery" },
     { "path": "../scope-engine" }
   ]
 }

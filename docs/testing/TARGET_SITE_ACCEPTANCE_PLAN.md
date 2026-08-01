@@ -1,5 +1,9 @@
 # Target-Site Acceptance Plan
 
+## Phase 7 boundary
+
+Recovery evidence is deterministic and local; it does not establish target-site coverage. Product Phase 8 browser rendering and Phase 9 Asset downloading remain planned. Future target runs must reuse Lease/Fencing/Checkpoint/Recovery semantics and cannot reinterpret synthetic completed Jobs as archived pages.
+
 **Document status:** Proposed template; blocked on target-specific approvals  
 **Owner / decision authority:** [TARGET_SITE_OWNER] with QA Lead and Security Owner  
 **Expected scale:** approximately 600 pages; replace with `[EXPECTED_PAGE_COUNT]`  

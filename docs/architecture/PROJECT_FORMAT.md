@@ -1,5 +1,9 @@
 # Project Format
 
+## Product Phase 7 compatibility
+
+Project format remains `1.1.0`; minimum application compatibility becomes `0.7.0`; SQLite schema becomes `5`. New durable values stay in SQLite and all artifact/output references remain portable relative paths. Lease Tokens, host absolute paths, and runtime process IDs are not portable Project content.
+
 Current Project format is `1.1.0`. It remains backwards-readable with `1.0.0`; implemented feature states are `scopePolicy` and `crawlQueue`. `profile/config.json` is an approved portable/exported root created only by `profile.create`; Queue state resides in `database/crawl.db`; auth/proxy secret roots remain excluded.
 
 Product Phase 4 established format `1.0.0`; Product Phase 5 extends it compatibly to `1.1.0`. Runtime authority is `ProjectManifestSchema` in `packages/project-format/src/index.ts`; the JSON Schema is the review/interchange projection. Both must change together.
@@ -30,4 +34,4 @@ The strict manifest records format/application versions, Project/Revision/Run UU
 
 All internal paths are Project-relative and follow [Portable Path Rules](PORTABLE_PATH_RULES.md). Local command/response paths are transport state and never persisted in the manifest.
 
-Compatibility policy accepts formats `1.0.0` and `1.1.0` in this build. Supported database schemas migrate forward through schema 4; schema 0, unknown histories, and newer schemas are rejected. Opening an older manifest may add the implemented `crawlQueue` feature after migration. There is no best-effort downgrade.
+Compatibility policy accepts formats `1.0.0` and `1.1.0` in this build. Supported database schemas migrate forward through schema 5; schema 0, unknown histories, and newer schemas are rejected. Opening an older manifest may add implemented Queue/recovery-compatible features after migration. There is no best-effort downgrade.

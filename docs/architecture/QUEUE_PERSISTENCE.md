@@ -1,5 +1,9 @@
 # Queue Persistence
 
+## Schema 5 recovery state
+
+Queue persistence now joins Page Jobs/attempts/transitions to Job Leases, Checkpoints, recovery events, and output descriptors. Logical recovery state/counts are mapped without rewriting historical migrations. Recovery rows are append/audit oriented; retention remains an open measured decision.
+
 SQLite schema `4` is introduced by forward-only migration `004_add_persistent_page_queue`; migrations 001–003 are unchanged. A verified database backup and sidecar precede migration of an existing Project, and the migration runner wraps each migration in one transaction with checksum validation.
 
 Tables are `scope_decisions`, `page_jobs`, `job_attempts`, `job_transitions`, `job_discoveries`, and `queue_operations`. Important constraints cover seven states, terminal timestamps, processing ownership, priority `0..1000`, attempt bounds and uniqueness, result JSON validity, composite Project/Run Scope references, logical Job uniqueness, discovery uniqueness, and operation idempotency.

@@ -1,5 +1,9 @@
 # Project Lifecycle
 
+## Recovery-aware open and close
+
+Open validates/migrates, begins an execution-session row, and inspects recovery facts without mutating Queue state. The returned Project summary includes status and counts for processing without Lease, expired Lease, abandoned attempt, output issue, and unclean session. Clean close ends the session; a killed process leaves it discoverable on the next open.
+
 After Project creation/open, Profile commands maintain immutable revisions. Scope commands compute local decisions. Queue commands validate the current Project/Run/Profile/revision/engine and mutate the schema-4 ledger through the same bounded open/close orchestration. A Queue command does not start a network request or real crawler.
 
 ## Create
@@ -24,4 +28,4 @@ See [Project Import and Export](PROJECT_IMPORT_EXPORT.md). Identity and relative
 
 ## Interfaces
 
-Contract `1.3.0` retains Project/Profile/Scope operations and adds Queue operations. Application Service is the only orchestration entry point. Desktop uses sender/frame/URL-authorized IPC plus main-process path grants from native dialogs. CLI exposes human/JSON output and stable exit codes. Queue claims are controlled state simulations; none of these commands performs a crawl or network request. Close/reopen preserves processing Jobs without recovering them.
+Contract `1.4.0` retains Project/Profile/Scope/Queue operations and adds Recovery/Run/Lease/Checkpoint operations. Application Service is the only orchestration entry point. Desktop uses sender/frame/URL-authorized IPC plus main-process path grants from native dialogs. CLI exposes human/JSON output and stable exit codes. Commands remain controlled local state operations with no crawl/network request. Close/reopen inspects abandoned processing and never auto-recovers it.

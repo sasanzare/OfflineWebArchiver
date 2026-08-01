@@ -6,7 +6,7 @@ import {
 } from "@offline-web-archive/project-format";
 
 const manifest = createProjectManifest({
-  applicationVersion: "0.6.0",
+  applicationVersion: "0.7.0",
   projectId: "00000000-0000-4000-8000-000000000001",
   name: "Format validation",
   slug: "format-validation",

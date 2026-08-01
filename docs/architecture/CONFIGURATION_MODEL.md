@@ -1,6 +1,10 @@
 # Configuration Model
 
-Build-owned Phase 6 values are application `0.6.0`, contract `1.3.0`, Project format `1.1.0`, SQLite schema `4`, Site Profile schema `1`, Scope Engine `1`, Queue state machine `1`, and priority policy `1`. Site Profile policy lives inside the Project and is never read from environment variables. `OWAB_LOG_LEVEL` remains the sole environment override.
+## Lease configuration version 1
+
+Default Lease duration is 60,000ms, Heartbeat interval 15,000ms, renewal extension 60,000ms, recovery batch 100, and Project-open policy `inspect`. Duration is bounded 5,000–86,400,000ms and batch maximum is 500. Heartbeat must be at least one second and less than duration. There is no hidden grace period.
+
+Build-owned Phase 7 values are application `0.7.0`, contract `1.4.0`, Project format `1.1.0`, SQLite schema `5`, Site Profile schema `1`, Scope Engine `1`, Queue state machine `2`, priority policy `1`, and Lease/Checkpoint/Recovery configuration/model `1`. Site Profile policy lives inside the Project and is never read from environment variables. `OWAB_LOG_LEVEL` remains the sole environment override.
 
 Runtime/platform facts expose only normalized Node version, OS family, and architecture.
 

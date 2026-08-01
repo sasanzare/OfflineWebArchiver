@@ -10,7 +10,7 @@ import {
   isTerminalState,
 } from "@offline-web-archive/queue";
 
-if (QUEUE_STATE_MACHINE_VERSION !== 1) throw new Error("Unexpected Page Job state-machine version");
+if (QUEUE_STATE_MACHINE_VERSION !== 2) throw new Error("Unexpected Page Job state-machine version");
 let valid = 0;
 let invalid = 0;
 for (const from of PAGE_JOB_STATES) {
@@ -34,7 +34,6 @@ for (const from of PAGE_JOB_STATES) {
 for (const terminal of ["completed", "failed", "skipped", "blocked"]) {
   if (!isTerminalState(terminal)) throw new Error(`${terminal} must remain terminal`);
 }
-for (const forbidden of ["leased", "abandoned", "recovering", "paused"]) {
-  if (PAGE_JOB_STATES.includes(forbidden)) throw new Error(`Product Phase 7 state ${forbidden} entered Product Phase 6`);
-}
+for (const required of ["interrupted", "paused"]) if (!PAGE_JOB_STATES.includes(required)) throw new Error(`Recovery state ${required} is missing`);
+for (const forbidden of ["leased", "abandoned", "recovering"]) if (PAGE_JOB_STATES.includes(forbidden)) throw new Error(`Run/Lease state ${forbidden} must not enter the Page Job vocabulary`);
 process.stdout.write(`Queue state machine ${QUEUE_STATE_MACHINE_VERSION} validated ${valid} valid and ${invalid} invalid transitions.\n`);

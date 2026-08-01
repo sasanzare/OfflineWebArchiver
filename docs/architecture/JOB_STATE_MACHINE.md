@@ -1,5 +1,9 @@
 # Page Job State Machine
 
+## Version 2
+
+Allowed recovery edges include processing→interrupted, processing→paused, interrupted→pending/failed/blocked, and paused→pending. Terminal states do not reopen. Recovery uses compatibility overlay fields/events for Phase 6 rows, and attempt outcomes distinguish interrupted/paused from ordinary failure.
+
 State-machine version is `1`. States are `pending`, `processing`, `completed`, `failed`, `retrying`, `skipped`, and `blocked`. Terminal states are `completed`, `failed`, `skipped`, and `blocked`; they cannot reopen in Product Phase 6.
 
 ```mermaid

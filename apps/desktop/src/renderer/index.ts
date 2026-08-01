@@ -28,9 +28,13 @@ const queuePageSize = document.querySelector<HTMLInputElement>("#queue-page-size
 const queueSummary = document.querySelector<HTMLElement>("#queue-summary");
 const queueList = document.querySelector<HTMLElement>("#queue-list");
 const queueDetail = document.querySelector<HTMLElement>("#queue-detail");
+const recoveryLimit = document.querySelector<HTMLInputElement>("#recovery-limit");
+const recoverySummary = document.querySelector<HTMLElement>("#recovery-summary");
+const recoveryReport = document.querySelector<HTMLElement>("#recovery-report");
+const checkpointHistory = document.querySelector<HTMLElement>("#checkpoint-history");
 const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-action]")];
 
-if (status === null || result === null || nameInput === null || slugInput === null || profileNameInput === null || profileSeedInput === null || profileBaseUrlInput === null || profileDomainAllowInput === null || profileDomainDenyInput === null || profilePathAllowInput === null || profilePathDenyInput === null || profileQueryPolicyInput === null || profileFragmentPolicyInput === null || profileCanonicalExternalInput === null || profileRedirectExternalInput === null || profileRedirectDowngradeInput === null || profileMaxDepthInput === null || profileMaxPagesInput === null || profileCompareFromInput === null || profileCompareToInput === null || profileRevisionSummary === null || scopeUrlInput === null || queueUrlInput === null || queueStateFilter === null || queuePageSize === null || queueSummary === null || queueList === null || queueDetail === null) {
+if (status === null || result === null || nameInput === null || slugInput === null || profileNameInput === null || profileSeedInput === null || profileBaseUrlInput === null || profileDomainAllowInput === null || profileDomainDenyInput === null || profilePathAllowInput === null || profilePathDenyInput === null || profileQueryPolicyInput === null || profileFragmentPolicyInput === null || profileCanonicalExternalInput === null || profileRedirectExternalInput === null || profileRedirectDowngradeInput === null || profileMaxDepthInput === null || profileMaxPagesInput === null || profileCompareFromInput === null || profileCompareToInput === null || profileRevisionSummary === null || scopeUrlInput === null || queueUrlInput === null || queueStateFilter === null || queuePageSize === null || queueSummary === null || queueList === null || queueDetail === null || recoveryLimit === null || recoverySummary === null || recoveryReport === null || checkpointHistory === null) {
   throw new Error("The desktop Project shell is missing required local elements.");
 }
 const statusElement = status;
@@ -61,6 +65,10 @@ const queuePageSizeInput = queuePageSize;
 const queueSummaryElement = queueSummary;
 const queueListElement = queueList;
 const queueDetailElement = queueDetail;
+const recoveryLimitInput = recoveryLimit;
+const recoverySummaryElement = recoverySummary;
+const recoveryReportElement = recoveryReport;
+const checkpointHistoryElement = checkpointHistory;
 
 let selectedProjectPath: string | null = null;
 let selectedRunId: string | null = null;
@@ -165,6 +173,7 @@ function renderQueueJob(job: PageJobContract): void {
   addDefinitionRow(queueDetailElement, "Priority", `${job.priority} (${job.prioritySource})`);
   addDefinitionRow(queueDetailElement, "Depth", String(job.depth));
   addDefinitionRow(queueDetailElement, "Attempts", `${job.attemptCount}/${job.maxAttempts}`);
+  addDefinitionRow(queueDetailElement, "Fencing generation", String(job.fencingGeneration));
   addDefinitionRow(queueDetailElement, "Next eligible", job.nextEligibleAt);
 }
 
@@ -312,12 +321,41 @@ function renderResponse(response: ResponseEnvelope): void {
   }
   if (value.resultType === "queue.clear") {
     statusElement.textContent = `Skipped ${value.skipped} pending Job(s); history was retained.`;
+    return;
+  }
+  if (value.resultType === "recovery.report") {
+    statusElement.textContent = value.report.dryRun ? "Recovery inspection completed without changing Job state." : "Recovery batch applied.";
+    recoverySummaryElement.replaceChildren();
+    for (const [name, count] of Object.entries({ status: value.report.status, scanned: value.report.scanned, interrupted: value.report.interrupted, requeued: value.report.requeued, paused: value.report.paused, outputIssues: value.report.outputIssues, hasMore: value.report.hasMore })) addDefinitionRow(recoverySummaryElement, name, String(count));
+    recoveryReportElement.textContent = value.report.items.map((item) => `${item.jobId}: ${item.reasonCode} -> ${item.action} (generation ${item.fencingGeneration})`).join("\n") || "No recovery action is required.";
+    return;
+  }
+  if (value.resultType === "run.control") {
+    statusElement.textContent = `Run control state is ${value.run.controlState}.`;
+    recoverySummaryElement.replaceChildren();
+    addDefinitionRow(recoverySummaryElement, "Run state", value.run.controlState);
+    addDefinitionRow(recoverySummaryElement, "Active Leases", String(value.run.activeLeaseCount));
+    addDefinitionRow(recoverySummaryElement, "Pause requested", value.run.requestedAt ?? "No");
+    addDefinitionRow(recoverySummaryElement, "Paused", value.run.pausedAt ?? "No");
+    return;
+  }
+  if (value.resultType === "checkpoint.list") {
+    statusElement.textContent = `Loaded ${value.checkpoints.length} immutable Checkpoint record(s).`;
+    checkpointHistoryElement.textContent = value.checkpoints.map((checkpoint) => `#${checkpoint.sequence} ${checkpoint.phase} progress=${checkpoint.progress} generation=${checkpoint.fencingGeneration} committed=${checkpoint.committed}`).join("\n") || "No Checkpoints exist for this Job.";
+    return;
+  }
+  if (value.resultType === "checkpoint.value") {
+    checkpointHistoryElement.textContent = value.checkpoint === null ? "No committed Checkpoint exists." : `#${value.checkpoint.sequence} ${value.checkpoint.phase} progress=${value.checkpoint.progress} generation=${value.checkpoint.fencingGeneration}`;
+    return;
+  }
+  if (value.resultType === "lease.list" || value.resultType === "lease.value") {
+    statusElement.textContent = "Lease metadata loaded. Lease Tokens are intentionally not rendered.";
   }
 }
 
 async function execute(commandType: Parameters<typeof createProjectCommand>[0], payload: unknown): Promise<ResponseEnvelope> {
   const commandMetadata = metadata();
-  const queueMutations = new Set(["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending"]);
+  const queueMutations = new Set(["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume"]);
   const commandPayload = queueMutations.has(commandType) && typeof payload === "object" && payload !== null
     ? { ...(payload as Record<string, unknown>), operationId: commandMetadata.commandId }
     : payload;
@@ -398,10 +436,32 @@ async function perform(action: string): Promise<void> {
       response = await execute("queue.claimNext", { ...queueContext(), claimedBy: "desktop-controlled-test", idempotencyKey: `desktop-claim-${crypto.randomUUID()}` });
     } else if (action === "queue-complete") {
       if (selectedQueueJob?.state !== "processing" || selectedQueueJob.claimToken === null) throw new ProfileEditorError("Select a processing Job owned by the current controlled test before completing it.");
-      response = await execute("queue.complete", { ...queueContext(), jobId: selectedQueueJob.jobId, claimToken: selectedQueueJob.claimToken, completionKey: `desktop-completion-${crypto.randomUUID()}`, resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: new Date().toISOString(), idempotencyKey: `desktop-complete-${crypto.randomUUID()}` });
+      response = await execute("queue.complete", { ...queueContext(), jobId: selectedQueueJob.jobId, claimToken: selectedQueueJob.claimToken, ownerId: "desktop-controlled-test", fencingGeneration: selectedQueueJob.fencingGeneration, completionKey: `desktop-completion-${crypto.randomUUID()}`, resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: new Date().toISOString(), idempotencyKey: `desktop-complete-${crypto.randomUUID()}` });
     } else if (action === "queue-fail") {
       if (selectedQueueJob?.state !== "processing" || selectedQueueJob.claimToken === null) throw new ProfileEditorError("Select a processing Job owned by the current controlled test before failing it.");
-      response = await execute("queue.fail", { ...queueContext(), jobId: selectedQueueJob.jobId, claimToken: selectedQueueJob.claimToken, failureKey: `desktop-failure-${crypto.randomUUID()}`, failureCode: "DESKTOP_TEST_FAILURE", failureCategory: "application", retryable: false, safeMessage: "Controlled Desktop queue failure simulation.", failedAt: new Date().toISOString(), idempotencyKey: `desktop-fail-${crypto.randomUUID()}` });
+      response = await execute("queue.fail", { ...queueContext(), jobId: selectedQueueJob.jobId, claimToken: selectedQueueJob.claimToken, ownerId: "desktop-controlled-test", fencingGeneration: selectedQueueJob.fencingGeneration, failureKey: `desktop-failure-${crypto.randomUUID()}`, failureCode: "DESKTOP_TEST_FAILURE", failureCategory: "application", retryable: false, safeMessage: "Controlled Desktop queue failure simulation.", failedAt: new Date().toISOString(), idempotencyKey: `desktop-fail-${crypto.randomUUID()}` });
+    } else if (action === "recovery-inspect") {
+      const limit = boundedNumber(recoveryLimitInput, "Recovery batch size");
+      if (limit === null || limit < 1 || limit > 500) throw new ProfileEditorError("Recovery batch size must be from 1 to 500.");
+      response = await execute("recovery.inspect", { ...queueContext(), evaluationTime: new Date().toISOString(), limit });
+    } else if (action === "recovery-apply") {
+      if (!window.confirm("Apply the inspected Recovery plan to expired or abandoned Jobs?")) {
+        statusElement.textContent = "Recovery application cancelled.";
+        statusElement.dataset["state"] = "";
+        return;
+      }
+      const limit = boundedNumber(recoveryLimitInput, "Recovery batch size");
+      if (limit === null || limit < 1 || limit > 500) throw new ProfileEditorError("Recovery batch size must be from 1 to 500.");
+      response = await execute("recovery.recover", { ...queueContext(), evaluationTime: new Date().toISOString(), limit, confirmation: "APPLY-RECOVERY", idempotencyKey: `desktop-recovery-${crypto.randomUUID()}` });
+    } else if (action === "run-pause") {
+      response = await execute("run.requestPause", queueContext());
+    } else if (action === "run-resume") {
+      response = await execute("run.resume", queueContext());
+    } else if (action === "run-state") {
+      response = await execute("run.getControlState", queueContext());
+    } else if (action === "checkpoint-history") {
+      if (selectedQueueJob === null) throw new ProfileEditorError("Select a Job before loading Checkpoint history.");
+      response = await execute("checkpoint.list", { ...queueContext(), jobId: selectedQueueJob.jobId, limit: 50 });
     }
     if (response === null) {
       statusElement.textContent = "Operation cancelled or no open Project is available.";

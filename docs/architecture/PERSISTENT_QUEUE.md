@@ -1,8 +1,12 @@
 # Persistent Page Job Queue
 
+## Product Phase 7 ownership
+
+Queue state machine version 2 adds logical `interrupted` and `paused` while terminal states remain completed/failed/skipped/blocked. Application Service claims through a Lease, and terminal writes for generation greater than zero require active token/fencing/expiry ownership. Recovery preserves attempt and transition history and safely requeues interrupted/paused work.
+
 ## Purpose and boundary
 
-Product Phase 6 turns approved Product Phase 5 Scope Decisions into durable local Page Jobs. `@offline-web-archive/queue` owns pure state, priority, retry, limit, redaction, and idempotency rules. Archive Core owns public types and `QueueRepositoryPort`; SQLite owns transactions; Application Service owns Profile/Run checks and Scope orchestration; contract `1.3.0` is the only CLI/Desktop boundary.
+Product Phase 6 established durable local Page Jobs; Product Phase 7 retains those invariants and adds Lease/Fencing/Checkpoint/Recovery ownership. `@offline-web-archive/queue` owns pure state, priority, retry, limit, redaction, and idempotency rules. Archive Core owns public ports; SQLite owns transactions; Application Service owns checks/orchestration; contract `1.4.0` is the only CLI/Desktop boundary.
 
 No component in this phase fetches a URL, discovers links, renders a page, stores page output, starts a Worker, expires a claim, or recovers an abandoned Job.
 

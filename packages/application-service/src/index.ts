@@ -2,10 +2,12 @@ import {
   createArchiveCore,
   ProjectOperationError,
   QueueOperationError,
+  RecoveryOperationError,
   type ArchiveCore,
   type ProjectStoragePort,
   type QueueEnqueueInput,
   type QueueRepositoryPort,
+  type RecoveryRepositoryPort,
 } from "@offline-web-archive/archive-core";
 import {
   CONTRACT_VERSION,
@@ -48,7 +50,7 @@ export interface ApplicationServiceDependencies {
   runtime: RuntimeInfo;
   platform: PlatformInfo;
   core?: ArchiveCore;
-  projectStorage?: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort;
+  projectStorage?: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort;
   logger?: Logger;
   now?: () => string;
 }
@@ -173,6 +175,28 @@ function queueError(error: QueueOperationError): ErrorContract {
   };
 }
 
+function recoveryError(error: RecoveryOperationError): ErrorContract {
+  const securityCodes = new Set(["LEASE_OWNER_MISMATCH", "LEASE_TOKEN_INVALID", "FENCING_GENERATION_STALE", "CHECKPOINT_OWNERSHIP_INVALID", "OUTPUT_DESCRIPTOR_INVALID"]);
+  const validationCodes = new Set(["CHECKPOINT_INVALID", "CHECKPOINT_TOO_LARGE", "ARTIFACT_CHECKPOINT_INVALID", "RECOVERY_INPUT_INVALID", "RECOVERY_CONFIRMATION_REQUIRED"]);
+  const userMessages: Partial<Record<RecoveryOperationError["code"], string>> = {
+    LEASE_NOT_FOUND: "No active Lease owns the selected Page Job.",
+    LEASE_EXPIRED: "The Page Job Lease expired before this operation.",
+    LEASE_OWNER_MISMATCH: "The Lease belongs to another owner.",
+    LEASE_TOKEN_INVALID: "The Lease Token is invalid.",
+    FENCING_GENERATION_STALE: "A newer owner has fenced this operation.",
+    RUN_NOT_ACTIVE: "The Run is not accepting new claims.",
+    RUN_PAUSE_CONFLICT: "The Run cannot perform that pause or resume operation in its current state.",
+    RECOVERY_CONFIRMATION_REQUIRED: "Recovery must be explicitly confirmed before it changes persisted state.",
+  };
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : "application",
+    message: error.message,
+    userMessage: userMessages[error.code] ?? "The recovery operation could not be completed safely.",
+    retryable: error.retryable,
+  };
+}
+
 function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<string, unknown> {
   if (result.resultType === "profile.value") return { resultType: result.resultType, profileId: result.profile.profileId, profileRevisionId: result.profile.revisionId, engineVersion: result.profile.engineVersion, changedPaths: result.changedPaths ?? [] };
   if (result.resultType === "profile.validation") return { resultType: result.resultType, valid: result.validation.valid, errorCodes: result.validation.errors.map((entry) => entry.code), warningCodes: result.validation.warnings.map((entry) => entry.code) };
@@ -188,6 +212,14 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "queue.statistics") return { resultType: result.resultType, ...result.statistics };
   if (result.resultType === "queue.history") return { resultType: result.resultType, jobId: result.history.job.jobId, transitions: result.history.transitions.length, attempts: result.history.attempts.length, discoveries: result.history.discoveries.length };
   if (result.resultType === "queue.clear") return { resultType: result.resultType, skipped: result.skipped };
+  if (result.resultType === "recovery.report") return { resultType: result.resultType, recoveryOperationId: result.report.recoveryOperationId, status: result.report.status, dryRun: result.report.dryRun, scanned: result.report.scanned, interrupted: result.report.interrupted, requeued: result.report.requeued, paused: result.report.paused, outputIssues: result.report.outputIssues, hasMore: result.report.hasMore };
+  if (result.resultType === "lease.value") return { resultType: result.resultType, leaseId: result.lease.leaseId, jobId: result.lease.jobId, ownerId: result.lease.ownerId, fencingGeneration: result.lease.fencingGeneration, status: result.lease.status, expiresAt: result.lease.expiresAt };
+  if (result.resultType === "lease.list") return { resultType: result.resultType, leaseCount: result.leases.length };
+  if (result.resultType === "checkpoint.value") return { resultType: result.resultType, action: result.action, checkpointId: result.checkpoint?.checkpointId ?? null, jobId: result.checkpoint?.jobId ?? null, phase: result.checkpoint?.phase ?? null, progress: result.checkpoint?.progress ?? null };
+  if (result.resultType === "checkpoint.list") return { resultType: result.resultType, checkpointCount: result.checkpoints.length };
+  if (result.resultType === "artifactCheckpoint.value") return { resultType: result.resultType, artifactCheckpointId: result.checkpoint.artifactCheckpointId, jobId: result.checkpoint.jobId, artifactKind: result.checkpoint.artifactKind, bytesWritten: result.checkpoint.bytesWritten, committed: result.checkpoint.committed };
+  if (result.resultType === "artifactCheckpoint.validation") return { resultType: result.resultType, valid: result.valid, reasonCode: result.reasonCode };
+  if (result.resultType === "run.control") return { resultType: result.resultType, runId: result.run.runId, controlState: result.run.controlState, activeLeaseCount: result.run.activeLeaseCount };
   return { resultType: result.resultType };
 }
 
@@ -203,7 +235,7 @@ function unauthorizedError(): ErrorContract {
 
 async function executeProjectCommand(
   command: Exclude<CommandEnvelope, { commandType: "system.describe" }>,
-  storage: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort,
+  storage: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort,
   now: () => string,
 ): Promise<unknown> {
   const withOpenProject = async <T>(projectPath: string, operation: () => Promise<T>): Promise<T> => {
@@ -339,29 +371,40 @@ async function executeProjectCommand(
         return { resultType: "queue.batch", ...batch };
       });
     case "queue.claimNext":
-      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "queue.job", action: "claimNext", job: await storage.claimNext({ ...command.payload, projectId: storage.getCurrent()!.projectId, correlationId: command.correlationId }) }));
+      return withOpenProject(command.payload.projectPath, async () => {
+        const claim = await storage.claimNextWithLease({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, ownerId: command.payload.claimedBy, leaseDurationMs: command.payload.leaseDurationMs, idempotencyKey: command.payload.idempotencyKey, operationId: command.payload.operationId, correlationId: command.correlationId });
+        return claim === null ? { resultType: "queue.job", action: "claimNext", job: null } : { resultType: "queue.job", action: "claimNext", job: claim.job, lease: claim.lease };
+      });
     case "queue.complete":
-      return withOpenProject(command.payload.projectPath, async () => ({
-        resultType: "queue.job",
-        action: "complete",
-        job: await storage.complete({
-          projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId,
-          claimToken: command.payload.claimToken, completionKey: command.payload.completionKey,
-          resultSummary: command.payload.resultSummary.metadata === undefined
-            ? { resultType: "queue-test", statusCode: command.payload.resultSummary.statusCode, contentStored: false }
-            : { resultType: "queue-test", statusCode: command.payload.resultSummary.statusCode, contentStored: false, metadata: command.payload.resultSummary.metadata },
-          completedAt: command.payload.completedAt, idempotencyKey: command.payload.idempotencyKey,
-          operationId: command.payload.operationId, correlationId: command.correlationId,
-        }),
-      }));
+      return withOpenProject(command.payload.projectPath, async () => {
+        const projectId = storage.getCurrent()!.projectId;
+        const currentJob = await storage.get({ projectId, runId: command.payload.runId, jobId: command.payload.jobId });
+        if (currentJob.state === "processing") {
+          await storage.heartbeatLease({ projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.claimToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, operationId: command.payload.operationId });
+          if (command.payload.outputs !== undefined) await storage.saveCompletedOutputs({ projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.claimToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, outputs: command.payload.outputs, operationId: command.payload.operationId });
+        }
+        return {
+          resultType: "queue.job", action: "complete", job: await storage.complete({
+            projectId, runId: command.payload.runId, jobId: command.payload.jobId, claimToken: command.payload.claimToken, completionKey: command.payload.completionKey,
+            resultSummary: command.payload.resultSummary.metadata === undefined
+              ? { resultType: "queue-test", statusCode: command.payload.resultSummary.statusCode, contentStored: false }
+              : { resultType: "queue-test", statusCode: command.payload.resultSummary.statusCode, contentStored: false, metadata: command.payload.resultSummary.metadata },
+            completedAt: command.payload.completedAt, idempotencyKey: command.payload.idempotencyKey, operationId: command.payload.operationId, correlationId: command.correlationId,
+          }),
+        };
+      });
     case "queue.fail":
-      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "queue.job", action: "fail", job: await storage.fail({
-        projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId,
-        claimToken: command.payload.claimToken, failureKey: command.payload.failureKey, failureCode: command.payload.failureCode,
-        failureCategory: command.payload.failureCategory, retryable: command.payload.retryable, safeMessage: command.payload.safeMessage,
-        failedAt: command.payload.failedAt, ...(command.payload.nextEligibleAt === undefined ? {} : { nextEligibleAt: command.payload.nextEligibleAt }),
-        idempotencyKey: command.payload.idempotencyKey, operationId: command.payload.operationId, correlationId: command.correlationId,
-      }) }));
+      return withOpenProject(command.payload.projectPath, async () => {
+        const projectId = storage.getCurrent()!.projectId;
+        const currentJob = await storage.get({ projectId, runId: command.payload.runId, jobId: command.payload.jobId });
+        if (currentJob.state === "processing") await storage.heartbeatLease({ projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.claimToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, operationId: command.payload.operationId });
+        return { resultType: "queue.job", action: "fail", job: await storage.fail({
+          projectId, runId: command.payload.runId, jobId: command.payload.jobId, claimToken: command.payload.claimToken, failureKey: command.payload.failureKey, failureCode: command.payload.failureCode,
+          failureCategory: command.payload.failureCategory, retryable: command.payload.retryable, safeMessage: command.payload.safeMessage, failedAt: command.payload.failedAt,
+          ...(command.payload.nextEligibleAt === undefined ? {} : { nextEligibleAt: command.payload.nextEligibleAt }), idempotencyKey: command.payload.idempotencyKey,
+          operationId: command.payload.operationId, correlationId: command.correlationId,
+        }) };
+      });
     case "queue.scheduleRetry":
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "queue.job", action: "scheduleRetry", job: await storage.scheduleRetry({ ...command.payload, projectId: storage.getCurrent()!.projectId, correlationId: command.correlationId }) }));
     case "queue.releaseDueRetries":
@@ -380,6 +423,42 @@ async function executeProjectCommand(
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "queue.history", history: await storage.getHistory({ ...command.payload, projectId: storage.getCurrent()!.projectId }) }));
     case "queue.clearPending":
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "queue.clear", ...(await storage.clearPending({ ...command.payload, projectId: storage.getCurrent()!.projectId, correlationId: command.correlationId })) }));
+    case "recovery.inspect":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "recovery.report", report: await storage.inspectRecovery({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, evaluationTime: command.payload.evaluationTime, limit: command.payload.limit, ...(command.payload.afterSequence === undefined ? {} : { afterSequence: command.payload.afterSequence }) }) }));
+    case "recovery.recover":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "recovery.report", report: await storage.recover({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, evaluationTime: command.payload.evaluationTime, limit: command.payload.limit, confirmation: command.payload.confirmation, idempotencyKey: command.payload.idempotencyKey, operationId: command.payload.operationId, correlationId: command.correlationId }) }));
+    case "recovery.getReport":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "recovery.report", report: await storage.getRecoveryReport({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, recoveryOperationId: command.payload.recoveryOperationId }) }));
+    case "recovery.heartbeat":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "lease.value", lease: await storage.heartbeatLease({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.leaseToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, operationId: command.payload.operationId }) }));
+    case "recovery.renewLease":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "lease.value", lease: await storage.renewLease({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.leaseToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, extensionMs: command.payload.extensionMs, operationId: command.payload.operationId }) }));
+    case "recovery.releaseLease":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "lease.value", lease: await storage.releaseLease({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.leaseToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, reasonCode: command.payload.reasonCode, operationId: command.payload.operationId }) }));
+    case "checkpoint.save":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "checkpoint.value", action: "save", checkpoint: await storage.saveJobCheckpoint({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.leaseToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, phase: command.payload.phase, progress: command.payload.progress, ...(command.payload.relativePath === undefined ? {} : { relativePath: command.payload.relativePath }), payload: command.payload.payload, operationId: command.payload.operationId }) }));
+    case "checkpoint.getLatest":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "checkpoint.value", action: "latest", checkpoint: await storage.getLatestJobCheckpoint({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId }) }));
+    case "checkpoint.list":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "checkpoint.list", checkpoints: await storage.listJobCheckpoints({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, limit: command.payload.limit }) }));
+    case "artifactCheckpoint.save":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "artifactCheckpoint.value", checkpoint: await storage.saveArtifactCheckpoint({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.leaseToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, artifactKey: command.payload.artifactKey, artifactKind: command.payload.artifactKind, relativePath: command.payload.relativePath, bytesWritten: command.payload.bytesWritten, ...(command.payload.expectedBytes === undefined ? {} : { expectedBytes: command.payload.expectedBytes }), ...(command.payload.sha256 === undefined ? {} : { sha256: command.payload.sha256 }), ...(command.payload.validator === undefined ? {} : { validator: command.payload.validator }), resumeOffset: command.payload.resumeOffset, committed: command.payload.committed, operationId: command.payload.operationId }) }));
+    case "artifactCheckpoint.validate":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "artifactCheckpoint.validation", ...(await storage.validateArtifactCheckpoint({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, artifactKey: command.payload.artifactKey })) }));
+    case "run.requestPause":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "run.control", run: await storage.requestPause({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, operationId: command.payload.operationId }) }));
+    case "run.getPauseStatus":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "run.control", run: await storage.getPauseStatus({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId }) }));
+    case "run.acknowledgePause":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "queue.job", action: "pause", job: await storage.acknowledgePause({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, leaseToken: command.payload.leaseToken, fencingGeneration: command.payload.fencingGeneration, ownerId: command.payload.ownerId, operationId: command.payload.operationId, correlationId: command.correlationId }) }));
+    case "run.resume":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "run.control", run: await storage.resumeRun({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, operationId: command.payload.operationId, correlationId: command.correlationId }) }));
+    case "run.getControlState":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "run.control", run: await storage.getRunControlState({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId }) }));
+    case "lease.list":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "lease.list", leases: await storage.listLeases({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, ...(command.payload.status === undefined ? {} : { status: command.payload.status }), limit: command.payload.limit }) }));
+    case "lease.show":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "lease.value", lease: await storage.getLease({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId }) }));
   }
 }
 
@@ -457,6 +536,8 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
             ? scopeError(error)
             : error instanceof QueueOperationError
               ? queueError(error)
+              : error instanceof RecoveryOperationError
+                ? recoveryError(error)
               : internalError();
         const operationId = typeof command.payload === "object" && command.payload !== null && "operationId" in command.payload && typeof command.payload.operationId === "string"
           ? command.payload.operationId

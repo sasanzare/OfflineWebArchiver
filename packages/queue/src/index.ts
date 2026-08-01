@@ -7,7 +7,7 @@ import {
   type QueueResultSummary,
 } from "@offline-web-archive/archive-core";
 
-export const QUEUE_STATE_MACHINE_VERSION = 1 as const;
+export const QUEUE_STATE_MACHINE_VERSION = 2 as const;
 export const QUEUE_PRIORITY_POLICY_VERSION = 1 as const;
 export const QUEUE_LIMITS = Object.freeze({
   batch: 250,
@@ -32,8 +32,10 @@ export const PAGE_JOB_PRIORITY = Object.freeze({
 
 export const VALID_JOB_TRANSITIONS: Readonly<Record<PageJobState, readonly PageJobState[]>> = Object.freeze({
   pending: Object.freeze<PageJobState[]>(["processing", "skipped", "blocked"]),
-  processing: Object.freeze<PageJobState[]>(["completed", "failed", "retrying", "skipped", "blocked"]),
+  processing: Object.freeze<PageJobState[]>(["completed", "failed", "retrying", "skipped", "blocked", "interrupted", "paused"]),
   retrying: Object.freeze<PageJobState[]>(["pending", "failed"]),
+  interrupted: Object.freeze<PageJobState[]>(["pending", "failed", "blocked"]),
+  paused: Object.freeze<PageJobState[]>(["pending"]),
   completed: Object.freeze<PageJobState[]>([]),
   failed: Object.freeze<PageJobState[]>([]),
   skipped: Object.freeze<PageJobState[]>([]),

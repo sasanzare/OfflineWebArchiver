@@ -4,11 +4,19 @@ import path from "node:path";
 import { repositoryRoot, runTypeScriptBuild } from "../build/typescript.mjs";
 
 const suite = process.argv[2] ?? "all";
-const suites = new Set(["all", "unit", "integration", "concurrency", "electron", "cli", "okf"]);
+const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "electron", "cli", "okf"]);
+const recoveryTests = [
+  "unit/recovery.test.js",
+  "integration/recovery-lifecycle.test.js",
+  "integration/partial-file-recovery.test.js",
+  "concurrency/recovery-concurrency.test.js",
+  "process-kill/recovery-process-kill.test.js",
+];
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
   ["package:archive-core", ["unit/archive-core.test.js"]],
   ["package:queue", ["unit/queue.test.js", "integration/queue-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
+  ["package:recovery", ["unit/recovery.test.js", "integration/recovery-lifecycle.test.js", "concurrency/recovery-concurrency.test.js", "process-kill/recovery-process-kill.test.js"]],
   ["package:scope-engine", ["unit/scope-engine.test.js"]],
   ["package:project-format", ["unit/project-format.test.js"]],
   ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
@@ -42,6 +50,8 @@ async function collect(directory) {
 const testRoot = path.join(repositoryRoot, ".build-tests", "tests");
 const selected = suite === "all"
   ? await collect(testRoot)
+  : suite === "recovery"
+    ? recoveryTests.map((name) => path.join(testRoot, name))
   : packageTests.has(suite)
     ? packageTests.get(suite).map((name) => path.join(testRoot, name))
     : await collect(path.join(testRoot, suite));

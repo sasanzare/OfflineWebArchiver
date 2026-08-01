@@ -9,6 +9,6 @@ Application Service composes the pure Scope Engine and Queue policy with Project
 | Electron renderer | Sandboxed Chromium frame | English Project/Profile/Scope/Queue inspection and controlled test UI | Unprivileged |
 | CLI | Node process | Parse bounded Project/Profile/Scope/Queue commands, compose service, format output/exits | Privileged terminal |
 | Application Service | Caller process | Validate/orchestrate/translate contracts | No UI |
-| SQLite adapter | Caller main/CLI process | Project filesystem, schema 4 Queue repository/transactions, migrations, ZIP, locks | Local I/O boundary |
+| SQLite adapter | Caller main/CLI process | Project filesystem, schema 5 Queue/Lease/Checkpoint/Recovery repositories and transactions, migrations, output verification, ZIP, locks | Local I/O boundary |
 
 Desktop and CLI do not communicate. Queue claims are synthetic in-process operations, not Worker processes. No loopback service, database daemon, browser automation process, network client, Worker Pool, Lease, or Heartbeat exists. A future utility process requires a new ADR and contract-preserving threat review.

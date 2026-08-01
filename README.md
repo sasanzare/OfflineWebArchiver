@@ -1,30 +1,24 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a planned portable desktop application for creating authorized, navigable offline archives of modern websites. Product Phase 6 is complete: the production monorepo now combines the portable Project/SQLite foundation, versioned Site Profile and Scope Engine, and a durable Page Job queue with deterministic identity, ordering, atomic claims, token-fenced terminal writes, retries, history, statistics, CLI operations, Desktop inspection, and canonical OKF evidence.
+Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 7 is complete: the monorepo now includes durable SQLite Job Leases, Heartbeats and explicit renewal, monotonic Fencing Generation, versioned Job/Run/Artifact Checkpoints, cooperative Pause/Resume, bounded idempotent Crash Recovery, execution-session detection, completed-output verification, and a partial-file recovery policy with a local HTTP Range fixture.
 
-The application/workspaces are `0.6.0`, transport contract is `1.3.0`, Project format is `1.1.0`, SQLite schema is `4`, Site Profile/Scope Engine are `1`, and Queue state/priority policies are `1`. Queue persistence does not mean pages are crawled: there is no website request, DNS dispatch, browser rendering, link discovery, Lease, Heartbeat, Checkpoint, stale-processing recovery, or real crawler.
+Current versions are application/workspaces `0.7.0`, transport contract `1.4.0`, Project format `1.1.0`, SQLite schema `5`, Queue state machine `2`, and Recovery/Checkpoint/Lease configuration models `1`. Product Phase 7 does not include website requests, DNS dispatch, browser rendering, link discovery, a production Asset Downloader, a Worker Pool, authentication, proxies, or a real crawler.
 
 ## Safety and authorization
 
-Use is limited to websites the user is authorized to archive or for which another valid legal basis exists. The product does not bypass access controls, challenges, or rate limits. Project, ZIP, Profile, URL, Queue, and result input is untrusted and bounded. Credential-bearing URLs fail closed; sensitive URL/error/result values are redacted; SQL stays behind parameterized repository methods; and Project/Run/Profile plus claim-token ownership is enforced.
+Use is limited to websites the user is authorized to archive. The product does not bypass access controls, challenges, or rate limits. Project input, Checkpoints, URLs, recovery reports, and output paths are untrusted and bounded. Lease verification uses a SHA-256 digest in `job_leases`; active owner credentials retained by the Phase 6 compatibility/idempotency ledgers make the Project database sensitive. Tokens are never logged or displayed by inspection/UI/list commands, and protected writes enforce Project/Run/Job ownership, token, active Lease, expiry, and current Fencing Generation.
 
 ## Workspace
 
 ```text
-apps/
-  desktop/              Isolated Electron Project/Profile/Scope/Queue UI
-  cli/                  Internal Project/Profile/Scope/Queue CLI
-packages/
-  archive-core/         GUI/platform-independent models and repository ports
-  scope-engine/         Profile schema and pure URL/scope policy
-  queue/                Pure state, priority, retry, idempotency, redaction policy
-  project-format/       Portable manifest/version/path contract
-  persistence-sqlite/   SQLite schema 4, migrations, repositories, files/ZIP/locks
-  application-service/ Use-case and ownership orchestration
-  contracts/            Runtime-validated transport contract 1.3.0
-  platform/             Platform/configuration adapter
-  observability/        Structured logging and redaction
-  test-support/         Test-only deterministic fixtures
+apps/desktop             isolated Electron Project/Queue/Recovery UI
+apps/cli                 internal Project/Queue/Recovery CLI
+packages/archive-core    GUI/platform-independent models and ports
+packages/recovery        pure Lease/Checkpoint/Recovery/partial-file policy
+packages/queue           pure Queue state/idempotency policy
+packages/persistence-sqlite  SQLite schema 5 and repositories
+packages/application-service use-case and ownership orchestration
+packages/contracts       runtime-validated contract 1.4.0
 ```
 
 Use Node 24 and npm 11:
@@ -38,14 +32,14 @@ npm run test
 npm run test:unit
 npm run test:integration
 npm run test:concurrency
+npm run test:process-kill
+npm run test:recovery
 npm run test:architecture
 npm run contracts:check
-npm run project-format:validate
 npm run migrations:validate
-npm run scope:validate
-npm run scope:golden
 npm run queue:validate
-npm run queue:state-machine
+npm run recovery:validate
+npm run checkpoint:validate
 npm run security:check
 npm run docs:validate
 npm run okf:validate
@@ -54,28 +48,23 @@ npm run okf:validate
 CLI examples:
 
 ```text
-npm run project -- project create D:\Archives\example --name "Example" --slug example
-npm run project -- profile create D:\Archives\example --name "Example scope" --seed https://example.com/
-npm run project -- scope explain D:\Archives\example https://example.com/docs --json
-npm run project -- queue enqueue D:\Archives\example https://example.com/docs --run <run-uuid> --profile-revision <profile-revision-uuid> --idempotency-key enqueue-docs-001
-npm run project -- queue list D:\Archives\example --run <run-uuid> --state pending --json
-npm run project -- queue stats D:\Archives\example --run <run-uuid>
+npm run project -- recovery inspect D:\Archives\example --run <run-uuid> --json
+npm run project -- recovery recover D:\Archives\example --run <run-uuid> --confirm --idempotency-key recovery-001
+npm run project -- run pause D:\Archives\example --run <run-uuid>
+npm run project -- checkpoint list D:\Archives\example --run <run-uuid> --job <job-uuid>
 ```
 
-Run `npm run project -- queue --help` for all Queue commands and limits. `npm run dev:desktop` opens the local UI. Desktop paths come from main-process native selection grants; the renderer receives no filesystem or SQLite primitive. Controlled Queue actions simulate future workers but never crawl a target.
+Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run/Lease/Checkpoint commands. `npm run dev:desktop` opens the local UI. The renderer receives only the approved two-method bridge; controlled owner mutations may carry an ephemeral token through that validated bridge, but the token is never rendered, logged, listed, or included in recovery reports. The renderer has no filesystem primitive or raw SQL access.
 
 ## Documentation
 
-- [Production architecture](docs/architecture/README.md)
-- [Persistent Queue](docs/architecture/PERSISTENT_QUEUE.md)
-- [Job state machine](docs/architecture/JOB_STATE_MACHINE.md)
-- [Queue persistence](docs/architecture/QUEUE_PERSISTENCE.md)
-- [Phase 6 security review](docs/architecture/PHASE_06_SECURITY_REVIEW.md)
-- [Phase 6 implementation report](docs/project/PHASE_06_IMPLEMENTATION_REPORT.md)
+- [Phase 7 implementation report](docs/project/PHASE_07_IMPLEMENTATION_REPORT.md)
+- [Crash Recovery](docs/architecture/CRASH_RECOVERY.md)
+- [Job Leases](docs/architecture/JOB_LEASES.md)
+- [Checkpoint model](docs/architecture/CHECKPOINT_MODEL.md)
+- [Security review](docs/architecture/PHASE_07_SECURITY_REVIEW.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
-- [Phase plan](docs/project/PHASE_PLAN.md)
-- [Risks and decisions](docs/project/RISK_REGISTER.md)
 - [Canonical OKF](okf/README.md)
 - [Current handoff](HANDOFF.md)
 
-Canonical `okf/` is synchronized through Product Phase 6. `okf-bootstrap/` remains historical governance/migration evidence. The exact next phase is **Product Phase 7 — Checkpoint, Lease, and Crash Recovery**; it must preserve Phase 6 idempotency and state invariants.
+The exact next phase is **Product Phase 8 — Browser Lifecycle and Rendering Engine**.

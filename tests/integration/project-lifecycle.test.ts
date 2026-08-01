@@ -12,6 +12,16 @@ async function workspace() {
   return { root, dispose: () => rm(root, { recursive: true, force: true }) };
 }
 
+function mutateFixtureDatabase(databasePath: string, statement: string): void {
+  const database = new DatabaseSync(databasePath);
+  try {
+    database.exec(statement);
+    database.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+  } finally {
+    database.close();
+  }
+}
+
 test("create, validate, open, close, move, export, and import preserve Project identity", async () => {
   const temporary = await workspace();
   const projectPath = path.join(temporary.root, "project");
@@ -63,7 +73,7 @@ test("opening schema version 1 creates a verified backup and migrates forward", 
     await storage.create({ destinationPath: projectPath, name: "Legacy", slug: "legacy" });
     const databasePath = path.join(projectPath, "database", "crawl.db");
     const database = new DatabaseSync(databasePath);
-    database.exec("DROP TABLE queue_operations; DROP TABLE job_discoveries; DROP TABLE job_transitions; DROP TABLE job_attempts; DROP TABLE page_jobs; DROP TABLE scope_decisions; DROP INDEX site_profile_revisions_profile_sequence; DROP TABLE scope_rules; DROP TABLE site_profile_revisions; DROP TABLE site_profiles; DROP INDEX project_events_project_time; DROP TABLE project_events; DELETE FROM schema_migrations WHERE sequence > 1; PRAGMA user_version = 1; UPDATE project_metadata SET schema_version = 1");
+    database.exec("DROP TABLE execution_sessions; DROP TABLE recovery_events; DROP TABLE recovery_operations; DROP TABLE completed_outputs; DROP TABLE artifact_checkpoints; DROP TABLE run_checkpoints; DROP TABLE job_checkpoints; DROP TABLE job_leases; DROP TABLE run_control; DROP TABLE queue_operations; DROP TABLE job_discoveries; DROP TABLE job_transitions; DROP TABLE job_attempts; DROP TABLE page_jobs; DROP TABLE scope_decisions; DROP INDEX site_profile_revisions_profile_sequence; DROP TABLE scope_rules; DROP TABLE site_profile_revisions; DROP TABLE site_profiles; DROP INDEX project_events_project_time; DROP TABLE project_events; DELETE FROM schema_migrations WHERE sequence > 1; PRAGMA user_version = 1; UPDATE project_metadata SET schema_version = 1");
     database.close();
     const manifestPath = path.join(projectPath, "project.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
@@ -74,7 +84,7 @@ test("opening schema version 1 creates a verified backup and migrates forward", 
     assert.equal(before.compatibility.requiresMigration, true);
     const opened = await storage.open(projectPath);
     assert.equal(opened.migrationStatus, "migrated");
-    assert.equal(opened.schemaVersion, 4);
+    assert.equal(opened.schemaVersion, 5);
     await storage.close();
     const backups = await readdir(path.join(projectPath, "database", "backups"));
     assert.equal(backups.some((name) => name.endsWith(".db")), true);
@@ -93,17 +103,19 @@ test("checksum drift, metadata mismatch, corruption, and bad imports fail withou
   const storage = createSqliteProjectStorage({ applicationVersion: "0.5.0" });
   try {
     await storage.create({ destinationPath: checksumPath, name: "Checksum", slug: "checksum" });
-    const checksumDb = new DatabaseSync(path.join(checksumPath, "database", "crawl.db"));
-    checksumDb.prepare("UPDATE schema_migrations SET checksum = ? WHERE sequence = 1").run("0".repeat(64));
-    checksumDb.close();
+    mutateFixtureDatabase(
+      path.join(checksumPath, "database", "crawl.db"),
+      `UPDATE schema_migrations SET checksum = '${"0".repeat(64)}' WHERE sequence = 1`,
+    );
     const checksumReport = await storage.validate(checksumPath);
     assert.equal(checksumReport.valid, false);
     assert.ok(checksumReport.issues.some((entry) => entry.code === "PROJECT_MIGRATION_CHECKSUM_MISMATCH"));
 
     await storage.create({ destinationPath: metadataPath, name: "Metadata", slug: "metadata" });
-    const metadataDb = new DatabaseSync(path.join(metadataPath, "database", "crawl.db"));
-    metadataDb.prepare("UPDATE project_metadata SET project_id = ? WHERE singleton_id = 1").run("00000000-0000-4000-8000-000000000999");
-    metadataDb.close();
+    const metadataManifestPath = path.join(metadataPath, "project.json");
+    const metadataManifest = JSON.parse(await readFile(metadataManifestPath, "utf8"));
+    metadataManifest.project.id = "00000000-0000-4000-8000-000000000999";
+    await writeFile(metadataManifestPath, `${JSON.stringify(metadataManifest, null, 2)}\n`);
     const metadataReport = await storage.validate(metadataPath);
     assert.equal(metadataReport.valid, false);
     assert.ok(metadataReport.issues.some((entry) => entry.code === "PROJECT_IDENTITY_MISMATCH"));

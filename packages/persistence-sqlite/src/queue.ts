@@ -63,6 +63,9 @@ function parseJson<T>(value: string | null): T | null {
 }
 
 function rowToJob(row: Row): PageJob {
+  const recoveryState = row["recovery_state"] === null || row["recovery_state"] === undefined
+    ? null
+    : String(row["recovery_state"]) as "interrupted" | "paused";
   return {
     jobId: String(row["job_id"]),
     projectId: String(row["project_id"]),
@@ -78,13 +81,14 @@ function rowToJob(row: Row): PageJob {
     identityHash: String(row["identity_hash"]),
     scopeDecisionId: String(row["scope_decision_id"]),
     scopeReasonCode: String(row["scope_reason_code"]),
-    state: String(row["state"]) as PageJobState,
+    state: recoveryState ?? String(row["state"]) as PageJobState,
     priority: Number(row["priority"]),
     prioritySource: String(row["priority_source"]) as "policy" | "explicit",
     queueSequence: Number(row["queue_sequence"]),
     depth: Number(row["depth"]),
     discoveryType: String(row["discovery_type"]) as PageJob["discoveryType"],
     attemptCount: Number(row["attempt_count"]),
+    fencingGeneration: Number(row["fencing_generation"] ?? 0),
     maxAttempts: Number(row["max_attempts"]),
     nextEligibleAt: String(row["next_eligible_at"]),
     claimToken: row["claim_token"] === null ? null : String(row["claim_token"]),
@@ -123,8 +127,12 @@ function rowToTransition(row: Row): PageJobTransition {
   return {
     transitionId: String(row["transition_id"]),
     jobId: String(row["job_id"]),
-    fromState: row["from_state"] === null ? null : String(row["from_state"]) as PageJobState,
-    toState: String(row["to_state"]) as PageJobState,
+    fromState: row["recovery_from_state"] !== null && row["recovery_from_state"] !== undefined
+      ? String(row["recovery_from_state"]) as PageJobState
+      : row["from_state"] === null ? null : String(row["from_state"]) as PageJobState,
+    toState: row["recovery_to_state"] !== null && row["recovery_to_state"] !== undefined
+      ? String(row["recovery_to_state"]) as PageJobState
+      : String(row["to_state"]) as PageJobState,
     reasonCode: String(row["reason_code"]),
     operationId: String(row["operation_id"]),
     correlationId: String(row["correlation_id"]),
@@ -140,7 +148,9 @@ function rowToAttempt(row: Row): PageJobAttempt {
     claimToken: String(row["claim_token"]),
     startedAt: String(row["started_at"]),
     finishedAt: row["finished_at"] === null ? null : String(row["finished_at"]),
-    outcome: String(row["outcome"]) as PageJobAttempt["outcome"],
+    outcome: row["recovery_outcome"] !== null && row["recovery_outcome"] !== undefined
+      ? String(row["recovery_outcome"]) as PageJobAttempt["outcome"]
+      : String(row["outcome"]) as PageJobAttempt["outcome"],
     errorCode: row["error_code"] === null ? null : String(row["error_code"]),
     errorCategory: row["error_category"] === null ? null : String(row["error_category"]) as QueueFailureCategory,
     safeErrorMessage: row["safe_error_message"] === null ? null : String(row["safe_error_message"]),
@@ -167,6 +177,18 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
     if (project === undefined) throw new QueueOperationError("QUEUE_PROJECT_NOT_OPEN", "The queue Project does not match the open Project");
     const run = database.prepare("SELECT run_id FROM runs WHERE run_id = ? AND project_id = ?").get(runId, projectId);
     if (run === undefined) throw new QueueOperationError("QUEUE_RUN_NOT_FOUND", "The selected Run does not belong to the Project");
+  };
+
+  const validateFencedClaim = (job: PageJob, claimToken: string): void => {
+    if (job.fencingGeneration === 0) return;
+    const lease = database.prepare(`
+      SELECT lease_token_hash, fencing_generation, expires_at FROM job_leases
+      WHERE job_id = ? AND project_id = ? AND run_id = ? AND status = 'active'
+    `).get(job.jobId, job.projectId, job.runId) as { lease_token_hash: string; fencing_generation: number; expires_at: string } | undefined;
+    const tokenHash = createHash("sha256").update(claimToken, "utf8").digest("hex");
+    if (lease === undefined || lease.lease_token_hash !== tokenHash || lease.fencing_generation !== job.fencingGeneration || now() >= lease.expires_at) {
+      throw new QueueOperationError("QUEUE_CLAIM_TOKEN_INVALID", "The active Lease and Fencing Generation do not authorize this operation");
+    }
   };
 
   const transaction = <T>(operation: () => T): T => {
@@ -340,6 +362,7 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
       const job = rowToJob(row);
       if (job.state !== "pending" && job.state !== "processing") throw new QueueOperationError("QUEUE_JOB_STATE_CONFLICT", `Only pending or processing Jobs may become ${target}`);
       if (job.state === "processing" && (input.claimToken === undefined || input.claimToken !== job.claimToken)) throw new QueueOperationError("QUEUE_CLAIM_TOKEN_INVALID", "The claim token does not own the processing Job");
+      if (job.state === "processing") validateFencedClaim(job, input.claimToken!);
       const timestamp = now();
       const message = sanitizeSafeMessage(input.safeMessage);
       database.prepare(`
@@ -350,6 +373,10 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
         UPDATE job_attempts SET finished_at = ?, outcome = ?, error_code = ?, error_category = 'domain', safe_error_message = ?
         WHERE job_id = ? AND claim_token = ? AND finished_at IS NULL
       `).run(timestamp, target, input.reasonCode, message, job.jobId, job.claimToken);
+      if (job.state === "processing" && job.fencingGeneration > 0) database.prepare(`
+        UPDATE job_leases SET status = 'released', released_at = ?, release_reason = ?, last_operation_id = ?
+        WHERE job_id = ? AND fencing_generation = ? AND status = 'active'
+      `).run(timestamp, `QUEUE_JOB_${target.toUpperCase()}`, input.operationId, job.jobId, job.fencingGeneration);
       transition({ jobId: job.jobId, from: job.state, to: target, reasonCode: input.reasonCode, operationId: input.operationId, correlationId: input.correlationId, occurredAt: timestamp });
       emit(`queue.job.${target}`, { projectId: input.projectId, runId: input.runId, jobId: job.jobId, reasonCode: input.reasonCode });
       return rowToJob(getJobRow(input.projectId, input.runId, job.jobId));
@@ -448,6 +475,7 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
           }
           if (job.state !== "processing") throw new QueueOperationError("QUEUE_JOB_STATE_CONFLICT", "Only a processing Page Job may complete");
           if (job.claimToken !== input.claimToken) throw new QueueOperationError("QUEUE_CLAIM_TOKEN_INVALID", "The completion claim token is invalid");
+          validateFencedClaim(job, input.claimToken);
           database.prepare(`
             UPDATE page_jobs SET state = 'completed', claim_token = NULL, claimed_by = NULL, completed_at = ?,
               completion_key = ?, result_version = 1, result_summary_json = ?, updated_at = ? WHERE job_id = ?
@@ -456,6 +484,10 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
             UPDATE job_attempts SET finished_at = ?, outcome = 'completed', metadata_json = ?
             WHERE job_id = ? AND claim_token = ? AND finished_at IS NULL
           `).run(input.completedAt, canonicalJson({ resultVersion: 1 }), job.jobId, input.claimToken);
+          if (job.fencingGeneration > 0) database.prepare(`
+            UPDATE job_leases SET status = 'released', released_at = ?, release_reason = 'QUEUE_JOB_COMPLETED', last_operation_id = ?
+            WHERE job_id = ? AND fencing_generation = ? AND status = 'active'
+          `).run(input.completedAt, input.operationId, job.jobId, job.fencingGeneration);
           transition({ jobId: job.jobId, from: "processing", to: "completed", reasonCode: "QUEUE_JOB_COMPLETED", operationId: input.operationId, correlationId: input.correlationId, occurredAt: input.completedAt, metadata: { resultVersion: 1 } });
           emit("queue.job.completed", { projectId: input.projectId, runId: input.runId, jobId: job.jobId, attemptNumber: job.attemptCount });
           return rowToJob(getJobRow(input.projectId, input.runId, job.jobId));
@@ -475,6 +507,7 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
           const job = rowToJob(row);
           if (job.state !== "processing") throw new QueueOperationError("QUEUE_JOB_STATE_CONFLICT", "Only a processing Page Job may fail");
           if (job.claimToken !== input.claimToken) throw new QueueOperationError("QUEUE_CLAIM_TOKEN_INVALID", "The failure claim token is invalid");
+          validateFencedClaim(job, input.claimToken);
           const retry = shouldRetry(job.attemptCount, job.maxAttempts, input.retryable);
           if (retry && input.nextEligibleAt === undefined) throw new QueueOperationError("QUEUE_INPUT_INVALID", "A retryable failure requires nextEligibleAt");
           const target = retry ? "retrying" : "failed";
@@ -488,6 +521,10 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
             UPDATE job_attempts SET finished_at = ?, outcome = ?, error_code = ?, error_category = ?, safe_error_message = ?, metadata_json = ?
             WHERE job_id = ? AND claim_token = ? AND finished_at IS NULL
           `).run(input.failedAt, target, input.failureCode, input.failureCategory, safeMessage, canonicalJson({ failureKey: input.failureKey, retryable: input.retryable }), job.jobId, input.claimToken);
+          if (job.fencingGeneration > 0) database.prepare(`
+            UPDATE job_leases SET status = 'released', released_at = ?, release_reason = ?, last_operation_id = ?
+            WHERE job_id = ? AND fencing_generation = ? AND status = 'active'
+          `).run(input.failedAt, retry ? 'QUEUE_JOB_RETRYING' : 'QUEUE_JOB_FAILED', input.operationId, job.jobId, job.fencingGeneration);
           transition({ jobId: job.jobId, from: "processing", to: target, reasonCode: input.failureCode, operationId: input.operationId, correlationId: input.correlationId, occurredAt: input.failedAt, metadata: { retryable: input.retryable, attemptNumber: job.attemptCount } });
           emit(retry ? "queue.job.retry-scheduled" : "queue.job.failed", { projectId: input.projectId, runId: input.runId, jobId: job.jobId, reasonCode: input.failureCode, attemptNumber: job.attemptCount });
           return rowToJob(getJobRow(input.projectId, input.runId, job.jobId));
@@ -555,7 +592,9 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
       if (!Number.isInteger(after) || after < 0) throw new QueueOperationError("QUEUE_INPUT_INVALID", "Queue cursor is invalid");
       const rows = input.state === undefined
         ? database.prepare("SELECT * FROM page_jobs WHERE project_id = ? AND run_id = ? AND queue_sequence > ? ORDER BY queue_sequence ASC LIMIT ?").all(input.projectId, input.runId, after, input.limit + 1) as unknown as Row[]
-        : database.prepare("SELECT * FROM page_jobs WHERE project_id = ? AND run_id = ? AND state = ? AND queue_sequence > ? ORDER BY queue_sequence ASC LIMIT ?").all(input.projectId, input.runId, input.state, after, input.limit + 1) as unknown as Row[];
+        : input.state === "interrupted" || input.state === "paused"
+          ? database.prepare("SELECT * FROM page_jobs WHERE project_id = ? AND run_id = ? AND recovery_state = ? AND queue_sequence > ? ORDER BY queue_sequence ASC LIMIT ?").all(input.projectId, input.runId, input.state, after, input.limit + 1) as unknown as Row[]
+          : database.prepare("SELECT * FROM page_jobs WHERE project_id = ? AND run_id = ? AND state = ? AND recovery_state IS NULL AND queue_sequence > ? ORDER BY queue_sequence ASC LIMIT ?").all(input.projectId, input.runId, input.state, after, input.limit + 1) as unknown as Row[];
       const hasMore = rows.length > input.limit;
       const jobs = rows.slice(0, input.limit).map(rowToJob);
       return { jobs, nextCursor: hasMore ? jobs.at(-1)?.queueSequence ?? null : null } satisfies QueueListResult;
@@ -567,12 +606,14 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
       const aggregate = database.prepare(`
         SELECT COUNT(*) AS total,
           SUM(CASE WHEN state = 'pending' THEN 1 ELSE 0 END) AS pending,
-          SUM(CASE WHEN state = 'processing' THEN 1 ELSE 0 END) AS processing,
+          SUM(CASE WHEN state = 'processing' AND recovery_state IS NULL THEN 1 ELSE 0 END) AS processing,
           SUM(CASE WHEN state = 'completed' THEN 1 ELSE 0 END) AS completed,
           SUM(CASE WHEN state = 'failed' THEN 1 ELSE 0 END) AS failed,
           SUM(CASE WHEN state = 'retrying' THEN 1 ELSE 0 END) AS retrying,
           SUM(CASE WHEN state = 'skipped' THEN 1 ELSE 0 END) AS skipped,
           SUM(CASE WHEN state = 'blocked' THEN 1 ELSE 0 END) AS blocked,
+          SUM(CASE WHEN recovery_state = 'interrupted' THEN 1 ELSE 0 END) AS interrupted,
+          SUM(CASE WHEN recovery_state = 'paused' THEN 1 ELSE 0 END) AS paused,
           SUM(CASE WHEN state = 'retrying' AND next_eligible_at <= ? THEN 1 ELSE 0 END) AS due_retries,
           SUM(CASE WHEN state = 'failed' AND attempt_count >= max_attempts THEN 1 ELSE 0 END) AS exhausted_retries,
           MAX(depth) AS maximum_depth, AVG(depth) AS average_depth,
@@ -594,6 +635,8 @@ export function createSqliteQueueRepository(database: DatabaseSync, options: Sql
         retrying: Number(aggregate["retrying"] ?? 0),
         skipped: Number(aggregate["skipped"] ?? 0),
         blocked: Number(aggregate["blocked"] ?? 0),
+        interrupted: Number(aggregate["interrupted"] ?? 0),
+        paused: Number(aggregate["paused"] ?? 0),
         dueRetries: Number(aggregate["due_retries"] ?? 0),
         exhaustedRetries: Number(aggregate["exhausted_retries"] ?? 0),
         maximumDepth: aggregate["maximum_depth"] === null ? null : Number(aggregate["maximum_depth"]),

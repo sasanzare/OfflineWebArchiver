@@ -9,9 +9,9 @@
   </head>
   <body>
     <main>
-      <p class="eyebrow">Product Phase 6</p>
-      <h1>Profile, scope, and persistent queue</h1>
-      <p class="lede">Inspect and test the durable Page Job queue. Crawling, browser rendering, automatic processing, Workers, Leases, and recovery are not implemented.</p>
+      <p class="eyebrow">Product Phase 7</p>
+      <h1>Persistent queue and crash recovery</h1>
+      <p class="lede">Inspect fenced Leases, durable Checkpoints, Recovery reports, and cooperative Pause/Resume. Crawling and browser rendering are not implemented.</p>
 
       <section aria-labelledby="create-heading">
         <h2 id="create-heading">Create Project</h2>
@@ -93,6 +93,8 @@
               <option value="retrying">Retrying</option>
               <option value="skipped">Skipped</option>
               <option value="blocked">Blocked</option>
+              <option value="interrupted">Interrupted</option>
+              <option value="paused">Paused</option>
             </select>
           </label>
           <label>Page size <input id="queue-page-size" type="number" min="1" max="200" value="25"></label>
@@ -111,6 +113,27 @@
         <div id="queue-list" class="queue-list" role="list">No Jobs loaded.</div>
         <h3>Selected Job detail and history</h3>
         <dl id="queue-detail"><div><dt>Selection</dt><dd>No Job selected.</dd></div></dl>
+      </section>
+
+      <section aria-labelledby="recovery-heading">
+        <h2 id="recovery-heading">Recovery and Run control</h2>
+        <p>Inspection is a dry run. Applying Recovery requires a separate confirmation and never displays Lease Tokens.</p>
+        <div class="fields">
+          <label>Recovery batch size <input id="recovery-limit" type="number" min="1" max="500" value="100"></label>
+        </div>
+        <div class="actions">
+          <button data-action="recovery-inspect" type="button">Inspect recovery</button>
+          <button data-action="recovery-apply" type="button">Apply recovery</button>
+          <button data-action="run-pause" type="button">Request pause</button>
+          <button data-action="run-resume" type="button">Resume</button>
+          <button data-action="run-state" type="button">Run state</button>
+          <button data-action="checkpoint-history" type="button">Selected Job checkpoints</button>
+        </div>
+        <h3>Recovery summary</h3>
+        <dl id="recovery-summary"><div><dt>Status</dt><dd>Not inspected</dd></div></dl>
+        <h3>Recovery report and checkpoint history</h3>
+        <div id="recovery-report">No Recovery report loaded.</div>
+        <div id="checkpoint-history">No Checkpoint history loaded.</div>
       </section>
 
       <section aria-labelledby="operations-heading">

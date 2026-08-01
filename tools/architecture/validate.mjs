@@ -12,6 +12,7 @@ const packageRules = new Map([
   ["packages/contracts/", new Set(["zod"])],
   ["packages/archive-core/", new Set()],
   ["packages/queue/", new Set(["@offline-web-archive/archive-core"])],
+  ["packages/recovery/", new Set(["@offline-web-archive/archive-core"])],
   ["packages/scope-engine/", new Set(["node:crypto", "node:url", "tldts", "zod"])],
   ["packages/project-format/", new Set(["zod"])],
   ["packages/persistence-sqlite/", new Set([
@@ -25,6 +26,7 @@ const packageRules = new Map([
     "@offline-web-archive/observability",
     "@offline-web-archive/project-format",
     "@offline-web-archive/queue",
+    "@offline-web-archive/recovery",
     "@offline-web-archive/scope-engine",
     "fflate",
   ])],
@@ -99,6 +101,7 @@ const manifests = [
   "packages/contracts/package.json",
   "packages/archive-core/package.json",
   "packages/queue/package.json",
+  "packages/recovery/package.json",
   "packages/scope-engine/package.json",
   "packages/project-format/package.json",
   "packages/persistence-sqlite/package.json",
@@ -144,12 +147,8 @@ function visit(name, trail = []) {
 for (const name of workspaceGraph.keys()) visit(name);
 
 const queueDomainSource = await readFile(path.join(repositoryRoot, "packages", "queue", "src", "index.ts"), "utf8");
-for (const forbidden of ["node:sqlite", "electron", "apps/cli", "playwright", "chromium", "heartbeat", "leaseExpiresAt", "checkpoint"]) {
-  if (queueDomainSource.toLowerCase().includes(forbidden.toLowerCase())) errors.push(`queue domain: forbidden Product Phase 6 dependency or recovery field '${forbidden}'`);
-}
-const queueMigrationSource = await readFile(path.join(repositoryRoot, "packages", "persistence-sqlite", "src", "migrations.ts"), "utf8");
-for (const forbidden of ["CREATE TABLE leases", "CREATE TABLE heartbeats", "lease_expires_at", "heartbeat_at", "checkpoint_path"]) {
-  if (queueMigrationSource.includes(forbidden)) errors.push(`queue migration: Product Phase 7 field '${forbidden}' is premature`);
+for (const forbidden of ["node:sqlite", "electron", "apps/cli", "playwright", "chromium"]) {
+  if (queueDomainSource.toLowerCase().includes(forbidden.toLowerCase())) errors.push(`queue domain: forbidden dependency '${forbidden}'`);
 }
 
 const desktopSource = await readFile(

@@ -31,10 +31,27 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "queue.getStatistics",
   "queue.getHistory",
   "queue.clearPending",
+  "recovery.inspect",
+  "recovery.recover",
+  "recovery.getReport",
+  "recovery.heartbeat",
+  "recovery.renewLease",
+  "recovery.releaseLease",
+  "checkpoint.save",
+  "checkpoint.getLatest",
+  "checkpoint.list",
+  "artifactCheckpoint.save",
+  "artifactCheckpoint.validate",
+  "run.requestPause",
+  "run.getPauseStatus",
+  "run.acknowledgePause",
+  "run.resume",
+  "run.getControlState",
+  "lease.list",
+  "lease.show",
 ] as const;
 
 export const PLANNED_CORE_CAPABILITIES = [
-  "queue.lease-recovery",
   "crawl.execution",
   "browser.rendering",
   "archive.generation",
@@ -105,6 +122,15 @@ export interface ProjectSummary {
   lastOpenedAt: string;
   state: "ready" | "closed";
   migrationStatus: "current" | "migrated";
+  recoveryStatus: "clean" | "recovery-available" | "recovery-required" | "recovery-blocked";
+  recoverySummary: {
+    processingJobs: number;
+    activeLeases: number;
+    expiredLeases: number;
+    abandonedJobs: number;
+    outputIssues: number;
+    uncleanSessions: number;
+  };
 }
 
 export interface ProjectValidationReport {
@@ -177,6 +203,8 @@ export const PAGE_JOB_STATES = [
   "retrying",
   "skipped",
   "blocked",
+  "interrupted",
+  "paused",
 ] as const;
 
 export type PageJobState = (typeof PAGE_JOB_STATES)[number];
@@ -258,6 +286,7 @@ export interface PageJob {
   depth: number;
   discoveryType: PageJobDiscoveryType;
   attemptCount: number;
+  fencingGeneration: number;
   maxAttempts: number;
   nextEligibleAt: string;
   claimToken: string | null;
@@ -319,7 +348,7 @@ export interface PageJobAttempt {
   claimToken: string;
   startedAt: string;
   finishedAt: string | null;
-  outcome: "processing" | "completed" | "failed" | "retrying" | "skipped" | "blocked";
+  outcome: "processing" | "completed" | "failed" | "retrying" | "skipped" | "blocked" | "interrupted" | "paused";
   errorCode: string | null;
   errorCategory: QueueFailureCategory | null;
   safeErrorMessage: string | null;
@@ -352,6 +381,8 @@ export interface QueueStatistics {
   retrying: number;
   skipped: number;
   blocked: number;
+  interrupted: number;
+  paused: number;
   dueRetries: number;
   exhaustedRetries: number;
   maximumDepth: number | null;
@@ -414,8 +445,190 @@ export interface QueueRepositoryPort {
   clearPending(input: { projectId: string; runId: string; confirmation: "CLEAR-PENDING-QUEUE"; reasonCode: string; idempotencyKey: string; operationId: string; correlationId: string }): Promise<{ skipped: number }>;
 }
 
+export interface Clock {
+  now(): string;
+}
+
+export type RunControlState = "active" | "pause_requested" | "paused" | "resuming" | "recovering" | "stopped" | "completed" | "failed";
+export type JobLeaseStatus = "active" | "released" | "expired" | "recovered";
+
+export type RecoveryOperationErrorCode =
+  | "LEASE_NOT_FOUND"
+  | "LEASE_EXPIRED"
+  | "LEASE_OWNER_MISMATCH"
+  | "LEASE_TOKEN_INVALID"
+  | "FENCING_GENERATION_STALE"
+  | "LEASE_RENEWAL_INVALID"
+  | "RUN_NOT_ACTIVE"
+  | "RUN_PAUSE_CONFLICT"
+  | "RECOVERY_ALREADY_RUNNING"
+  | "RECOVERY_OPERATION_NOT_FOUND"
+  | "RECOVERY_CONFIRMATION_REQUIRED"
+  | "CHECKPOINT_NOT_FOUND"
+  | "CHECKPOINT_INVALID"
+  | "CHECKPOINT_TOO_LARGE"
+  | "CHECKPOINT_OWNERSHIP_INVALID"
+  | "ARTIFACT_CHECKPOINT_INVALID"
+  | "OUTPUT_DESCRIPTOR_INVALID"
+  | "OUTPUT_VERIFICATION_FAILED"
+  | "RECOVERY_INPUT_INVALID"
+  | "RECOVERY_TRANSACTION_FAILED";
+
+export class RecoveryOperationError extends Error {
+  public constructor(
+    public readonly code: RecoveryOperationErrorCode,
+    message: string,
+    public readonly retryable = false,
+  ) {
+    super(message);
+    this.name = "RecoveryOperationError";
+  }
+}
+
+export interface JobLease {
+  leaseId: string;
+  jobId: string;
+  projectId: string;
+  runId: string;
+  ownerId: string;
+  fencingGeneration: number;
+  status: JobLeaseStatus;
+  acquiredAt: string;
+  heartbeatAt: string;
+  expiresAt: string;
+  releasedAt: string | null;
+  releaseReason: string | null;
+}
+
+export interface LeaseClaim {
+  job: PageJob;
+  lease: JobLease;
+  leaseToken: string;
+}
+
+export interface JobCheckpoint {
+  checkpointId: string;
+  jobId: string;
+  attemptNumber: number;
+  sequence: number;
+  checkpointVersion: number;
+  fencingGeneration: number;
+  ownerId: string;
+  phase: string;
+  progress: number;
+  relativePath: string | null;
+  payload: Readonly<Record<string, unknown>>;
+  committed: boolean;
+  supersedesCheckpointId: string | null;
+  createdAt: string;
+}
+
+export interface RunCheckpoint {
+  checkpointId: string;
+  projectId: string;
+  runId: string;
+  sequence: number;
+  checkpointVersion: number;
+  controlState: RunControlState;
+  pendingJobs: number;
+  processingJobs: number;
+  completedJobs: number;
+  createdAt: string;
+}
+
+export interface ArtifactCheckpoint {
+  artifactCheckpointId: string;
+  jobId: string;
+  artifactKey: string;
+  artifactKind: "document" | "asset" | "metadata" | "partial-file";
+  relativePath: string;
+  bytesWritten: number;
+  expectedBytes: number | null;
+  sha256: string | null;
+  validator: string | null;
+  resumeOffset: number;
+  fencingGeneration: number;
+  committed: boolean;
+  createdAt: string;
+}
+
+export interface CompletedOutputDescriptor {
+  descriptorId: string;
+  jobId: string;
+  relativePath: string;
+  byteLength: number;
+  sha256: string;
+  verificationPolicy: "size-and-sha256";
+  verifiedAt: string | null;
+  verificationStatus: "pending" | "valid" | "missing" | "size-mismatch" | "hash-mismatch";
+}
+
+export interface RecoveryInspectionItem {
+  jobId: string;
+  queueSequence: number;
+  currentState: PageJobState;
+  reasonCode: string;
+  action: "requeue" | "pause" | "report-output" | "none";
+  leaseId: string | null;
+  fencingGeneration: number;
+}
+
+export interface RecoveryReport {
+  recoveryOperationId: string;
+  projectId: string;
+  runId: string;
+  status: "inspected" | "in_progress" | "completed" | "failed";
+  dryRun: boolean;
+  evaluationTime: string;
+  scanned: number;
+  interrupted: number;
+  requeued: number;
+  paused: number;
+  outputIssues: number;
+  cursor: number;
+  hasMore: boolean;
+  items: readonly RecoveryInspectionItem[];
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export interface PauseStatus {
+  projectId: string;
+  runId: string;
+  controlState: RunControlState;
+  requestedAt: string | null;
+  pausedAt: string | null;
+  activeLeaseCount: number;
+}
+
+export interface RecoveryRepositoryPort {
+  claimNextWithLease(input: { projectId: string; runId: string; ownerId: string; leaseDurationMs: number; idempotencyKey: string; operationId: string; correlationId: string }): Promise<LeaseClaim | null>;
+  heartbeatLease(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; operationId: string }): Promise<JobLease>;
+  renewLease(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; extensionMs: number; operationId: string }): Promise<JobLease>;
+  releaseLease(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; reasonCode: string; operationId: string }): Promise<JobLease>;
+  listLeases(input: { projectId: string; runId: string; status?: JobLeaseStatus; limit: number }): Promise<readonly JobLease[]>;
+  getLease(input: { projectId: string; runId: string; jobId: string }): Promise<JobLease>;
+  saveJobCheckpoint(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; phase: string; progress: number; relativePath?: string | null; payload: Readonly<Record<string, unknown>>; operationId: string }): Promise<JobCheckpoint>;
+  getLatestJobCheckpoint(input: { projectId: string; runId: string; jobId: string }): Promise<JobCheckpoint | null>;
+  listJobCheckpoints(input: { projectId: string; runId: string; jobId: string; limit: number }): Promise<readonly JobCheckpoint[]>;
+  saveArtifactCheckpoint(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; artifactKey: string; artifactKind: ArtifactCheckpoint["artifactKind"]; relativePath: string; bytesWritten: number; expectedBytes?: number | null; sha256?: string | null; validator?: string | null; resumeOffset: number; committed: boolean; operationId: string }): Promise<ArtifactCheckpoint>;
+  validateArtifactCheckpoint(input: { projectId: string; runId: string; jobId: string; artifactKey: string }): Promise<{ valid: boolean; checkpoint: ArtifactCheckpoint | null; reasonCode: string | null }>;
+  saveCompletedOutputs(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; outputs: readonly Omit<CompletedOutputDescriptor, "descriptorId" | "jobId" | "verifiedAt" | "verificationStatus">[]; operationId: string }): Promise<readonly CompletedOutputDescriptor[]>;
+  inspectRecovery(input: { projectId: string; runId: string; evaluationTime: string; limit: number; afterSequence?: number }): Promise<RecoveryReport>;
+  recover(input: { projectId: string; runId: string; evaluationTime: string; limit: number; confirmation: "APPLY-RECOVERY"; idempotencyKey: string; operationId: string; correlationId: string }): Promise<RecoveryReport>;
+  getRecoveryReport(input: { projectId: string; runId: string; recoveryOperationId: string }): Promise<RecoveryReport>;
+  requestPause(input: { projectId: string; runId: string; operationId: string }): Promise<PauseStatus>;
+  getPauseStatus(input: { projectId: string; runId: string }): Promise<PauseStatus>;
+  acknowledgePause(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; operationId: string; correlationId: string }): Promise<PageJob>;
+  resumeRun(input: { projectId: string; runId: string; operationId: string; correlationId: string }): Promise<PauseStatus>;
+  getRunControlState(input: { projectId: string; runId: string }): Promise<PauseStatus>;
+  verifyCompletedOutput(input: { projectId: string; runId: string; jobId: string; projectRoot: string }): Promise<readonly CompletedOutputDescriptor[]>;
+  beginExecutionSession(input: { projectId: string; runId: string; processId: number; hostId: string }): Promise<string>;
+  endExecutionSession(input: { projectId: string; runId: string; sessionId: string }): Promise<void>;
+}
+
 export interface CoreSystemDescription {
-  coreStatus: "queue-foundation-ready";
+  coreStatus: "recovery-foundation-ready";
   implementedCapabilities: typeof IMPLEMENTED_CORE_CAPABILITIES;
   plannedCapabilities: typeof PLANNED_CORE_CAPABILITIES;
 }
@@ -428,7 +641,7 @@ export function createArchiveCore(): ArchiveCore {
   return Object.freeze({
     describeSystem(): CoreSystemDescription {
       return {
-        coreStatus: "queue-foundation-ready",
+        coreStatus: "recovery-foundation-ready",
         implementedCapabilities: IMPLEMENTED_CORE_CAPABILITIES,
         plannedCapabilities: PLANNED_CORE_CAPABILITIES,
       };

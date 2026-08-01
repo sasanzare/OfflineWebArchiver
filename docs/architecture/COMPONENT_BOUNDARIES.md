@@ -1,5 +1,9 @@
 # Component Boundaries
 
+## Product Phase 7 additions
+
+`packages/recovery` is pure policy and may depend on Core types only. Core exposes recovery/Lease/Checkpoint ports without SQLite, filesystem, Electron, browser, network, or process APIs. `persistence-sqlite` implements transactional ledgers and bounded output verification. Application Service validates/orchestrates; contracts carry versioned commands; CLI/Desktop depend only on the contract boundary. Partial HTTP Range behavior exists only in test fixtures.
+
 Scope Engine owns Profile runtime validation and URL/scope identity. Archive Core owns Queue models and the repository port; the Queue package owns pure state, ordering, retry, idempotency, and redaction policy. Persistence owns locking, SQLite transactions/schema/history and file consistency. Application Service owns Scope re-evaluation, ownership checks, command orchestration, and error translation. Contracts own transport validation. Desktop/CLI own presentation only.
 
 | Component | Owns | May depend on | Must not own |

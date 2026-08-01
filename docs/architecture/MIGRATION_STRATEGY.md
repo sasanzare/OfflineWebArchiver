@@ -1,5 +1,9 @@
 # Migration Strategy
 
+## Migration 005
+
+`005_add_checkpoint_lease_recovery` is forward-only and additive. It does not edit migrations 001–004, backfills Run control for existing Runs, and new Run creation inserts control explicitly. Tests cover schema 4→5, schema 1→5, rollback/integrity, exact migration IDs, and final schema assertions.
+
 Current SQLite schema is 4. Additive immutable migration `004_add_persistent_page_queue` creates normalized Scope Decision, Page Job, attempt, transition, discovery, and Queue operation tables plus supporting constraints/indexes. Applied migrations 001–003 are unchanged. Opening any supported older schema creates a verified SQLite backup before advancing.
 
 SQLite migrations are forward-only, ordered, and immutable:
@@ -15,4 +19,4 @@ Open first validates without mutation and acquires the Project writer lock. If m
 
 Migration logs contain IDs, sequences, versions, duration, and status—not SQL data, Project paths, or secrets. Backup retention/restore UX remains open for Product Phase 17.
 
-Tests cover definition validation, recorded checksum alteration, unknown/mismatched state, injected failure rollback, real legacy upgrades through schema 4, backup presence/metadata, Queue tables/indexes/constraints, absence of Product Phase 7 tables, and post-upgrade integrity.
+Tests cover definition validation, recorded checksum alteration, unknown/mismatched state, injected failure rollback, real legacy upgrades through schema 5, backup presence/metadata, Queue/Lease/Checkpoint/Recovery tables/indexes/constraints, preserved migrations 001–004, and post-upgrade integrity.

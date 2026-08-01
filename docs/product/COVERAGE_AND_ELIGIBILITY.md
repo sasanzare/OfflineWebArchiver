@@ -1,5 +1,9 @@
 # Coverage and Eligibility
 
+## Product Phase 7 status
+
+Recovery statistics, interrupted/paused Job counts, Lease state, Checkpoint progress, and output-verification issues are operational health evidence only. They are not eligible-page coverage and must not change a future denominator. No Phase 7 test or UI claims that pages were rendered, discovered, downloaded, or archived. Valid completed synthetic Jobs remain terminal during recovery; invalid output is reported separately.
+
 ## Product Phase 5 policy input
 
 Coverage remains a later measured outcome, but every future candidate classification must retain Scope Engine version, Profile revision, normalized/identity URL hash, structured matched rule ID/type/action/match data, and reason codes. Denied, invalid, duplicate-equivalent, depth-limited, and page-limited candidates must not disappear from the denominator merely because they are ineligible. Phase 5 supplies deterministic classifications only; it does not create a candidate ledger or calculate a target coverage percentage.

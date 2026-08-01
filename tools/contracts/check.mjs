@@ -9,6 +9,11 @@ import {
 
 const timestamp = "2026-07-31T12:00:00.000Z";
 const metadata = { commandId: "contract-check-command", correlationId: "contract-check-correlation", timestamp };
+const runId = "00000000-0000-4000-8000-000000000601";
+const jobId = "00000000-0000-4000-8000-000000000603";
+const leaseToken = "00000000-0000-4000-8000-000000000604";
+const recoveryOperationId = "00000000-0000-4000-8000-000000000605";
+const leaseOwnership = { jobId, leaseToken, fencingGeneration: 1, ownerId: "contract-check", operationId: "operation-owner" };
 const draft = {
   name: "Profile", baseUrl: "https://example.com/", seedUrls: ["https://example.com/"], authorization: { status: "incomplete", legalBasisReference: null, approvedBy: [], approvedAt: null, expiresAt: null },
   domainRules: [{ ruleId: "seed", effect: "allow", match: "exact", hostname: "example.com", schemes: ["https"], ports: [] }], pathRules: [],
@@ -37,8 +42,8 @@ const commands = [
   createProjectCommand("queue.enqueue", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", profileRevision: "00000000-0000-4000-8000-000000000602", url: "https://example.com/", discoveryType: "manual", maxAttempts: 3, idempotencyKey: "enqueue-001", operationId: "operation-enqueue" }, metadata),
   createProjectCommand("queue.enqueueBatch", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", profileRevision: "00000000-0000-4000-8000-000000000602", items: [{ url: "https://example.com/", discoveryType: "manual", maxAttempts: 3 }], idempotencyKey: "batch-001", operationId: "operation-batch" }, metadata),
   createProjectCommand("queue.claimNext", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", claimedBy: "contract-check", idempotencyKey: "claim-001", operationId: "operation-claim" }, metadata),
-  createProjectCommand("queue.complete", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", jobId: "00000000-0000-4000-8000-000000000603", claimToken: "00000000-0000-4000-8000-000000000604", completionKey: "completion-001", resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: timestamp, idempotencyKey: "complete-001", operationId: "operation-complete" }, metadata),
-  createProjectCommand("queue.fail", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", jobId: "00000000-0000-4000-8000-000000000603", claimToken: "00000000-0000-4000-8000-000000000604", failureKey: "failure-001", failureCode: "TEST_FAILURE", failureCategory: "domain", retryable: false, safeMessage: "safe test failure", failedAt: timestamp, idempotencyKey: "fail-001", operationId: "operation-fail" }, metadata),
+  createProjectCommand("queue.complete", { projectPath: "/projects/sample", runId, jobId, claimToken: leaseToken, ownerId: "contract-check", fencingGeneration: 1, completionKey: "completion-001", resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: timestamp, idempotencyKey: "complete-001", operationId: "operation-complete" }, metadata),
+  createProjectCommand("queue.fail", { projectPath: "/projects/sample", runId, jobId, claimToken: leaseToken, ownerId: "contract-check", fencingGeneration: 1, failureKey: "failure-001", failureCode: "TEST_FAILURE", failureCategory: "domain", retryable: false, safeMessage: "safe test failure", failedAt: timestamp, idempotencyKey: "fail-001", operationId: "operation-fail" }, metadata),
   createProjectCommand("queue.scheduleRetry", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", jobId: "00000000-0000-4000-8000-000000000603", nextEligibleAt: timestamp, reasonCode: "TEST_RETRY", idempotencyKey: "retry-001", operationId: "operation-retry" }, metadata),
   createProjectCommand("queue.releaseDueRetries", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", dueAt: timestamp, limit: 10, idempotencyKey: "release-001", operationId: "operation-release" }, metadata),
   createProjectCommand("queue.skip", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", jobId: "00000000-0000-4000-8000-000000000603", reasonCode: "TEST_SKIP", safeMessage: "safe test skip", idempotencyKey: "skip-001", operationId: "operation-skip" }, metadata),
@@ -48,6 +53,24 @@ const commands = [
   createProjectCommand("queue.getStatistics", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601" }, metadata),
   createProjectCommand("queue.getHistory", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", jobId: "00000000-0000-4000-8000-000000000603" }, metadata),
   createProjectCommand("queue.clearPending", { projectPath: "/projects/sample", runId: "00000000-0000-4000-8000-000000000601", confirmation: "CLEAR-PENDING-QUEUE", reasonCode: "TEST_CLEAR", idempotencyKey: "clear-001", operationId: "operation-clear" }, metadata),
+  createProjectCommand("recovery.inspect", { projectPath: "/projects/sample", runId, evaluationTime: timestamp, limit: 100 }, metadata),
+  createProjectCommand("recovery.recover", { projectPath: "/projects/sample", runId, evaluationTime: timestamp, limit: 100, confirmation: "APPLY-RECOVERY", idempotencyKey: "recovery-001", operationId: "operation-recovery" }, metadata),
+  createProjectCommand("recovery.getReport", { projectPath: "/projects/sample", runId, recoveryOperationId }, metadata),
+  createProjectCommand("recovery.heartbeat", { projectPath: "/projects/sample", runId, ...leaseOwnership }, metadata),
+  createProjectCommand("recovery.renewLease", { projectPath: "/projects/sample", runId, ...leaseOwnership, extensionMs: 60_000 }, metadata),
+  createProjectCommand("recovery.releaseLease", { projectPath: "/projects/sample", runId, ...leaseOwnership, reasonCode: "TEST_RELEASE" }, metadata),
+  createProjectCommand("checkpoint.save", { projectPath: "/projects/sample", runId, ...leaseOwnership, phase: "render", progress: 0.5, relativePath: "pages/index.html", payload: { cursor: 1 } }, metadata),
+  createProjectCommand("checkpoint.getLatest", { projectPath: "/projects/sample", runId, jobId }, metadata),
+  createProjectCommand("checkpoint.list", { projectPath: "/projects/sample", runId, jobId, limit: 50 }, metadata),
+  createProjectCommand("artifactCheckpoint.save", { projectPath: "/projects/sample", runId, ...leaseOwnership, artifactKey: "asset-1", artifactKind: "partial-file", relativePath: "assets/file.part", bytesWritten: 10, expectedBytes: 20, sha256: null, validator: "etag-1", resumeOffset: 10, committed: false }, metadata),
+  createProjectCommand("artifactCheckpoint.validate", { projectPath: "/projects/sample", runId, jobId, artifactKey: "asset-1" }, metadata),
+  createProjectCommand("run.requestPause", { projectPath: "/projects/sample", runId, operationId: "operation-pause" }, metadata),
+  createProjectCommand("run.getPauseStatus", { projectPath: "/projects/sample", runId }, metadata),
+  createProjectCommand("run.acknowledgePause", { projectPath: "/projects/sample", runId, ...leaseOwnership }, metadata),
+  createProjectCommand("run.resume", { projectPath: "/projects/sample", runId, operationId: "operation-resume" }, metadata),
+  createProjectCommand("run.getControlState", { projectPath: "/projects/sample", runId }, metadata),
+  createProjectCommand("lease.list", { projectPath: "/projects/sample", runId, status: "active", limit: 50 }, metadata),
+  createProjectCommand("lease.show", { projectPath: "/projects/sample", runId, jobId }, metadata),
 ];
 commands.forEach((command) => parseCommandEnvelope(JSON.parse(JSON.stringify(command))));
 parseResponseEnvelope({

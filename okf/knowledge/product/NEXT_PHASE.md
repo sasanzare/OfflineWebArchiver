@@ -1,3 +1,3 @@
 # Next Product Phase
 
-Product Phase 7 — Checkpoint, Lease, and Crash Recovery is next. It must add Worker Lease ownership, Heartbeats, expiration, abandoned `processing` recovery, persistent Checkpoints, safe Pause/Resume, application/process/system-shutdown and multi-day recovery, completed-output hash verification, partial Asset recovery foundations, and stale-worker commit prevention. It must preserve Product Phase 6 token fencing, idempotency, immutable histories, and state invariants. It has not started.
+**Product Phase 8 — Browser Lifecycle and Rendering Engine** is the exact next phase. It must integrate browser ownership/lifecycle through contract 1.4 and the verified Lease/Fencing/Checkpoint/Recovery boundary. It must not claim a production Asset Downloader, Worker Pool, authentication, proxies, rewriting, or crawling outside its scope.

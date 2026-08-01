@@ -1,5 +1,9 @@
 # Dependency Rules
 
+## Product Phase 7 rule
+
+The permitted path is Desktop/CLI → contracts → Application Service → Core ports, with `persistence-sqlite` and platform adapters injected outside Core. `recovery` → `archive-core` is permitted; Core/Recovery/Queue → SQLite/Electron/browser/network is forbidden. Production source may not import the local Range fixture or process-kill helpers.
+
 Scope Engine remains limited to computational URL/crypto APIs, Zod, and `tldts`. Phase 6 Queue may depend on Archive Core plus computational UUID/hash facilities but cannot import filesystem, SQLite, applications, services, Electron, browser/network/Worker/Lease APIs, or test support. Persistence implements Core ports and may use Queue pure policy; Application Service composes Scope and Queue. Architecture validation enforces this graph.
 
 ```text

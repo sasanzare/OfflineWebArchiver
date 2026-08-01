@@ -1,9 +1,13 @@
 # Project Scope
 
+## Product Phase 7 implementation boundary
+
+Product Phase 7 is verified. `FR-RECOVERY-001` now has SQLite-backed Lease/Heartbeat/renewal/expiration, monotonic Fencing Generation, versioned Checkpoints, cooperative Pause/Resume, explicit bounded Crash Recovery, process-kill and multi-day evidence, completed-output verification, and a partial-file decision/loopback Range foundation. Browser rendering, link discovery, production network download, Worker Pool scheduling, authentication, and proxies remain planned. The exact next phase is **Product Phase 8 — Browser Lifecycle and Rendering Engine**.
+
 **Project:** Offline Web Archive Builder  
 **Document status:** Proposed baseline  
 **Owner / decision authority:** Product Owner, except where another owner is named  
-**Current product phase:** Product Phase 6 complete; Product Phase 7 — Checkpoint, Lease, and Crash Recovery is next
+**Current product phase:** Product Phase 7 complete; Product Phase 8 — Browser Lifecycle and Rendering Engine is next and not started
 **Last updated:** 2026-07-31
 
 This is the authoritative product-scope and requirements document. Measurement

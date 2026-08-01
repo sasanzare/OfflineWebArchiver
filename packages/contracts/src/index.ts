@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.3.0" as const;
+export const CONTRACT_VERSION = "1.4.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -35,6 +35,24 @@ export const COMMAND_TYPES = [
   "queue.getStatistics",
   "queue.getHistory",
   "queue.clearPending",
+  "recovery.inspect",
+  "recovery.recover",
+  "recovery.getReport",
+  "recovery.heartbeat",
+  "recovery.renewLease",
+  "recovery.releaseLease",
+  "checkpoint.save",
+  "checkpoint.getLatest",
+  "checkpoint.list",
+  "artifactCheckpoint.save",
+  "artifactCheckpoint.validate",
+  "run.requestPause",
+  "run.getPauseStatus",
+  "run.acknowledgePause",
+  "run.resume",
+  "run.getControlState",
+  "lease.list",
+  "lease.show",
 ] as const;
 
 export const SYSTEM_DESCRIBE_COMMAND = COMMAND_TYPES[0];
@@ -111,6 +129,26 @@ export const ERROR_CODES = [
   "QUEUE_RESULT_TOO_LARGE",
   "QUEUE_PAGINATION_LIMIT_EXCEEDED",
   "QUEUE_CLEAR_NOT_ALLOWED",
+  "LEASE_NOT_FOUND",
+  "LEASE_EXPIRED",
+  "LEASE_OWNER_MISMATCH",
+  "LEASE_TOKEN_INVALID",
+  "FENCING_GENERATION_STALE",
+  "LEASE_RENEWAL_INVALID",
+  "RUN_NOT_ACTIVE",
+  "RUN_PAUSE_CONFLICT",
+  "RECOVERY_ALREADY_RUNNING",
+  "RECOVERY_OPERATION_NOT_FOUND",
+  "RECOVERY_CONFIRMATION_REQUIRED",
+  "CHECKPOINT_NOT_FOUND",
+  "CHECKPOINT_INVALID",
+  "CHECKPOINT_TOO_LARGE",
+  "CHECKPOINT_OWNERSHIP_INVALID",
+  "ARTIFACT_CHECKPOINT_INVALID",
+  "OUTPUT_DESCRIPTOR_INVALID",
+  "OUTPUT_VERIFICATION_FAILED",
+  "RECOVERY_INPUT_INVALID",
+  "RECOVERY_TRANSACTION_FAILED",
 ] as const;
 
 const identifierSchema = z
@@ -253,13 +291,26 @@ export const ScopeExplainCommandSchema = z.object({ ...commandBase, commandType:
 export const ScopePreviewNormalizationCommandSchema = z.object({ ...commandBase, commandType: z.literal("scope.previewNormalization"), payload: z.object({ projectPath: localPathSchema, input: scopeInputSchema }).strict() }).strict();
 export const ScopeGetEngineInfoCommandSchema = z.object({ ...commandBase, commandType: z.literal("scope.getEngineInfo"), payload: z.object({}).strict() }).strict();
 
-const queueStateSchema = z.enum(["pending", "processing", "completed", "failed", "retrying", "skipped", "blocked"]);
+const queueStateSchema = z.enum(["pending", "processing", "completed", "failed", "retrying", "skipped", "blocked", "interrupted", "paused"]);
 const queueDiscoveryTypeSchema = z.enum(["seed", "dom-link", "canonical", "redirect", "sitemap", "history-api", "navigation-action", "json-discovery", "manual"]);
 const queueFailureCategorySchema = z.enum(["validation", "configuration", "application", "domain", "platform", "internal"]);
 const queueKeySchema = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
 const queueReasonSchema = z.string().min(1).max(120).regex(/^[A-Z0-9][A-Z0-9._:-]*$/);
 const queueMutationFields = { idempotencyKey: queueKeySchema, operationId: identifierSchema };
 const queueOwnerFields = { projectPath: localPathSchema, runId: z.string().uuid() };
+const leaseOwnershipFields = {
+  jobId: z.string().uuid(),
+  leaseToken: z.string().uuid(),
+  fencingGeneration: z.number().int().positive(),
+  ownerId: z.string().min(1).max(120),
+  operationId: identifierSchema,
+};
+const outputDescriptorInputSchema = z.object({
+  relativePath: z.string().min(1).max(2_048),
+  byteLength: z.number().int().nonnegative(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  verificationPolicy: z.literal("size-and-sha256"),
+}).strict();
 const queueEnqueueItemSchema = z.object({
   url: z.string().min(1).max(8_193),
   sourceUrl: z.string().min(1).max(8_192).optional(),
@@ -278,9 +329,9 @@ const queueResultSummarySchema = z.object({
 
 export const QueueEnqueueCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.enqueue"), payload: z.object({ ...queueOwnerFields, profileRevision: z.string().uuid(), ...queueEnqueueItemSchema.shape, ...queueMutationFields }).strict() }).strict();
 export const QueueEnqueueBatchCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.enqueueBatch"), payload: z.object({ ...queueOwnerFields, profileRevision: z.string().uuid(), items: z.array(queueEnqueueItemSchema).min(1).max(250), ...queueMutationFields }).strict() }).strict();
-export const QueueClaimNextCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.claimNext"), payload: z.object({ ...queueOwnerFields, claimedBy: z.string().min(1).max(120), ...queueMutationFields }).strict() }).strict();
-export const QueueCompleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.complete"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), completionKey: queueKeySchema, resultSummary: queueResultSummarySchema, completedAt: timestampSchema, ...queueMutationFields }).strict() }).strict();
-export const QueueFailCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.fail"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), failureKey: queueKeySchema, failureCode: queueReasonSchema, failureCategory: queueFailureCategorySchema, retryable: z.boolean(), safeMessage: z.string().min(1).max(800), failedAt: timestampSchema, nextEligibleAt: timestampSchema.optional(), ...queueMutationFields }).strict() }).strict();
+export const QueueClaimNextCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.claimNext"), payload: z.object({ ...queueOwnerFields, claimedBy: z.string().min(1).max(120), leaseDurationMs: z.number().int().min(5_000).max(86_400_000).default(60_000), ...queueMutationFields }).strict() }).strict();
+export const QueueCompleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.complete"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), ownerId: z.string().min(1).max(120), fencingGeneration: z.number().int().positive(), completionKey: queueKeySchema, resultSummary: queueResultSummarySchema, outputs: z.array(outputDescriptorInputSchema).max(1_000).optional(), completedAt: timestampSchema, ...queueMutationFields }).strict() }).strict();
+export const QueueFailCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.fail"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), ownerId: z.string().min(1).max(120), fencingGeneration: z.number().int().positive(), failureKey: queueKeySchema, failureCode: queueReasonSchema, failureCategory: queueFailureCategorySchema, retryable: z.boolean(), safeMessage: z.string().min(1).max(800), failedAt: timestampSchema, nextEligibleAt: timestampSchema.optional(), ...queueMutationFields }).strict() }).strict();
 export const QueueScheduleRetryCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.scheduleRetry"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), nextEligibleAt: timestampSchema, reasonCode: queueReasonSchema, ...queueMutationFields }).strict() }).strict();
 export const QueueReleaseDueRetriesCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.releaseDueRetries"), payload: z.object({ ...queueOwnerFields, dueAt: timestampSchema, limit: z.number().int().min(1).max(200), ...queueMutationFields }).strict() }).strict();
 const queueTerminalCommandPayload = z.object({ ...queueOwnerFields, jobId: z.string().uuid(), reasonCode: queueReasonSchema, safeMessage: z.string().min(1).max(800), claimToken: z.string().uuid().optional(), ...queueMutationFields }).strict();
@@ -291,6 +342,26 @@ export const QueueListCommandSchema = z.object({ ...commandBase, commandType: z.
 export const QueueGetStatisticsCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.getStatistics"), payload: z.object(queueOwnerFields).strict() }).strict();
 export const QueueGetHistoryCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.getHistory"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid() }).strict() }).strict();
 export const QueueClearPendingCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.clearPending"), payload: z.object({ ...queueOwnerFields, confirmation: z.literal("CLEAR-PENDING-QUEUE"), reasonCode: queueReasonSchema, ...queueMutationFields }).strict() }).strict();
+
+const recoveryReadFields = { ...queueOwnerFields };
+export const RecoveryInspectCommandSchema = z.object({ ...commandBase, commandType: z.literal("recovery.inspect"), payload: z.object({ ...recoveryReadFields, evaluationTime: timestampSchema, afterSequence: z.number().int().nonnegative().optional(), limit: z.number().int().min(1).max(500).default(100) }).strict() }).strict();
+export const RecoveryRecoverCommandSchema = z.object({ ...commandBase, commandType: z.literal("recovery.recover"), payload: z.object({ ...recoveryReadFields, evaluationTime: timestampSchema, limit: z.number().int().min(1).max(500).default(100), confirmation: z.literal("APPLY-RECOVERY"), ...queueMutationFields }).strict() }).strict();
+export const RecoveryGetReportCommandSchema = z.object({ ...commandBase, commandType: z.literal("recovery.getReport"), payload: z.object({ ...recoveryReadFields, recoveryOperationId: z.string().uuid() }).strict() }).strict();
+export const RecoveryHeartbeatCommandSchema = z.object({ ...commandBase, commandType: z.literal("recovery.heartbeat"), payload: z.object({ ...recoveryReadFields, ...leaseOwnershipFields }).strict() }).strict();
+export const RecoveryRenewLeaseCommandSchema = z.object({ ...commandBase, commandType: z.literal("recovery.renewLease"), payload: z.object({ ...recoveryReadFields, ...leaseOwnershipFields, extensionMs: z.number().int().min(5_000).max(86_400_000) }).strict() }).strict();
+export const RecoveryReleaseLeaseCommandSchema = z.object({ ...commandBase, commandType: z.literal("recovery.releaseLease"), payload: z.object({ ...recoveryReadFields, ...leaseOwnershipFields, reasonCode: queueReasonSchema }).strict() }).strict();
+export const CheckpointSaveCommandSchema = z.object({ ...commandBase, commandType: z.literal("checkpoint.save"), payload: z.object({ ...recoveryReadFields, ...leaseOwnershipFields, phase: z.string().min(1).max(120), progress: z.number().min(0).max(1), relativePath: z.string().min(1).max(2_048).nullable().optional(), payload: z.record(z.string().max(120), z.unknown()) }).strict() }).strict();
+export const CheckpointGetLatestCommandSchema = z.object({ ...commandBase, commandType: z.literal("checkpoint.getLatest"), payload: z.object({ ...recoveryReadFields, jobId: z.string().uuid() }).strict() }).strict();
+export const CheckpointListCommandSchema = z.object({ ...commandBase, commandType: z.literal("checkpoint.list"), payload: z.object({ ...recoveryReadFields, jobId: z.string().uuid(), limit: z.number().int().min(1).max(200).default(50) }).strict() }).strict();
+export const ArtifactCheckpointSaveCommandSchema = z.object({ ...commandBase, commandType: z.literal("artifactCheckpoint.save"), payload: z.object({ ...recoveryReadFields, ...leaseOwnershipFields, artifactKey: z.string().min(1).max(160), artifactKind: z.enum(["document", "asset", "metadata", "partial-file"]), relativePath: z.string().min(1).max(2_048), bytesWritten: z.number().int().nonnegative(), expectedBytes: z.number().int().nonnegative().nullable().optional(), sha256: z.string().regex(/^[a-f0-9]{64}$/).nullable().optional(), validator: z.string().max(512).nullable().optional(), resumeOffset: z.number().int().nonnegative(), committed: z.boolean() }).strict() }).strict();
+export const ArtifactCheckpointValidateCommandSchema = z.object({ ...commandBase, commandType: z.literal("artifactCheckpoint.validate"), payload: z.object({ ...recoveryReadFields, jobId: z.string().uuid(), artifactKey: z.string().min(1).max(160) }).strict() }).strict();
+export const RunRequestPauseCommandSchema = z.object({ ...commandBase, commandType: z.literal("run.requestPause"), payload: z.object({ ...recoveryReadFields, operationId: identifierSchema }).strict() }).strict();
+export const RunGetPauseStatusCommandSchema = z.object({ ...commandBase, commandType: z.literal("run.getPauseStatus"), payload: z.object(recoveryReadFields).strict() }).strict();
+export const RunAcknowledgePauseCommandSchema = z.object({ ...commandBase, commandType: z.literal("run.acknowledgePause"), payload: z.object({ ...recoveryReadFields, ...leaseOwnershipFields }).strict() }).strict();
+export const RunResumeCommandSchema = z.object({ ...commandBase, commandType: z.literal("run.resume"), payload: z.object({ ...recoveryReadFields, operationId: identifierSchema }).strict() }).strict();
+export const RunGetControlStateCommandSchema = z.object({ ...commandBase, commandType: z.literal("run.getControlState"), payload: z.object(recoveryReadFields).strict() }).strict();
+export const LeaseListCommandSchema = z.object({ ...commandBase, commandType: z.literal("lease.list"), payload: z.object({ ...recoveryReadFields, status: z.enum(["active", "released", "expired", "recovered"]).optional(), limit: z.number().int().min(1).max(200).default(50) }).strict() }).strict();
+export const LeaseShowCommandSchema = z.object({ ...commandBase, commandType: z.literal("lease.show"), payload: z.object({ ...recoveryReadFields, jobId: z.string().uuid() }).strict() }).strict();
 
 export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   SystemDescribeCommandSchema,
@@ -325,6 +396,24 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   QueueGetStatisticsCommandSchema,
   QueueGetHistoryCommandSchema,
   QueueClearPendingCommandSchema,
+  RecoveryInspectCommandSchema,
+  RecoveryRecoverCommandSchema,
+  RecoveryGetReportCommandSchema,
+  RecoveryHeartbeatCommandSchema,
+  RecoveryRenewLeaseCommandSchema,
+  RecoveryReleaseLeaseCommandSchema,
+  CheckpointSaveCommandSchema,
+  CheckpointGetLatestCommandSchema,
+  CheckpointListCommandSchema,
+  ArtifactCheckpointSaveCommandSchema,
+  ArtifactCheckpointValidateCommandSchema,
+  RunRequestPauseCommandSchema,
+  RunGetPauseStatusCommandSchema,
+  RunAcknowledgePauseCommandSchema,
+  RunResumeCommandSchema,
+  RunGetControlStateCommandSchema,
+  LeaseListCommandSchema,
+  LeaseShowCommandSchema,
 ]);
 
 export const RuntimeInfoSchema = z.object({
@@ -342,7 +431,7 @@ export const SystemDescriptionSchema = z.object({
   applicationName: z.literal("Offline Web Archive Builder"),
   applicationVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
   contractVersion: z.literal(CONTRACT_VERSION),
-  coreStatus: z.literal("queue-foundation-ready"),
+  coreStatus: z.literal("recovery-foundation-ready"),
   implementedCapabilities: z.array(z.enum(COMMAND_TYPES)).min(1),
   plannedCapabilities: z.array(z.string().min(1)).min(1),
   runtime: RuntimeInfoSchema,
@@ -371,6 +460,8 @@ export const ProjectSummarySchema = z.object({
   lastOpenedAt: timestampSchema,
   state: z.enum(["ready", "closed"]),
   migrationStatus: z.enum(["current", "migrated"]),
+  recoveryStatus: z.enum(["clean", "recovery-available", "recovery-required", "recovery-blocked"]),
+  recoverySummary: z.object({ processingJobs: z.number().int().nonnegative(), activeLeases: z.number().int().nonnegative(), expiredLeases: z.number().int().nonnegative(), abandonedJobs: z.number().int().nonnegative(), outputIssues: z.number().int().nonnegative(), uncleanSessions: z.number().int().nonnegative() }).strict(),
 }).strict();
 
 export const ProjectValidationIssueSchema = z.object({
@@ -461,6 +552,7 @@ export const PageJobContractSchema = z.object({
   scopeDecisionId: z.string().regex(/^[a-f0-9]{64}$/), scopeReasonCode: z.string().min(1).max(120), state: queueStateSchema,
   priority: z.number().int().min(0).max(1_000), prioritySource: z.enum(["policy", "explicit"]), queueSequence: z.number().int().positive(),
   depth: z.number().int().nonnegative(), discoveryType: queueDiscoveryTypeSchema, attemptCount: z.number().int().nonnegative(), maxAttempts: z.number().int().min(1).max(100),
+  fencingGeneration: z.number().int().nonnegative(),
   nextEligibleAt: timestampSchema, claimToken: z.string().uuid().nullable(), claimedBy: z.string().max(120).nullable(), claimedAt: timestampSchema.nullable(), lastAttemptAt: timestampSchema.nullable(),
   completedAt: timestampSchema.nullable(), failedAt: timestampSchema.nullable(), completionKey: queueKeySchema.nullable(), resultVersion: z.number().int().positive().nullable(),
   resultSummary: queueResultSummarySchema.nullable(), lastErrorCode: z.string().max(120).nullable(), lastErrorCategory: queueFailureCategorySchema.nullable(), lastErrorMessage: z.string().max(400).nullable(),
@@ -477,7 +569,7 @@ const PageJobTransitionContractSchema = z.object({
 }).strict();
 const PageJobAttemptContractSchema = z.object({
   attemptId: z.string().uuid(), jobId: z.string().uuid(), attemptNumber: z.number().int().positive(), claimToken: z.string().uuid(),
-  startedAt: timestampSchema, finishedAt: timestampSchema.nullable(), outcome: z.enum(["processing", "completed", "failed", "retrying", "skipped", "blocked"]),
+  startedAt: timestampSchema, finishedAt: timestampSchema.nullable(), outcome: z.enum(["processing", "completed", "failed", "retrying", "skipped", "blocked", "interrupted", "paused"]),
   errorCode: z.string().max(120).nullable(), errorCategory: queueFailureCategorySchema.nullable(), safeErrorMessage: z.string().max(400).nullable(),
 }).strict();
 const QueueEnqueueOutcomeSchema = z.discriminatedUnion("outcome", [
@@ -493,7 +585,8 @@ export const QueueBatchResultSchema = z.object({
   counts: z.object({ created: z.number().int().nonnegative(), existing: z.number().int().nonnegative(), rejected: z.number().int().nonnegative(), blocked: z.number().int().nonnegative(), invalid: z.number().int().nonnegative(), failed: z.number().int().nonnegative() }).strict(),
 }).strict();
 export const QueueJobResultSchema = z.object({
-  resultType: z.literal("queue.job"), action: z.enum(["claimNext", "complete", "fail", "scheduleRetry", "skip", "block", "get"]), job: PageJobContractSchema.nullable(),
+  resultType: z.literal("queue.job"), action: z.enum(["claimNext", "complete", "fail", "scheduleRetry", "skip", "block", "get", "pause"]), job: PageJobContractSchema.nullable(),
+  lease: z.object({ leaseId: z.string().uuid(), jobId: z.string().uuid(), projectId: z.string().uuid(), runId: z.string().uuid(), ownerId: z.string().min(1).max(120), fencingGeneration: z.number().int().positive(), status: z.enum(["active", "released", "expired", "recovered"]), acquiredAt: timestampSchema, heartbeatAt: timestampSchema, expiresAt: timestampSchema, releasedAt: timestampSchema.nullable(), releaseReason: z.string().max(120).nullable() }).strict().optional(),
 }).strict();
 export const QueueReleasedResultSchema = z.object({ resultType: z.literal("queue.released"), jobs: z.array(PageJobContractSchema).max(200) }).strict();
 export const QueueListResultSchema = z.object({ resultType: z.literal("queue.list"), jobs: z.array(PageJobContractSchema).max(200), nextCursor: z.number().int().positive().nullable() }).strict();
@@ -501,6 +594,7 @@ export const QueueStatisticsResultSchema = z.object({
   resultType: z.literal("queue.statistics"), statistics: z.object({
     total: z.number().int().nonnegative(), pending: z.number().int().nonnegative(), processing: z.number().int().nonnegative(), completed: z.number().int().nonnegative(),
     failed: z.number().int().nonnegative(), retrying: z.number().int().nonnegative(), skipped: z.number().int().nonnegative(), blocked: z.number().int().nonnegative(),
+    interrupted: z.number().int().nonnegative(), paused: z.number().int().nonnegative(),
     dueRetries: z.number().int().nonnegative(), exhaustedRetries: z.number().int().nonnegative(), maximumDepth: z.number().int().nonnegative().nullable(),
     averageDepth: z.number().nonnegative().nullable(), oldestPendingAt: timestampSchema.nullable(), newestJobAt: timestampSchema.nullable(), duplicateDiscoveries: z.number().int().nonnegative(),
   }).strict(),
@@ -509,6 +603,40 @@ export const QueueHistoryResultSchema = z.object({
   resultType: z.literal("queue.history"), history: z.object({ job: PageJobContractSchema, transitions: z.array(PageJobTransitionContractSchema).max(10_000), attempts: z.array(PageJobAttemptContractSchema).max(100), discoveries: z.array(PageJobDiscoveryContractSchema).max(10_000) }).strict(),
 }).strict();
 export const QueueClearResultSchema = z.object({ resultType: z.literal("queue.clear"), skipped: z.number().int().nonnegative() }).strict();
+
+export const JobLeaseContractSchema = z.object({
+  leaseId: z.string().uuid(), jobId: z.string().uuid(), projectId: z.string().uuid(), runId: z.string().uuid(), ownerId: z.string().min(1).max(120),
+  fencingGeneration: z.number().int().positive(), status: z.enum(["active", "released", "expired", "recovered"]), acquiredAt: timestampSchema,
+  heartbeatAt: timestampSchema, expiresAt: timestampSchema, releasedAt: timestampSchema.nullable(), releaseReason: z.string().max(120).nullable(),
+}).strict();
+export const JobCheckpointContractSchema = z.object({
+  checkpointId: z.string().uuid(), jobId: z.string().uuid(), attemptNumber: z.number().int().positive(), sequence: z.number().int().positive(), checkpointVersion: z.literal(1),
+  fencingGeneration: z.number().int().positive(), ownerId: z.string().min(1).max(120), phase: z.string().min(1).max(120), progress: z.number().min(0).max(1),
+  relativePath: z.string().min(1).max(2_048).nullable(), payload: z.record(z.string(), z.unknown()), committed: z.boolean(), supersedesCheckpointId: z.string().uuid().nullable(), createdAt: timestampSchema,
+}).strict();
+export const ArtifactCheckpointContractSchema = z.object({
+  artifactCheckpointId: z.string().uuid(), jobId: z.string().uuid(), artifactKey: z.string().min(1).max(160), artifactKind: z.enum(["document", "asset", "metadata", "partial-file"]),
+  relativePath: z.string().min(1).max(2_048), bytesWritten: z.number().int().nonnegative(), expectedBytes: z.number().int().nonnegative().nullable(), sha256: z.string().regex(/^[a-f0-9]{64}$/).nullable(),
+  validator: z.string().max(512).nullable(), resumeOffset: z.number().int().nonnegative(), fencingGeneration: z.number().int().positive(), committed: z.boolean(), createdAt: timestampSchema,
+}).strict();
+const RecoveryInspectionItemContractSchema = z.object({
+  jobId: z.string().uuid(), queueSequence: z.number().int().positive(), currentState: queueStateSchema, reasonCode: queueReasonSchema,
+  action: z.enum(["requeue", "pause", "report-output", "none"]), leaseId: z.string().uuid().nullable(), fencingGeneration: z.number().int().nonnegative(),
+}).strict();
+export const RecoveryReportContractSchema = z.object({
+  recoveryOperationId: z.string().uuid(), projectId: z.string().uuid(), runId: z.string().uuid(), status: z.enum(["inspected", "in_progress", "completed", "failed"]),
+  dryRun: z.boolean(), evaluationTime: timestampSchema, scanned: z.number().int().nonnegative(), interrupted: z.number().int().nonnegative(), requeued: z.number().int().nonnegative(), paused: z.number().int().nonnegative(),
+  outputIssues: z.number().int().nonnegative(), cursor: z.number().int().nonnegative(), hasMore: z.boolean(), items: z.array(RecoveryInspectionItemContractSchema).max(500), startedAt: timestampSchema, completedAt: timestampSchema.nullable(),
+}).strict();
+const PauseStatusContractSchema = z.object({ projectId: z.string().uuid(), runId: z.string().uuid(), controlState: z.enum(["active", "pause_requested", "paused", "resuming", "recovering", "stopped", "completed", "failed"]), requestedAt: timestampSchema.nullable(), pausedAt: timestampSchema.nullable(), activeLeaseCount: z.number().int().nonnegative() }).strict();
+export const RecoveryReportResultSchema = z.object({ resultType: z.literal("recovery.report"), report: RecoveryReportContractSchema }).strict();
+export const LeaseValueResultSchema = z.object({ resultType: z.literal("lease.value"), lease: JobLeaseContractSchema }).strict();
+export const LeaseListResultSchema = z.object({ resultType: z.literal("lease.list"), leases: z.array(JobLeaseContractSchema).max(200) }).strict();
+export const CheckpointValueResultSchema = z.object({ resultType: z.literal("checkpoint.value"), action: z.enum(["save", "latest"]), checkpoint: JobCheckpointContractSchema.nullable() }).strict();
+export const CheckpointListResultSchema = z.object({ resultType: z.literal("checkpoint.list"), checkpoints: z.array(JobCheckpointContractSchema).max(200) }).strict();
+export const ArtifactCheckpointValueResultSchema = z.object({ resultType: z.literal("artifactCheckpoint.value"), checkpoint: ArtifactCheckpointContractSchema }).strict();
+export const ArtifactCheckpointValidationResultSchema = z.object({ resultType: z.literal("artifactCheckpoint.validation"), valid: z.boolean(), checkpoint: ArtifactCheckpointContractSchema.nullable(), reasonCode: z.string().max(120).nullable() }).strict();
+export const RunControlResultSchema = z.object({ resultType: z.literal("run.control"), run: PauseStatusContractSchema }).strict();
 
 export const ResultContractSchema = z.discriminatedUnion("resultType", [
   SystemDescriptionSchema,
@@ -531,6 +659,14 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   QueueStatisticsResultSchema,
   QueueHistoryResultSchema,
   QueueClearResultSchema,
+  RecoveryReportResultSchema,
+  LeaseValueResultSchema,
+  LeaseListResultSchema,
+  CheckpointValueResultSchema,
+  CheckpointListResultSchema,
+  ArtifactCheckpointValueResultSchema,
+  ArtifactCheckpointValidationResultSchema,
+  RunControlResultSchema,
 ]);
 
 const responseBase = {
@@ -602,6 +738,9 @@ export type SystemDescription = z.infer<typeof SystemDescriptionSchema>;
 export type ProjectSummaryContract = z.infer<typeof ProjectSummarySchema>;
 export type SiteProfileContract = z.infer<typeof SiteProfileContractSchema>;
 export type PageJobContract = z.infer<typeof PageJobContractSchema>;
+export type JobLeaseContract = z.infer<typeof JobLeaseContractSchema>;
+export type JobCheckpointContract = z.infer<typeof JobCheckpointContractSchema>;
+export type RecoveryReportContract = z.infer<typeof RecoveryReportContractSchema>;
 export type RuntimeInfo = z.infer<typeof RuntimeInfoSchema>;
 export type PlatformInfo = z.infer<typeof PlatformInfoSchema>;
 export type ResponseEnvelope = z.infer<typeof ResponseEnvelopeSchema>;

@@ -1,5 +1,9 @@
 # Portable Path Rules
 
+## Phase 7 artifacts
+
+Checkpoint/output paths use forward-slash relative segments, reject absolute/drive/backslash/NUL/empty/dot/parent segments, and are bounded to 2,048 characters. Verification resolves beneath the Project root and rejects symbolic links. No Lease or Checkpoint stores a host root.
+
 Project-internal and archive paths are UTF-8 Unicode NFC strings using `/`. They are relative to Project root, at most 240 characters, with segments at most 120 characters.
 
 The validator rejects:

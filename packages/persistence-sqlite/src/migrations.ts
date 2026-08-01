@@ -258,6 +258,191 @@ CREATE INDEX queue_operations_project_time
 ON queue_operations(project_id, run_id, created_at, operation_record_id);
 `;
 
+const ADD_CHECKPOINT_LEASE_RECOVERY_SQL = `
+ALTER TABLE page_jobs ADD COLUMN fencing_generation INTEGER NOT NULL DEFAULT 0 CHECK (fencing_generation >= 0);
+ALTER TABLE page_jobs ADD COLUMN recovery_state TEXT CHECK (recovery_state IS NULL OR recovery_state IN ('interrupted', 'paused'));
+ALTER TABLE job_attempts ADD COLUMN recovery_outcome TEXT CHECK (recovery_outcome IS NULL OR recovery_outcome IN ('interrupted', 'paused'));
+ALTER TABLE job_transitions ADD COLUMN recovery_from_state TEXT CHECK (recovery_from_state IS NULL OR recovery_from_state IN ('interrupted', 'paused'));
+ALTER TABLE job_transitions ADD COLUMN recovery_to_state TEXT CHECK (recovery_to_state IS NULL OR recovery_to_state IN ('interrupted', 'paused'));
+
+CREATE TABLE run_control (
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  control_state TEXT NOT NULL CHECK (control_state IN ('active', 'pause_requested', 'paused', 'resuming', 'recovering', 'stopped', 'completed', 'failed')),
+  requested_at TEXT,
+  paused_at TEXT,
+  updated_at TEXT NOT NULL,
+  operation_id TEXT NOT NULL,
+  PRIMARY KEY (project_id, run_id)
+) STRICT;
+
+INSERT INTO run_control (project_id, run_id, control_state, updated_at, operation_id)
+SELECT project_id, run_id, 'active', created_at, 'migration-005' FROM runs;
+
+CREATE TABLE job_leases (
+  lease_id TEXT PRIMARY KEY NOT NULL,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  owner_id TEXT NOT NULL CHECK (length(owner_id) BETWEEN 1 AND 120),
+  lease_token_hash TEXT NOT NULL CHECK (length(lease_token_hash) = 64),
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  status TEXT NOT NULL CHECK (status IN ('active', 'released', 'expired', 'recovered')),
+  acquired_at TEXT NOT NULL,
+  heartbeat_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  released_at TEXT,
+  release_reason TEXT,
+  last_operation_id TEXT NOT NULL,
+  UNIQUE (job_id, fencing_generation),
+  UNIQUE (lease_token_hash)
+) STRICT;
+
+CREATE UNIQUE INDEX job_leases_one_active_per_job
+ON job_leases(job_id) WHERE status = 'active';
+CREATE INDEX job_leases_run_expiration
+ON job_leases(project_id, run_id, status, expires_at, job_id);
+CREATE INDEX job_leases_owner
+ON job_leases(project_id, run_id, owner_id, status);
+
+CREATE TABLE job_checkpoints (
+  checkpoint_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  checkpoint_id TEXT NOT NULL UNIQUE,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  attempt_number INTEGER NOT NULL CHECK (attempt_number > 0),
+  checkpoint_version INTEGER NOT NULL CHECK (checkpoint_version > 0),
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  owner_id TEXT NOT NULL CHECK (length(owner_id) BETWEEN 1 AND 120),
+  phase TEXT NOT NULL CHECK (length(phase) BETWEEN 1 AND 120),
+  progress REAL NOT NULL CHECK (progress >= 0 AND progress <= 1),
+  relative_path TEXT,
+  payload_json TEXT NOT NULL CHECK (json_valid(payload_json)),
+  committed INTEGER NOT NULL CHECK (committed IN (0, 1)),
+  supersedes_checkpoint_id TEXT REFERENCES job_checkpoints(checkpoint_id) ON DELETE RESTRICT,
+  operation_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (job_id, attempt_number, fencing_generation, operation_id)
+) STRICT;
+
+CREATE INDEX job_checkpoints_latest
+ON job_checkpoints(job_id, checkpoint_sequence DESC);
+
+CREATE TABLE run_checkpoints (
+  checkpoint_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  checkpoint_id TEXT NOT NULL UNIQUE,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  checkpoint_version INTEGER NOT NULL CHECK (checkpoint_version > 0),
+  control_state TEXT NOT NULL CHECK (control_state IN ('active', 'pause_requested', 'paused', 'resuming', 'recovering', 'stopped', 'completed', 'failed')),
+  pending_jobs INTEGER NOT NULL CHECK (pending_jobs >= 0),
+  processing_jobs INTEGER NOT NULL CHECK (processing_jobs >= 0),
+  completed_jobs INTEGER NOT NULL CHECK (completed_jobs >= 0),
+  operation_id TEXT NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX run_checkpoints_latest
+ON run_checkpoints(project_id, run_id, checkpoint_sequence DESC);
+
+CREATE TABLE artifact_checkpoints (
+  artifact_checkpoint_id TEXT PRIMARY KEY NOT NULL,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  artifact_key TEXT NOT NULL CHECK (length(artifact_key) BETWEEN 1 AND 160),
+  artifact_kind TEXT NOT NULL CHECK (artifact_kind IN ('document', 'asset', 'metadata', 'partial-file')),
+  relative_path TEXT NOT NULL CHECK (length(relative_path) BETWEEN 1 AND 2048),
+  bytes_written INTEGER NOT NULL CHECK (bytes_written >= 0),
+  expected_bytes INTEGER CHECK (expected_bytes IS NULL OR expected_bytes >= bytes_written),
+  sha256 TEXT CHECK (sha256 IS NULL OR length(sha256) = 64),
+  validator TEXT,
+  resume_offset INTEGER NOT NULL CHECK (resume_offset >= 0 AND resume_offset <= bytes_written),
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  committed INTEGER NOT NULL CHECK (committed IN (0, 1)),
+  operation_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (job_id, artifact_key, fencing_generation, operation_id)
+) STRICT;
+
+CREATE INDEX artifact_checkpoints_latest
+ON artifact_checkpoints(job_id, artifact_key, created_at DESC, artifact_checkpoint_id DESC);
+
+CREATE TABLE completed_outputs (
+  descriptor_id TEXT PRIMARY KEY NOT NULL,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  relative_path TEXT NOT NULL CHECK (length(relative_path) BETWEEN 1 AND 2048),
+  byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+  sha256 TEXT NOT NULL CHECK (length(sha256) = 64),
+  verification_policy TEXT NOT NULL CHECK (verification_policy = 'size-and-sha256'),
+  verified_at TEXT,
+  verification_status TEXT NOT NULL CHECK (verification_status IN ('pending', 'valid', 'missing', 'size-mismatch', 'hash-mismatch')),
+  UNIQUE (job_id, relative_path)
+) STRICT;
+
+CREATE TABLE recovery_operations (
+  recovery_operation_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  idempotency_key TEXT NOT NULL,
+  request_hash TEXT NOT NULL CHECK (length(request_hash) = 64),
+  status TEXT NOT NULL CHECK (status IN ('inspected', 'in_progress', 'completed', 'failed')),
+  dry_run INTEGER NOT NULL CHECK (dry_run IN (0, 1)),
+  evaluation_time TEXT NOT NULL,
+  batch_limit INTEGER NOT NULL CHECK (batch_limit BETWEEN 1 AND 500),
+  cursor INTEGER NOT NULL DEFAULT 0 CHECK (cursor >= 0),
+  scanned INTEGER NOT NULL DEFAULT 0 CHECK (scanned >= 0),
+  interrupted INTEGER NOT NULL DEFAULT 0 CHECK (interrupted >= 0),
+  requeued INTEGER NOT NULL DEFAULT 0 CHECK (requeued >= 0),
+  paused INTEGER NOT NULL DEFAULT 0 CHECK (paused >= 0),
+  output_issues INTEGER NOT NULL DEFAULT 0 CHECK (output_issues >= 0),
+  has_more INTEGER NOT NULL DEFAULT 0 CHECK (has_more IN (0, 1)),
+  items_json TEXT NOT NULL CHECK (json_valid(items_json)),
+  owner_operation_id TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  completed_at TEXT,
+  UNIQUE (project_id, run_id, idempotency_key)
+) STRICT;
+
+CREATE UNIQUE INDEX recovery_operations_one_active_run
+ON recovery_operations(project_id, run_id) WHERE status = 'in_progress';
+CREATE INDEX recovery_operations_run_time
+ON recovery_operations(project_id, run_id, started_at DESC, recovery_operation_id DESC);
+
+CREATE TABLE recovery_events (
+  recovery_event_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  recovery_event_id TEXT NOT NULL UNIQUE,
+  recovery_operation_id TEXT REFERENCES recovery_operations(recovery_operation_id) ON DELETE RESTRICT,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  job_id TEXT REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  event_type TEXT NOT NULL,
+  reason_code TEXT NOT NULL,
+  from_state TEXT,
+  to_state TEXT,
+  fencing_generation INTEGER,
+  safe_metadata_json TEXT NOT NULL CHECK (json_valid(safe_metadata_json)),
+  occurred_at TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX recovery_events_run_time
+ON recovery_events(project_id, run_id, recovery_event_sequence);
+CREATE INDEX recovery_events_job_time
+ON recovery_events(job_id, recovery_event_sequence);
+
+CREATE TABLE execution_sessions (
+  session_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  process_id INTEGER NOT NULL CHECK (process_id > 0),
+  host_id TEXT NOT NULL CHECK (length(host_id) BETWEEN 1 AND 160),
+  started_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  closed_at TEXT,
+  close_kind TEXT CHECK (close_kind IS NULL OR close_kind IN ('clean', 'unclean-detected'))
+) STRICT;
+
+CREATE INDEX execution_sessions_unclean
+ON execution_sessions(project_id, run_id, closed_at, last_seen_at);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -267,6 +452,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "002_add_project_events", sequence: 2, sql: ADD_PROJECT_EVENTS_SQL, checksum: checksum(ADD_PROJECT_EVENTS_SQL) }),
   Object.freeze({ id: "003_add_site_profiles", sequence: 3, sql: ADD_SITE_PROFILES_SQL, checksum: checksum(ADD_SITE_PROFILES_SQL) }),
   Object.freeze({ id: "004_add_persistent_page_queue", sequence: 4, sql: ADD_PERSISTENT_PAGE_QUEUE_SQL, checksum: checksum(ADD_PERSISTENT_PAGE_QUEUE_SQL) }),
+  Object.freeze({ id: "005_add_checkpoint_lease_recovery", sequence: 5, sql: ADD_CHECKPOINT_LEASE_RECOVERY_SQL, checksum: checksum(ADD_CHECKPOINT_LEASE_RECOVERY_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

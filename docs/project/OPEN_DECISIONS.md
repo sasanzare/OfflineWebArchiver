@@ -89,3 +89,30 @@ No open item authorizes later-phase implementation before its deadline.
 Detailed OKF-specific questions are maintained in
 [`okf-bootstrap/OPEN_QUESTIONS.md`](../../okf-bootstrap/OPEN_QUESTIONS.md) as
 `OKF-OD-001..025`. They do not replace or renumber this project decision register.
+
+## Product Phase 7 recovery decisions
+
+| Decision ID | Question | Why it matters | Available options | Current recommendation | Evidence needed / why postponed | Decision owner | Deadline or required phase | Blocking status | Final outcome | Related ADR, if resolved |
+|---|---|---|---|---|---|---|---|---|---|---|
+| OD-044 | Default Lease duration? | Balances recovery latency and false expiry | 30s; 60s; 5m | 60s, bounded 5s–24h | fake-clock lifecycle | Reliability Owner | Resolved P7 | No block | Configuration version 1 uses 60s | ADR-031 |
+| OD-045 | Heartbeat interval? | Controls liveness/write load | 5s; 15s; 30s | 15s and shorter than duration | timing/unit evidence | Reliability Owner | Resolved P7 | No block | 15s default | ADR-033 |
+| OD-046 | Does heartbeat extend ownership? | Hidden extension delays recovery | yes; no; configurable | No; heartbeat writes liveness only | expiry persistence test | Reliability Owner | Resolved P7 | No block | Explicit renewal only | ADR-033 |
+| OD-047 | Renewal policy? | Must reject late/stale owner | sliding; from old expiry; from renewal now | explicit extension from validated renewal time | boundary tests | Reliability Owner | Resolved P7 | No block | renew before expiry only | ADR-033 |
+| OD-048 | Where is Fencing Generation stored? | Stale writers need durable ordering | Lease only; Job only; both | authoritative Job plus Lease/checkpoint copies | stale-owner races | Data Owner | Resolved P7 | No block | monotonic per Job | ADR-032 |
+| OD-049 | Expiration boundary? | Equality must be deterministic | `>`; `>=` | `now >= expiresAt` | exact clock test | Reliability Owner | Resolved P7 | No block | inclusive expiry | ADR-033, ADR-040 |
+| OD-050 | Expiry grace period? | Grace can create dual ownership | hidden; configured; none | none in Phase 7 | concurrency/boundary evidence | Security Owner | Resolved P7 | No block | no implicit grace | ADR-033 |
+| OD-051 | Automatic recovery on Project open? | Mutation may surprise user | apply; inspect; ignore | inspect only | process-kill/project-open test | Product Owner | Resolved P7 | No block | structured status, no mutation | ADR-037 |
+| OD-052 | Is dry-run required? | User needs impact before repair | optional; mandatory UI flow | expose inspect/dry-run before confirmed apply | CLI/Desktop smoke | Product Owner | Resolved P7 | No block | explicit inspect surface | ADR-037 |
+| OD-053 | Recovery batch size? | Bounds locks and supports resume | unbounded; 100; 1000 | default 100, max 500 | crash/cursor/concurrency tests | Data Owner | Resolved P7 | No block | bounded version-1 policy | ADR-037 |
+| OD-054 | How count interrupted attempts? | Retry budgets/history must remain honest | erase; fail; interrupted outcome | retain and close as interrupted | recovery lifecycle | Reliability Owner | Resolved P7 | No block | attempt stays counted | ADR-034 |
+| OD-055 | Pause semantics? | Safe boundary cannot be assumed | immediate; cooperative | request then owner Checkpoint/ack/release | pause lifecycle | Reliability Owner | Resolved P7 | No block | cooperative pause | ADR-036 |
+| OD-056 | Pause timeout/forced Pause policy? | Future workers may not acknowledge | kill; timeout; wait | remain unresolved; no forced pause in P7 | Worker Pool/process policy needed | Reliability Owner | P15/P17 | Open | No P7 timeout | — |
+| OD-057 | Resume with changed Project/Profile revision? | Semantics may drift | auto migrate; deny; new Run | fail closed; detailed product policy unresolved | real worker/revision evidence | Product Owner | P8/P17 | Open | No automatic reconciliation | — |
+| OD-058 | Checkpoint payload format? | Compatibility/security | blob; arbitrary JSON; bounded versioned JSON | canonical JSON model 1, 16KiB, depth 6, secret keys denied | unit/lifecycle tests | Architecture Owner | Resolved P7 | No block | immutable versioned payload | ADR-035 |
+| OD-059 | Checkpoint/recovery-event retention? | Ledgers can grow | forever; count; time policy | preserve in P7; measure before compaction | scale/retention evidence missing | Data Owner | P17 | Open | no deletion policy | — |
+| OD-060 | Output hash algorithm? | Portable integrity identity | SHA-256; SHA-512; BLAKE | SHA-256 | descriptor/fixture tests | Security Owner | Resolved P7 | No block | size and SHA-256 | ADR-038 |
+| OD-061 | Hash verification frequency? | Cost versus confidence | every open; recovery only; scheduled | explicit verification/recovery only in P7 | large archive benchmarks needed | Performance Owner | P17/P18 | Open | no background scan | — |
+| OD-062 | Partial-file retention? | Storage vs restart | delete always; retain forever; TTL | no production retention policy in P7 | Asset Downloader evidence needed | Archive Owner | P9 | Open | foundation only | — |
+| OD-063 | Range validators? | Blind append corrupts data | size only; optional; strict | require matching non-null stored/remote validator | loopback decision tests | Network Owner | Resolved P7 | No block | otherwise restart | ADR-039 |
+| OD-064 | Recovery lock and execution-session retention? | Coordination/growth | file lock only; DB only; layered | Project lock plus DB constraints; retention unresolved | multi-process/scale evidence needed | Data Owner | P17 | Partial | layered ownership implemented | ADR-037 |
+| OD-065 | Multi-day Resume limit? | Very old work may be invalid | 24h; 14d; unlimited | policy works through 14d; product cutoff unresolved | production revision/asset evidence needed | Product Owner | P17 | Open | tested horizon is not retention promise | ADR-040 |

@@ -1,16 +1,16 @@
 {
   "name": "@offline-web-archive/desktop",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "main": "./dist/main.cjs",
   "files": ["dist"],
   "scripts": { "build": "node ../../tools/build/build.mjs", "test": "node ../../tools/testing/run-tests.mjs package:desktop" },
   "dependencies": {
-    "@offline-web-archive/application-service": "0.6.0",
-    "@offline-web-archive/contracts": "0.6.0",
-    "@offline-web-archive/observability": "0.6.0",
-    "@offline-web-archive/platform": "0.6.0"
+    "@offline-web-archive/application-service": "0.7.0",
+    "@offline-web-archive/contracts": "0.7.0",
+    "@offline-web-archive/observability": "0.7.0",
+    "@offline-web-archive/platform": "0.7.0"
   },
   "devDependencies": {
     "electron": "43.2.0"

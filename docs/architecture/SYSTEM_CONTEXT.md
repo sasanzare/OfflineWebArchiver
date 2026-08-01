@@ -1,8 +1,8 @@
 # System Context
 
-In Product Phase 6 the authorized local user can manage a portable Project/Profile, evaluate local URL scope, enqueue synthetic Page Jobs, inspect Queue state/history/statistics, and run controlled claim/terminal/retry operations through contract 1.3.0. Websites, DNS resolvers, proxies, remote services, browser engines, and Worker processes remain outside the running system.
+In Product Phase 7 the authorized local user can manage a portable Project/Profile, evaluate local URL scope, enqueue synthetic Page Jobs, and operate Queue/Lease/Checkpoint/Recovery/Pause controls through contract 1.4.0. Websites, DNS resolvers, proxies, remote services, browser engines, production downloaders, and Worker Pools remain outside the running system.
 
-The English Electron Desktop and internal CLI call one local Application Service. The service composes Archive Core ports, pure Scope Engine and Queue policy, and the Node SQLite adapter. SQLite schema 4 persists Profile revisions, Scope Decisions, Jobs, discoveries, attempts, transitions, and idempotency results. No network listener or website request exists.
+The English Electron Desktop and internal CLI call one local Application Service. The service composes Archive Core ports, pure Scope/Queue/Recovery policy, and the Node SQLite adapter. SQLite schema 5 also persists Leases, Checkpoints, Run control, recovery/output/session state. No production network listener or website request exists; the Range server is test-only.
 
 ```mermaid
 flowchart LR
@@ -13,9 +13,9 @@ flowchart LR
   Service --> Core["Archive Core ports/models"]
   Service --> Scope["Scope Engine 1"]
   Service --> Queue["Queue policy 1"]
-  Service --> Persistence["SQLite adapter / schema 4"]
+  Service --> Persistence["SQLite adapter / schema 5"]
   Persistence --> Files["Portable Project directory / ZIP"]
-  Contracts["Contract 1.3.0"] -.-> Desktop
+  Contracts["Contract 1.4.0"] -.-> Desktop
   Contracts -.-> CLI
   Contracts -.-> Service
 ```

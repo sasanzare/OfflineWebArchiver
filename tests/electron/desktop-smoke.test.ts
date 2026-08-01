@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import test from "node:test";
 
-test("Electron renderer executes Project, Profile, Scope, and Queue flows through the secure bridge", { timeout: 45_000 }, () => {
+test("Electron renderer executes Project, Profile, Scope, Queue, and Recovery flows through the secure bridge", { timeout: 45_000 }, () => {
   const root = mkdtempSync(path.join(tmpdir(), "owa-electron-"));
   try {
     const electron = path.resolve("node_modules/electron/dist/electron.exe");

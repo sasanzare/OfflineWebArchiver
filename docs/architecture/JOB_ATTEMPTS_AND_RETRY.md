@@ -1,5 +1,9 @@
 # Job Attempts and Retry Foundation
 
+## Crash and pause outcomes
+
+An attempt still increments only on committed claim. A recovered abandoned attempt closes as `interrupted`; a cooperative pause closes as `paused`. Neither outcome is erased. Requeue creates no attempt until the next successful Lease claim, which uses a higher Fencing Generation.
+
 `attemptCount` starts at zero. A successful guarded `pending -> processing` claim increments it and inserts exactly one attempt with a unique claim token. Failed or empty claims do not increment. `maxAttempts` is `1..100`; Desktop/CLI controlled enqueue defaults to `3`.
 
 Completion finalizes the active attempt as `completed`. Failure sanitizes its message and finalizes the attempt as `retrying` when `retryable` and attempts remain, otherwise `failed`. Retry scheduling persists `nextEligibleAt`; due release moves `retrying -> pending` without changing the attempt count. The next successful claim creates the next consecutive attempt number.

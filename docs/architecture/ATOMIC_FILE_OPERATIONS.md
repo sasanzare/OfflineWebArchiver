@@ -1,5 +1,9 @@
 # Atomic File Operations
 
+## Recovery interaction
+
+Artifact Checkpoints record only durable byte offsets. A partial is promoted only after expected size/hash validation; non-Range or changed validators restart rather than append. Completed-output verification reads only root-contained non-symlink paths. Phase 7 does not implement production download/temp-file lifecycle, so disk-space/cleanup integration remains open.
+
 The reusable Node adapter follows this protocol:
 
 1. Resolve an exact destination and same-directory unique temporary sibling.

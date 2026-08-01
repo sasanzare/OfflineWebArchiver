@@ -1,5 +1,13 @@
 # Requirements Traceability
 
+## Product Phase 7 trace
+
+| Requirement | Acceptance | Implementation | Direct evidence | Risks | Decisions | OKF |
+|---|---|---|---|---|---|---|
+| FR-RECOVERY-001, FR-QUEUE-003, NFR-REL-001..002 | AC-P07-001..035 | `packages/recovery`, Core port, SQLite recovery repository, Application Service | recovery unit/integration/concurrency/process-kill suites | R-065, R-067..089 | OD-044..065; ADR-031..040 | OKF-PHASE-007 |
+| FR-CLI-001, FR-UX-002, NFR-SEC-003 | AC-P07-036..038 | contract 1.4, CLI, isolated Desktop | CLI/Electron smoke and security gate | R-070, R-078, R-088..089 | ADR-031, ADR-037 | OKF-NODE-P07-INTERFACES |
+| NFR-KNOW-001..004, NFR-TEST-001 | AC-P07-039 | phase report, ADRs, registries, documents | docs and OKF validators | RISK-KNOW-001 | OD-026 | OKF-CHG-P07-001 |
+
 **Document status:** Proposed baseline  
 **Owner:** QA Lead  
 **Last updated:** 2026-07-31

@@ -11,6 +11,8 @@ const files = {
 const scopeEngine = await readFile(path.join(repositoryRoot, "packages/scope-engine/src/index.ts"), "utf8");
 const queueDomain = await readFile(path.join(repositoryRoot, "packages/queue/src/index.ts"), "utf8");
 const queuePersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/queue.ts"), "utf8");
+const recoveryDomain = await readFile(path.join(repositoryRoot, "packages/recovery/src/index.ts"), "utf8");
+const recoveryPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/recovery.ts"), "utf8");
 const required = [
   [files.main, "contextIsolation: true", "context isolation"],
   [files.main, "nodeIntegration: false", "disabled Node integration"],
@@ -40,10 +42,18 @@ if (/\b(?:eval|Function)\s*\(|new\s+RegExp\s*\(/.test(scopeEngine)) {
 if (/node:(?:http|https|net|tls|dns|child_process)|\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\b(?:eval|Function)\s*\(/.test(queueDomain + queuePersistence)) {
   errors.push("Queue production code contains a forbidden network, process, or dynamic-evaluation API");
 }
+if (/node:(?:http|https|net|tls|dns|child_process)|\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\b(?:eval|Function)\s*\(/.test(recoveryDomain + recoveryPersistence)) {
+  errors.push("Recovery production code contains a forbidden network, process, or dynamic-evaluation API");
+}
 for (const token of ["resultMetadataBytes", "safeMessageLength", "idempotencyKeyLength", "QUEUE_PAGINATION_LIMIT_EXCEEDED", "QUEUE_CLAIM_TOKEN_INVALID", "BEGIN IMMEDIATE"]) {
   if (!(queueDomain + queuePersistence).includes(token)) errors.push(`Queue security control is missing: ${token}`);
 }
 if (/database\.exec\s*\(\s*input|prepare\s*\(\s*input/.test(queuePersistence)) errors.push("Queue persistence accepts caller-provided SQL");
+for (const token of ["lease_token_hash", "fencingGeneration", "assertLease", "validateCheckpointPayload", "validatePortableRelativePath", "CHECKPOINT_TOO_LARGE", "FENCING_GENERATION_STALE", "BEGIN IMMEDIATE"]) {
+  if (!(recoveryDomain + recoveryPersistence).includes(token)) errors.push(`Recovery security control is missing: ${token}`);
+}
+if (/database\.exec\s*\(\s*input|prepare\s*\(\s*input/.test(recoveryPersistence)) errors.push("Recovery persistence accepts caller-provided SQL");
+if (/addDefinitionRow\([^\n]*(?:claimToken|leaseToken)/.test(files.renderer)) errors.push("Desktop renderer displays a Lease Token");
 for (const token of ["URL_CREDENTIALS_FORBIDDEN", "SENSITIVE_QUERY_REMOVED", "PRIVATE_NETWORK_NOT_ALLOWED", "SCOPE_BATCH_LIMIT_EXCEEDED"]) {
   if (!scopeEngine.includes(token)) errors.push(`Scope Engine is missing security decision ${token}`);
 }

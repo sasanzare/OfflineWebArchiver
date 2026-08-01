@@ -33,6 +33,17 @@
     { "id": "OKF-EV-P06-CLI-DESKTOP", "name": "Built CLI and real Electron queue smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P06-SECURITY", "name": "Queue ownership limits redaction and SQL boundary evidence", "status": "VERIFIED", "path": "tests/integration/queue-security.test.ts", "method": "npm run security:check and npm run test:integration" },
     { "id": "OKF-EV-P06-DOCS", "name": "Product Phase 6 implementation and ADR record", "status": "VERIFIED", "path": "docs/project/PHASE_06_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P06-RECORD", "name": "Product Phase 6 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md", "method": "npm run okf:validate" }
+    { "id": "OKF-EV-P06-RECORD", "name": "Product Phase 6 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P07-DOMAIN", "name": "Lease Checkpoint Recovery and fencing policy source", "status": "VERIFIED", "path": "packages/recovery/src/index.ts", "method": "npm run typecheck and npm run test:unit" },
+    { "id": "OKF-EV-P07-PERSISTENCE", "name": "SQLite schema 5 migration and recovery repository", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/recovery.ts", "method": "npm run migrations:validate and npm run test:integration" },
+    { "id": "OKF-EV-P07-LIFECYCLE", "name": "Lease Checkpoint pause recovery output and multi-day lifecycle", "status": "VERIFIED", "path": "tests/integration/recovery-lifecycle.test.ts", "method": "npm run test:recovery" },
+    { "id": "OKF-EV-P07-CONCURRENCY", "name": "Independent connection Lease fencing and recovery races", "status": "VERIFIED", "path": "tests/concurrency/recovery-concurrency.test.ts", "method": "npm run test:concurrency" },
+    { "id": "OKF-EV-P07-PROCESS-KILL", "name": "Actual child process termination crash evidence", "status": "VERIFIED", "path": "tests/process-kill/recovery-process-kill.test.ts", "method": "npm run test:process-kill" },
+    { "id": "OKF-EV-P07-OUTPUT", "name": "Completed output verification and partial file policy", "status": "VERIFIED", "path": "tests/unit/recovery.test.ts", "method": "npm run test:recovery" },
+    { "id": "OKF-EV-P07-RANGE", "name": "Loopback Range resume and non-Range fallback fixture", "status": "VERIFIED", "path": "tests/integration/partial-file-recovery.test.ts", "method": "npm run test:recovery" },
+    { "id": "OKF-EV-P07-INTERFACES", "name": "Built CLI and real Electron recovery smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:cli and npm run test:electron" },
+    { "id": "OKF-EV-P07-SECURITY", "name": "Recovery ownership token redaction payload and path security", "status": "VERIFIED", "path": "tools/security/check.mjs", "method": "npm run security:check" },
+    { "id": "OKF-EV-P07-DOCS", "name": "Product Phase 7 ADRs security and implementation report", "status": "VERIFIED", "path": "docs/project/PHASE_07_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
+    { "id": "OKF-EV-P07-RECORD", "name": "Product Phase 7 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md", "method": "npm run okf:validate" }
   ]
 }

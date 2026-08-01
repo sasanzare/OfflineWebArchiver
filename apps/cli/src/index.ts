@@ -15,7 +15,7 @@ import {
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
 
-export const CLI_VERSION = "0.6.0";
+export const CLI_VERSION = "0.7.0";
 
 export const CLI_EXIT_CODES = Object.freeze({
   success: 0,
@@ -49,19 +49,27 @@ Usage:
   offline-archive queue enqueue-batch <project> <items.json> --run <uuid> --profile-revision <uuid> --idempotency-key <key> [--json]
   offline-archive queue list <project> --run <uuid> [--state <state>] [--after <sequence>] [--limit <n>] [--json]
   offline-archive queue show <project> <job-id> --run <uuid> [--json]
-  offline-archive queue claim-next <project> --run <uuid> --claimed-by <name> --idempotency-key <key> [--json]
-  offline-archive queue complete <project> <job-id> --run <uuid> --claim-token <uuid> --completion-key <key> --idempotency-key <key> [--status-code <n>] [--json]
-  offline-archive queue fail <project> <job-id> --run <uuid> --claim-token <uuid> --failure-key <key> --failure-code <code> --failure-category <category> --message <safe-message> --idempotency-key <key> [--retryable --next-eligible-at <utc>] [--json]
+  offline-archive queue claim-next <project> --run <uuid> --claimed-by <name> --idempotency-key <key> [--lease-duration <ms>] [--json]
+  offline-archive queue complete <project> <job-id> --run <uuid> --claim-token <uuid> --owner <name> --generation <n> --completion-key <key> --idempotency-key <key> [--status-code <n>] [--json]
+  offline-archive queue fail <project> <job-id> --run <uuid> --claim-token <uuid> --owner <name> --generation <n> --failure-key <key> --failure-code <code> --failure-category <category> --message <safe-message> --idempotency-key <key> [--retryable --next-eligible-at <utc>] [--json]
   offline-archive queue retry <project> <job-id> --run <uuid> --next-eligible-at <utc> --reason <code> --idempotency-key <key> [--json]
   offline-archive queue release-due <project> --run <uuid> --due-at <utc> --limit <n> --idempotency-key <key> [--json]
   offline-archive queue skip|block <project> <job-id> --run <uuid> --reason <code> --message <safe-message> --idempotency-key <key> [--claim-token <uuid>] [--json]
   offline-archive queue stats <project> --run <uuid> [--json]
   offline-archive queue history <project> <job-id> --run <uuid> [--json]
   offline-archive queue clear-pending <project> --run <uuid> --reason <code> --idempotency-key <key> --confirm CLEAR-PENDING-QUEUE [--json]
+  offline-archive recovery inspect <project> --run <uuid> --at <utc> [--after <sequence>] [--limit <n>] [--json]
+  offline-archive recovery recover <project> --run <uuid> --at <utc> --idempotency-key <key> [--dry-run | --confirm APPLY-RECOVERY] [--limit <n>] [--json]
+  offline-archive recovery report <project> <recovery-operation-id> --run <uuid> [--json]
+  offline-archive run pause|pause-status|resume|state <project> --run <uuid> [--json]
+  offline-archive lease list <project> --run <uuid> [--lease-status <status>] [--limit <n>] [--json]
+  offline-archive lease show <project> <job-id> --run <uuid> [--json]
+  offline-archive checkpoint list <project> <job-id> --run <uuid> [--limit <n>] [--json]
+  offline-archive checkpoint show <project> <job-id> --run <uuid> [--json]
   offline-archive --help
   offline-archive --version
 
-Project and queue commands are local-only. Queue completion/failure actions are architecture-test simulations; this phase does not crawl or contact a website.
+Project, Queue, and Recovery commands are local-only. Lease Tokens are accepted as sensitive inputs and never printed. This phase does not crawl or contact a website.
 `;
 
 export interface CliIo {
@@ -85,6 +93,10 @@ export type ParsedArguments =
   | { kind: "scope"; operation: "evaluate" | "explain" | "previewNormalization"; json: boolean; payload: { projectPath: string; input: { rawUrl: string; sourceUrl?: string; baseUrl?: string; sourceDepth?: number; discoveryType?: string; profileRevision?: string; currentEligibleCount?: number } } }
   | { kind: "scope"; operation: "getEngineInfo"; json: boolean; payload: {} }
   | { kind: "queue"; operation: "enqueue" | "enqueueBatch" | "claimNext" | "complete" | "fail" | "scheduleRetry" | "releaseDueRetries" | "skip" | "block" | "get" | "list" | "getStatistics" | "getHistory" | "clearPending"; json: boolean; payload: Record<string, unknown>; batchPath?: string }
+  | { kind: "recovery"; operation: "inspect" | "recover" | "getReport"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "run"; operation: "requestPause" | "getPauseStatus" | "resume" | "getControlState"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "lease"; operation: "list" | "show"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "checkpoint"; operation: "list" | "getLatest"; json: boolean; payload: Record<string, unknown> }
   | { kind: "invalid"; message: string };
 
 function invalid(message: string): ParsedArguments {
@@ -98,6 +110,12 @@ function optionValue(arguments_: readonly string[], name: string): string | unde
   return value !== undefined && !value.startsWith("--") ? value : undefined;
 }
 
+function integerOption(arguments_: readonly string[], name: string, fallback?: number): number | undefined {
+  const value = optionValue(arguments_, name);
+  if (value === undefined) return fallback;
+  return /^\d+$/.test(value) ? Number(value) : undefined;
+}
+
 export function parseCliArguments(arguments_: readonly string[]): ParsedArguments {
   if (arguments_.length === 0 || arguments_.includes("--help") || arguments_.includes("-h")) return { kind: "help" };
   if (arguments_.length === 1 && (arguments_[0] === "--version" || arguments_[0] === "-v")) return { kind: "version" };
@@ -106,9 +124,10 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     "--name", "--slug", "--base-url", "--seed", "--base", "--source", "--depth", "--source-depth", "--discovery-type", "--profile-revision", "--count",
     "--run", "--idempotency-key", "--priority", "--max-attempts", "--state", "--after", "--limit", "--claimed-by", "--claim-token", "--completion-key", "--status-code",
     "--failure-key", "--failure-code", "--failure-category", "--message", "--next-eligible-at", "--reason", "--due-at", "--confirm",
+    "--owner", "--generation", "--lease-duration", "--at", "--lease-status",
   ];
   const filtered = arguments_.filter((argument, index) => {
-    if (argument === "--json" || argument === "--retryable") return false;
+    if (argument === "--json" || argument === "--retryable" || argument === "--dry-run") return false;
     if (valueOptions.includes(arguments_[index - 1] ?? "")) return false;
     return !valueOptions.includes(argument);
   });
@@ -177,17 +196,18 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     if (operation === "history" && filtered.length === 4) return { kind: "queue", operation: "getHistory", json, payload: { projectPath, runId, jobId: filtered[3]! } };
     if (operation === "claim-next" && filtered.length === 3) {
       const claimedBy = optionValue(arguments_, "--claimed-by");
-      return claimedBy === undefined ? invalid("Queue claim-next requires --claimed-by.") : mutation({ claimedBy }, "claimNext");
+      const leaseDurationMs = integer("--lease-duration", 60_000);
+      return claimedBy === undefined || leaseDurationMs === undefined ? invalid("Queue claim-next requires --claimed-by and a valid optional Lease duration.") : mutation({ claimedBy, leaseDurationMs }, "claimNext");
     }
     if (operation === "complete" && filtered.length === 4) {
-      const claimToken = optionValue(arguments_, "--claim-token"); const completionKey = optionValue(arguments_, "--completion-key"); const statusCode = integer("--status-code");
-      if (claimToken === undefined || completionKey === undefined || (optionValue(arguments_, "--status-code") !== undefined && statusCode === undefined)) return invalid("Queue complete requires a claim token, completion key, and valid optional status code.");
-      return mutation({ jobId: filtered[3]!, claimToken, completionKey, completedAt: new Date().toISOString(), resultSummary: { resultType: "queue-test", statusCode: statusCode ?? null, contentStored: false } }, "complete");
+      const claimToken = optionValue(arguments_, "--claim-token"); const ownerId = optionValue(arguments_, "--owner"); const fencingGeneration = integer("--generation"); const completionKey = optionValue(arguments_, "--completion-key"); const statusCode = integer("--status-code");
+      if (claimToken === undefined || ownerId === undefined || fencingGeneration === undefined || completionKey === undefined || (optionValue(arguments_, "--status-code") !== undefined && statusCode === undefined)) return invalid("Queue complete requires a Lease Token, owner, Fencing Generation, completion key, and valid optional status code.");
+      return mutation({ jobId: filtered[3]!, claimToken, ownerId, fencingGeneration, completionKey, completedAt: new Date().toISOString(), resultSummary: { resultType: "queue-test", statusCode: statusCode ?? null, contentStored: false } }, "complete");
     }
     if (operation === "fail" && filtered.length === 4) {
-      const claimToken = optionValue(arguments_, "--claim-token"); const failureKey = optionValue(arguments_, "--failure-key"); const failureCode = optionValue(arguments_, "--failure-code"); const failureCategory = optionValue(arguments_, "--failure-category"); const safeMessage = optionValue(arguments_, "--message"); const nextEligibleAt = optionValue(arguments_, "--next-eligible-at"); const retryable = arguments_.includes("--retryable");
-      if ([claimToken, failureKey, failureCode, failureCategory, safeMessage].some((value) => value === undefined) || (retryable && nextEligibleAt === undefined)) return invalid("Queue fail is missing failure details or retry time.");
-      return mutation({ jobId: filtered[3]!, claimToken, failureKey, failureCode, failureCategory, safeMessage, retryable, failedAt: new Date().toISOString(), ...(nextEligibleAt === undefined ? {} : { nextEligibleAt }) }, "fail");
+      const claimToken = optionValue(arguments_, "--claim-token"); const ownerId = optionValue(arguments_, "--owner"); const fencingGeneration = integer("--generation"); const failureKey = optionValue(arguments_, "--failure-key"); const failureCode = optionValue(arguments_, "--failure-code"); const failureCategory = optionValue(arguments_, "--failure-category"); const safeMessage = optionValue(arguments_, "--message"); const nextEligibleAt = optionValue(arguments_, "--next-eligible-at"); const retryable = arguments_.includes("--retryable");
+      if ([claimToken, ownerId, failureKey, failureCode, failureCategory, safeMessage].some((value) => value === undefined) || fencingGeneration === undefined || (retryable && nextEligibleAt === undefined)) return invalid("Queue fail is missing Lease ownership, failure details, or retry time.");
+      return mutation({ jobId: filtered[3]!, claimToken, ownerId, fencingGeneration, failureKey, failureCode, failureCategory, safeMessage, retryable, failedAt: new Date().toISOString(), ...(nextEligibleAt === undefined ? {} : { nextEligibleAt }) }, "fail");
     }
     if (operation === "retry" && filtered.length === 4) {
       const nextEligibleAt = optionValue(arguments_, "--next-eligible-at"); const reasonCode = optionValue(arguments_, "--reason");
@@ -206,6 +226,62 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
       return reasonCode === undefined || confirmation === undefined ? invalid("Queue clear-pending requires --reason and --confirm.") : mutation({ reasonCode, confirmation }, "clearPending");
     }
     return invalid(`Invalid queue ${operation} arguments.`);
+  }
+  if (filtered[0] === "recovery" && filtered[1] !== undefined) {
+    const operation = filtered[1];
+    const projectPath = filtered[2];
+    const runId = optionValue(arguments_, "--run");
+    if (projectPath === undefined || runId === undefined) return invalid(`Recovery ${operation} requires a Project and --run.`);
+    if (operation === "report" && filtered.length === 4) return { kind: "recovery", operation: "getReport", json, payload: { projectPath, runId, recoveryOperationId: filtered[3]! } };
+    const evaluationTime = optionValue(arguments_, "--at");
+    const limit = integerOption(arguments_, "--limit", 100);
+    if (evaluationTime === undefined || limit === undefined) return invalid(`Recovery ${operation} requires --at and a valid --limit.`);
+    if (operation === "inspect" && filtered.length === 3) {
+      const afterSequence = integerOption(arguments_, "--after");
+      if (optionValue(arguments_, "--after") !== undefined && afterSequence === undefined) return invalid("Recovery cursor must be a non-negative integer.");
+      return { kind: "recovery", operation: "inspect", json, payload: { projectPath, runId, evaluationTime, limit, ...(afterSequence === undefined ? {} : { afterSequence }) } };
+    }
+    if (operation === "recover" && filtered.length === 3) {
+      if (arguments_.includes("--dry-run")) return { kind: "recovery", operation: "inspect", json, payload: { projectPath, runId, evaluationTime, limit } };
+      const confirmation = optionValue(arguments_, "--confirm");
+      const idempotencyKey = optionValue(arguments_, "--idempotency-key");
+      return confirmation !== "APPLY-RECOVERY" || idempotencyKey === undefined
+        ? invalid("Applying Recovery requires --confirm APPLY-RECOVERY and --idempotency-key; use --dry-run to inspect.")
+        : { kind: "recovery", operation: "recover", json, payload: { projectPath, runId, evaluationTime, limit, confirmation, idempotencyKey } };
+    }
+    return invalid(`Invalid recovery ${operation} arguments.`);
+  }
+  if (filtered[0] === "run" && filtered[1] !== undefined && filtered.length === 3) {
+    const projectPath = filtered[2]!;
+    const runId = optionValue(arguments_, "--run");
+    if (runId === undefined) return invalid(`Run ${filtered[1]} requires --run.`);
+    const operations = { pause: "requestPause", "pause-status": "getPauseStatus", resume: "resume", state: "getControlState" } as const;
+    const operation = operations[filtered[1] as keyof typeof operations];
+    return operation === undefined ? invalid(`Invalid run ${filtered[1]} arguments.`) : { kind: "run", operation, json, payload: { projectPath, runId } };
+  }
+  if (filtered[0] === "lease" && filtered[1] !== undefined) {
+    const projectPath = filtered[2];
+    const runId = optionValue(arguments_, "--run");
+    if (projectPath === undefined || runId === undefined) return invalid(`Lease ${filtered[1]} requires a Project and --run.`);
+    if (filtered[1] === "show" && filtered.length === 4) return { kind: "lease", operation: "show", json, payload: { projectPath, runId, jobId: filtered[3]! } };
+    if (filtered[1] === "list" && filtered.length === 3) {
+      const limit = integerOption(arguments_, "--limit", 50);
+      const status = optionValue(arguments_, "--lease-status");
+      return limit === undefined ? invalid("Lease list limit is invalid.") : { kind: "lease", operation: "list", json, payload: { projectPath, runId, limit, ...(status === undefined ? {} : { status }) } };
+    }
+    return invalid(`Invalid lease ${filtered[1]} arguments.`);
+  }
+  if (filtered[0] === "checkpoint" && filtered[1] !== undefined) {
+    const projectPath = filtered[2];
+    const jobId = filtered[3];
+    const runId = optionValue(arguments_, "--run");
+    if (projectPath === undefined || jobId === undefined || runId === undefined) return invalid(`Checkpoint ${filtered[1]} requires a Project, Job, and --run.`);
+    if (filtered[1] === "show" && filtered.length === 4) return { kind: "checkpoint", operation: "getLatest", json, payload: { projectPath, runId, jobId } };
+    if (filtered[1] === "list" && filtered.length === 4) {
+      const limit = integerOption(arguments_, "--limit", 50);
+      return limit === undefined ? invalid("Checkpoint list limit is invalid.") : { kind: "checkpoint", operation: "list", json, payload: { projectPath, runId, jobId, limit } };
+    }
+    return invalid(`Invalid checkpoint ${filtered[1]} arguments.`);
   }
   if (filtered[0] !== "project" || filtered[1] === undefined) return invalid("Unknown command.");
   const operation = filtered[1];
@@ -320,12 +396,27 @@ export function formatHumanDescription(response: SuccessResponseEnvelope): strin
   }
   if (result.resultType === "queue.history") return [`Job: ${result.history.job.jobId}`, `State: ${result.history.job.state}`, `Transitions: ${result.history.transitions.length}`, `Attempts: ${result.history.attempts.length}`, `Discoveries: ${result.history.discoveries.length}`].join("\n");
   if (result.resultType === "queue.clear") return `Skipped ${result.skipped} pending Job(s); history was retained.`;
-  return [
+  if (result.resultType === "recovery.report") return [`Recovery: ${result.report.status}${result.report.dryRun ? " (dry run)" : ""}`, `Operation: ${result.report.recoveryOperationId}`, `Scanned: ${result.report.scanned}`, `Interrupted: ${result.report.interrupted}`, `Requeued: ${result.report.requeued}`, `Paused: ${result.report.paused}`, `Output issues: ${result.report.outputIssues}`, `More: ${result.report.hasMore ? "yes" : "no"}`].join("\n");
+  if (result.resultType === "lease.value") return [`Lease: ${result.lease.leaseId}`, `Job: ${result.lease.jobId}`, `Owner: ${result.lease.ownerId}`, `Generation: ${result.lease.fencingGeneration}`, `Status: ${result.lease.status}`, `Expires: ${result.lease.expiresAt}`].join("\n");
+  if (result.resultType === "lease.list") return [`Leases: ${result.leases.length}`, ...result.leases.map((lease) => `${lease.leaseId} job=${lease.jobId} owner=${lease.ownerId} generation=${lease.fencingGeneration} status=${lease.status} expires=${lease.expiresAt}`)].join("\n");
+  if (result.resultType === "checkpoint.value") return result.checkpoint === null ? "No committed checkpoint." : [`Checkpoint: ${result.checkpoint.checkpointId}`, `Job: ${result.checkpoint.jobId}`, `Phase: ${result.checkpoint.phase}`, `Progress: ${result.checkpoint.progress}`, `Generation: ${result.checkpoint.fencingGeneration}`].join("\n");
+  if (result.resultType === "checkpoint.list") return [`Checkpoints: ${result.checkpoints.length}`, ...result.checkpoints.map((checkpoint) => `${checkpoint.sequence} ${checkpoint.checkpointId} phase=${checkpoint.phase} progress=${checkpoint.progress} generation=${checkpoint.fencingGeneration}`)].join("\n");
+  if (result.resultType === "artifactCheckpoint.value") return [`Artifact checkpoint: ${result.checkpoint.artifactCheckpointId}`, `Job: ${result.checkpoint.jobId}`, `Kind: ${result.checkpoint.artifactKind}`, `Bytes: ${result.checkpoint.bytesWritten}`, `Committed: ${result.checkpoint.committed ? "yes" : "no"}`].join("\n");
+  if (result.resultType === "artifactCheckpoint.validation") return [`Artifact checkpoint: ${result.valid ? "valid" : "invalid"}`, `Reason: ${result.reasonCode ?? "none"}`].join("\n");
+  if (result.resultType === "run.control") return [`Run: ${result.run.runId}`, `State: ${result.run.controlState}`, `Active leases: ${result.run.activeLeaseCount}`, `Pause requested: ${result.run.requestedAt ?? "no"}`, `Paused at: ${result.run.pausedAt ?? "no"}`].join("\n");
+  if (result.resultType === "project.info") return [
     `Current Project: ${result.currentProject?.name ?? "none"}`,
     `Compatible: ${result.compatibility === null ? "not inspected" : result.compatibility.compatible ? "yes" : "no"}`,
     `Format: ${result.compatibility?.formatVersion ?? "unknown"}`,
     `Database schema: ${result.compatibility?.schemaVersion ?? "unknown"}`,
   ].join("\n");
+  return "Command completed.";
+}
+
+function redactLeaseTokens(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactLeaseTokens);
+  if (typeof value !== "object" || value === null) return value;
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, child]) => [key, key === "claimToken" || key === "leaseToken" ? "[redacted]" : redactLeaseTokens(child)]));
 }
 
 function exitCodeForError(error: ErrorContract): number {
@@ -352,7 +443,7 @@ function metadata() {
   };
 }
 
-async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" }>, service: ApplicationService): Promise<ResponseEnvelope> {
+async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" }>, service: ApplicationService): Promise<ResponseEnvelope> {
   if (parsed.kind === "describe") {
     return parseResponseEnvelope(await service.execute(createSystemDescribeCommand(metadata()), { transport: "cli", authorized: true }));
   }
@@ -383,6 +474,16 @@ async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe"
       payload = { ...payload, operationId: commandMetadata.commandId };
     }
     return parseResponseEnvelope(await service.execute(createProjectCommand(`queue.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], payload, commandMetadata), { transport: "cli", authorized: true }));
+  }
+  if (parsed.kind === "recovery" || parsed.kind === "run" || parsed.kind === "lease" || parsed.kind === "checkpoint") {
+    const commandMetadata = metadata();
+    const commandPrefix = parsed.kind;
+    const operation = parsed.kind === "lease" && parsed.operation === "show"
+      ? "show"
+      : parsed.operation;
+    const needsOperationId = (parsed.kind === "recovery" && parsed.operation === "recover") || (parsed.kind === "run" && (parsed.operation === "requestPause" || parsed.operation === "resume"));
+    const payload = needsOperationId ? { ...parsed.payload, operationId: commandMetadata.commandId } : parsed.payload;
+    return parseResponseEnvelope(await service.execute(createProjectCommand(`${commandPrefix}.${operation}` as Parameters<typeof createProjectCommand>[0], payload, commandMetadata), { transport: "cli", authorized: true }));
   }
   const commandType = `project.${parsed.operation}` as Parameters<typeof createProjectCommand>[0];
   const openResponse = parsed.operation === "export"
@@ -422,7 +523,7 @@ export async function runCli(
   }
   try {
     const response = await executeParsed(parsed, createService(environment));
-    if (parsed.json) io.stdout(`${JSON.stringify(response, null, 2)}\n`);
+    if (parsed.json) io.stdout(`${JSON.stringify(redactLeaseTokens(response), null, 2)}\n`);
     else if (response.status === "success") io.stdout(`${formatHumanDescription(response)}\n`);
     else io.stderr(`${response.error.userMessage} (${response.error.code})\n`);
     if (response.status === "error") return exitCodeForError(response.error);

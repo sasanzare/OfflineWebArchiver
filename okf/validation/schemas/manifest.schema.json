@@ -10,7 +10,7 @@
     "frameworkVersion": { "const": "1.0.0" },
     "product": { "type": "string", "minLength": 1 },
     "status": { "enum": ["VERIFIED", "PLANNED", "PARTIAL", "UNKNOWN", "NEEDS_OWNER_CONFIRMATION", "DOCUMENTATION_CODE_CONFLICT", "DEPRECATED", "BLOCKED", "NOT_APPLICABLE"] },
-    "activatedPhase": { "const": 6 },
+    "activatedPhase": { "const": 7 },
     "activatedAt": { "type": "string" },
     "authority": { "type": "string" },
     "bootstrapHistory": { "type": "string" },

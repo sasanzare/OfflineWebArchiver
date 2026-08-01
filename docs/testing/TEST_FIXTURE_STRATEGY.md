@@ -1,5 +1,9 @@
 # Test Fixture Strategy
 
+## Product Phase 7 fixtures
+
+Fixtures include an injected fake UTC Clock, SQLite Projects at legacy/current schemas, independent worker connections, forked crash children with deterministic fault points, and a loopback-only HTTP server supporting both 206 Range and no-Range behavior. No external site or production browser/downloader is exercised.
+
 **Document status:** Proposed baseline  
 **Owner:** QA Lead  
 **Last updated:** 2026-07-31

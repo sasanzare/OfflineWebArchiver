@@ -1,5 +1,9 @@
 # Project-Wide Definition of Done
 
+## Product Phase 7 gate
+
+Product Phase 7 satisfies its gate when schema 5 migration, Lease/fencing/heartbeat, Checkpoint, recovery, pause/resume, completed-output, partial-file policy, independent-connection concurrency, actual process-kill, 5m/6h/24h/3d/14d Resume, CLI, real Electron, security, documentation, and OKF evidence pass. AC-P07-001–039 are the authority. Rendering/downloading/Worker Pool work cannot be used to pass this gate and remains absent.
+
 ## Product Phase 6 gate
 
 Product Phase 6 is done only when Page Job identity and database uniqueness, schema-4 forward migration, closed state machine, deterministic ordering, transactional enqueue/claim/terminal/retry operations, token fencing, attempt/discovery/history/idempotency persistence, Queue statistics, CLI/Desktop paths, real separate-connection races, architecture/security/docs/OKF validation, and explicit absence of Lease/Heartbeat/Checkpoint/recovery/network capability all pass. Any duplicate logical Job, double claim, partial transition, invalid terminal reopen, ownership/redaction escape, fake concurrency evidence, missing OKF record, or Product Phase 7 recovery behavior fails the gate.

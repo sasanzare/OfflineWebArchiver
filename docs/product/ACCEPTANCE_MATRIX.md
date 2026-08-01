@@ -325,3 +325,47 @@ These criteria prove deterministic local policy only. They do not claim DNS, req
   preconditions. `passed` requires retained evidence and reviewer sign-off.
 - A later phase may add criteria but must not weaken or silently renumber these.
   Superseded criteria remain in history with a replacement reference.
+
+## Product Phase 7 completion criteria
+
+| Acceptance ID | Requirement ID | Capability | Direct scenario | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P07-001 | FR-PROJECT-003, NFR-REL-002 | Lease migration | Upgrade schema 4 Project | Migration 005 adds recovery tables/columns and backfills Run control; prior data survives | migration validator and lifecycle tests | Critical | passed |
+| AC-P07-002 | FR-QUEUE-003 | Lease acquisition | Claim eligible Job | Attempt, processing state, one Lease and generation commit atomically | recovery lifecycle | Critical | passed |
+| AC-P07-003 | FR-QUEUE-003 | Active-Lease uniqueness | Race independent SQLite connections | Exactly one active Lease exists | recovery concurrency | Critical | passed |
+| AC-P07-004 | FR-QUEUE-003 | Lease Token validation | Use wrong/released token | Protected write rejects without mutation; token is hashed/hidden | lifecycle/security/CLI tests | Critical | passed |
+| AC-P07-005 | FR-RECOVERY-001 | Fencing Generation | Reclaim after expiry; use prior owner | Generation increases and stale owner is rejected | lifecycle/concurrency tests | Critical | passed |
+| AC-P07-006 | FR-RECOVERY-001 | Heartbeat persistence | Heartbeat current Lease | Timestamp persists and expiry is unchanged | fake-clock lifecycle | High | passed |
+| AC-P07-007 | FR-RECOVERY-001 | Lease renewal | Renew before expiry | Expiry extends from renewal instant | fake-clock lifecycle | Critical | passed |
+| AC-P07-008 | FR-RECOVERY-001 | Lease expiration | Evaluate before/at/after boundary | Expired exactly when `now >= expiresAt` | recovery unit/lifecycle | Critical | passed |
+| AC-P07-009 | FR-RECOVERY-001 | Stale-owner rejection | Complete/checkpoint after expiry or re-claim | Every protected mutation fails closed | lifecycle/concurrency | Critical | passed |
+| AC-P07-010 | FR-RECOVERY-001 | Recovery inspection | Inspect stale and clean Runs | Bounded reason-coded report; no mutation | recovery lifecycle | Critical | passed |
+| AC-P07-011 | FR-RECOVERY-001 | Dry-run Recovery | Inspect recovery candidates | State/history/Lease remain unchanged | lifecycle/CLI/Desktop smoke | Critical | passed |
+| AC-P07-012 | FR-RECOVERY-001 | Recovery operation | Confirm with idempotency key | Durable bounded transactional report is produced | lifecycle/process-kill | Critical | passed |
+| AC-P07-013 | FR-RECOVERY-001 | Processing without Lease | Kill after attempt start | Project open/inspection identifies abandoned processing | process-kill | Critical | passed |
+| AC-P07-014 | FR-RECOVERY-001 | Expired-Job recovery | Advance beyond expiry | Expired ownership is released and classified | fake-clock lifecycle | Critical | passed |
+| AC-P07-015 | FR-QUEUE-003 | Interrupted state | Recover abandoned attempt | Logical interrupted transition/outcome persist | lifecycle/process-kill | Critical | passed |
+| AC-P07-016 | FR-RECOVERY-001 | Safe requeue | Apply recovery twice | Job is pending once; history remains; operation is idempotent | lifecycle/concurrency | Critical | passed |
+| AC-P07-017 | FR-RECOVERY-001 | Checkpoint persistence | Save and reopen | Versioned Checkpoint survives | lifecycle/process-kill | Critical | passed |
+| AC-P07-018 | FR-RECOVERY-001 | Checkpoint sequence | Save consecutive progress | Sequence increases and supersession links prior record | recovery lifecycle | High | passed |
+| AC-P07-019 | FR-RECOVERY-001 | Checkpoint ownership | Wrong token/generation/project | Save rejects without row | lifecycle/security tests | Critical | passed |
+| AC-P07-020 | FR-RECOVERY-001 | Checkpoint supersession | Save new Job Checkpoint | Immutable older Checkpoint remains linked | recovery lifecycle | High | passed |
+| AC-P07-021 | FR-RECOVERY-001 | Run Checkpoint | Claim/pause/recover Run | Versioned control/count snapshots persist | recovery lifecycle | High | passed |
+| AC-P07-022 | FR-RECOVERY-001 | Pause request | Request active Run pause | Durable state becomes `pause_requested`; no new claim | pause lifecycle | Critical | passed |
+| AC-P07-023 | FR-RECOVERY-001 | Cooperative Pause | Owner acknowledges at safe boundary | Checkpoint commits, Lease releases, Job/Run pause | pause lifecycle | Critical | passed |
+| AC-P07-024 | FR-RECOVERY-001 | Resume | Resume paused Run | Paused Jobs requeue and next owner gets higher generation | pause lifecycle | Critical | passed |
+| AC-P07-025 | FR-RECOVERY-001 | Project-open recovery | Open Project after unclean owner | Structured recovery summary appears without automatic mutation | process-kill/project lifecycle | Critical | passed |
+| AC-P07-026 | NFR-REL-001 | Forced process termination | SIGKILL at six fault boundaries | Committed state survives; partial transaction does not | process-kill suite | Critical | passed |
+| AC-P07-027 | NFR-REL-001 | Multi-day Resume | Evaluate 5m, 6h, 24h, 3d, 14d | Deterministic expiry/recovery/reclaim works at every horizon | recovery lifecycle | Critical | passed |
+| AC-P07-028 | NFR-REL-002 | Completed-output verification | Verify bounded descriptor | Relative non-symlink size/SHA-256 validation persists | recovery lifecycle | Critical | passed |
+| AC-P07-029 | NFR-REL-002 | Hash mismatch detection | Modify completed bytes | Hash mismatch is reported | recovery lifecycle | Critical | passed |
+| AC-P07-030 | NFR-REL-002 | Valid completed preservation | Recover with valid descriptor | Completed Job remains terminal and is not duplicated | recovery lifecycle | Critical | passed |
+| AC-P07-031 | FR-ASSET-002 | Partial-file decision | Vary size/Range/validator/hash | Pure policy returns safe resume/restart/discard/complete reason | unit tests | Critical | passed |
+| AC-P07-032 | FR-ASSET-002 | Range Resume fixture | Interrupt loopback transfer | HTTP 206 appends at durable offset and final hash matches | partial-file integration | High | passed |
+| AC-P07-033 | FR-ASSET-002 | Non-Range fallback | Server omits Range | Partial is restarted from zero without corrupt append | partial-file integration | Critical | passed |
+| AC-P07-034 | NFR-REL-001 | Recovery concurrency | Race claim/recovery/stale commit | Unique constraints, transactions, and fencing prevent duplicate effects | recovery concurrency | Critical | passed |
+| AC-P07-035 | NFR-REL-001 | Recovery operation Resume | Kill/retry a bounded operation | Same idempotency request resumes persisted cursor/counters | process-kill/lifecycle | Critical | passed |
+| AC-P07-036 | FR-CLI-001 | CLI Recovery | Built CLI inspect/apply/report/run/lease/checkpoint | Commands, confirmation, exit codes and token redaction work | CLI unit/smoke | Critical | passed |
+| AC-P07-037 | FR-UX-002 | Desktop Recovery | Real sandboxed Electron workflow | Summary, dry-run/apply, pause/resume/report/history use bridge only | Electron smoke/architecture | Critical | passed |
+| AC-P07-038 | NFR-SEC-003 | Security tests | Secrets, traversal, scope and stale owners | Inputs fail closed; token never reaches logs/output/renderer | unit/integration/security gate | Critical | passed |
+| AC-P07-039 | NFR-KNOW-001, NFR-TEST-001 | OKF synchronization | Validate phase/domain/evidence/decision/risk records | Canonical OKF and docs reconcile with Phase 8 still planned | docs/OKF validators | Critical | passed |

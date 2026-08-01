@@ -1,5 +1,9 @@
 # Security Boundaries
 
+## Product Phase 7 ownership boundary
+
+Protected writes validate Project, Run, Job, owner, the active Lease token digest, the Phase 6 compatibility claim where applicable, active status, exact expiry, and current Fencing Generation. The Project database contains the active owner credential for durable identical-claim replay and must be protected as sensitive local state. Project-open recovery is read-only. Mutating recovery is explicitly confirmed/idempotent/bounded. Checkpoint secret-like keys and unsafe paths fail closed; completed output rejects traversal and symlink escape. See [Phase 7 Security Review](PHASE_07_SECURITY_REVIEW.md).
+
 Scope evaluation is not network authorization. Phase 6 re-evaluates Scope before enqueue, binds Jobs to Project/Run/Profile/revision/engine, redacts sensitive URL/error/result values, bounds payloads/pagination, parameterizes SQL, and requires claim tokens for terminal writes. Desktop `connect-src 'none'` and its existing sandbox/IPC/path-grant boundary remain unchanged. See the [Product Phase 6 Security Review](PHASE_06_SECURITY_REVIEW.md).
 
 Electron main is privileged; preload is a narrow capability boundary; renderer is untrusted. Context isolation, disabled Node integration, sandbox, web security, local restrictive CSP, denied permissions/downloads/windows/webviews/navigation, exact sender/frame/URL authorization, and contract validation remain mandatory.

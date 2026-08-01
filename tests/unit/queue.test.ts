@@ -46,6 +46,7 @@ function job(overrides: Partial<PageJob> = {}): PageJob {
     depth: 2,
     discoveryType: "dom-link",
     attemptCount: 0,
+    fencingGeneration: 0,
     maxAttempts: 3,
     nextEligibleAt: "2026-07-31T12:00:00.000Z",
     claimToken: null,
@@ -68,8 +69,8 @@ function job(overrides: Partial<PageJob> = {}): PageJob {
 }
 
 test("Page Job states, terminal classification, and transition matrix are closed and versioned", () => {
-  assert.equal(QUEUE_STATE_MACHINE_VERSION, 1);
-  for (const state of ["pending", "processing", "completed", "failed", "retrying", "skipped", "blocked"] as const) assert.equal(isPageJobState(state), true);
+  assert.equal(QUEUE_STATE_MACHINE_VERSION, 2);
+  for (const state of ["pending", "processing", "completed", "failed", "retrying", "skipped", "blocked", "interrupted", "paused"] as const) assert.equal(isPageJobState(state), true);
   assert.equal(isPageJobState("leased"), false);
   for (const state of ["completed", "failed", "skipped", "blocked"] as const) assert.equal(isTerminalState(state), true);
   for (const [from, destinations] of Object.entries(VALID_JOB_TRANSITIONS)) {

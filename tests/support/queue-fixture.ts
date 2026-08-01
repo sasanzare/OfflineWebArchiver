@@ -36,7 +36,7 @@ export async function createQueueFixture(prefix = "owa-queue-"): Promise<QueueFi
   const root = await mkdtemp(path.join(tmpdir(), prefix));
   const projectPath = path.join(root, "project");
   let currentTime = QUEUE_TEST_TIME;
-  const storage = createSqliteProjectStorage({ applicationVersion: "0.6.0", now: () => currentTime });
+  const storage = createSqliteProjectStorage({ applicationVersion: "0.7.0", now: () => currentTime });
   await storage.create({ destinationPath: projectPath, name: "Queue Test", slug: "queue-test" });
   await storage.open(projectPath);
   const draft = createDefaultSiteProfileDraft({ name: "Approved Queue Profile", seedUrl: "https://example.com/" });

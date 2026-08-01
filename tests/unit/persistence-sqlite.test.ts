@@ -49,20 +49,20 @@ test("a failed migration transaction rolls back its schema changes", () => {
   database.close();
 });
 
-test("schema 4 installs the constrained queue ledger without Phase 7 recovery fields", () => {
+test("schema 5 installs the constrained Lease, Checkpoint, and Recovery ledgers", () => {
   const database = new DatabaseSync(":memory:", { allowExtension: false, defensive: true });
   configureDatabase(database);
-  applyPendingMigrations(database, "0.6.0", () => "2026-07-31T12:00:00.000Z");
+  applyPendingMigrations(database, "0.7.0", () => "2026-08-01T12:00:00.000Z");
   const tables = new Set((database.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((row) => row.name));
-  for (const name of ["scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations"]) assert.equal(tables.has(name), true, name);
-  for (const forbidden of ["leases", "heartbeats", "checkpoints", "workers"]) assert.equal(tables.has(forbidden), false, forbidden);
+  for (const name of ["scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations", "job_leases", "job_checkpoints", "run_checkpoints", "artifact_checkpoints", "completed_outputs", "recovery_operations", "recovery_events", "execution_sessions", "run_control"]) assert.equal(tables.has(name), true, name);
+  assert.equal(tables.has("workers"), false);
   const indexes = new Set((database.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as { name: string }[]).map((row) => row.name));
   for (const name of ["page_jobs_claim_order", "page_jobs_retry_due", "page_jobs_state", "job_attempts_job_number", "job_transitions_job_time", "job_discoveries_child_time", "queue_operations_project_time"]) assert.equal(indexes.has(name), true, name);
   const jobColumns = (database.prepare("PRAGMA table_info(page_jobs)").all() as { name: string }[]).map((row) => row.name);
-  for (const forbidden of ["lease_id", "lease_expires_at", "heartbeat_at", "checkpoint_path"]) assert.equal(jobColumns.includes(forbidden), false, forbidden);
+  for (const required of ["fencing_generation", "recovery_state"]) assert.equal(jobColumns.includes(required), true, required);
   assert.equal(database.prepare("PRAGMA foreign_keys").get()!["foreign_keys"], 1);
   assert.equal(database.prepare("PRAGMA integrity_check").get()!["integrity_check"], "ok");
-  assert.equal(database.prepare("PRAGMA user_version").get()!["user_version"], 4);
+  assert.equal(database.prepare("PRAGMA user_version").get()!["user_version"], 5);
   database.close();
 });
 
