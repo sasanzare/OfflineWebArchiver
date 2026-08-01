@@ -15,7 +15,7 @@ await Promise.all([
     platform: "node",
     format: "cjs",
     target: "node24",
-    external: ["electron"],
+    external: ["electron", "playwright-core"],
     sourcemap: true,
     logLevel: "warning",
   }),
@@ -61,4 +61,3 @@ await Promise.all([
 ]);
 
 process.stdout.write("Desktop main, bundled preload, and renderer built.\n");
-

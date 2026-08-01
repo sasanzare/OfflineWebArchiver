@@ -1,5 +1,5 @@
 # Evidence Knowledge
 
-Product Phase 7 evidence IDs `OKF-EV-P07-*` cover domain source, SQLite repository/migration, lifecycle/multi-day tests, independent-connection races, actual child-process termination, output/partial policy, loopback Range, CLI/real Electron, security, documentation, and the canonical phase record. Paths are repository-relative and browser/downloader evidence is not claimed.
+Product Phase 8 evidence IDs `OKF-EV-P08-*` cover Browser/Render source, schema 6 persistence, real Chromium fixtures, artifact/DB fault injection, actual Page/Browser process kill, contract/CLI/Desktop interfaces, security/docs, and the canonical record. Paths are repository-relative; external targets and discovery/downloader evidence are not claimed.
 
-Product Phase 6 registers Queue/Core/contracts source, schema-4 repository/migration, lifecycle/security integration, real separate-connection concurrency, CLI/Electron smoke, security review, implementation/ADR documentation, and its canonical record. Evidence is local-only and makes no Lease/recovery/network/crawl claim. Paths are repository-relative and validated.
+All Phase 1–7 evidence remains preserved. `okf/registry/evidence.json` is authoritative.

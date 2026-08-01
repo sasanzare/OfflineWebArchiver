@@ -90,6 +90,17 @@
     { "id": "OD-062", "name": "Production partial-file retention", "status": "UNKNOWN", "recordPath": "docs/project/OPEN_DECISIONS.md" },
     { "id": "OD-063", "name": "Strict matching Range validators", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-039-partial-file-recovery-foundation.md" },
     { "id": "OD-064", "name": "Layered recovery lock and session retention", "status": "PARTIAL", "recordPath": "docs/project/OPEN_DECISIONS.md" },
-    { "id": "OD-065", "name": "Maximum multi-day Resume age", "status": "UNKNOWN", "recordPath": "docs/project/OPEN_DECISIONS.md" }
+    { "id": "OD-065", "name": "Maximum multi-day Resume age", "status": "UNKNOWN", "recordPath": "docs/project/OPEN_DECISIONS.md" },
+    { "id": "OD-066", "name": "Pinned Playwright 1.56.1 and Chromium revision 1194", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-041-pinned-playwright-chromium-runtime.md" },
+    { "id": "OD-067", "name": "Explicit checksum verified Browser provisioning", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-041-pinned-playwright-chromium-runtime.md" },
+    { "id": "OD-068", "name": "One Browser Process per Application Service", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-042-single-browser-process-one-active-job.md" },
+    { "id": "OD-069", "name": "Browser recycle and restart bounds", "status": "PARTIAL", "recordPath": "docs/project/OPEN_DECISIONS.md" },
+    { "id": "OD-070", "name": "Fresh deterministic Browser Context per Job", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-043-isolated-context-per-job.md" },
+    { "id": "OD-071", "name": "DOM selector and mutation quiet readiness", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-044-combined-dom-network-stability.md" },
+    { "id": "OD-072", "name": "Finite request network quiet readiness", "status": "PARTIAL", "recordPath": "docs/project/OPEN_DECISIONS.md" },
+    { "id": "OD-073", "name": "CDP runtime network authorization", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-045-cdp-runtime-network-authorization.md" },
+    { "id": "OD-074", "name": "Fenced artifact first Render commit", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-046-fenced-artifact-first-render-commit.md" },
+    { "id": "OD-075", "name": "Opt-in bounded Render screenshot", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-047-opt-in-bounded-render-screenshot.md" },
+    { "id": "OD-076", "name": "Separate Browser and Page crash classification", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-048-browser-and-page-crash-recovery.md" }
   ]
 }

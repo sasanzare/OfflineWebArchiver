@@ -1,5 +1,5 @@
 # Decision Knowledge
 
-OD-044–065 cover Product Phase 7. Supported outcomes are recorded by ADR-031–040. Forced-pause timeout, revision reconciliation, ledger retention, hash frequency, production partial retention, part of execution-session retention, and maximum Resume age remain unresolved.
+OD-066–076 cover Product Phase 8 and ADR-041–048. Exact browser pin/provisioning, single-runtime ownership, Context-per-Job, DOM readiness, fenced artifact-first commit, and split crash classifications are verified. OS memory thresholds, broader long-lived-network policy, DNS connection pinning, screenshot retention, and non-Windows process-kill evidence remain partial/open.
 
-`okf/registry/decisions.json` is authoritative for status and paths. Product Phase 6 resolves OD-036..043 through Accepted ADR-023..030: Job identity, schema, state machine, atomic claim, order/priority, idempotency, attempts/retry, and discovery storage. Lease/Heartbeat/Checkpoint recovery and retention/scale/starvation policy remain future decisions; earlier statuses are preserved.
+`okf/registry/decisions.json` is authoritative for status and paths. Earlier decisions and unresolved questions remain preserved.

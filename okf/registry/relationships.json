@@ -49,6 +49,18 @@
     { "id": "OKF-REL-046", "name": "Application Service owns recovery orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P07-RECOVERY", "type": "owns" },
     { "id": "OKF-REL-047", "name": "Desktop uses recovery contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P07-CONTRACT-1-4", "type": "depends-on" },
     { "id": "OKF-REL-048", "name": "CLI uses recovery contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P07-CONTRACT-1-4", "type": "depends-on" },
-    { "id": "OKF-REL-049", "name": "Phase 7 evidenced by canonical record", "status": "VERIFIED", "sourceId": "OKF-PHASE-007", "targetId": "OKF-EV-P07-RECORD", "type": "evidenced-by" }
+    { "id": "OKF-REL-049", "name": "Phase 7 evidenced by canonical record", "status": "VERIFIED", "sourceId": "OKF-PHASE-007", "targetId": "OKF-EV-P07-RECORD", "type": "evidenced-by" },
+    { "id": "OKF-REL-050", "name": "Phase 8 depends on Scope", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-BROWSER-RENDER", "targetId": "OKF-NODE-P05-SCOPE-1", "type": "depends-on" },
+    { "id": "OKF-REL-051", "name": "Phase 8 depends on Queue", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-BROWSER-RENDER", "targetId": "OKF-NODE-P06-QUEUE", "type": "depends-on" },
+    { "id": "OKF-REL-052", "name": "Phase 8 depends on Recovery", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-BROWSER-RENDER", "targetId": "OKF-NODE-P07-RECOVERY", "type": "depends-on" },
+    { "id": "OKF-REL-053", "name": "Browser Render satisfies rendering", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-BROWSER-RENDER", "targetId": "FR-RENDER-001", "type": "satisfies" },
+    { "id": "OKF-REL-054", "name": "Runtime network satisfies safe dispatch", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-RUNTIME-NETWORK", "targetId": "FR-SCOPE-003", "type": "satisfies" },
+    { "id": "OKF-REL-055", "name": "Fenced results evidenced by faults", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-FENCED-RESULTS", "targetId": "OKF-EV-P08-FAULTS", "type": "evidenced-by" },
+    { "id": "OKF-REL-056", "name": "Schema 6 implements fenced results", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-SQLITE-6", "targetId": "OKF-NODE-P08-FENCED-RESULTS", "type": "implements" },
+    { "id": "OKF-REL-057", "name": "Contract exposes Browser Render", "status": "VERIFIED", "sourceId": "OKF-NODE-P08-CONTRACT-1-5", "targetId": "OKF-NODE-P08-BROWSER-RENDER", "type": "exposes" },
+    { "id": "OKF-REL-058", "name": "Application Service owns Browser Render orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P08-BROWSER-RENDER", "type": "owns" },
+    { "id": "OKF-REL-059", "name": "Desktop uses Browser Render contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P08-CONTRACT-1-5", "type": "depends-on" },
+    { "id": "OKF-REL-060", "name": "CLI uses Browser Render contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P08-CONTRACT-1-5", "type": "depends-on" },
+    { "id": "OKF-REL-061", "name": "Phase 8 evidenced by canonical record", "status": "VERIFIED", "sourceId": "OKF-PHASE-008", "targetId": "OKF-EV-P08-RECORD", "type": "evidenced-by" }
   ]
 }

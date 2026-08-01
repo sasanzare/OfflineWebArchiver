@@ -3,7 +3,7 @@ import test from "node:test";
 import { CLI_EXIT_CODES, formatHumanDescription, parseCliArguments } from "../../apps/cli/src/index.js";
 import { parseResponseEnvelope } from "@offline-web-archive/contracts";
 
-test("CLI parser exposes the bounded Project, Profile, Scope, Queue, and Recovery command surface", () => {
+test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, and Render command surface", () => {
   assert.deepEqual(parseCliArguments(["system", "describe", "--json"]), { kind: "describe", json: true });
   const create = parseCliArguments(["project", "create", "C:\\demo", "--name", "Demo", "--slug", "demo"]);
   assert.equal(create.kind, "project");
@@ -24,13 +24,23 @@ test("CLI parser exposes the bounded Project, Profile, Scope, Queue, and Recover
   assert.equal(parseCliArguments(["run", "pause", "C:\\demo", "--run", "00000000-0000-4000-8000-000000000002"]).kind, "run");
   assert.equal(parseCliArguments(["lease", "list", "C:\\demo", "--run", "00000000-0000-4000-8000-000000000002"]).kind, "lease");
   assert.equal(parseCliArguments(["checkpoint", "show", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--run", "00000000-0000-4000-8000-000000000002"]).kind, "checkpoint");
+  assert.equal(parseCliArguments(["browser", "validate", "--json"]).kind, "browser");
+  const render = parseCliArguments(["render", "start", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--run", "00000000-0000-4000-8000-000000000002", "--owner", "cli-renderer", "--operation-id", "render-op-1", "--idempotency-key", "render-idem-1", "--screenshot"]);
+  assert.equal(render.kind, "render");
+  if (render.kind === "render") {
+    assert.equal(render.operation, "start");
+    assert.equal(render.payload["jobId"], "00000000-0000-4000-8000-000000000003");
+    assert.equal((render.payload["policy"] as Record<string, unknown>)["captureScreenshot"], true);
+    assert.equal("url" in render.payload, false);
+  }
+  assert.equal(parseCliArguments(["render", "start", "C:\\demo", "job", "--run", "run", "--owner", "owner"]).kind, "invalid");
   assert.equal(parseCliArguments(["crawl"]).kind, "invalid");
   assert.equal(CLI_EXIT_CODES.validation, 4);
 });
 
 test("human formatting distinguishes implemented and future capabilities", () => {
   const response = parseResponseEnvelope({
-    contractVersion: "1.4.0",
+    contractVersion: "1.5.0",
     commandId: "command-1",
     correlationId: "correlation-1",
     timestamp: "2026-07-31T12:00:00.000Z",
@@ -38,16 +48,16 @@ test("human formatting distinguishes implemented and future capabilities", () =>
     result: {
       resultType: "system.description",
       applicationName: "Offline Web Archive Builder",
-      applicationVersion: "0.7.0",
-      contractVersion: "1.4.0",
-      coreStatus: "recovery-foundation-ready",
-      implementedCapabilities: ["system.describe", "project.create", "queue.enqueue"],
-      plannedCapabilities: ["crawl.execution"],
+      applicationVersion: "0.8.0",
+      contractVersion: "1.5.0",
+      coreStatus: "rendering-engine-ready",
+      implementedCapabilities: ["system.describe", "project.create", "queue.enqueue", "browser.getHealth", "render.start"],
+      plannedCapabilities: ["link.discovery", "crawl.execution"],
       runtime: { name: "Node.js", version: "24.0.0" },
       platform: { operatingSystem: "windows", architecture: "x64" },
     },
     error: null,
   });
   assert.equal(response.status, "success");
-  if (response.status === "success") assert.match(formatHumanDescription(response), /Planned, not implemented: crawl\.execution/);
+  if (response.status === "success") assert.match(formatHumanDescription(response), /Planned, not implemented: link\.discovery, crawl\.execution/);
 });

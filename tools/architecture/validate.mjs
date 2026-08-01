@@ -11,6 +11,14 @@ const errors = [];
 const packageRules = new Map([
   ["packages/contracts/", new Set(["zod"])],
   ["packages/archive-core/", new Set()],
+  ["packages/browser-runtime/", new Set([
+    "node:crypto",
+    "node:fs/promises",
+    "node:path",
+    "playwright-core",
+    "@offline-web-archive/archive-core",
+  ])],
+  ["packages/rendering/", new Set(["@offline-web-archive/archive-core"])],
   ["packages/queue/", new Set(["@offline-web-archive/archive-core"])],
   ["packages/recovery/", new Set(["@offline-web-archive/archive-core"])],
   ["packages/scope-engine/", new Set(["node:crypto", "node:url", "tldts", "zod"])],
@@ -33,12 +41,16 @@ const packageRules = new Map([
   ["packages/observability/", new Set()],
   ["packages/platform/", new Set(["@offline-web-archive/contracts"])],
   ["packages/application-service/", new Set([
+    "node:dns/promises",
+    "node:path",
     "@offline-web-archive/archive-core",
+    "@offline-web-archive/browser-runtime",
     "@offline-web-archive/contracts",
     "@offline-web-archive/observability",
     "@offline-web-archive/persistence-sqlite",
     "@offline-web-archive/queue",
     "@offline-web-archive/scope-engine",
+    "@offline-web-archive/rendering",
   ])],
   ["packages/test-support/", new Set([
     "@offline-web-archive/contracts",
@@ -100,6 +112,8 @@ for (const file of sourceFiles) {
 const manifests = [
   "packages/contracts/package.json",
   "packages/archive-core/package.json",
+  "packages/browser-runtime/package.json",
+  "packages/rendering/package.json",
   "packages/queue/package.json",
   "packages/recovery/package.json",
   "packages/scope-engine/package.json",

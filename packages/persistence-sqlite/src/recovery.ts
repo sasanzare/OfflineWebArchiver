@@ -318,6 +318,61 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
       return claimed;
     },
 
+    async claimJobWithLease(input) {
+      validateLeaseDuration(input.leaseDurationMs);
+      const claimed = transaction(() => {
+        validateOwnership(input.projectId, input.runId);
+        if (String(runState(input.projectId, input.runId)["control_state"]) !== "active") throw new RecoveryOperationError("RUN_NOT_ACTIVE", "New claims are blocked while the Run is not active");
+        const requestHash = hash({ ...input, correlationId: undefined, operationId: undefined });
+        const existing = database.prepare("SELECT request_hash, result_json FROM queue_operations WHERE project_id = ? AND operation_type = 'recovery.claimJobWithLease' AND idempotency_key = ?")
+          .get(input.projectId, input.idempotencyKey) as { request_hash: string; result_json: string } | undefined;
+        if (existing !== undefined) {
+          if (existing.request_hash !== requestHash) throw new QueueOperationError("QUEUE_OPERATION_IDEMPOTENCY_CONFLICT", "The idempotency key was already used for another Job Lease claim");
+          const stored = JSON.parse(existing.result_json) as { jobId: string };
+          if (stored.jobId !== input.jobId) throw new QueueOperationError("QUEUE_OPERATION_IDEMPOTENCY_CONFLICT", "The idempotent Job Lease claim references another Job");
+          const leaseRow = activeLeaseRow(input.projectId, input.runId, stored.jobId);
+          const jobRow = getJobRow(input.projectId, input.runId, stored.jobId);
+          const storedClaimToken = jobRow["claim_token"];
+          if (leaseRow === undefined || typeof storedClaimToken !== "string" || hash(storedClaimToken) !== String(leaseRow["lease_token_hash"])) {
+            throw new RecoveryOperationError("LEASE_NOT_FOUND", "The replayed Job Lease is no longer active");
+          }
+          return { job: rowToJob(jobRow), lease: rowToLease(leaseRow), leaseToken: storedClaimToken } satisfies LeaseClaim;
+        }
+        const timestamp = now();
+        const row = getJobRow(input.projectId, input.runId, input.jobId);
+        const job = rowToJob(row);
+        if (job.state !== "pending" || row["recovery_state"] !== null || job.nextEligibleAt > timestamp) {
+          throw new QueueOperationError("QUEUE_JOB_STATE_CONFLICT", "The selected Page Job is not pending and eligible for Render claim");
+        }
+        if (job.attemptCount >= job.maxAttempts) throw new QueueOperationError("QUEUE_MAX_ATTEMPTS_REACHED", "The selected Job has exhausted its attempts");
+        const leaseToken = id();
+        const leaseId = id();
+        const generation = job.fencingGeneration + 1;
+        const attemptNumber = job.attemptCount + 1;
+        const expiresAt = calculateLeaseExpiry(timestamp, input.leaseDurationMs);
+        const updated = database.prepare(`
+          UPDATE page_jobs SET state = 'processing', recovery_state = NULL, claim_token = ?, claimed_by = ?, claimed_at = ?, last_attempt_at = ?,
+            attempt_count = ?, fencing_generation = ?, updated_at = ? WHERE job_id = ? AND state = 'pending' AND recovery_state IS NULL AND fencing_generation = ?
+        `).run(leaseToken, input.ownerId, timestamp, timestamp, attemptNumber, generation, timestamp, job.jobId, job.fencingGeneration);
+        if (updated.changes !== 1) throw new QueueOperationError("QUEUE_CLAIM_CONFLICT", "Another owner claimed the selected Page Job");
+        const attemptId = id();
+        database.prepare(`INSERT INTO job_attempts (attempt_id, job_id, attempt_number, claim_token, started_at, outcome, metadata_json) VALUES (?, ?, ?, ?, ?, 'processing', ?)`)
+          .run(attemptId, job.jobId, attemptNumber, leaseToken, timestamp, canonicalJson({ fencingGeneration: generation, leaseId, purpose: "render" }));
+        database.prepare(`
+          INSERT INTO job_leases (lease_id, job_id, project_id, run_id, owner_id, lease_token_hash, fencing_generation, status, acquired_at, heartbeat_at, expires_at, last_operation_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+        `).run(leaseId, job.jobId, input.projectId, input.runId, input.ownerId, hash(leaseToken), generation, timestamp, timestamp, expiresAt, input.operationId);
+        database.prepare(`INSERT INTO job_transitions (transition_id, job_id, from_state, to_state, reason_code, operation_id, correlation_id, occurred_at, safe_metadata_json) VALUES (?, ?, 'pending', 'processing', 'RENDER_LEASE_CLAIMED', ?, ?, ?, ?)`)
+          .run(id(), job.jobId, input.operationId, input.correlationId, timestamp, canonicalJson({ attemptId, attemptNumber, fencingGeneration: generation, leaseId }));
+        database.prepare(`INSERT INTO queue_operations (operation_record_id, project_id, run_id, operation_type, idempotency_key, request_hash, result_json, created_at) VALUES (?, ?, ?, 'recovery.claimJobWithLease', ?, ?, ?, ?)`)
+          .run(id(), input.projectId, input.runId, input.idempotencyKey, requestHash, canonicalJson({ jobId: job.jobId }), timestamp);
+        const leaseRow = activeLeaseRow(input.projectId, input.runId, job.jobId)!;
+        return { job: rowToJob(getJobRow(input.projectId, input.runId, job.jobId)), lease: rowToLease(leaseRow), leaseToken } satisfies LeaseClaim;
+      });
+      emit("lease.acquired", { projectId: input.projectId, runId: input.runId, jobId: claimed.job.jobId, leaseId: claimed.lease.leaseId, ownerId: input.ownerId, fencingGeneration: claimed.lease.fencingGeneration, expiresAt: claimed.lease.expiresAt, purpose: "render" });
+      return claimed;
+    },
+
     async heartbeatLease(input) {
       return transaction(() => {
         const lease = assertLease(input);

@@ -1,5 +1,7 @@
 # Application Service Knowledge
 
-Contract 1.4 recovery commands are orchestrated here: Lease claim/heartbeat/renew/release, owner-fenced terminal writes, Checkpoints, artifact/output descriptors, inspection/apply/report, Pause/Resume, and safe error translation. Only the owner claim result and protected mutation inputs carry a token; safe events, logs, and ordinary inspection/list/report results do not.
+**Status:** PARTIAL product service, VERIFIED through Product Phase 8 scope.
 
-The local Application Service validates contract 1.4.0, authorizes local transports, orchestrates Project/Profile/Scope/Queue/Recovery persistence and policy, revalidates ownership/revisions/identity/Lease/fencing, translates stable errors, emits safe token-free events, and preserves correlation/operation identifiers. Use cases are local durable state operations; they do not dispatch network or crawl work.
+Contract 1.5 commands are authorized and orchestrated here. Product Phase 8 composes Phase 5 Scope, Phase 6 Queue, Phase 7 Lease/Heartbeat/Fencing/Checkpoint/Pause/Recovery, Browser Runtime, Rendering Engine, and persistence ports. `render.start` accepts an existing queued Job, not an ad-hoc URL; it owns stage events, Heartbeats/renewal, Pause observation, fenced commit/failure, error translation, and cleanup.
+
+Desktop and CLI invoke the same service. No raw Browser/Playwright/SQLite handle crosses the service boundary. Automatic discovery/enqueue and all later network workflows remain planned.

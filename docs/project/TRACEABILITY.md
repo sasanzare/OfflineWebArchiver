@@ -1,12 +1,12 @@
 # Requirements Traceability
 
-## Product Phase 7 trace
+## Product Phase 8 trace
 
 | Requirement | Acceptance | Implementation | Direct evidence | Risks | Decisions | OKF |
 |---|---|---|---|---|---|---|
-| FR-RECOVERY-001, FR-QUEUE-003, NFR-REL-001..002 | AC-P07-001..035 | `packages/recovery`, Core port, SQLite recovery repository, Application Service | recovery unit/integration/concurrency/process-kill suites | R-065, R-067..089 | OD-044..065; ADR-031..040 | OKF-PHASE-007 |
-| FR-CLI-001, FR-UX-002, NFR-SEC-003 | AC-P07-036..038 | contract 1.4, CLI, isolated Desktop | CLI/Electron smoke and security gate | R-070, R-078, R-088..089 | ADR-031, ADR-037 | OKF-NODE-P07-INTERFACES |
-| NFR-KNOW-001..004, NFR-TEST-001 | AC-P07-039 | phase report, ADRs, registries, documents | docs and OKF validators | RISK-KNOW-001 | OD-026 | OKF-CHG-P07-001 |
+| FR-RENDER-001..002, NFR-PORT-001, NFR-SEC-003 | AC-P08-001..011, AC-P08-015..016 | `browser-runtime`, `rendering`, Core ports, Application Service | browser/render unit, real Chromium integration, actual Page/Browser process-kill | R-002, R-009, R-090..097, R-100..101 | OD-066..073, OD-075..076; ADR-041..045, ADR-047..048 | OKF-NODE-P08-BROWSER-RENDER |
+| FR-RECOVERY-001, FR-QUEUE-003, NFR-REL-001..002 | AC-P08-012..014 | fenced Render repository, schema 6, stage Checkpoints/Heartbeats/Pause/Resume | render lifecycle/fault plus recovery/concurrency/process-kill suites | R-098..099 | OD-074; ADR-046 | OKF-NODE-P08-FENCED-RESULTS |
+| FR-CLI-001, FR-UX-002, NFR-MAINT-001 | AC-P08-017 | contract 1.5, CLI, isolated Desktop, architecture/docs/OKF | unit/CLI/Electron/architecture/security/docs/OKF gates | R-091, R-101 | ADR-041..048 | OKF-CHG-P08-001 |
 
 **Document status:** Proposed baseline  
 **Owner:** QA Lead  

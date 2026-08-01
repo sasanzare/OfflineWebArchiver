@@ -5,6 +5,8 @@
     { "path": "packages/archive-core" },
     { "path": "packages/queue" },
     { "path": "packages/recovery" },
+    { "path": "packages/browser-runtime" },
+    { "path": "packages/rendering" },
     { "path": "packages/scope-engine" },
     { "path": "packages/project-format" },
     { "path": "packages/persistence-sqlite" },

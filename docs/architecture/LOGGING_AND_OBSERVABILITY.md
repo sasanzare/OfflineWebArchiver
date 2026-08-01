@@ -1,5 +1,9 @@
 # Logging and Observability
 
+## Product Phase 8 evidence
+
+Render stage events carry Job/attempt/Lease/Fencing identities and bounded safe metadata. Results retain only warning/error console entries, Page errors, failed GET/HEAD requests, redirects, blocked count, and truncation. Credential-like key/value text and URL queries are redacted; cookies, authorization headers, request/response bodies, form values, lease tokens, executable paths, and raw Browser objects are never evidence fields. The default global evidence cap is 100 entries per Page.
+
 ## Recovery observability
 
 Safe events include Project/Run/Job/Lease IDs, owner ID, Fencing Generation, state, operation ID, timestamps, bounded counters, and reason codes. Lease Tokens, token hashes, Checkpoint payload values, raw filesystem roots, output bytes, and sensitive URLs are never logged. Execution-session rows distinguish clean close from unclean detection but are advisory alongside Lease/Job facts.

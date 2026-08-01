@@ -1,8 +1,8 @@
 # Project-Wide Definition of Done
 
-## Product Phase 7 gate
+## Product Phase 8 gate
 
-Product Phase 7 satisfies its gate when schema 5 migration, Lease/fencing/heartbeat, Checkpoint, recovery, pause/resume, completed-output, partial-file policy, independent-connection concurrency, actual process-kill, 5m/6h/24h/3d/14d Resume, CLI, real Electron, security, documentation, and OKF evidence pass. AC-P07-001–039 are the authority. Rendering/downloading/Worker Pool work cannot be used to pass this gate and remains absent.
+Product Phase 8 satisfies its gate when exact browser provisioning/version/checksum validation, no system fallback/download, sandboxed Process/Context/Page lifecycle, static/JavaScript/SPA/lazy rendering, bounded DOM/network stability, final HTML/optional PNG artifacts, runtime-network authorization, Queue/Lease/Heartbeat/Fencing/Checkpoint/Pause/Resume integration, actual Browser/Page process kill, migration 006, contract 1.5, CLI/Desktop, security, documentation, and OKF evidence pass. AC-P08-001–017 are the concise authority. Link Discovery and all Phase 9/10 capabilities cannot be used to pass this gate and remain absent.
 
 ## Product Phase 6 gate
 

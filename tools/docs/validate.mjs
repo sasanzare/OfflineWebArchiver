@@ -59,10 +59,19 @@ const required = [
   "docs/architecture/PARTIAL_FILE_RECOVERY.md",
   "docs/architecture/RECOVERY_CONCURRENCY.md",
   "docs/architecture/PHASE_07_SECURITY_REVIEW.md",
+  "docs/architecture/BROWSER_RUNTIME.md",
+  "docs/architecture/BROWSER_LIFECYCLE.md",
+  "docs/architecture/RENDERING_ENGINE.md",
+  "docs/architecture/RENDER_STABILITY.md",
+  "docs/architecture/RUNTIME_NETWORK_POLICY.md",
+  "docs/architecture/RENDER_RESULTS.md",
+  "docs/architecture/PERFORMANCE_BASELINE.md",
+  "docs/architecture/PHASE_08_SECURITY_REVIEW.md",
   "docs/project/PHASE_04_IMPLEMENTATION_REPORT.md",
   "docs/project/PHASE_05_IMPLEMENTATION_REPORT.md",
   "docs/project/PHASE_06_IMPLEMENTATION_REPORT.md",
   "docs/project/PHASE_07_IMPLEMENTATION_REPORT.md",
+  "docs/project/PHASE_08_IMPLEMENTATION_REPORT.md",
   "docs/project/adr/ADR-001-monorepo-and-workspace-strategy.md",
   "docs/project/adr/ADR-002-production-package-boundaries.md",
   "docs/project/adr/ADR-003-local-application-service-transport-boundary.md",
@@ -103,11 +112,20 @@ const required = [
   "docs/project/adr/ADR-038-completed-output-verification.md",
   "docs/project/adr/ADR-039-partial-file-recovery-foundation.md",
   "docs/project/adr/ADR-040-clock-abstraction.md",
+  "docs/project/adr/ADR-041-pinned-playwright-chromium-runtime.md",
+  "docs/project/adr/ADR-042-single-browser-process-one-active-job.md",
+  "docs/project/adr/ADR-043-isolated-context-per-job.md",
+  "docs/project/adr/ADR-044-combined-dom-network-stability.md",
+  "docs/project/adr/ADR-045-cdp-runtime-network-authorization.md",
+  "docs/project/adr/ADR-046-fenced-artifact-first-render-commit.md",
+  "docs/project/adr/ADR-047-opt-in-bounded-render-screenshot.md",
+  "docs/project/adr/ADR-048-browser-and-page-crash-recovery.md",
   "okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md",
   "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md",
   "okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md",
   "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md",
   "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md",
+  "okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md",
   "okf/knowledge/queue/README.md",
   "okf/knowledge/job-state-machine/README.md",
 ];
@@ -148,7 +166,7 @@ const phaseSevenAdrSections = [
 for (const name of required.filter((value) => value.includes("/ADR-"))) {
   try {
     const text = await readFile(path.join(repositoryRoot, name), "utf8");
-    const headings = /^docs\/project\/adr\/ADR-0(?:31|32|33|34|35|36|37|38|39|40)-/.test(name)
+    const headings = /^docs\/project\/adr\/ADR-0(?:31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48)-/.test(name)
       ? phaseSevenAdrSections
       : /^docs\/project\/adr\/ADR-0(?:23|24|25|26|27|28|29|30)-/.test(name)
         ? phaseSixAdrSections

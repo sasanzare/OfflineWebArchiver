@@ -4,13 +4,23 @@ import path from "node:path";
 import { repositoryRoot, runTypeScriptBuild } from "../build/typescript.mjs";
 
 const suite = process.argv[2] ?? "all";
-const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "electron", "cli", "okf"]);
+const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "browser", "rendering", "electron", "cli", "okf"]);
 const recoveryTests = [
   "unit/recovery.test.js",
   "integration/recovery-lifecycle.test.js",
   "integration/partial-file-recovery.test.js",
   "concurrency/recovery-concurrency.test.js",
   "process-kill/recovery-process-kill.test.js",
+];
+const browserTests = [
+  "browser/browser-runtime.test.js",
+  "process-kill/browser-process-kill.test.js",
+];
+const renderingTests = [
+  "rendering/render-engine.test.js",
+  "integration/render-lifecycle.test.js",
+  "integration/render-persistence-faults.test.js",
+  "process-kill/browser-process-kill.test.js",
 ];
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
@@ -19,12 +29,14 @@ const packageTests = new Map([
   ["package:recovery", ["unit/recovery.test.js", "integration/recovery-lifecycle.test.js", "concurrency/recovery-concurrency.test.js", "process-kill/recovery-process-kill.test.js"]],
   ["package:scope-engine", ["unit/scope-engine.test.js"]],
   ["package:project-format", ["unit/project-format.test.js"]],
-  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
+  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "concurrency/queue-concurrency.test.js"]],
   ["package:observability", ["unit/observability.test.js"]],
   ["package:platform", ["unit/platform.test.js"]],
-  ["package:application-service", ["integration/application-service.test.js"]],
+  ["package:application-service", ["integration/application-service.test.js", "integration/render-lifecycle.test.js"]],
+  ["package:browser-runtime", ["browser/browser-runtime.test.js", "process-kill/browser-process-kill.test.js"]],
+  ["package:rendering", ["rendering/render-engine.test.js", "integration/render-lifecycle.test.js", "integration/render-persistence-faults.test.js"]],
   ["package:test-support", ["unit/test-support.test.js"]],
-  ["package:cli", ["unit/cli.test.js", "cli/cli-smoke.test.js"]],
+  ["package:cli", ["unit/cli.test.js", "cli/cli-smoke.test.js", "cli/cli-render-smoke.test.js"]],
   ["package:desktop", ["integration/desktop-transport.test.js", "electron/desktop-smoke.test.js"]],
 ]);
 if (!suites.has(suite) && !packageTests.has(suite)) {
@@ -52,6 +64,10 @@ const selected = suite === "all"
   ? await collect(testRoot)
   : suite === "recovery"
     ? recoveryTests.map((name) => path.join(testRoot, name))
+  : suite === "browser"
+    ? browserTests.map((name) => path.join(testRoot, name))
+  : suite === "rendering"
+    ? renderingTests.map((name) => path.join(testRoot, name))
   : packageTests.has(suite)
     ? packageTests.get(suite).map((name) => path.join(testRoot, name))
     : await collect(path.join(testRoot, suite));

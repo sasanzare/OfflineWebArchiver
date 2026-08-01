@@ -32,9 +32,13 @@ const recoveryLimit = document.querySelector<HTMLInputElement>("#recovery-limit"
 const recoverySummary = document.querySelector<HTMLElement>("#recovery-summary");
 const recoveryReport = document.querySelector<HTMLElement>("#recovery-report");
 const checkpointHistory = document.querySelector<HTMLElement>("#checkpoint-history");
+const renderOwner = document.querySelector<HTMLInputElement>("#render-owner");
+const renderScreenshot = document.querySelector<HTMLInputElement>("#render-screenshot");
+const renderSummary = document.querySelector<HTMLElement>("#render-summary");
+const renderEvents = document.querySelector<HTMLElement>("#render-events");
 const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-action]")];
 
-if (status === null || result === null || nameInput === null || slugInput === null || profileNameInput === null || profileSeedInput === null || profileBaseUrlInput === null || profileDomainAllowInput === null || profileDomainDenyInput === null || profilePathAllowInput === null || profilePathDenyInput === null || profileQueryPolicyInput === null || profileFragmentPolicyInput === null || profileCanonicalExternalInput === null || profileRedirectExternalInput === null || profileRedirectDowngradeInput === null || profileMaxDepthInput === null || profileMaxPagesInput === null || profileCompareFromInput === null || profileCompareToInput === null || profileRevisionSummary === null || scopeUrlInput === null || queueUrlInput === null || queueStateFilter === null || queuePageSize === null || queueSummary === null || queueList === null || queueDetail === null || recoveryLimit === null || recoverySummary === null || recoveryReport === null || checkpointHistory === null) {
+if (status === null || result === null || nameInput === null || slugInput === null || profileNameInput === null || profileSeedInput === null || profileBaseUrlInput === null || profileDomainAllowInput === null || profileDomainDenyInput === null || profilePathAllowInput === null || profilePathDenyInput === null || profileQueryPolicyInput === null || profileFragmentPolicyInput === null || profileCanonicalExternalInput === null || profileRedirectExternalInput === null || profileRedirectDowngradeInput === null || profileMaxDepthInput === null || profileMaxPagesInput === null || profileCompareFromInput === null || profileCompareToInput === null || profileRevisionSummary === null || scopeUrlInput === null || queueUrlInput === null || queueStateFilter === null || queuePageSize === null || queueSummary === null || queueList === null || queueDetail === null || recoveryLimit === null || recoverySummary === null || recoveryReport === null || checkpointHistory === null || renderOwner === null || renderScreenshot === null || renderSummary === null || renderEvents === null) {
   throw new Error("The desktop Project shell is missing required local elements.");
 }
 const statusElement = status;
@@ -69,6 +73,10 @@ const recoveryLimitInput = recoveryLimit;
 const recoverySummaryElement = recoverySummary;
 const recoveryReportElement = recoveryReport;
 const checkpointHistoryElement = checkpointHistory;
+const renderOwnerInput = renderOwner;
+const renderScreenshotInput = renderScreenshot;
+const renderSummaryElement = renderSummary;
+const renderEventsElement = renderEvents;
 
 let selectedProjectPath: string | null = null;
 let selectedRunId: string | null = null;
@@ -350,12 +358,57 @@ function renderResponse(response: ResponseEnvelope): void {
   }
   if (value.resultType === "lease.list" || value.resultType === "lease.value") {
     statusElement.textContent = "Lease metadata loaded. Lease Tokens are intentionally not rendered.";
+    return;
+  }
+  if (value.resultType === "browser.runtimeInfo") {
+    statusElement.textContent = value.info.valid ? "The pinned Browser Runtime installation is valid." : "The Browser Runtime installation is unavailable or invalid.";
+    statusElement.dataset["state"] = value.info.valid ? "passed" : "failed";
+    renderSummaryElement.replaceChildren();
+    addDefinitionRow(renderSummaryElement, "Playwright", value.info.playwrightVersion);
+    addDefinitionRow(renderSummaryElement, "Chromium", value.info.chromiumVersion ?? "Unavailable");
+    addDefinitionRow(renderSummaryElement, "Revision", value.info.browserRevision ?? "Unavailable");
+    addDefinitionRow(renderSummaryElement, "Sandbox", value.info.sandboxEnabled ? "Enabled" : "Disabled");
+    addDefinitionRow(renderSummaryElement, "System fallback", value.info.systemBrowserFallback ? "Enabled" : "Disabled");
+    return;
+  }
+  if (value.resultType === "browser.health") {
+    statusElement.textContent = `Browser Runtime is ${value.health.state}.`;
+    renderSummaryElement.replaceChildren();
+    addDefinitionRow(renderSummaryElement, "State", value.health.state);
+    addDefinitionRow(renderSummaryElement, "Connected", String(value.health.connected));
+    addDefinitionRow(renderSummaryElement, "Active Job", value.health.activeJobId ?? "None");
+    addDefinitionRow(renderSummaryElement, "Restart count", String(value.health.restartCountInWindow));
+    return;
+  }
+  if (value.resultType === "render.status") {
+    statusElement.textContent = `Render status for the selected Job is ${value.status.resultStatus ?? value.status.jobState}.`;
+    renderSummaryElement.replaceChildren();
+    addDefinitionRow(renderSummaryElement, "Job", value.status.jobId);
+    addDefinitionRow(renderSummaryElement, "Queue state", value.status.jobState);
+    addDefinitionRow(renderSummaryElement, "Stage", value.status.stage ?? "Not started");
+    addDefinitionRow(renderSummaryElement, "Result", value.status.resultStatus ?? "None");
+    return;
+  }
+  if (value.resultType === "render.result") {
+    statusElement.textContent = `Render completed with ${value.result.qualityClassification} quality.`;
+    renderSummaryElement.replaceChildren();
+    addDefinitionRow(renderSummaryElement, "Result ID", value.result.renderResultId);
+    addDefinitionRow(renderSummaryElement, "Final URL", value.result.finalUrlSafe);
+    addDefinitionRow(renderSummaryElement, "HTTP status", value.result.httpStatus === null ? "None" : String(value.result.httpStatus));
+    addDefinitionRow(renderSummaryElement, "HTML artifact", value.result.htmlArtifact.relativePath);
+    addDefinitionRow(renderSummaryElement, "Screenshot artifact", value.result.screenshotArtifact?.relativePath ?? "Disabled");
+    addDefinitionRow(renderSummaryElement, "Total duration", `${value.result.totalDurationMs} ms`);
+    return;
+  }
+  if (value.resultType === "render.events") {
+    statusElement.textContent = `Loaded ${value.events.length} bounded Render event(s).`;
+    renderEventsElement.textContent = value.events.map((event) => `${event.renderEventId} ${event.occurredAt} ${event.stage} ${event.eventType}`).join("\n") || "No Render events exist for the selected Job.";
   }
 }
 
 async function execute(commandType: Parameters<typeof createProjectCommand>[0], payload: unknown): Promise<ResponseEnvelope> {
   const commandMetadata = metadata();
-  const queueMutations = new Set(["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume"]);
+  const queueMutations = new Set(["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume", "browser.restart", "render.start", "render.cancel"]);
   const commandPayload = queueMutations.has(commandType) && typeof payload === "object" && payload !== null
     ? { ...(payload as Record<string, unknown>), operationId: commandMetadata.commandId }
     : payload;
@@ -462,6 +515,22 @@ async function perform(action: string): Promise<void> {
     } else if (action === "checkpoint-history") {
       if (selectedQueueJob === null) throw new ProfileEditorError("Select a Job before loading Checkpoint history.");
       response = await execute("checkpoint.list", { ...queueContext(), jobId: selectedQueueJob.jobId, limit: 50 });
+    } else if (action === "browser-info") {
+      response = await execute("browser.getRuntimeInfo", {});
+    } else if (action === "browser-validate") {
+      response = await execute("browser.validateInstallation", {});
+    } else if (action === "browser-health") {
+      response = await execute("browser.getHealth", {});
+    } else if (action === "browser-restart") {
+      response = await execute("browser.restart", {});
+    } else if (action.startsWith("render-")) {
+      if (selectedQueueJob === null) throw new ProfileEditorError("Select a queued Page Job before using Render controls.");
+      const context = { ...queueContext(), jobId: selectedQueueJob.jobId };
+      if (action === "render-start") response = await execute("render.start", { ...context, ownerId: renderOwnerInput.value, leaseDurationMs: 60_000, idempotencyKey: `desktop-render-${crypto.randomUUID()}`, policy: { captureScreenshot: renderScreenshotInput.checked } });
+      if (action === "render-status") response = await execute("render.getStatus", context);
+      if (action === "render-result") response = await execute("render.getResult", context);
+      if (action === "render-events") response = await execute("render.getEvents", { ...context, limit: 100 });
+      if (action === "render-cancel") response = await execute("render.cancel", context);
     }
     if (response === null) {
       statusElement.textContent = "Operation cancelled or no open Project is available.";

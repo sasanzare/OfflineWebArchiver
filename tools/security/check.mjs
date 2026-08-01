@@ -13,6 +13,10 @@ const queueDomain = await readFile(path.join(repositoryRoot, "packages/queue/src
 const queuePersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/queue.ts"), "utf8");
 const recoveryDomain = await readFile(path.join(repositoryRoot, "packages/recovery/src/index.ts"), "utf8");
 const recoveryPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/recovery.ts"), "utf8");
+const browserRuntime = await readFile(path.join(repositoryRoot, "packages/browser-runtime/src/index.ts"), "utf8");
+const renderEngine = await readFile(path.join(repositoryRoot, "packages/rendering/src/index.ts"), "utf8");
+const renderPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/render.ts"), "utf8");
+const applicationService = await readFile(path.join(repositoryRoot, "packages/application-service/src/index.ts"), "utf8");
 const required = [
   [files.main, "contextIsolation: true", "context isolation"],
   [files.main, "nodeIntegration: false", "disabled Node integration"],
@@ -52,6 +56,21 @@ if (/database\.exec\s*\(\s*input|prepare\s*\(\s*input/.test(queuePersistence)) e
 for (const token of ["lease_token_hash", "fencingGeneration", "assertLease", "validateCheckpointPayload", "validatePortableRelativePath", "CHECKPOINT_TOO_LARGE", "FENCING_GENERATION_STALE", "BEGIN IMMEDIATE"]) {
   if (!(recoveryDomain + recoveryPersistence).includes(token)) errors.push(`Recovery security control is missing: ${token}`);
 }
+for (const token of ["chromiumSandbox: true", "Fetch.enable", "Fetch.failRequest", "BlockedByClient", "method !== \"GET\"", "serviceWorkers: CONTEXT_PROFILE.serviceWorkers", "executableSha256", "systemBrowserFallback: false", "launchDownloadAllowed: false"]) {
+  if (!browserRuntime.includes(token)) errors.push(`Browser Runtime security control is missing: ${token}`);
+}
+for (const token of ["domQuietMs", "networkQuietMs", "activeRequests === 0", "captureScreenshot: false", "maxHtmlBytes", "RENDER_STABILITY_TIMEOUT"]) {
+  if (!renderEngine.includes(token)) errors.push(`Render Engine bound is missing: ${token}`);
+}
+for (const token of ["assertOwnership", "fencing_generation", "atomicWriteFile", "BEGIN IMMEDIATE", "result_summary_json", "lease_token_hash"]) {
+  if (!renderPersistence.includes(token)) errors.push(`Render persistence control is missing: ${token}`);
+}
+for (const token of ["lookup(url.hostname", "classifyHost", "RUNTIME_PRIVATE_OR_MIXED_ADDRESS_BLOCKED", "fixtureOrigins.includes(url.origin)", "renderTestMode"]) {
+  if (!applicationService.includes(token)) errors.push(`Runtime network authorization control is missing: ${token}`);
+}
+if (/networkidle/i.test(renderEngine + browserRuntime)) errors.push("Browser/Render production code uses forbidden networkidle readiness");
+if (/--no-sandbox|chromiumSandbox:\s*false|channel:\s*["']chrome/i.test(browserRuntime)) errors.push("Browser Runtime contains an unsafe sandbox or system-browser fallback");
+if (/\b(?:proxy|httpCredentials|storageState)\s*:/.test(browserRuntime)) errors.push("Browser Runtime contains out-of-scope proxy or authentication state");
 if (/database\.exec\s*\(\s*input|prepare\s*\(\s*input/.test(recoveryPersistence)) errors.push("Recovery persistence accepts caller-provided SQL");
 if (/addDefinitionRow\([^\n]*(?:claimToken|leaseToken)/.test(files.renderer)) errors.push("Desktop renderer displays a Lease Token");
 for (const token of ["URL_CREDENTIALS_FORBIDDEN", "SENSITIVE_QUERY_REMOVED", "PRIVATE_NETWORK_NOT_ALLOWED", "SCOPE_BATCH_LIMIT_EXCEEDED"]) {

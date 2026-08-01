@@ -4,7 +4,7 @@ import { readEnvironmentConfiguration, resolveApplicationConfiguration } from "@
 
 test("configuration has safe explicit defaults", () => {
   const configuration = resolveApplicationConfiguration();
-  assert.equal(configuration.applicationVersion, "0.7.0");
+  assert.equal(configuration.applicationVersion, "0.8.0");
   assert.equal(configuration.logLevel, "info");
 });
 

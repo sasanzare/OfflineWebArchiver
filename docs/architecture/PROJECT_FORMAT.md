@@ -1,8 +1,12 @@
 # Project Format
 
+## Product Phase 8 artifacts
+
+Project format remains `1.1.0`. Render HTML and optional screenshot files live under fixed portable paths `pages/<job-id>/rendered.html` and `pages/<job-id>/screenshot.png`; SQLite schema 6 owns metadata and SHA-256 descriptors. Browser binaries, manifests, caches, profiles, and Playwright dependencies are runtime/package resources and are never exported inside a portable Project.
+
 ## Product Phase 7 compatibility
 
-Project format remains `1.1.0`; minimum application compatibility becomes `0.7.0`; SQLite schema becomes `5`. New durable values stay in SQLite and all artifact/output references remain portable relative paths. Lease Tokens, host absolute paths, and runtime process IDs are not portable Project content.
+Project format remains `1.1.0`; minimum application compatibility becomes `0.8.0`; SQLite schema becomes `6`. New durable values stay in SQLite and all artifact/output references remain portable relative paths. Lease Tokens, host absolute paths, Browser resources, and runtime process IDs are not portable Project content.
 
 Current Project format is `1.1.0`. It remains backwards-readable with `1.0.0`; implemented feature states are `scopePolicy` and `crawlQueue`. `profile/config.json` is an approved portable/exported root created only by `profile.create`; Queue state resides in `database/crawl.db`; auth/proxy secret roots remain excluded.
 
@@ -34,4 +38,4 @@ The strict manifest records format/application versions, Project/Revision/Run UU
 
 All internal paths are Project-relative and follow [Portable Path Rules](PORTABLE_PATH_RULES.md). Local command/response paths are transport state and never persisted in the manifest.
 
-Compatibility policy accepts formats `1.0.0` and `1.1.0` in this build. Supported database schemas migrate forward through schema 5; schema 0, unknown histories, and newer schemas are rejected. Opening an older manifest may add implemented Queue/recovery-compatible features after migration. There is no best-effort downgrade.
+Compatibility policy accepts formats `1.0.0` and `1.1.0` in this build. Supported database schemas migrate forward through schema 6; schema 0, unknown histories, and newer schemas are rejected. Opening an older manifest may add implemented Queue/Recovery/Render-compatible features after migration. There is no best-effort downgrade.

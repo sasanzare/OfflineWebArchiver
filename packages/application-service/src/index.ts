@@ -1,14 +1,25 @@
+import path from "node:path";
+import { lookup } from "node:dns/promises";
 import {
+  BROWSER_CONTEXT_PROFILE_VERSION,
   createArchiveCore,
   ProjectOperationError,
   QueueOperationError,
   RecoveryOperationError,
+  RenderOperationError,
+  RENDER_ENGINE_VERSION,
   type ArchiveCore,
   type ProjectStoragePort,
   type QueueEnqueueInput,
   type QueueRepositoryPort,
   type RecoveryRepositoryPort,
+  type BrowserRuntimePort,
+  type RenderEnginePort,
+  type RenderPolicy,
+  type RenderRepositoryPort,
+  type RuntimeNetworkDecision,
 } from "@offline-web-archive/archive-core";
+import { createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } from "@offline-web-archive/browser-runtime";
 import {
   CONTRACT_VERSION,
   ContractValidationError,
@@ -25,7 +36,9 @@ import {
 import { createSilentLogger, type Logger } from "@offline-web-archive/observability";
 import { createSqliteProjectStorage } from "@offline-web-archive/persistence-sqlite";
 import { deriveBatchItemIdempotencyKey } from "@offline-web-archive/queue";
+import { classifyRenderFailure, createRenderEngine, DEFAULT_RENDER_POLICY } from "@offline-web-archive/rendering";
 import {
+  classifyHost,
   evaluateScope,
   evaluateScopeBatch,
   createDefaultSiteProfileDraft,
@@ -43,6 +56,7 @@ export interface TransportContext {
 
 export interface ApplicationService {
   execute(command: unknown, context: TransportContext): Promise<ResponseEnvelope>;
+  close(): Promise<void>;
 }
 
 export interface ApplicationServiceDependencies {
@@ -50,7 +64,13 @@ export interface ApplicationServiceDependencies {
   runtime: RuntimeInfo;
   platform: PlatformInfo;
   core?: ArchiveCore;
-  projectStorage?: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort;
+  projectStorage?: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort;
+  browserRuntime?: BrowserRuntimePort;
+  renderEngine?: RenderEnginePort;
+  browserRoot?: string;
+  renderTestMode?: boolean;
+  fixtureOrigins?: readonly string[];
+  renderHeartbeatIntervalMs?: number;
   logger?: Logger;
   now?: () => string;
 }
@@ -197,6 +217,24 @@ function recoveryError(error: RecoveryOperationError): ErrorContract {
   };
 }
 
+function renderError(error: RenderOperationError): ErrorContract {
+  const securityCodes = new Set(["RUNTIME_NETWORK_BLOCKED", "REDIRECT_BLOCKED", "BROWSER_INSTALLATION_INVALID"]);
+  const validationCodes = new Set(["BROWSER_INSTALLATION_MISSING", "RENDER_INPUT_INVALID", "RENDER_HTML_TOO_LARGE", "RENDER_SCREENSHOT_TOO_LARGE", "RENDER_BLANK_PAGE"]);
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : error.code.startsWith("BROWSER_") || error.code === "PAGE_CRASHED" ? "platform" : "application",
+    message: error.message,
+    userMessage: error.code === "BROWSER_INSTALLATION_MISSING"
+      ? "The approved Chromium runtime is not installed. Run the explicit browser installation command."
+      : error.code === "RUNTIME_NETWORK_BLOCKED" || error.code === "REDIRECT_BLOCKED"
+        ? "Browser navigation was blocked by the approved Scope or runtime-network policy."
+        : error.code === "RENDER_RESULT_NOT_FOUND"
+          ? "No committed Render Result exists for this Page Job."
+          : "The Page Job could not be rendered safely.",
+    retryable: error.retryable,
+  };
+}
+
 function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<string, unknown> {
   if (result.resultType === "profile.value") return { resultType: result.resultType, profileId: result.profile.profileId, profileRevisionId: result.profile.revisionId, engineVersion: result.profile.engineVersion, changedPaths: result.changedPaths ?? [] };
   if (result.resultType === "profile.validation") return { resultType: result.resultType, valid: result.validation.valid, errorCodes: result.validation.errors.map((entry) => entry.code), warningCodes: result.validation.warnings.map((entry) => entry.code) };
@@ -220,6 +258,11 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "artifactCheckpoint.value") return { resultType: result.resultType, artifactCheckpointId: result.checkpoint.artifactCheckpointId, jobId: result.checkpoint.jobId, artifactKind: result.checkpoint.artifactKind, bytesWritten: result.checkpoint.bytesWritten, committed: result.checkpoint.committed };
   if (result.resultType === "artifactCheckpoint.validation") return { resultType: result.resultType, valid: result.valid, reasonCode: result.reasonCode };
   if (result.resultType === "run.control") return { resultType: result.resultType, runId: result.run.runId, controlState: result.run.controlState, activeLeaseCount: result.run.activeLeaseCount };
+  if (result.resultType === "browser.runtimeInfo") return { resultType: result.resultType, action: result.action, valid: result.info.valid, playwrightVersion: result.info.playwrightVersion, chromiumVersion: result.info.chromiumVersion, sandboxEnabled: result.info.sandboxEnabled };
+  if (result.resultType === "browser.health") return { resultType: result.resultType, action: result.action, state: result.health.state, connected: result.health.connected, activeJobId: result.health.activeJobId };
+  if (result.resultType === "render.result") return { resultType: result.resultType, action: result.action, renderResultId: result.result.renderResultId, jobId: result.result.jobId, status: result.result.resultStatus, quality: result.result.qualityClassification, totalDurationMs: result.result.totalDurationMs, htmlSha256: result.result.htmlArtifact.sha256 };
+  if (result.resultType === "render.status") return { resultType: result.resultType, action: result.action, jobId: result.status.jobId, jobState: result.status.jobState, stage: result.status.stage, resultStatus: result.status.resultStatus };
+  if (result.resultType === "render.events") return { resultType: result.resultType, eventCount: result.events.length };
   return { resultType: result.resultType };
 }
 
@@ -233,9 +276,178 @@ function unauthorizedError(): ErrorContract {
   };
 }
 
+interface ActiveRender {
+  controller: AbortController;
+  operationId: string;
+}
+
+async function authorizeRuntimeUrl(
+  rawUrl: string,
+  profile: Awaited<ReturnType<ProfileStoragePort["getProfile"]>>,
+  testMode: boolean,
+  fixtureOrigins: readonly string[],
+): Promise<RuntimeNetworkDecision> {
+  let url: URL;
+  try { url = new URL(rawUrl); }
+  catch { return { allowed: false, reasonCode: "RUNTIME_URL_INVALID", safeUrl: "invalid-url", resolvedAddresses: [] }; }
+  if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username !== "" || url.password !== "") {
+    return { allowed: false, reasonCode: "RUNTIME_SCHEME_OR_CREDENTIALS_BLOCKED", safeUrl: `${url.protocol}//${url.hostname}/`, resolvedAddresses: [] };
+  }
+  const fixtureAllowed = testMode && fixtureOrigins.includes(url.origin);
+  const scope = evaluateScope(profile, { rawUrl, discoveryType: "manual", profileRevision: profile.revisionId, currentEligibleCount: 0 });
+  if (!fixtureAllowed && !scope.eligible) return { allowed: false, reasonCode: scope.reasonCodes[0] ?? "RUNTIME_SCOPE_BLOCKED", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: [] };
+  let addresses: readonly string[];
+  try { addresses = [...new Set((await lookup(url.hostname, { all: true, verbatim: true })).map((entry) => entry.address))]; }
+  catch { return { allowed: false, reasonCode: "RUNTIME_DNS_FAILED", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: [] }; }
+  if (addresses.length === 0) return { allowed: false, reasonCode: "RUNTIME_DNS_EMPTY", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: [] };
+  const classes = addresses.map(classifyHost);
+  const allowed = fixtureAllowed ? classes.every((value) => value === "loopback") : classes.every((value) => value === "public");
+  return { allowed, reasonCode: allowed ? (fixtureAllowed ? "RUNTIME_TEST_LOOPBACK_ALLOWED" : "RUNTIME_PUBLIC_ADDRESS_ALLOWED") : "RUNTIME_PRIVATE_OR_MIXED_ADDRESS_BLOCKED", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: addresses };
+}
+
+function renderPolicy(commandPolicy: Extract<CommandEnvelope, { commandType: "render.start" }>["payload"]["policy"], testMode: boolean): RenderPolicy {
+  const merged: RenderPolicy = {
+    ...DEFAULT_RENDER_POLICY,
+    navigationTimeoutMs: commandPolicy?.navigationTimeoutMs ?? DEFAULT_RENDER_POLICY.navigationTimeoutMs,
+    renderTimeoutMs: commandPolicy?.renderTimeoutMs ?? DEFAULT_RENDER_POLICY.renderTimeoutMs,
+    stabilityTimeoutMs: commandPolicy?.stabilityTimeoutMs ?? DEFAULT_RENDER_POLICY.stabilityTimeoutMs,
+    domQuietMs: commandPolicy?.domQuietMs ?? DEFAULT_RENDER_POLICY.domQuietMs,
+    networkQuietMs: commandPolicy?.networkQuietMs ?? DEFAULT_RENDER_POLICY.networkQuietMs,
+    fixtureScroll: commandPolicy?.fixtureScroll ?? false,
+    captureScreenshot: commandPolicy?.captureScreenshot ?? false,
+    ...(commandPolicy?.completionSelector === undefined ? {} : { completionSelector: commandPolicy.completionSelector }),
+  };
+  if (merged.fixtureScroll && !testMode) throw new RenderOperationError("RENDER_INPUT_INVALID", "Fixture scrolling is disabled in production Render mode");
+  return merged;
+}
+
+async function executeRenderStart(
+  command: Extract<CommandEnvelope, { commandType: "render.start" }>,
+  storage: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort,
+  runtime: BrowserRuntimePort,
+  engine: RenderEnginePort,
+  activeRenders: Map<string, ActiveRender>,
+  now: () => string,
+  testMode: boolean,
+  fixtureOrigins: readonly string[],
+  heartbeatIntervalMs: number,
+): Promise<unknown> {
+  const project = storage.getCurrent();
+  if (project === null) throw new RenderOperationError("RENDER_INPUT_INVALID", "Open the selected Project before starting a Render");
+  if (project.runId !== command.payload.runId) throw new QueueOperationError("QUEUE_RUN_NOT_FOUND", "The selected Run does not belong to the open Project");
+  if (activeRenders.has(command.payload.jobId)) throw new RenderOperationError("BROWSER_BUSY", "The selected Page Job already has an active Render operation");
+  const policy = renderPolicy(command.payload.policy, testMode);
+  const profile = await storage.getProfile(command.payload.projectPath);
+  try {
+    return { resultType: "render.result", action: "start", result: await storage.getRenderResult({ projectId: project.projectId, runId: project.runId, jobId: command.payload.jobId }) };
+  } catch (error) {
+    if (!(error instanceof RenderOperationError) || error.code !== "RENDER_RESULT_NOT_FOUND") throw error;
+  }
+  const requestedLeaseMs = Math.min(86_400_000, Math.max(command.payload.leaseDurationMs, policy.renderTimeoutMs + 60_000));
+  const claim = await storage.claimJobWithLease({
+    projectId: project.projectId, runId: command.payload.runId, jobId: command.payload.jobId, ownerId: command.payload.ownerId,
+    leaseDurationMs: requestedLeaseMs, idempotencyKey: command.payload.idempotencyKey, operationId: command.payload.operationId, correlationId: command.correlationId,
+  });
+  const controller = new AbortController();
+  activeRenders.set(command.payload.jobId, { controller, operationId: command.payload.operationId });
+  let page: Awaited<ReturnType<BrowserRuntimePort["createPageSession"]>> | null = null;
+  let lease = claim.lease;
+  let heartbeatRunning = false;
+  let heartbeatFailure: unknown = null;
+  const heartbeat = async (): Promise<void> => {
+    if (heartbeatRunning) return;
+    heartbeatRunning = true;
+    try {
+      lease = await storage.heartbeatLease({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, operationId: `${command.payload.operationId}:heartbeat` });
+      if (Date.parse(lease.expiresAt) - Date.parse(now()) < 30_000) {
+        lease = await storage.renewLease({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, extensionMs: requestedLeaseMs, operationId: `${command.payload.operationId}:renew` });
+      }
+    } catch (error) {
+      heartbeatFailure = error;
+      controller.abort();
+    } finally {
+      heartbeatRunning = false;
+    }
+  };
+  const heartbeatTimer = setInterval(() => void heartbeat(), heartbeatIntervalMs);
+  const persistStage = async (stage: Parameters<RenderEnginePort["render"]>[0]["onStage"] extends (stage: infer S, ...arguments_: never[]) => unknown ? S : never, progress: number, safeMetadata: Readonly<Record<string, string | number | boolean | null>> = {}): Promise<void> => {
+    await storage.recordRenderEvent({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, stage, eventType: `render.${stage}`, safeMetadata: { progress, ...safeMetadata }, occurredAt: now() });
+    await storage.saveJobCheckpoint({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, phase: stage, progress, payload: { stage, ...safeMetadata }, operationId: `${command.payload.operationId}:${stage}` });
+  };
+  try {
+    await persistStage("claimed", 0.05, { attemptNumber: claim.job.attemptCount, contextProfileVersion: BROWSER_CONTEXT_PROFILE_VERSION });
+    const installation = await runtime.validateInstallation();
+    if (!installation.valid) throw new RenderOperationError(installation.reasonCode === "BROWSER_INSTALLATION_MISSING" ? "BROWSER_INSTALLATION_MISSING" : "BROWSER_INSTALLATION_INVALID", "The approved Chromium runtime did not pass validation");
+    await persistStage("browser-starting", 0.1, { playwrightVersion: installation.playwrightVersion });
+    const browserHealth = await runtime.start();
+    await persistStage("context-created", 0.12, { contextProfileVersion: BROWSER_CONTEXT_PROFILE_VERSION });
+    page = await runtime.createPageSession(claim.job.jobId, {
+      testMode,
+      allowedFixtureOrigins: fixtureOrigins,
+      maxEvidenceEntries: policy.maxEvidenceEntries,
+      authorizeUrl: (url) => authorizeRuntimeUrl(url, profile, testMode, fixtureOrigins),
+    });
+    await persistStage("page-created", 0.15);
+    const output = await engine.render({
+      jobId: claim.job.jobId,
+      requestedUrl: claim.job.normalizedUrl,
+      page,
+      policy,
+      signal: controller.signal,
+      now,
+      onStage: persistStage,
+      heartbeat,
+      shouldPause: async () => (await storage.getRunControlState({ projectId: project.projectId, runId: project.runId })).controlState === "pause_requested",
+    });
+    if (heartbeatFailure !== null) throw heartbeatFailure;
+    if (output.qualityClassification !== "complete") throw new RenderOperationError(output.qualityClassification === "http-error" ? "NAVIGATION_FAILED" : "RENDER_BLANK_PAGE", "The Page output did not meet the successful Render quality policy");
+    await persistStage("committing-result", 0.92, { htmlBytes: new TextEncoder().encode(output.html).byteLength, screenshot: output.screenshot !== null });
+    const result = await storage.commitRenderResult({
+      projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration,
+      ownerId: command.payload.ownerId, operationId: command.payload.operationId,
+      result: {
+        renderResultVersion: 1, jobId: claim.job.jobId, projectId: project.projectId, runId: project.runId,
+        requestedUrlSafe: output.navigation.requestedUrlSafe, finalUrlSafe: output.navigation.finalUrlSafe, httpStatus: output.navigation.statusCode,
+        contentType: output.navigation.contentType, pageTitleSafe: output.titleSafe, resultStatus: "completed", qualityClassification: output.qualityClassification,
+        navigationStartedAt: output.navigation.startedAt, stabilityReachedAt: output.stabilityReachedAt, extractionCompletedAt: output.extractionCompletedAt,
+        renderCompletedAt: now(), navigationDurationMs: output.navigation.durationMs, stabilityDurationMs: output.stabilityDurationMs, totalDurationMs: output.totalDurationMs,
+        browserVersion: browserHealth.browserVersion ?? installation.chromiumVersion ?? "unknown", playwrightVersion: PLAYWRIGHT_VERSION, renderEngineVersion: RENDER_ENGINE_VERSION,
+        contextProfileVersion: BROWSER_CONTEXT_PROFILE_VERSION, evidence: output.evidence,
+      },
+      html: output.html,
+      screenshot: output.screenshot,
+    });
+    return { resultType: "render.result", action: "start", result };
+  } catch (error) {
+    if (error instanceof RenderOperationError && error.code === "RENDER_COMMIT_FAILED") {
+      try { return { resultType: "render.result", action: "start", result: await storage.getRenderResult({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId }) }; }
+      catch { /* The commit did not become durable. */ }
+    }
+    const pauseRequested = (await storage.getRunControlState({ projectId: project.projectId, runId: project.runId })).controlState === "pause_requested";
+    if (pauseRequested) {
+      await storage.saveJobCheckpoint({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, phase: "cancelled", progress: 0, payload: { reasonCode: "RUN_PAUSE_REQUESTED" }, operationId: `${command.payload.operationId}:pause` }).catch(() => undefined);
+      await storage.acknowledgePause({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, operationId: `${command.payload.operationId}:pause-ack`, correlationId: command.correlationId }).catch(() => undefined);
+      throw new RenderOperationError("RENDER_CANCELLED", "The Render stopped at a cooperative pause boundary", true);
+    }
+    const failure = classifyRenderFailure(error);
+    await storage.recordRenderFailure({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, operationId: `${command.payload.operationId}:failure`, failureCode: failure.code, failureCategory: failure.category, retryable: failure.retryable || failure.code === "RENDER_CANCELLED", safeMessage: failure.safeMessage, occurredAt: now() }).catch(() => undefined);
+    throw error;
+  } finally {
+    clearInterval(heartbeatTimer);
+    await page?.close().catch(() => undefined);
+    activeRenders.delete(command.payload.jobId);
+  }
+}
+
 async function executeProjectCommand(
   command: Exclude<CommandEnvelope, { commandType: "system.describe" }>,
-  storage: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort,
+  storage: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort,
+  runtime: BrowserRuntimePort,
+  engine: RenderEnginePort,
+  activeRenders: Map<string, ActiveRender>,
+  renderTestMode: boolean,
+  fixtureOrigins: readonly string[],
+  heartbeatIntervalMs: number,
   now: () => string,
 ): Promise<unknown> {
   const withOpenProject = async <T>(projectPath: string, operation: () => Promise<T>): Promise<T> => {
@@ -295,6 +507,28 @@ async function executeProjectCommand(
     };
   };
   switch (command.commandType) {
+    case "browser.getRuntimeInfo":
+      return { resultType: "browser.runtimeInfo", action: "info", info: await runtime.getRuntimeInfo() };
+    case "browser.validateInstallation":
+      return { resultType: "browser.runtimeInfo", action: "validate", info: await runtime.validateInstallation() };
+    case "browser.getHealth":
+      return { resultType: "browser.health", action: "health", health: await runtime.getHealth() };
+    case "browser.restart":
+      return { resultType: "browser.health", action: "restart", health: await runtime.restart() };
+    case "render.start":
+      return withOpenProject(command.payload.projectPath, () => executeRenderStart(command, storage, runtime, engine, activeRenders, now, renderTestMode, fixtureOrigins, heartbeatIntervalMs));
+    case "render.getStatus":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "render.status", action: "status", status: await storage.getRenderStatus({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId }) }));
+    case "render.getResult":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "render.result", action: "get", result: await storage.getRenderResult({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId }) }));
+    case "render.getEvents":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "render.events", events: await storage.listRenderEvents({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, limit: command.payload.limit }) }));
+    case "render.cancel":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const active = activeRenders.get(command.payload.jobId);
+        if (active !== undefined) active.controller.abort();
+        return { resultType: "render.status", action: "cancel", status: await storage.getRenderStatus({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId }) };
+      });
     case "project.create":
       return {
         resultType: "project.summary",
@@ -471,6 +705,21 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
     logger,
     now,
   });
+  const browserRuntime = dependencies.browserRuntime ?? createPlaywrightBrowserRuntime({ browserRoot: dependencies.browserRoot ?? path.resolve(process.cwd(), ".runtime", "browsers"), now });
+  const renderEngine = dependencies.renderEngine ?? createRenderEngine();
+  const renderTestMode = dependencies.renderTestMode ?? false;
+  const fixtureOrigins = dependencies.fixtureOrigins ?? [];
+  const heartbeatIntervalMs = dependencies.renderHeartbeatIntervalMs ?? 15_000;
+  if (!Number.isInteger(heartbeatIntervalMs) || heartbeatIntervalMs < 10 || heartbeatIntervalMs > 15_000 || (!renderTestMode && heartbeatIntervalMs !== 15_000)) {
+    throw new RenderOperationError("RENDER_INPUT_INVALID", "The Render Heartbeat interval override is available only to bounded deterministic tests");
+  }
+  if (fixtureOrigins.some((origin) => {
+    try {
+      const hostname = new URL(origin).hostname;
+      return !renderTestMode || (hostname !== "127.0.0.1" && hostname !== "[::1]" && hostname !== "::1");
+    } catch { return true; }
+  })) throw new RenderOperationError("RENDER_INPUT_INVALID", "Fixture origins must be explicit Loopback origins and require Render test mode");
+  const activeRenders = new Map<string, ActiveRender>();
 
   const response = (raw: unknown, result: unknown, error: ErrorContract | null): ResponseEnvelope => {
     const identifiers = safeIdentifiers(raw);
@@ -516,7 +765,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               runtime: dependencies.runtime,
               platform: dependencies.platform,
             }
-          : await executeProjectCommand(command, storage, now);
+          : await executeProjectCommand(command, storage, browserRuntime, renderEngine, activeRenders, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
         const completed = response(rawCommand, result, null);
         const completionMetadata = completed.status === "success" ? resultLogMetadata(completed.result) : {};
         logger.log({
@@ -538,6 +787,8 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               ? queueError(error)
               : error instanceof RecoveryOperationError
                 ? recoveryError(error)
+                : error instanceof RenderOperationError
+                  ? renderError(error)
               : internalError();
         const operationId = typeof command.payload === "object" && command.payload !== null && "operationId" in command.payload && typeof command.payload.operationId === "string"
           ? command.payload.operationId
@@ -555,6 +806,11 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
         });
         return response(rawCommand, null, translatedWithOperation);
       }
+    },
+    async close(): Promise<void> {
+      for (const active of activeRenders.values()) active.controller.abort();
+      await browserRuntime.close();
+      if (storage.getCurrent() !== null) await storage.close();
     },
   });
 }

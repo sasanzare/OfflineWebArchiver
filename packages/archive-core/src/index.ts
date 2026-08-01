@@ -49,11 +49,20 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "run.getControlState",
   "lease.list",
   "lease.show",
+  "browser.getRuntimeInfo",
+  "browser.validateInstallation",
+  "browser.getHealth",
+  "browser.restart",
+  "render.start",
+  "render.getStatus",
+  "render.getResult",
+  "render.getEvents",
+  "render.cancel",
 ] as const;
 
 export const PLANNED_CORE_CAPABILITIES = [
   "crawl.execution",
-  "browser.rendering",
+  "link.discovery",
   "archive.generation",
   "authentication",
   "proxy.management",
@@ -306,12 +315,21 @@ export interface PageJob {
   queuedAt: string;
 }
 
-export interface QueueResultSummary {
-  resultType: "queue-test";
-  statusCode: number | null;
-  contentStored: false;
-  metadata?: Readonly<Record<string, string | number | boolean | null>>;
-}
+export type QueueResultSummary =
+  | {
+      resultType: "queue-test";
+      statusCode: number | null;
+      contentStored: false;
+      metadata?: Readonly<Record<string, string | number | boolean | null>>;
+    }
+  | {
+      resultType: "render";
+      statusCode: number | null;
+      contentStored: true;
+      renderResultId: string;
+      htmlSha256: string;
+      relativePath: string;
+    };
 
 export interface QueueScopeDecisionSnapshot {
   decisionId: string;
@@ -603,6 +621,7 @@ export interface PauseStatus {
 
 export interface RecoveryRepositoryPort {
   claimNextWithLease(input: { projectId: string; runId: string; ownerId: string; leaseDurationMs: number; idempotencyKey: string; operationId: string; correlationId: string }): Promise<LeaseClaim | null>;
+  claimJobWithLease(input: { projectId: string; runId: string; jobId: string; ownerId: string; leaseDurationMs: number; idempotencyKey: string; operationId: string; correlationId: string }): Promise<LeaseClaim>;
   heartbeatLease(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; operationId: string }): Promise<JobLease>;
   renewLease(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; extensionMs: number; operationId: string }): Promise<JobLease>;
   releaseLease(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; reasonCode: string; operationId: string }): Promise<JobLease>;
@@ -627,8 +646,313 @@ export interface RecoveryRepositoryPort {
   endExecutionSession(input: { projectId: string; runId: string; sessionId: string }): Promise<void>;
 }
 
+export const RENDER_ENGINE_VERSION = 1 as const;
+export const BROWSER_CONTEXT_PROFILE_VERSION = 1 as const;
+
+export const RENDER_STAGES = [
+  "claimed",
+  "browser-starting",
+  "context-created",
+  "page-created",
+  "navigating",
+  "waiting-for-stability",
+  "extracting-html",
+  "capturing-screenshot",
+  "committing-result",
+  "completed",
+  "failed",
+  "cancelled",
+] as const;
+
+export type RenderStage = (typeof RENDER_STAGES)[number];
+export type RenderResultStatus = "completed" | "failed" | "cancelled";
+export type RenderQualityClassification = "complete" | "blank" | "incomplete" | "http-error";
+export type BrowserRuntimeState = "stopped" | "starting" | "ready" | "unhealthy" | "crashed" | "restarting" | "closing";
+
+export type RenderOperationErrorCode =
+  | "BROWSER_INSTALLATION_MISSING"
+  | "BROWSER_INSTALLATION_INVALID"
+  | "BROWSER_LAUNCH_FAILED"
+  | "BROWSER_UNHEALTHY"
+  | "BROWSER_CRASHED"
+  | "BROWSER_RESTART_LIMITED"
+  | "BROWSER_BUSY"
+  | "BROWSER_CONTEXT_FAILED"
+  | "PAGE_CREATE_FAILED"
+  | "PAGE_CRASHED"
+  | "NAVIGATION_TIMEOUT"
+  | "NAVIGATION_FAILED"
+  | "REDIRECT_BLOCKED"
+  | "RUNTIME_NETWORK_BLOCKED"
+  | "RENDER_TIMEOUT"
+  | "RENDER_STABILITY_TIMEOUT"
+  | "RENDER_BLANK_PAGE"
+  | "RENDER_HTML_TOO_LARGE"
+  | "RENDER_SCREENSHOT_TOO_LARGE"
+  | "RENDER_EXTRACTION_FAILED"
+  | "RENDER_COMMIT_FAILED"
+  | "RENDER_RESULT_NOT_FOUND"
+  | "RENDER_CANCELLED"
+  | "RENDER_INPUT_INVALID";
+
+export class RenderOperationError extends Error {
+  public constructor(
+    public readonly code: RenderOperationErrorCode,
+    message: string,
+    public readonly retryable = false,
+  ) {
+    super(message);
+    this.name = "RenderOperationError";
+  }
+}
+
+export interface BrowserInstallationInfo {
+  installed: boolean;
+  valid: boolean;
+  provider: "playwright-core";
+  playwrightVersion: string;
+  chromiumVersion: string | null;
+  browserRevision: string | null;
+  executableSha256: string | null;
+  resourceRootKind: "repository-owned" | "packaged-resource";
+  systemBrowserFallback: false;
+  launchDownloadAllowed: false;
+  sandboxEnabled: true;
+  reasonCode: string | null;
+}
+
+export interface BrowserHealth {
+  state: BrowserRuntimeState;
+  connected: boolean;
+  activeJobId: string | null;
+  restartCountInWindow: number;
+  startedAt: string | null;
+  lastCrashAt: string | null;
+  browserVersion: string | null;
+}
+
+export interface RuntimeNetworkDecision {
+  allowed: boolean;
+  reasonCode: string;
+  safeUrl: string;
+  resolvedAddresses: readonly string[];
+}
+
+export interface BrowserConsoleEntry {
+  index: number;
+  type: "error" | "warning";
+  textSafe: string;
+  locationSafe: string | null;
+  occurredAt: string;
+}
+
+export interface BrowserPageErrorEntry {
+  index: number;
+  messageSafe: string;
+  occurredAt: string;
+}
+
+export interface BrowserFailedRequestEntry {
+  index: number;
+  urlSafe: string;
+  method: "GET" | "HEAD";
+  resourceType: string;
+  failureSafe: string;
+  occurredAt: string;
+}
+
+export interface BrowserRedirectEntry {
+  index: number;
+  fromUrlSafe: string;
+  toUrlSafe: string;
+  status: number;
+  occurredAt: string;
+}
+
+export interface BrowserEvidenceSnapshot {
+  consoleEntries: readonly BrowserConsoleEntry[];
+  pageErrors: readonly BrowserPageErrorEntry[];
+  failedRequests: readonly BrowserFailedRequestEntry[];
+  redirects: readonly BrowserRedirectEntry[];
+  blockedRequests: number;
+  evidenceTruncated: boolean;
+}
+
+export interface NavigationObservation {
+  requestedUrlSafe: string;
+  finalUrlSafe: string;
+  statusCode: number | null;
+  contentType: string | null;
+  redirectCount: number;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+}
+
+export interface PageStabilitySnapshot {
+  mutationCount: number;
+  lastMutationAtMs: number;
+  activeRequests: number;
+  lastNetworkActivityAtMs: number;
+  selectorMatched: boolean;
+}
+
+export interface BrowserPageSession {
+  readonly jobId: string;
+  navigate(url: string, timeoutMs: number): Promise<NavigationObservation>;
+  initializeStabilityObserver(selector?: string): Promise<void>;
+  readStabilitySnapshot(selector?: string): Promise<PageStabilitySnapshot>;
+  scrollForFixture(): Promise<void>;
+  extractHtml(): Promise<string>;
+  getTitle(): Promise<string>;
+  inspectBody(): Promise<{ textLength: number; elementCount: number }>;
+  captureScreenshot(): Promise<Uint8Array>;
+  getEvidence(): BrowserEvidenceSnapshot;
+  isCrashed(): boolean;
+  close(): Promise<void>;
+}
+
+export interface BrowserSessionPolicy {
+  testMode: boolean;
+  allowedFixtureOrigins: readonly string[];
+  maxEvidenceEntries: number;
+  authorizeUrl(url: string): Promise<RuntimeNetworkDecision>;
+}
+
+export interface BrowserRuntimePort {
+  getRuntimeInfo(): Promise<BrowserInstallationInfo>;
+  validateInstallation(): Promise<BrowserInstallationInfo>;
+  getHealth(): Promise<BrowserHealth>;
+  start(): Promise<BrowserHealth>;
+  restart(): Promise<BrowserHealth>;
+  createPageSession(jobId: string, policy: BrowserSessionPolicy): Promise<BrowserPageSession>;
+  close(): Promise<void>;
+}
+
+export interface RenderPolicy {
+  navigationTimeoutMs: number;
+  renderTimeoutMs: number;
+  stabilityTimeoutMs: number;
+  domQuietMs: number;
+  networkQuietMs: number;
+  pollIntervalMs: number;
+  completionSelector?: string;
+  captureScreenshot: boolean;
+  fixtureScroll: boolean;
+  maxHtmlBytes: number;
+  maxScreenshotBytes: number;
+  maxEvidenceEntries: number;
+}
+
+export interface RenderEngineInput {
+  jobId: string;
+  requestedUrl: string;
+  page: BrowserPageSession;
+  policy: RenderPolicy;
+  signal: AbortSignal;
+  now(): string;
+  onStage(stage: RenderStage, progress: number, safeMetadata?: Readonly<Record<string, string | number | boolean | null>>): Promise<void>;
+  heartbeat(): Promise<void>;
+  shouldPause(): Promise<boolean>;
+}
+
+export interface RenderEngineOutput {
+  html: string;
+  screenshot: Uint8Array | null;
+  navigation: NavigationObservation;
+  titleSafe: string;
+  qualityClassification: RenderQualityClassification;
+  stabilityReachedAt: string;
+  extractionCompletedAt: string;
+  stabilityDurationMs: number;
+  totalDurationMs: number;
+  evidence: BrowserEvidenceSnapshot;
+}
+
+export interface RenderEnginePort {
+  render(input: RenderEngineInput): Promise<RenderEngineOutput>;
+}
+
+export interface RenderEvent {
+  renderEventId: string;
+  jobId: string;
+  attemptId: string;
+  leaseId: string;
+  fencingGeneration: number;
+  stage: RenderStage;
+  eventType: string;
+  safeMetadata: Readonly<Record<string, string | number | boolean | null>>;
+  occurredAt: string;
+}
+
+export interface RenderArtifactDescriptor {
+  relativePath: string;
+  byteLength: number;
+  sha256: string;
+}
+
+export interface RenderResult {
+  renderResultId: string;
+  renderResultVersion: 1;
+  jobId: string;
+  attemptId: string;
+  projectId: string;
+  runId: string;
+  requestedUrlSafe: string;
+  finalUrlSafe: string;
+  httpStatus: number | null;
+  contentType: string | null;
+  pageTitleSafe: string;
+  resultStatus: RenderResultStatus;
+  qualityClassification: RenderQualityClassification;
+  navigationStartedAt: string;
+  stabilityReachedAt: string;
+  extractionCompletedAt: string;
+  renderCompletedAt: string;
+  navigationDurationMs: number;
+  stabilityDurationMs: number;
+  totalDurationMs: number;
+  browserVersion: string;
+  playwrightVersion: string;
+  renderEngineVersion: number;
+  contextProfileVersion: number;
+  htmlArtifact: RenderArtifactDescriptor;
+  screenshotArtifact: RenderArtifactDescriptor | null;
+  evidence: BrowserEvidenceSnapshot;
+  createdAt: string;
+}
+
+export interface RenderFailure {
+  renderFailureId: string;
+  jobId: string;
+  attemptId: string;
+  failureCode: RenderOperationErrorCode;
+  failureCategory: "browser" | "navigation" | "stability" | "extraction" | "persistence" | "security" | "cancellation";
+  retryable: boolean;
+  safeMessage: string;
+  occurredAt: string;
+}
+
+export interface RenderStatus {
+  jobId: string;
+  jobState: PageJobState;
+  stage: RenderStage | null;
+  resultStatus: RenderResultStatus | null;
+  fencingGeneration: number;
+  updatedAt: string;
+}
+
+export interface RenderRepositoryPort {
+  recordRenderEvent(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; stage: RenderStage; eventType: string; safeMetadata?: Readonly<Record<string, string | number | boolean | null>>; occurredAt: string }): Promise<RenderEvent>;
+  commitRenderResult(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; operationId: string; result: Omit<RenderResult, "renderResultId" | "attemptId" | "htmlArtifact" | "screenshotArtifact" | "createdAt">; html: string; screenshot: Uint8Array | null }): Promise<RenderResult>;
+  recordRenderFailure(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; operationId: string; failureCode: RenderOperationErrorCode; failureCategory: RenderFailure["failureCategory"]; retryable: boolean; safeMessage: string; occurredAt: string }): Promise<RenderFailure>;
+  getRenderStatus(input: { projectId: string; runId: string; jobId: string }): Promise<RenderStatus>;
+  getRenderResult(input: { projectId: string; runId: string; jobId: string }): Promise<RenderResult>;
+  listRenderEvents(input: { projectId: string; runId: string; jobId: string; limit: number }): Promise<readonly RenderEvent[]>;
+}
+
 export interface CoreSystemDescription {
-  coreStatus: "recovery-foundation-ready";
+  coreStatus: "rendering-engine-ready";
   implementedCapabilities: typeof IMPLEMENTED_CORE_CAPABILITIES;
   plannedCapabilities: typeof PLANNED_CORE_CAPABILITIES;
 }
@@ -641,7 +965,7 @@ export function createArchiveCore(): ArchiveCore {
   return Object.freeze({
     describeSystem(): CoreSystemDescription {
       return {
-        coreStatus: "recovery-foundation-ready",
+        coreStatus: "rendering-engine-ready",
         implementedCapabilities: IMPLEMENTED_CORE_CAPABILITIES,
         plannedCapabilities: PLANNED_CORE_CAPABILITIES,
       };

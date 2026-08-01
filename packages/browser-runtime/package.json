@@ -1,0 +1,20 @@
+{
+  "name": "@offline-web-archive/browser-runtime",
+  "version": "0.8.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:browser-runtime" },
+  "dependencies": {
+    "@offline-web-archive/archive-core": "0.8.0",
+    "playwright-core": "1.56.1"
+  }
+}

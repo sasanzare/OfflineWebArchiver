@@ -7,6 +7,7 @@ import {
   ProjectOperationError,
   QueueOperationError,
   RecoveryOperationError,
+  RenderOperationError,
   type ProjectCompatibility,
   type ProjectOperationErrorCode,
   type ProjectStoragePort,
@@ -15,6 +16,7 @@ import {
   type ProjectValidationReport,
   type QueueRepositoryPort,
   type RecoveryRepositoryPort,
+  type RenderRepositoryPort,
 } from "@offline-web-archive/archive-core";
 import {
   normalizeSiteProfileDraft,
@@ -52,6 +54,7 @@ import {
 import { acquireProjectLock, type ProjectLock } from "./locking.js";
 import { createSqliteQueueRepository } from "./queue.js";
 import { createSqliteRecoveryRepository } from "./recovery.js";
+import { createSqliteRenderRepository } from "./render.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -66,6 +69,7 @@ export { DEFAULT_ARCHIVE_LIMITS, extractAndVerifyProjectArchive, inspectZipArchi
 export { acquireProjectLock } from "./locking.js";
 export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
 export { createSqliteRecoveryRepository, type RecoveryFaultPoint, type SqliteRecoveryRepositoryOptions } from "./recovery.js";
+export { createSqliteRenderRepository, type SqliteRenderRepositoryOptions } from "./render.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -96,7 +100,7 @@ interface CurrentProject {
   sessionId: string;
 }
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -105,6 +109,7 @@ export interface SqliteProjectStorageOptions {
   id?: () => string;
   archiveLimits?: ArchiveLimits;
   profileCommitFault?: "after-database" | "after-profile-file" | "after-manifest-file";
+  renderCommitFault?: "after-html-write" | "after-database-commit";
 }
 
 function profileDraftFrom(profile: SiteProfile): SiteProfileDraft {
@@ -511,6 +516,11 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
       id,
       onEvent: (eventName, metadata) => log(eventName, current!.manifest.project.id, metadata),
     });
+  };
+
+  const renderForCurrent = (): RenderRepositoryPort => {
+    if (current === null) throw new RenderOperationError("RENDER_INPUT_INVALID", "Open the selected Project before using Render operations");
+    return createSqliteRenderRepository(current.database, { projectRoot: current.root, now, id, ...(options.renderCommitFault === undefined ? {} : { fault: options.renderCommitFault }) });
   };
 
   const readCurrentProfile = async (active: CurrentProject): Promise<SiteProfile> => {
@@ -1007,6 +1017,10 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
       return recoveryForCurrent().claimNextWithLease(input);
     },
 
+    async claimJobWithLease(input) {
+      return recoveryForCurrent().claimJobWithLease(input);
+    },
+
     async heartbeatLease(input) {
       return recoveryForCurrent().heartbeatLease(input);
     },
@@ -1093,6 +1107,30 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async endExecutionSession(input) {
       return recoveryForCurrent().endExecutionSession(input);
+    },
+
+    async recordRenderEvent(input) {
+      return renderForCurrent().recordRenderEvent(input);
+    },
+
+    async commitRenderResult(input) {
+      return renderForCurrent().commitRenderResult(input);
+    },
+
+    async recordRenderFailure(input) {
+      return renderForCurrent().recordRenderFailure(input);
+    },
+
+    async getRenderStatus(input) {
+      return renderForCurrent().getRenderStatus(input);
+    },
+
+    async getRenderResult(input) {
+      return renderForCurrent().getRenderResult(input);
+    },
+
+    async listRenderEvents(input) {
+      return renderForCurrent().listRenderEvents(input);
     },
 
     async getCompatibility(projectPath) {

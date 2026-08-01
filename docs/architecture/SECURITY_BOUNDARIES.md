@@ -1,5 +1,11 @@
 # Security Boundaries
 
+## Product Phase 8 Browser boundary
+
+The Browser Runtime is privileged production infrastructure owned by Application Service. Its executable must be an exact, checksum-verified, root-contained owned Chromium resource. Sandbox stays enabled; no system fallback, normal-launch download, system profile, arbitrary flag/path, external debug port, extension, or HTTPS bypass exists. A fresh Context clears permissions and blocks service workers; popups/downloads/dialogs are closed/cancelled/dismissed.
+
+Every request and redirect is authorized pre-dispatch for method, Phase 5 scope, DNS address classes, and final URL. Production loopback/private/link-local/reserved targets fail closed. Render artifacts use fixed Project-relative paths, bounded sizes, atomic writes, SHA-256, and current Lease/Fencing checks. The isolated Electron renderer never receives Playwright/raw Browser/filesystem/SQL/process primitives.
+
 ## Product Phase 7 ownership boundary
 
 Protected writes validate Project, Run, Job, owner, the active Lease token digest, the Phase 6 compatibility claim where applicable, active status, exact expiry, and current Fencing Generation. The Project database contains the active owner credential for durable identical-claim replay and must be protected as sensitive local state. Project-open recovery is read-only. Mutating recovery is explicitly confirmed/idempotent/bounded. Checkpoint secret-like keys and unsafe paths fail closed; completed output rejects traversal and symlink escape. See [Phase 7 Security Review](PHASE_07_SECURITY_REVIEW.md).

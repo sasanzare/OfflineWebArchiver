@@ -443,6 +443,91 @@ CREATE INDEX execution_sessions_unclean
 ON execution_sessions(project_id, run_id, closed_at, last_seen_at);
 `;
 
+const ADD_BROWSER_RENDERING_ENGINE_SQL = `
+CREATE TABLE render_results (
+  render_result_id TEXT PRIMARY KEY NOT NULL,
+  render_result_version INTEGER NOT NULL CHECK (render_result_version = 1),
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  attempt_id TEXT NOT NULL REFERENCES job_attempts(attempt_id) ON DELETE RESTRICT,
+  lease_id TEXT NOT NULL REFERENCES job_leases(lease_id) ON DELETE RESTRICT,
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  requested_url_safe TEXT NOT NULL CHECK (length(requested_url_safe) BETWEEN 1 AND 2048),
+  final_url_safe TEXT NOT NULL CHECK (length(final_url_safe) BETWEEN 1 AND 2048),
+  http_status INTEGER CHECK (http_status IS NULL OR http_status BETWEEN 100 AND 599),
+  content_type TEXT CHECK (content_type IS NULL OR length(content_type) <= 240),
+  page_title_safe TEXT NOT NULL CHECK (length(page_title_safe) <= 300),
+  result_status TEXT NOT NULL CHECK (result_status IN ('completed', 'failed', 'cancelled')),
+  quality_classification TEXT NOT NULL CHECK (quality_classification IN ('complete', 'blank', 'incomplete', 'http-error')),
+  navigation_started_at TEXT NOT NULL,
+  stability_reached_at TEXT NOT NULL,
+  extraction_completed_at TEXT NOT NULL,
+  render_completed_at TEXT NOT NULL,
+  navigation_duration_ms INTEGER NOT NULL CHECK (navigation_duration_ms >= 0),
+  stability_duration_ms INTEGER NOT NULL CHECK (stability_duration_ms >= 0),
+  total_duration_ms INTEGER NOT NULL CHECK (total_duration_ms >= 0),
+  browser_version TEXT NOT NULL CHECK (length(browser_version) BETWEEN 1 AND 120),
+  playwright_version TEXT NOT NULL CHECK (length(playwright_version) BETWEEN 1 AND 40),
+  render_engine_version INTEGER NOT NULL CHECK (render_engine_version > 0),
+  context_profile_version INTEGER NOT NULL CHECK (context_profile_version > 0),
+  html_relative_path TEXT NOT NULL CHECK (length(html_relative_path) BETWEEN 1 AND 2048),
+  html_byte_length INTEGER NOT NULL CHECK (html_byte_length > 0),
+  html_sha256 TEXT NOT NULL CHECK (length(html_sha256) = 64),
+  screenshot_relative_path TEXT CHECK (screenshot_relative_path IS NULL OR length(screenshot_relative_path) BETWEEN 1 AND 2048),
+  screenshot_byte_length INTEGER CHECK (screenshot_byte_length IS NULL OR screenshot_byte_length > 0),
+  screenshot_sha256 TEXT CHECK (screenshot_sha256 IS NULL OR length(screenshot_sha256) = 64),
+  safe_summary_json TEXT NOT NULL CHECK (json_valid(safe_summary_json) AND length(safe_summary_json) <= 131072),
+  operation_id TEXT NOT NULL CHECK (length(operation_id) BETWEEN 1 AND 128),
+  created_at TEXT NOT NULL,
+  UNIQUE (job_id, attempt_id),
+  UNIQUE (project_id, operation_id),
+  CHECK ((screenshot_relative_path IS NULL AND screenshot_byte_length IS NULL AND screenshot_sha256 IS NULL)
+    OR (screenshot_relative_path IS NOT NULL AND screenshot_byte_length IS NOT NULL AND screenshot_sha256 IS NOT NULL))
+) STRICT;
+
+CREATE UNIQUE INDEX render_results_one_success_per_attempt
+ON render_results(attempt_id) WHERE result_status = 'completed';
+CREATE INDEX render_results_job_created
+ON render_results(project_id, run_id, job_id, created_at DESC);
+
+CREATE TABLE render_events (
+  render_event_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+  render_event_id TEXT NOT NULL UNIQUE,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  attempt_id TEXT NOT NULL REFERENCES job_attempts(attempt_id) ON DELETE RESTRICT,
+  lease_id TEXT NOT NULL REFERENCES job_leases(lease_id) ON DELETE RESTRICT,
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  stage TEXT NOT NULL CHECK (stage IN ('claimed', 'browser-starting', 'context-created', 'page-created', 'navigating', 'waiting-for-stability', 'extracting-html', 'capturing-screenshot', 'committing-result', 'completed', 'failed', 'cancelled')),
+  event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 120),
+  safe_metadata_json TEXT NOT NULL CHECK (json_valid(safe_metadata_json) AND length(safe_metadata_json) <= 16384),
+  occurred_at TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX render_events_job_sequence
+ON render_events(job_id, render_event_sequence);
+CREATE INDEX render_events_attempt_sequence
+ON render_events(attempt_id, render_event_sequence);
+
+CREATE TABLE render_failures (
+  render_failure_id TEXT PRIMARY KEY NOT NULL,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  attempt_id TEXT NOT NULL REFERENCES job_attempts(attempt_id) ON DELETE RESTRICT,
+  lease_id TEXT NOT NULL REFERENCES job_leases(lease_id) ON DELETE RESTRICT,
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  failure_code TEXT NOT NULL CHECK (length(failure_code) BETWEEN 1 AND 120),
+  failure_category TEXT NOT NULL CHECK (failure_category IN ('browser', 'navigation', 'stability', 'extraction', 'persistence', 'security', 'cancellation')),
+  retryable INTEGER NOT NULL CHECK (retryable IN (0, 1)),
+  safe_message TEXT NOT NULL CHECK (length(safe_message) BETWEEN 1 AND 800),
+  safe_metadata_json TEXT NOT NULL CHECK (json_valid(safe_metadata_json) AND length(safe_metadata_json) <= 16384),
+  occurred_at TEXT NOT NULL,
+  UNIQUE (job_id, attempt_id)
+) STRICT;
+
+CREATE INDEX render_failures_job_time
+ON render_failures(job_id, occurred_at DESC);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -453,6 +538,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "003_add_site_profiles", sequence: 3, sql: ADD_SITE_PROFILES_SQL, checksum: checksum(ADD_SITE_PROFILES_SQL) }),
   Object.freeze({ id: "004_add_persistent_page_queue", sequence: 4, sql: ADD_PERSISTENT_PAGE_QUEUE_SQL, checksum: checksum(ADD_PERSISTENT_PAGE_QUEUE_SQL) }),
   Object.freeze({ id: "005_add_checkpoint_lease_recovery", sequence: 5, sql: ADD_CHECKPOINT_LEASE_RECOVERY_SQL, checksum: checksum(ADD_CHECKPOINT_LEASE_RECOVERY_SQL) }),
+  Object.freeze({ id: "006_add_browser_rendering_engine", sequence: 6, sql: ADD_BROWSER_RENDERING_ENGINE_SQL, checksum: checksum(ADD_BROWSER_RENDERING_ENGINE_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

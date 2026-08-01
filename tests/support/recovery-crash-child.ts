@@ -9,7 +9,7 @@ process.send?.({ type: "ready" });
 process.once("message", async (raw) => {
   const message = raw as CrashMessage;
   if (message.mode === "open-storage") {
-    const storage = createSqliteProjectStorage({ applicationVersion: "0.7.0" });
+    const storage = createSqliteProjectStorage({ applicationVersion: "0.8.0" });
     await storage.open(message.projectPath);
     process.kill(process.pid, "SIGKILL");
     return;

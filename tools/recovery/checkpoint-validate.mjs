@@ -7,7 +7,7 @@ validateCheckpointPayload({ phase: "validation", cursor: 1, relativePath: "temp/
 validatePortableRelativePath("temp/page.part");
 const database = new DatabaseSync(":memory:", { allowExtension: false, defensive: true });
 configureDatabase(database);
-applyPendingMigrations(database, "0.7.0", () => "2026-08-01T12:00:00.000Z");
+applyPendingMigrations(database, "0.8.0", () => "2026-08-01T12:00:00.000Z");
 for (const table of ["job_checkpoints", "run_checkpoints", "artifact_checkpoints", "completed_outputs"]) {
   if (database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table) === undefined) throw new Error(`Missing Checkpoint table ${table}`);
 }

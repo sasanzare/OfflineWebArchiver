@@ -9,9 +9,9 @@
   </head>
   <body>
     <main>
-      <p class="eyebrow">Product Phase 7</p>
-      <h1>Persistent queue and crash recovery</h1>
-      <p class="lede">Inspect fenced Leases, durable Checkpoints, Recovery reports, and cooperative Pause/Resume. Crawling and browser rendering are not implemented.</p>
+      <p class="eyebrow">Product Phase 8</p>
+      <h1>Controlled browser rendering</h1>
+      <p class="lede">Render one queued Page Job at a time with repository-owned Chromium, isolated contexts, bounded stability checks, fenced persistence, and crash-safe recovery. Link Discovery is not implemented.</p>
 
       <section aria-labelledby="create-heading">
         <h2 id="create-heading">Create Project</h2>
@@ -80,7 +80,7 @@
 
       <section aria-labelledby="queue-heading">
         <h2 id="queue-heading">Persistent Page Job queue</h2>
-        <p>These controls simulate queue management only. They never contact a website or create archived page output.</p>
+        <p>Queue controls remain explicit. Rendering starts only for the selected queued Page Job and never accepts an ad-hoc URL.</p>
         <div class="fields">
           <label>Test URL <input id="queue-url" value="https://example.com/docs/?utm_source=queue-test" maxlength="8192"></label>
           <label>State filter
@@ -113,6 +113,30 @@
         <div id="queue-list" class="queue-list" role="list">No Jobs loaded.</div>
         <h3>Selected Job detail and history</h3>
         <dl id="queue-detail"><div><dt>Selection</dt><dd>No Job selected.</dd></div></dl>
+      </section>
+
+      <section aria-labelledby="render-heading">
+        <h2 id="render-heading">Browser Runtime and Render</h2>
+        <p>The runtime uses the pinned Playwright Chromium resource. Screenshot capture is disabled by default; when enabled, only the local artifact path is shown here.</p>
+        <div class="fields">
+          <label>Render owner <input id="render-owner" value="desktop-renderer" maxlength="120"></label>
+          <label class="check-field"><input id="render-screenshot" type="checkbox"> Capture diagnostic screenshot</label>
+        </div>
+        <div class="actions">
+          <button data-action="browser-info" type="button">Browser info</button>
+          <button data-action="browser-validate" type="button">Validate installation</button>
+          <button data-action="browser-health" type="button">Browser health</button>
+          <button data-action="browser-restart" type="button">Restart browser</button>
+          <button data-action="render-start" type="button">Render selected Job</button>
+          <button data-action="render-status" type="button">Render status</button>
+          <button data-action="render-result" type="button">Render result</button>
+          <button data-action="render-events" type="button">Render events</button>
+          <button data-action="render-cancel" type="button">Cancel render</button>
+        </div>
+        <h3>Browser and Render summary</h3>
+        <dl id="render-summary"><div><dt>Status</dt><dd>Not inspected</dd></div></dl>
+        <h3>Bounded Render events</h3>
+        <div id="render-events">No Render events loaded.</div>
       </section>
 
       <section aria-labelledby="recovery-heading">

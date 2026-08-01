@@ -1,5 +1,9 @@
 # Error Model
 
+## Product Phase 8 Browser and Render errors
+
+Stable codes distinguish installation/launch/health/busy/restart/context failures, Page and Browser crashes, navigation timeout/failure, redirect/runtime-network denial, Render timeout/stability/blank/size/extraction/commit/result/cancellation/input failures. Process/Page death is retryable and takes classification precedence over incidental interception failures. Security denials are non-secret, no stack trace crosses the contract, and persistence converts unknown SQLite details to a bounded safe message.
+
 ## Recovery errors
 
 Phase 7 exposes stable categories for invalid recovery input, Lease mismatch/expiry/renewal, stale fencing, invalid/oversized Checkpoint, invalid Artifact Checkpoint/output descriptor, recovery conflict/confirmation, and not-found ownership. Application Service translates repository errors without token, filesystem root, SQL, or sensitive payload leakage.

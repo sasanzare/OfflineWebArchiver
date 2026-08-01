@@ -90,6 +90,18 @@
     { "id": "R-086", "name": "Recovery Checkpoint and session ledger growth", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-087", "name": "Unclean shutdown misclassification", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-088", "name": "Project lock temp and disk exhaustion", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
-    { "id": "R-089", "name": "Future Worker Pool and browser integration complexity", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }
+    { "id": "R-089", "name": "Future Worker Pool and browser integration complexity", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-090", "name": "Pinned browser security or availability drift", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-091", "name": "Browser resource or license omitted from package", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-092", "name": "Single Browser Runtime throughput bound", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-093", "name": "Browser crash restart loop", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-094", "name": "Browser Context state leakage", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-095", "name": "Dynamic page stability timeout", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-096", "name": "Runtime DNS rebinding", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-097", "name": "Redirect or request scope escape", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-098", "name": "Orphan Render artifact before database commit", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-099", "name": "Stale Render owner commit", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-100", "name": "Screenshot or evidence privacy retention", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-101", "name": "Unverified Linux and macOS Browser behavior", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }
   ]
 }

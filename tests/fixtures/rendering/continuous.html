@@ -1,0 +1,1 @@
+<!doctype html><html><head><title>Continuous mutation fixture</title></head><body><main id="counter">0</main><script>void fetch('/page-active'); let value = 0; setInterval(() => { document.querySelector('#counter').textContent = String(++value); }, 20);</script></body></html>

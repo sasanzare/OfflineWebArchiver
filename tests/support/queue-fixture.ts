@@ -32,11 +32,11 @@ export interface QueueFixture {
   dispose(): Promise<void>;
 }
 
-export async function createQueueFixture(prefix = "owa-queue-"): Promise<QueueFixture> {
+export async function createQueueFixture(prefix = "owa-queue-", options: { renderCommitFault?: "after-html-write" | "after-database-commit" } = {}): Promise<QueueFixture> {
   const root = await mkdtemp(path.join(tmpdir(), prefix));
   const projectPath = path.join(root, "project");
   let currentTime = QUEUE_TEST_TIME;
-  const storage = createSqliteProjectStorage({ applicationVersion: "0.7.0", now: () => currentTime });
+  const storage = createSqliteProjectStorage({ applicationVersion: "0.8.0", now: () => currentTime, ...options });
   await storage.create({ destinationPath: projectPath, name: "Queue Test", slug: "queue-test" });
   await storage.open(projectPath);
   const draft = createDefaultSiteProfileDraft({ name: "Approved Queue Profile", seedUrl: "https://example.com/" });

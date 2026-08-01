@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { repositoryRoot } from "../build/typescript.mjs";
 
-const ignored = new Set([".git", ".build-tests", "node_modules", "dist", "build", "output", ".playwright-browsers"]);
+const ignored = new Set([".git", ".build-tests", ".runtime", ".npm-cache", "node_modules", "dist", "build", "output", ".playwright-browsers"]);
 
 export async function repositoryFiles(root = repositoryRoot) {
   const files = [];
@@ -27,4 +27,3 @@ export async function readTextFiles(extensions) {
 export function relative(file) {
   return path.relative(repositoryRoot, file).split(path.sep).join("/");
 }
-

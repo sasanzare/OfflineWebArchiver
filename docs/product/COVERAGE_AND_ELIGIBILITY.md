@@ -1,8 +1,8 @@
 # Coverage and Eligibility
 
-## Product Phase 7 status
+## Product Phase 8 status
 
-Recovery statistics, interrupted/paused Job counts, Lease state, Checkpoint progress, and output-verification issues are operational health evidence only. They are not eligible-page coverage and must not change a future denominator. No Phase 7 test or UI claims that pages were rendered, discovered, downloaded, or archived. Valid completed synthetic Jobs remain terminal during recovery; invalid output is reported separately.
+Render Result counts, Page/Browser failures, Checkpoint progress, and local fixture success are operational evidence only. They do not define future eligible-page coverage or a crawl denominator. Phase 8 renders only manually/previously queued eligible Jobs and does not discover links, enqueue discovered candidates, download assets, or claim a complete archive. A valid completed Render remains terminal and is replayed; output verification issues are reported separately.
 
 ## Product Phase 5 policy input
 

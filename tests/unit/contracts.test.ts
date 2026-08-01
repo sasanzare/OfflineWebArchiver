@@ -42,7 +42,7 @@ function pageJob() {
   };
 }
 
-test("all Project, Profile, Scope, Queue, and Recovery command contracts survive JSON serialization", () => {
+test("all Project, Queue, Recovery, Browser, and Render command contracts survive JSON serialization", () => {
   const commands = [
     createSystemDescribeCommand(metadata),
     createProjectCommand("project.create", { destinationPath: "C:\\archive", name: "Archive", slug: "archive" }, metadata),
@@ -94,6 +94,15 @@ test("all Project, Profile, Scope, Queue, and Recovery command contracts survive
     createProjectCommand("run.getControlState", queueOwner, metadata),
     createProjectCommand("lease.list", { ...queueOwner, status: "active", limit: 50 }, metadata),
     createProjectCommand("lease.show", { ...queueOwner, jobId: leaseOwnership.jobId }, metadata),
+    createProjectCommand("browser.getRuntimeInfo", {}, metadata),
+    createProjectCommand("browser.validateInstallation", {}, metadata),
+    createProjectCommand("browser.getHealth", {}, metadata),
+    createProjectCommand("browser.restart", { operationId: "browser-restart-001" }, metadata),
+    createProjectCommand("render.start", { ...queueOwner, jobId: leaseOwnership.jobId, ownerId: "contract-renderer", leaseDurationMs: 60_000, idempotencyKey: "render-idempotency-001", operationId: "render-operation-001", policy: { captureScreenshot: false } }, metadata),
+    createProjectCommand("render.getStatus", { ...queueOwner, jobId: leaseOwnership.jobId }, metadata),
+    createProjectCommand("render.getResult", { ...queueOwner, jobId: leaseOwnership.jobId }, metadata),
+    createProjectCommand("render.getEvents", { ...queueOwner, jobId: leaseOwnership.jobId, limit: 100 }, metadata),
+    createProjectCommand("render.cancel", { ...queueOwner, jobId: leaseOwnership.jobId, operationId: "render-cancel-001" }, metadata),
   ];
   commands.forEach((command) => assert.deepEqual(parseCommandEnvelope(JSON.parse(JSON.stringify(command))), command));
 });
@@ -110,6 +119,7 @@ test("unknown fields, malformed payloads, and unsupported versions fail closed",
   assert.throws(() => createProjectCommand("queue.list", { ...queueOwner, limit: 201 }, metadata));
   assert.throws(() => createProjectCommand("queue.get", { ...queueOwner, jobId: "' OR 1=1 --" }, metadata));
   assert.throws(() => createProjectCommand("queue.list", { ...queueOwner, state: "leased", limit: 25 }, metadata));
+  assert.throws(() => createProjectCommand("render.start", { ...queueOwner, jobId: leaseOwnership.jobId, ownerId: "renderer", leaseDurationMs: 60_000, idempotencyKey: "render-001", operationId: "render-001", url: "https://example.com/" }, metadata));
 });
 
 test("Queue Job, statistics, transition event, and stable Queue error responses validate", () => {
@@ -133,6 +143,16 @@ test("Recovery, Lease, Checkpoint, and Run-control responses validate without Le
   assert.equal(reportResponse.status, "success");
   const runResponse = parseResponseEnvelope({ ...base, result: { resultType: "run.control", run: { projectId: pageJob().projectId, runId: queueOwner.runId, controlState: "paused", requestedAt: metadata.timestamp, pausedAt: metadata.timestamp, activeLeaseCount: 0 } } });
   assert.equal(runResponse.status, "success");
+});
+
+test("Browser and Render responses validate without executable paths or Lease Tokens", () => {
+  const base = { contractVersion: CONTRACT_VERSION, commandId: metadata.commandId, correlationId: metadata.correlationId, timestamp: metadata.timestamp, status: "success" as const, error: null };
+  const browser = parseResponseEnvelope({ ...base, result: { resultType: "browser.runtimeInfo", action: "validate", info: { installed: true, valid: true, provider: "playwright-core", playwrightVersion: "1.56.1", chromiumVersion: "141.0.7390.37", browserRevision: "1194", executableSha256: "a".repeat(64), resourceRootKind: "repository-owned", systemBrowserFallback: false, launchDownloadAllowed: false, sandboxEnabled: true, reasonCode: null } } });
+  assert.equal(browser.status, "success");
+  assert.equal(JSON.stringify(browser).includes("chrome.exe"), false);
+  const renderStatus = parseResponseEnvelope({ ...base, result: { resultType: "render.status", action: "status", status: { jobId: pageJob().jobId, jobState: "processing", stage: "waiting-for-stability", resultStatus: null, fencingGeneration: 1, updatedAt: metadata.timestamp } } });
+  assert.equal(renderStatus.status, "success");
+  assert.equal(JSON.stringify(renderStatus).includes("leaseToken"), false);
 });
 
 test("response and progress event envelopes preserve correlation", () => {

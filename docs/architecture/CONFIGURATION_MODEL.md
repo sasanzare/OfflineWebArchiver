@@ -1,10 +1,14 @@
 # Configuration Model
 
+## Product Phase 8 configuration
+
+Browser executable roots and fixture exceptions are composition-time values, not user/Project/CLI policy. Callers cannot set executable paths or Chromium arguments. Context profile 1 is deterministic (`en-US`, UTC, 1280x720, scale 1, light, reduced motion, JavaScript on, service workers blocked, downloads off). Render policy is contract-bounded with default navigation/stability/total limits of 15s/12s/30s, 500ms DOM/network quiet, 50ms polling, optional selector/screenshot, 8 MiB HTML/PNG, and 100 evidence entries. Fixture scrolling and loopback authorization are rejected outside explicit test composition.
+
 ## Lease configuration version 1
 
 Default Lease duration is 60,000ms, Heartbeat interval 15,000ms, renewal extension 60,000ms, recovery batch 100, and Project-open policy `inspect`. Duration is bounded 5,000–86,400,000ms and batch maximum is 500. Heartbeat must be at least one second and less than duration. There is no hidden grace period.
 
-Build-owned Phase 7 values are application `0.7.0`, contract `1.4.0`, Project format `1.1.0`, SQLite schema `5`, Site Profile schema `1`, Scope Engine `1`, Queue state machine `2`, priority policy `1`, and Lease/Checkpoint/Recovery configuration/model `1`. Site Profile policy lives inside the Project and is never read from environment variables. `OWAB_LOG_LEVEL` remains the sole environment override.
+Build-owned Phase 8 values are application `0.8.0`, contract `1.5.0`, Project format `1.1.0`, SQLite schema `6`, Site Profile/Scope/Queue/Lease/Checkpoint/Recovery models, Render Engine `1`, Context profile `1`, Stability model `1`, Playwright `1.56.1`, and Chromium revision `1194`. Site Profile policy lives inside the Project and is never read from environment variables. `OWAB_LOG_LEVEL` remains the sole environment override.
 
 Runtime/platform facts expose only normalized Node version, OS family, and architecture.
 

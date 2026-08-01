@@ -1,6 +1,6 @@
 {
   "name": "offline-web-archive-builder",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Production monorepo foundation for Offline Web Archive Builder",
   "license": "UNLICENSED",
@@ -22,6 +22,8 @@
     "test:concurrency": "node tools/testing/run-tests.mjs concurrency",
     "test:process-kill": "node tools/testing/run-tests.mjs process-kill",
     "test:recovery": "node tools/testing/run-tests.mjs recovery",
+    "test:browser": "node tools/testing/run-tests.mjs browser",
+    "test:rendering": "node tools/testing/run-tests.mjs rendering",
     "test:architecture": "node tools/architecture/validate.mjs",
     "test:electron": "node tools/testing/run-tests.mjs electron",
     "test:cli": "node tools/testing/run-tests.mjs cli",
@@ -36,6 +38,10 @@
     "queue:state-machine": "node tools/queue/state-machine.mjs",
     "recovery:validate": "node tools/recovery/validate.mjs",
     "checkpoint:validate": "node tools/recovery/checkpoint-validate.mjs",
+    "browser:install": "node tools/browser/provision.mjs install",
+    "browser:verify": "node tools/browser/provision.mjs verify",
+    "browser:info": "node tools/browser/provision.mjs info",
+    "render:validate": "node tools/rendering/validate.mjs",
     "migrations:validate": "node tools/migrations/validate.mjs",
     "okf:migrate": "node tools/okf/migrate.mjs",
     "okf:validate": "node tools/okf/validate.mjs",
@@ -52,6 +58,9 @@
     "esbuild": "0.28.1",
     "typescript": "7.0.2",
     "fflate": "0.8.3"
+  },
+  "dependencies": {
+    "playwright-core": "1.56.1"
   },
   "allowScripts": {
     "electron@43.2.0": true,

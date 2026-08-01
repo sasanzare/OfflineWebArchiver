@@ -22,4 +22,28 @@ The intact `spikes/phase-02-feasibility/` tree remains isolated historical evide
 | `package.json`, `package-lock.json`, `tsconfig.json` | Retained only | Exact P2 environment must remain reproducible | Old browser/tool pins cannot leak into production | Root/workspace files are new | Current exact pins, no Playwright production dependency, strict refs/exports | ADR-001, ADR-005 | P3 complete |
 | `README.md`, `DEPENDENCIES.md`, `THIRD_PARTY_NOTICES.md`, generated evidence | Preserved evidence | Captures commands, versions, licenses, outcomes, limitations | Must not be mistaken for current production/release authority | Linked from OKF P2 record | Keep immutable-in-scope; supersede claims only with new evidence | ADR-008 | Historical / P25 review |
 
-Production promotion result: the architecture/security/testing concepts named above were reimplemented in Product Phase 3, and the portable Project/persistence concepts were independently reimplemented in Product Phase 4. Browser automation, crawling, archive generation, fixture-specific rewriting, loopback serving, and release packaging remain absent from the production dependency graph.
+## Product Phase 8 promotion review
+
+The following review uses the required Phase 8 classifications. All promoted ideas were independently reimplemented behind production ports; no production package imports `spikes/`.
+
+| Reviewed Phase 2 component | Classification | Product Phase 8 disposition |
+|---|---|---|
+| Browser executable path resolution | promote-after-review | Rewritten as manifest-relative, root-contained, checksum-verified resolution in `browser-runtime` |
+| Playwright browser installation strategy | rewrite | Explicit repository provisioning with exact pin; no global cache/system fallback/normal-launch download |
+| Chromium packaging structure | promote-after-review | Repository-owned development/test root plus documented packaged-resource root |
+| Browser launch options | rewrite | Minimal headless launch, explicit Sandbox, no arbitrary flags/profile/debugging |
+| Chromium Sandbox configuration | promote-after-review | `chromiumSandbox: true`; no `--no-sandbox` |
+| Local fixture server | rewrite | New bounded test-support server with explicit exact-origin loopback exception |
+| Navigation handling | rewrite | `domcontentloaded`, timeouts, CDP pre-dispatch authorization, redirect/final-scope validation |
+| Render marker handling | promote-after-review | Optional bounded selector combined with DOM/network quiet; never sole readiness evidence |
+| HTML extraction | promote-after-review | Final DOM extraction through Browser Runtime port with size/blank checks |
+| Console recording | rewrite | warning/error-only, redacted, globally bounded structured evidence |
+| Network failure recording | rewrite | bounded safe GET/HEAD metadata without headers or bodies |
+| Screenshot support | promote-after-review | opt-in viewport PNG with size limit, portable path, SHA-256 |
+| Browser cleanup | rewrite | Page/Context finally cleanup, Process shutdown/recycle/restart policy, crash classification |
+| Error sanitization | rewrite | versioned Render error codes and redacted contract boundary |
+| Electron smoke integration | retain-as-reference | Phase 8 uses the existing production isolated Desktop smoke, not spike code |
+| Spike archive/rewrite/local runtime | defer | Assets, rewriting, and offline runtime remain future phases |
+| Spike crawl/discovery workflow | discard | It is not a production Phase 8 design and no discovery/enqueue was copied |
+
+Production promotion result: Product Phase 8 now contains reviewed Browser Runtime and Rendering packages plus real production-boundary tests. The Phase 2 tree remains unchanged historical evidence. Link discovery, asset download, archive rewriting, loopback offline serving, and release packaging remain outside the Phase 8 production graph.

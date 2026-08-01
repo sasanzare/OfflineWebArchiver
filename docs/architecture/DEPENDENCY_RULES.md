@@ -1,5 +1,9 @@
 # Dependency Rules
 
+## Product Phase 8 rules
+
+Only `packages/browser-runtime` may import `playwright-core`. `packages/rendering` uses Archive Core `BrowserPageSession`/`RenderEnginePort` only and must not import Playwright, SQLite, Desktop, or CLI. Archive Core must remain free of Playwright/browser paths and operating-system process APIs. Application Service may compose Browser/Rendering/Recovery ports but must not expose raw Browser objects. Desktop and CLI may depend only on public contract/service entries. Production code must not import `spikes/`, test fixtures, or generated Browser resources.
+
 ## Product Phase 7 rule
 
 The permitted path is Desktop/CLI → contracts → Application Service → Core ports, with `persistence-sqlite` and platform adapters injected outside Core. `recovery` → `archive-core` is permitted; Core/Recovery/Queue → SQLite/Electron/browser/network is forbidden. Production source may not import the local Range fixture or process-kill helpers.

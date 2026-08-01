@@ -1,7 +1,7 @@
 # Security Knowledge
 
-Phase 7 security evidence covers hashed Lease verification, token-free logs and ordinary inspection/UI/list/report display, current generation/expiry/scope ownership, recovery confirmation/idempotency/bounds, Checkpoint secret/size/depth rejection, portable root-bounded non-symlink paths, process-kill durability, and renderer isolation. The owner claim result/mutations carry the credential, and Phase 6 compatibility/idempotency rows retain it for durable replay; the Project database is therefore sensitive.
+**Status:** PARTIAL product security, VERIFIED through Product Phase 8 scope.
 
-Phase 6 inherits Scope controls and adds bounded Queue commands/results/errors/pagination, URL/error/result redaction, Project/Run/Profile/revision ownership, claim-token fencing, parameterized SQL, safe event metadata, and adversarial cross-owner/injection/oversize tests. It retains an explicit no-network and no-recovery boundary.
+Phase 8 verifies checksum/root-contained Browser provisioning, explicit Chromium Sandbox, no system fallback/download, fresh Contexts, safe popup/download/dialog/permission defaults, GET/HEAD pre-dispatch authorization, redirect/DNS revalidation, bounded redacted evidence, portable bounded artifacts, renderer isolation, and current Lease/Fencing enforcement.
 
-Current production controls protect the Electron privilege boundary and redact logs. They do not yet constitute the complete threat model for crawling, hostile archive rendering, authentication, proxy credentials, or release signing.
+Phase 1–7 authorization, Project/ZIP/path, Scope/private-network, Queue ownership, and Recovery controls remain active. DNS connection pinning, screenshot retention, hostile final archive execution, authentication/proxy secrets, release signing, and non-Windows Browser evidence remain partial/planned.

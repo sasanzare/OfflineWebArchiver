@@ -1,5 +1,9 @@
 # Test Fixture Strategy
 
+## Product Phase 8 rendering fixtures
+
+All Browser/Render network evidence uses an ephemeral `127.0.0.1` server constructed by tests. Exact origin is injected through a test-only composition seam and cannot be supplied by Desktop/CLI. Fixtures cover static final DOM, delayed JavaScript, History API SPA state, one-shot bounded lazy scroll, continuous mutation, EventSource, blank DOM, navigation timeout, safe/private redirects, blocked non-GET, dialog/popup/download/permission defaults, Page crash, Browser crash, and sanitized console/Page/request failures. No external or private target is contacted and no fixture is treated as target-site acceptance evidence.
+
 ## Product Phase 7 fixtures
 
 Fixtures include an injected fake UTC Clock, SQLite Projects at legacy/current schemas, independent worker connections, forked crash children with deterministic fault points, and a loopback-only HTTP server supporting both 206 Range and no-Range behavior. No external site or production browser/downloader is exercised.

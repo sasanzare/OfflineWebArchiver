@@ -2,7 +2,7 @@
 
 ## Phase 7 boundary
 
-Recovery evidence is deterministic and local; it does not establish target-site coverage. Product Phase 8 browser rendering and Phase 9 Asset downloading remain planned. Future target runs must reuse Lease/Fencing/Checkpoint/Recovery semantics and cannot reinterpret synthetic completed Jobs as archived pages.
+Browser/Render/Recovery evidence is deterministic and local; it does not establish target-site coverage. Product Phase 9 discovery and later Asset/Rewrite/Runtime work remain planned. Future target runs must reuse Scope/Queue/Lease/Fencing/Checkpoint/Render semantics and cannot reinterpret synthetic completed Jobs as a complete archive.
 
 **Document status:** Proposed template; blocked on target-specific approvals  
 **Owner / decision authority:** [TARGET_SITE_OWNER] with QA Lead and Security Owner  

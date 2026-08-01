@@ -44,6 +44,16 @@
     { "id": "OKF-EV-P07-INTERFACES", "name": "Built CLI and real Electron recovery smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P07-SECURITY", "name": "Recovery ownership token redaction payload and path security", "status": "VERIFIED", "path": "tools/security/check.mjs", "method": "npm run security:check" },
     { "id": "OKF-EV-P07-DOCS", "name": "Product Phase 7 ADRs security and implementation report", "status": "VERIFIED", "path": "docs/project/PHASE_07_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P07-RECORD", "name": "Product Phase 7 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md", "method": "npm run okf:validate" }
+    { "id": "OKF-EV-P07-RECORD", "name": "Product Phase 7 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P08-BROWSER", "name": "Owned Playwright Chromium runtime and lifecycle", "status": "VERIFIED", "path": "packages/browser-runtime/src/index.ts", "method": "npm run browser:verify and npm run test:browser" },
+    { "id": "OKF-EV-P08-RENDER", "name": "Render Engine stability and extraction policy", "status": "VERIFIED", "path": "packages/rendering/src/index.ts", "method": "npm run render:validate and npm run test:rendering" },
+    { "id": "OKF-EV-P08-PERSISTENCE", "name": "SQLite schema 6 fenced Render repository", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/render.ts", "method": "npm run migrations:validate and npm run test:integration" },
+    { "id": "OKF-EV-P08-INTEGRATION", "name": "Real Chromium Render lifecycle fixtures", "status": "VERIFIED", "path": "tests/integration/render-lifecycle.test.ts", "method": "npm run test:integration" },
+    { "id": "OKF-EV-P08-FAULTS", "name": "Artifact-first and post-commit fault evidence", "status": "VERIFIED", "path": "tests/integration/render-persistence-faults.test.ts", "method": "npm run test:rendering" },
+    { "id": "OKF-EV-P08-PROCESS-KILL", "name": "Actual Page and Browser process termination evidence", "status": "VERIFIED", "path": "tests/process-kill/browser-process-kill.test.ts", "method": "npm run test:browser and npm run test:process-kill" },
+    { "id": "OKF-EV-P08-INTERFACES", "name": "Browser Render contract CLI and Desktop surfaces", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:unit, npm run test:cli and npm run test:electron" },
+    { "id": "OKF-EV-P08-SECURITY", "name": "Product Phase 8 Browser and Render security gate", "status": "VERIFIED", "path": "docs/architecture/PHASE_08_SECURITY_REVIEW.md", "method": "npm run security:check and adversarial browser tests" },
+    { "id": "OKF-EV-P08-DOCS", "name": "Product Phase 8 implementation ADR and architecture record", "status": "VERIFIED", "path": "docs/project/PHASE_08_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
+    { "id": "OKF-EV-P08-RECORD", "name": "Product Phase 8 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md", "method": "npm run okf:validate" }
   ]
 }

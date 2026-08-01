@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.4.0" as const;
+export const CONTRACT_VERSION = "1.5.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -53,6 +53,15 @@ export const COMMAND_TYPES = [
   "run.getControlState",
   "lease.list",
   "lease.show",
+  "browser.getRuntimeInfo",
+  "browser.validateInstallation",
+  "browser.getHealth",
+  "browser.restart",
+  "render.start",
+  "render.getStatus",
+  "render.getResult",
+  "render.getEvents",
+  "render.cancel",
 ] as const;
 
 export const SYSTEM_DESCRIBE_COMMAND = COMMAND_TYPES[0];
@@ -149,6 +158,30 @@ export const ERROR_CODES = [
   "OUTPUT_VERIFICATION_FAILED",
   "RECOVERY_INPUT_INVALID",
   "RECOVERY_TRANSACTION_FAILED",
+  "BROWSER_INSTALLATION_MISSING",
+  "BROWSER_INSTALLATION_INVALID",
+  "BROWSER_LAUNCH_FAILED",
+  "BROWSER_UNHEALTHY",
+  "BROWSER_CRASHED",
+  "BROWSER_RESTART_LIMITED",
+  "BROWSER_BUSY",
+  "BROWSER_CONTEXT_FAILED",
+  "PAGE_CREATE_FAILED",
+  "PAGE_CRASHED",
+  "NAVIGATION_TIMEOUT",
+  "NAVIGATION_FAILED",
+  "REDIRECT_BLOCKED",
+  "RUNTIME_NETWORK_BLOCKED",
+  "RENDER_TIMEOUT",
+  "RENDER_STABILITY_TIMEOUT",
+  "RENDER_BLANK_PAGE",
+  "RENDER_HTML_TOO_LARGE",
+  "RENDER_SCREENSHOT_TOO_LARGE",
+  "RENDER_EXTRACTION_FAILED",
+  "RENDER_COMMIT_FAILED",
+  "RENDER_RESULT_NOT_FOUND",
+  "RENDER_CANCELLED",
+  "RENDER_INPUT_INVALID",
 ] as const;
 
 const identifierSchema = z
@@ -320,17 +353,26 @@ const queueEnqueueItemSchema = z.object({
   requestedPriority: z.number().int().min(0).max(1_000).optional(),
   maxAttempts: z.number().int().min(1).max(100).default(3),
 }).strict();
-const queueResultSummarySchema = z.object({
+const queueTestResultSummarySchema = z.object({
   resultType: z.literal("queue-test"),
   statusCode: z.number().int().min(100).max(599).nullable(),
   contentStored: z.literal(false),
   metadata: z.record(z.string().max(80), z.union([z.string().max(256), z.number().finite(), z.boolean(), z.null()])).optional(),
 }).strict().refine((value) => JSON.stringify(value).length <= 4_096, "Result metadata exceeds the Phase 6 limit");
+const renderQueueResultSummarySchema = z.object({
+  resultType: z.literal("render"),
+  statusCode: z.number().int().min(100).max(599).nullable(),
+  contentStored: z.literal(true),
+  renderResultId: z.string().uuid(),
+  htmlSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  relativePath: z.string().min(1).max(2_048),
+}).strict();
+const queueResultSummarySchema = z.discriminatedUnion("resultType", [queueTestResultSummarySchema, renderQueueResultSummarySchema]);
 
 export const QueueEnqueueCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.enqueue"), payload: z.object({ ...queueOwnerFields, profileRevision: z.string().uuid(), ...queueEnqueueItemSchema.shape, ...queueMutationFields }).strict() }).strict();
 export const QueueEnqueueBatchCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.enqueueBatch"), payload: z.object({ ...queueOwnerFields, profileRevision: z.string().uuid(), items: z.array(queueEnqueueItemSchema).min(1).max(250), ...queueMutationFields }).strict() }).strict();
 export const QueueClaimNextCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.claimNext"), payload: z.object({ ...queueOwnerFields, claimedBy: z.string().min(1).max(120), leaseDurationMs: z.number().int().min(5_000).max(86_400_000).default(60_000), ...queueMutationFields }).strict() }).strict();
-export const QueueCompleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.complete"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), ownerId: z.string().min(1).max(120), fencingGeneration: z.number().int().positive(), completionKey: queueKeySchema, resultSummary: queueResultSummarySchema, outputs: z.array(outputDescriptorInputSchema).max(1_000).optional(), completedAt: timestampSchema, ...queueMutationFields }).strict() }).strict();
+export const QueueCompleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.complete"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), ownerId: z.string().min(1).max(120), fencingGeneration: z.number().int().positive(), completionKey: queueKeySchema, resultSummary: queueTestResultSummarySchema, outputs: z.array(outputDescriptorInputSchema).max(1_000).optional(), completedAt: timestampSchema, ...queueMutationFields }).strict() }).strict();
 export const QueueFailCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.fail"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), claimToken: z.string().uuid(), ownerId: z.string().min(1).max(120), fencingGeneration: z.number().int().positive(), failureKey: queueKeySchema, failureCode: queueReasonSchema, failureCategory: queueFailureCategorySchema, retryable: z.boolean(), safeMessage: z.string().min(1).max(800), failedAt: timestampSchema, nextEligibleAt: timestampSchema.optional(), ...queueMutationFields }).strict() }).strict();
 export const QueueScheduleRetryCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.scheduleRetry"), payload: z.object({ ...queueOwnerFields, jobId: z.string().uuid(), nextEligibleAt: timestampSchema, reasonCode: queueReasonSchema, ...queueMutationFields }).strict() }).strict();
 export const QueueReleaseDueRetriesCommandSchema = z.object({ ...commandBase, commandType: z.literal("queue.releaseDueRetries"), payload: z.object({ ...queueOwnerFields, dueAt: timestampSchema, limit: z.number().int().min(1).max(200), ...queueMutationFields }).strict() }).strict();
@@ -362,6 +404,28 @@ export const RunResumeCommandSchema = z.object({ ...commandBase, commandType: z.
 export const RunGetControlStateCommandSchema = z.object({ ...commandBase, commandType: z.literal("run.getControlState"), payload: z.object(recoveryReadFields).strict() }).strict();
 export const LeaseListCommandSchema = z.object({ ...commandBase, commandType: z.literal("lease.list"), payload: z.object({ ...recoveryReadFields, status: z.enum(["active", "released", "expired", "recovered"]).optional(), limit: z.number().int().min(1).max(200).default(50) }).strict() }).strict();
 export const LeaseShowCommandSchema = z.object({ ...commandBase, commandType: z.literal("lease.show"), payload: z.object({ ...recoveryReadFields, jobId: z.string().uuid() }).strict() }).strict();
+
+export const BrowserGetRuntimeInfoCommandSchema = z.object({ ...commandBase, commandType: z.literal("browser.getRuntimeInfo"), payload: z.object({}).strict() }).strict();
+export const BrowserValidateInstallationCommandSchema = z.object({ ...commandBase, commandType: z.literal("browser.validateInstallation"), payload: z.object({}).strict() }).strict();
+export const BrowserGetHealthCommandSchema = z.object({ ...commandBase, commandType: z.literal("browser.getHealth"), payload: z.object({}).strict() }).strict();
+export const BrowserRestartCommandSchema = z.object({ ...commandBase, commandType: z.literal("browser.restart"), payload: z.object({ operationId: identifierSchema }).strict() }).strict();
+
+const renderReadFields = { ...queueOwnerFields, jobId: z.string().uuid() };
+const renderPolicySchema = z.object({
+  navigationTimeoutMs: z.number().int().min(100).max(120_000).optional(),
+  renderTimeoutMs: z.number().int().min(500).max(300_000).optional(),
+  stabilityTimeoutMs: z.number().int().min(100).max(120_000).optional(),
+  domQuietMs: z.number().int().min(50).max(10_000).optional(),
+  networkQuietMs: z.number().int().min(50).max(10_000).optional(),
+  completionSelector: z.string().min(1).max(240).optional(),
+  captureScreenshot: z.boolean().default(false),
+  fixtureScroll: z.boolean().default(false),
+}).strict();
+export const RenderStartCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.start"), payload: z.object({ ...renderReadFields, ownerId: z.string().min(1).max(120), leaseDurationMs: z.number().int().min(5_000).max(86_400_000).default(60_000), idempotencyKey: queueKeySchema, operationId: identifierSchema, policy: renderPolicySchema.optional() }).strict() }).strict();
+export const RenderGetStatusCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.getStatus"), payload: z.object(renderReadFields).strict() }).strict();
+export const RenderGetResultCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.getResult"), payload: z.object(renderReadFields).strict() }).strict();
+export const RenderGetEventsCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.getEvents"), payload: z.object({ ...renderReadFields, limit: z.number().int().min(1).max(200).default(100) }).strict() }).strict();
+export const RenderCancelCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.cancel"), payload: z.object({ ...renderReadFields, operationId: identifierSchema }).strict() }).strict();
 
 export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   SystemDescribeCommandSchema,
@@ -414,6 +478,15 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   RunGetControlStateCommandSchema,
   LeaseListCommandSchema,
   LeaseShowCommandSchema,
+  BrowserGetRuntimeInfoCommandSchema,
+  BrowserValidateInstallationCommandSchema,
+  BrowserGetHealthCommandSchema,
+  BrowserRestartCommandSchema,
+  RenderStartCommandSchema,
+  RenderGetStatusCommandSchema,
+  RenderGetResultCommandSchema,
+  RenderGetEventsCommandSchema,
+  RenderCancelCommandSchema,
 ]);
 
 export const RuntimeInfoSchema = z.object({
@@ -431,7 +504,7 @@ export const SystemDescriptionSchema = z.object({
   applicationName: z.literal("Offline Web Archive Builder"),
   applicationVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
   contractVersion: z.literal(CONTRACT_VERSION),
-  coreStatus: z.literal("recovery-foundation-ready"),
+  coreStatus: z.literal("rendering-engine-ready"),
   implementedCapabilities: z.array(z.enum(COMMAND_TYPES)).min(1),
   plannedCapabilities: z.array(z.string().min(1)).min(1),
   runtime: RuntimeInfoSchema,
@@ -638,6 +711,43 @@ export const ArtifactCheckpointValueResultSchema = z.object({ resultType: z.lite
 export const ArtifactCheckpointValidationResultSchema = z.object({ resultType: z.literal("artifactCheckpoint.validation"), valid: z.boolean(), checkpoint: ArtifactCheckpointContractSchema.nullable(), reasonCode: z.string().max(120).nullable() }).strict();
 export const RunControlResultSchema = z.object({ resultType: z.literal("run.control"), run: PauseStatusContractSchema }).strict();
 
+export const BrowserInstallationInfoContractSchema = z.object({
+  installed: z.boolean(), valid: z.boolean(), provider: z.literal("playwright-core"), playwrightVersion: z.string().min(1).max(40),
+  chromiumVersion: z.string().min(1).max(120).nullable(), browserRevision: z.string().min(1).max(40).nullable(), executableSha256: z.string().regex(/^[a-f0-9]{64}$/).nullable(),
+  resourceRootKind: z.enum(["repository-owned", "packaged-resource"]), systemBrowserFallback: z.literal(false), launchDownloadAllowed: z.literal(false), sandboxEnabled: z.literal(true), reasonCode: z.string().max(120).nullable(),
+}).strict();
+export const BrowserHealthContractSchema = z.object({
+  state: z.enum(["stopped", "starting", "ready", "unhealthy", "crashed", "restarting", "closing"]), connected: z.boolean(), activeJobId: z.string().uuid().nullable(),
+  restartCountInWindow: z.number().int().nonnegative().max(3), startedAt: timestampSchema.nullable(), lastCrashAt: timestampSchema.nullable(), browserVersion: z.string().max(120).nullable(),
+}).strict();
+export const BrowserRuntimeInfoResultSchema = z.object({ resultType: z.literal("browser.runtimeInfo"), action: z.enum(["info", "validate"]), info: BrowserInstallationInfoContractSchema }).strict();
+export const BrowserHealthResultSchema = z.object({ resultType: z.literal("browser.health"), action: z.enum(["health", "restart"]), health: BrowserHealthContractSchema }).strict();
+
+const renderStageSchema = z.enum(["claimed", "browser-starting", "context-created", "page-created", "navigating", "waiting-for-stability", "extracting-html", "capturing-screenshot", "committing-result", "completed", "failed", "cancelled"]);
+const consoleEntrySchema = z.object({ index: z.number().int().nonnegative().max(99), type: z.enum(["error", "warning"]), textSafe: z.string().max(800), locationSafe: z.string().max(2_048).nullable(), occurredAt: timestampSchema }).strict();
+const pageErrorSchema = z.object({ index: z.number().int().nonnegative().max(99), messageSafe: z.string().max(800), occurredAt: timestampSchema }).strict();
+const failedRequestSchema = z.object({ index: z.number().int().nonnegative().max(99), urlSafe: z.string().max(2_048), method: z.enum(["GET", "HEAD"]), resourceType: z.string().max(80), failureSafe: z.string().max(240), occurredAt: timestampSchema }).strict();
+const redirectEntrySchema = z.object({ index: z.number().int().nonnegative().max(99), fromUrlSafe: z.string().max(2_048), toUrlSafe: z.string().max(2_048), status: z.number().int().min(0).max(599), occurredAt: timestampSchema }).strict();
+export const BrowserEvidenceContractSchema = z.object({
+  consoleEntries: z.array(consoleEntrySchema).max(100), pageErrors: z.array(pageErrorSchema).max(100), failedRequests: z.array(failedRequestSchema).max(100), redirects: z.array(redirectEntrySchema).max(100),
+  blockedRequests: z.number().int().nonnegative(), evidenceTruncated: z.boolean(),
+}).strict();
+const renderArtifactSchema = z.object({ relativePath: z.string().min(1).max(2_048), byteLength: z.number().int().positive(), sha256: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
+export const RenderResultContractSchema = z.object({
+  renderResultId: z.string().uuid(), renderResultVersion: z.literal(1), jobId: z.string().uuid(), attemptId: z.string().uuid(), projectId: z.string().uuid(), runId: z.string().uuid(),
+  requestedUrlSafe: z.string().min(1).max(2_048), finalUrlSafe: z.string().min(1).max(2_048), httpStatus: z.number().int().min(100).max(599).nullable(), contentType: z.string().max(240).nullable(), pageTitleSafe: z.string().max(300),
+  resultStatus: z.enum(["completed", "failed", "cancelled"]), qualityClassification: z.enum(["complete", "blank", "incomplete", "http-error"]),
+  navigationStartedAt: timestampSchema, stabilityReachedAt: timestampSchema, extractionCompletedAt: timestampSchema, renderCompletedAt: timestampSchema,
+  navigationDurationMs: z.number().int().nonnegative(), stabilityDurationMs: z.number().int().nonnegative(), totalDurationMs: z.number().int().nonnegative(),
+  browserVersion: z.string().min(1).max(120), playwrightVersion: z.string().min(1).max(40), renderEngineVersion: z.number().int().positive(), contextProfileVersion: z.number().int().positive(),
+  htmlArtifact: renderArtifactSchema, screenshotArtifact: renderArtifactSchema.nullable(), evidence: BrowserEvidenceContractSchema, createdAt: timestampSchema,
+}).strict();
+export const RenderStatusContractSchema = z.object({ jobId: z.string().uuid(), jobState: queueStateSchema, stage: renderStageSchema.nullable(), resultStatus: z.enum(["completed", "failed", "cancelled"]).nullable(), fencingGeneration: z.number().int().nonnegative(), updatedAt: timestampSchema }).strict();
+export const RenderEventContractSchema = z.object({ renderEventId: z.string().uuid(), jobId: z.string().uuid(), attemptId: z.string().uuid(), leaseId: z.string().uuid(), fencingGeneration: z.number().int().positive(), stage: renderStageSchema, eventType: z.string().min(1).max(120), safeMetadata: z.record(z.string().max(120), z.union([z.string().max(512), z.number().finite(), z.boolean(), z.null()])), occurredAt: timestampSchema }).strict();
+export const RenderResultResultSchema = z.object({ resultType: z.literal("render.result"), action: z.enum(["start", "get"]), result: RenderResultContractSchema }).strict();
+export const RenderStatusResultSchema = z.object({ resultType: z.literal("render.status"), action: z.enum(["status", "cancel"]), status: RenderStatusContractSchema }).strict();
+export const RenderEventsResultSchema = z.object({ resultType: z.literal("render.events"), events: z.array(RenderEventContractSchema).max(200) }).strict();
+
 export const ResultContractSchema = z.discriminatedUnion("resultType", [
   SystemDescriptionSchema,
   ProjectSummaryResultSchema,
@@ -667,6 +777,11 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   ArtifactCheckpointValueResultSchema,
   ArtifactCheckpointValidationResultSchema,
   RunControlResultSchema,
+  BrowserRuntimeInfoResultSchema,
+  BrowserHealthResultSchema,
+  RenderResultResultSchema,
+  RenderStatusResultSchema,
+  RenderEventsResultSchema,
 ]);
 
 const responseBase = {
@@ -712,6 +827,22 @@ export const EventEnvelopeSchema = z.object({
     "queue.job.skipped",
     "queue.job.blocked",
     "queue.batch.completed",
+    "browser.started",
+    "browser.ready",
+    "browser.crashed",
+    "browser.restarted",
+    "browser.closed",
+    "render.started",
+    "render.stage.changed",
+    "render.navigation.started",
+    "render.navigation.completed",
+    "render.stability.waiting",
+    "render.stability.reached",
+    "render.html.extracted",
+    "render.screenshot.captured",
+    "render.result.committed",
+    "render.failed",
+    "render.cancelled",
   ]),
   correlationId: identifierSchema,
   sequence: z.number().int().nonnegative(),
@@ -741,6 +872,11 @@ export type PageJobContract = z.infer<typeof PageJobContractSchema>;
 export type JobLeaseContract = z.infer<typeof JobLeaseContractSchema>;
 export type JobCheckpointContract = z.infer<typeof JobCheckpointContractSchema>;
 export type RecoveryReportContract = z.infer<typeof RecoveryReportContractSchema>;
+export type BrowserInstallationInfoContract = z.infer<typeof BrowserInstallationInfoContractSchema>;
+export type BrowserHealthContract = z.infer<typeof BrowserHealthContractSchema>;
+export type RenderResultContract = z.infer<typeof RenderResultContractSchema>;
+export type RenderStatusContract = z.infer<typeof RenderStatusContractSchema>;
+export type RenderEventContract = z.infer<typeof RenderEventContractSchema>;
 export type RuntimeInfo = z.infer<typeof RuntimeInfoSchema>;
 export type PlatformInfo = z.infer<typeof PlatformInfoSchema>;
 export type ResponseEnvelope = z.infer<typeof ResponseEnvelopeSchema>;

@@ -1,13 +1,13 @@
 # Project Scope
 
-## Product Phase 7 implementation boundary
+## Product Phase 8 implementation boundary
 
-Product Phase 7 is verified. `FR-RECOVERY-001` now has SQLite-backed Lease/Heartbeat/renewal/expiration, monotonic Fencing Generation, versioned Checkpoints, cooperative Pause/Resume, explicit bounded Crash Recovery, process-kill and multi-day evidence, completed-output verification, and a partial-file decision/loopback Range foundation. Browser rendering, link discovery, production network download, Worker Pool scheduling, authentication, and proxies remain planned. The exact next phase is **Product Phase 8 — Browser Lifecycle and Rendering Engine**.
+Product Phase 8 is verified. `FR-RENDER-001` and the bounded Phase 8 portion of `FR-RENDER-002` now have owned Playwright/Chromium lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML, optional screenshot, safe evidence, runtime-network authorization, and Browser/Page crash recovery under Lease/Fencing/Checkpoint ownership. Link discovery, production asset download, HTML rewrite, API capture, Worker Pool scheduling, authentication, and proxies remain planned. The exact next phase is **Product Phase 9 — Link Discovery and SPA Support**.
 
 **Project:** Offline Web Archive Builder  
 **Document status:** Proposed baseline  
 **Owner / decision authority:** Product Owner, except where another owner is named  
-**Current product phase:** Product Phase 7 complete; Product Phase 8 — Browser Lifecycle and Rendering Engine is next and not started
+**Current product phase:** Product Phase 8 complete; Product Phase 9 — Link Discovery and SPA Support is next and not started
 **Last updated:** 2026-07-31
 
 This is the authoritative product-scope and requirements document. Measurement
@@ -20,7 +20,7 @@ in the [Open Decision Register](../project/OPEN_DECISIONS.md).
 
 Product Phases 3–6 establish npm workspaces, versioned contracts, GUI-independent Archive Core, one Application Service, secure Electron/CLI adapters, canonical OKF, portable Project format `1.1.0`, SQLite schema `4`, Site Profile/Scope Engine `1`, and persistent Page Job Queue state/priority policy `1`. Implemented local commands cover system description, Project lifecycle/transfer, Profile revisions, Scope evaluation/normalization, and Queue enqueue/batch/claim/complete/fail/retry/release/skip/block/get/list/statistics/history/clear-pending.
 
-The Queue durably stores synthetic Page Job identity, state, attempts, transitions, discoveries, idempotency, and statistics. It does **not** fetch or render those URLs. The production repository does not implement Worker Lease expiration, Heartbeats, stale-processing recovery, Checkpoints, automatic Resume, browser rendering, link discovery, authentication/OTP/session storage, proxies, captured content, downloads, archive rewriting, offline serving, final UX, release packaging, or target-site validation. Interfaces and planned names are not implementation claims. Exact next phase is Product Phase 7 — Checkpoint, Lease, and Crash Recovery.
+The Queue durably stores Page Job identity, state, attempts, transitions, idempotency, and statistics. Phase 8 can render only an already eligible queued Page Job and persist its final DOM artifact. The production repository does **not** discover/enqueue links, authenticate, store Sessions/OTP, use proxies, download production assets, rewrite archives, capture/replay APIs, serve a final offline runtime, schedule multiple Workers, package releases, or validate a real target site. Interfaces and planned names are not implementation claims. Exact next phase is Product Phase 9 — Link Discovery and SPA Support.
 
 ## Vision and problem
 

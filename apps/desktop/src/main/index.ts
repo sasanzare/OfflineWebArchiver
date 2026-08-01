@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { createApplicationService } from "@offline-web-archive/application-service";
-import { createProjectCommand, parseResponseEnvelope, type SiteProfileContract } from "@offline-web-archive/contracts";
+import type { SiteProfileContract } from "@offline-web-archive/contracts";
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
 import { createDesktopTransportHandler } from "./ipc-transport.js";
@@ -21,6 +21,8 @@ export const MAIN_WINDOW_SECURITY = Object.freeze({
 const architectureSmoke = process.argv.includes("--architecture-smoke");
 const smokeRootArgument = process.argv.find((argument) => argument.startsWith("--project-smoke-root="));
 const smokeRoot = smokeRootArgument?.slice("--project-smoke-root=".length) ?? null;
+const renderSmokeOriginArgument = process.argv.find((argument) => argument.startsWith("--render-smoke-origin="));
+const renderSmokeOrigin = renderSmokeOriginArgument?.slice("--render-smoke-origin=".length) ?? null;
 let mainWindow: BrowserWindow | null = null;
 let expectedRendererUrl = "";
 let shutdownStarted = false;
@@ -32,6 +34,8 @@ const configuration = readEnvironmentConfiguration(process.env);
 const service = createApplicationService({
   configuration,
   ...readRuntimePlatformInfo(),
+  renderTestMode: architectureSmoke && renderSmokeOrigin !== null,
+  fixtureOrigins: architectureSmoke && renderSmokeOrigin !== null ? [renderSmokeOrigin] : [],
   logger: createDevelopmentLogger((line) => process.stderr.write(`${line}\n`)),
 });
 const transport = createDesktopTransportHandler(service);
@@ -135,6 +139,9 @@ interface SmokeResponse {
     jobs?: readonly { jobId?: string; state?: string }[];
     statistics?: { total?: number; pending?: number; completed?: number; failed?: number };
     history?: { transitions?: readonly unknown[]; discoveries?: readonly unknown[] };
+    result?: { renderResultId?: string; htmlArtifact?: { relativePath?: string }; screenshotArtifact?: { relativePath?: string } | null };
+    status?: { jobState?: string; resultStatus?: string | null };
+    events?: readonly unknown[];
   };
   error?: { code?: string };
 }
@@ -150,9 +157,9 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   [projectPath, archivePath, importedPath].forEach((value) => approvedPaths.add(path.resolve(value)));
   const invoke = async (commandType: string, payload: Record<string, unknown>): Promise<SmokeResponse> => {
     const commandId = `smoke-${randomUUID()}`;
-    const queueMutation = ["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume"].includes(commandType);
+    const queueMutation = ["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume", "browser.restart", "render.start", "render.cancel"].includes(commandType);
     return window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
-      contractVersion: "1.4.0",
+      contractVersion: "1.5.0",
       commandId,
       commandType,
       correlationId: `smoke-${randomUUID()}`,
@@ -174,6 +181,9 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const recoveryFields = await window.webContents.executeJavaScript(`[
     "recovery-limit", "recovery-summary", "recovery-report", "checkpoint-history"
   ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
+  const renderFields = await window.webContents.executeJavaScript(`[
+    "render-owner", "render-screenshot", "render-summary", "render-events"
+  ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
   const invalidVersion = await window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
     contractVersion: "2.0.0",
     commandId: "smoke-invalid-command",
@@ -183,9 +193,12 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
     payload: {},
   })})`, true) as SmokeResponse;
   const created = await invoke("project.create", { destinationPath: projectPath, name: "Desktop Smoke", slug: "desktop-smoke" });
+  const browserInfo = await invoke("browser.getRuntimeInfo", {});
+  const browserHealth = await invoke("browser.getHealth", {});
   const validated = await invoke("project.validate", { projectPath });
   const opened = await invoke("project.open", { projectPath });
-  const smokeSeedUrl = ["https:", "", "example.invalid", ""].join("/");
+  const smokeSeedUrl = renderSmokeOrigin ?? ["https:", "", "example.invalid", ""].join("/");
+  const smokeUrl = (route: string): string => new URL(route, `${smokeSeedUrl.replace(/\/$/, "")}/`).toString();
   const profile = await invoke("profile.create", { projectPath, name: "Desktop Profile", seedUrl: smokeSeedUrl });
   const createdProfile = profile.result?.profile;
   const profileUpdate = await invoke("profile.update", {
@@ -202,22 +215,28 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
       fragmentPolicy: createdProfile?.fragmentPolicy,
       redirectPolicy: createdProfile?.redirectPolicy,
       canonicalPolicy: createdProfile?.canonicalPolicy,
-      networkPolicy: createdProfile?.networkPolicy,
+      networkPolicy: renderSmokeOrigin === null ? createdProfile?.networkPolicy : { allowedIpClasses: ["public", "loopback"] },
       limits: createdProfile?.limits,
     },
   });
   const profileComparison = await invoke("profile.compare", { projectPath, fromSequence: 1, toSequence: 2 });
-  const scope = await invoke("scope.explain", { projectPath, input: { url: `${smokeSeedUrl}docs?utm_source=smoke` } });
+  const scope = await invoke("scope.explain", { projectPath, input: { url: smokeUrl("docs?utm_source=smoke") } });
   const runId = created.result?.project?.runId;
   const profileRevision = profileUpdate.result?.profile?.revisionId;
-  const queueEnqueue = await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: `${smokeSeedUrl}docs?utm_source=smoke`, discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-enqueue-1" });
-  const queueDuplicate = await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: `${smokeSeedUrl}docs?utm_source=duplicate`, discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-enqueue-2" });
+  const queueEnqueue = await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: smokeUrl("docs?utm_source=smoke"), discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-enqueue-1" });
+  const queueDuplicate = await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: smokeUrl("docs?utm_source=duplicate"), discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-enqueue-2" });
   const queueStatisticsBefore = await invoke("queue.getStatistics", { projectPath, runId });
   const queueListBefore = await invoke("queue.list", { projectPath, runId, state: "pending", limit: 25 });
   const queueJobId = queueEnqueue.result?.enqueue?.job?.jobId;
   const queueGet = await invoke("queue.get", { projectPath, runId, jobId: queueJobId });
   const queueClaim = await invoke("queue.claimNext", { projectPath, runId, claimedBy: "desktop-smoke", idempotencyKey: "desktop-smoke-claim" });
   const queueComplete = await invoke("queue.complete", { projectPath, runId, jobId: queueClaim.result?.job?.jobId, claimToken: queueClaim.result?.job?.claimToken, ownerId: "desktop-smoke", fencingGeneration: queueClaim.result?.job?.fencingGeneration, completionKey: "desktop-smoke-complete", resultSummary: { resultType: "queue-test", statusCode: null, contentStored: false }, completedAt: new Date().toISOString(), idempotencyKey: "desktop-smoke-complete-operation" });
+  const renderEnqueue = renderSmokeOrigin === null ? null : await invoke("queue.enqueue", { projectPath, runId, profileRevision, url: smokeUrl("static"), discoveryType: "manual", maxAttempts: 3, idempotencyKey: "desktop-smoke-render-enqueue" });
+  const renderJobId = renderEnqueue?.result?.enqueue?.job?.jobId;
+  const renderStart = renderSmokeOrigin === null ? null : await invoke("render.start", { projectPath, runId, jobId: renderJobId, ownerId: "desktop-renderer", leaseDurationMs: 60_000, idempotencyKey: "desktop-smoke-render", policy: { captureScreenshot: true } });
+  const renderStatus = renderSmokeOrigin === null ? null : await invoke("render.getStatus", { projectPath, runId, jobId: renderJobId });
+  const renderResult = renderSmokeOrigin === null ? null : await invoke("render.getResult", { projectPath, runId, jobId: renderJobId });
+  const renderEvents = renderSmokeOrigin === null ? null : await invoke("render.getEvents", { projectPath, runId, jobId: renderJobId, limit: 100 });
   const recoveryInspect = await invoke("recovery.inspect", { projectPath, runId, evaluationTime: new Date().toISOString(), limit: 25 });
   const recoveryApply = await invoke("recovery.recover", { projectPath, runId, evaluationTime: new Date().toISOString(), limit: 25, confirmation: "APPLY-RECOVERY", idempotencyKey: "desktop-smoke-recovery" });
   const runPause = await invoke("run.requestPause", { projectPath, runId });
@@ -232,15 +251,15 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const imported = await invoke("project.import", { archivePath, destinationPath: importedPath });
   const importedValidation = await invoke("project.validate", { projectPath: importedPath });
   const projectId = created.result?.project?.projectId;
-  const passed = [created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation]
+  const passed = [created, browserInfo, browserHealth, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, ...(renderSmokeOrigin === null ? [] : [renderEnqueue!, renderStart!, renderStatus!, renderResult!, renderEvents!]), recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation]
     .every((response) => response.status === "success") &&
     validated.result?.report?.valid === true && importedValidation.result?.report?.valid === true &&
     imported.result?.import?.project?.projectId === projectId &&
-    profileEditorFields.every(Boolean) && queueFields.every(Boolean) && recoveryFields.every(Boolean) &&
+    profileEditorFields.every(Boolean) && queueFields.every(Boolean) && recoveryFields.every(Boolean) && renderFields.every(Boolean) &&
     queueEnqueue.result?.enqueue?.outcome === "created" && queueDuplicate.result?.enqueue?.outcome === "existing" &&
     queueStatisticsBefore.result?.statistics?.total === 1 && queueListBefore.result?.jobs?.length === 1 &&
     queueGet.result?.job?.jobId === queueJobId && queueComplete.result?.job?.state === "completed" && runResume.status === "success" &&
-    (queueHistory.result?.history?.transitions?.length ?? 0) >= 3 && queueCompletedFilter.result?.jobs?.length === 1 &&
+    (queueHistory.result?.history?.transitions?.length ?? 0) >= 3 && queueCompletedFilter.result?.jobs?.length === (renderSmokeOrigin === null ? 1 : 2) &&
     invalidVersion.status === "error" && invalidVersion.error?.code === "CONTRACT_UNSUPPORTED_VERSION";
   const report = {
     status: passed ? "passed" : "failed",
@@ -249,21 +268,15 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
     profileEditorFields,
     queueFields,
     recoveryFields,
+    renderFields,
     invalidVersion,
-    operations: { created, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation },
+    operations: { created, browserInfo, browserHealth, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, renderEnqueue, renderStart, renderStatus, renderResult, renderEvents, recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation },
     security: MAIN_WINDOW_SECURITY,
     restrictions: { senderValidation: true, approvedPathGrants: true, navigation: true, windowCreation: true, permissions: true, downloads: true, webviews: true, remoteContent: false },
   };
   process.stdout.write(`ARCHITECTURE_SMOKE=${JSON.stringify(report)}\n`);
+  await service.close();
   app.exit(passed ? 0 : 1);
-}
-
-function closeCommand() {
-  return createProjectCommand("project.close", {}, {
-    commandId: `shutdown-${randomUUID()}`,
-    correlationId: `shutdown-${randomUUID()}`,
-    timestamp: new Date().toISOString(),
-  });
 }
 
 app.whenReady().then(() => {
@@ -272,7 +285,7 @@ app.whenReady().then(() => {
   if (architectureSmoke) {
     void runArchitectureSmoke(mainWindow).catch((error: unknown) => {
       process.stderr.write(`Architecture smoke failed: ${error instanceof Error ? error.message : "Unknown smoke failure"}\n`);
-      app.exit(1);
+      void service.close().finally(() => app.exit(1));
     });
   }
 });
@@ -281,7 +294,7 @@ app.on("before-quit", (event) => {
   if (architectureSmoke || shutdownStarted) return;
   event.preventDefault();
   shutdownStarted = true;
-  void service.execute(closeCommand(), { transport: "electron-ipc", authorized: true }).finally(() => app.quit());
+  void service.close().finally(() => app.quit());
 });
 
 app.on("window-all-closed", () => app.quit());

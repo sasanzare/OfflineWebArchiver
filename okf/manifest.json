@@ -4,7 +4,7 @@
   "frameworkVersion": "1.0.0",
   "product": "Offline Web Archive Builder",
   "status": "VERIFIED",
-  "activatedPhase": 7,
+  "activatedPhase": 8,
   "activatedAt": "2026-08-01",
   "authority": "okf/README.md",
   "bootstrapHistory": "okf-bootstrap/README.md",

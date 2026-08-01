@@ -81,7 +81,7 @@ test("a killed Project owner leaves durable unclean-session evidence that the ne
   await fixture.storage.close();
   try {
     await crash({ mode: "open-storage", projectPath });
-    const next = createSqliteProjectStorage({ applicationVersion: "0.7.0" });
+    const next = createSqliteProjectStorage({ applicationVersion: "0.8.0" });
     const summary = await next.open(projectPath);
     assert.equal(summary.recoveryStatus, "recovery-available");
     assert.equal(summary.recoverySummary.uncleanSessions >= 1, true);

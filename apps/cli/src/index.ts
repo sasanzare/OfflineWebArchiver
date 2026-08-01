@@ -15,7 +15,7 @@ import {
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
 
-export const CLI_VERSION = "0.7.0";
+export const CLI_VERSION = "0.8.0";
 
 export const CLI_EXIT_CODES = Object.freeze({
   success: 0,
@@ -66,10 +66,16 @@ Usage:
   offline-archive lease show <project> <job-id> --run <uuid> [--json]
   offline-archive checkpoint list <project> <job-id> --run <uuid> [--limit <n>] [--json]
   offline-archive checkpoint show <project> <job-id> --run <uuid> [--json]
+  offline-archive browser info|validate|health [--json]
+  offline-archive browser restart [--json]
+  offline-archive render start <project> <job-id> --run <uuid> --owner <name> --operation-id <id> --idempotency-key <key> [--lease-duration <ms>] [--navigation-timeout <ms>] [--render-timeout <ms>] [--stability-timeout <ms>] [--dom-quiet <ms>] [--network-quiet <ms>] [--completion-selector <selector>] [--screenshot] [--json]
+  offline-archive render status|result <project> <job-id> --run <uuid> [--json]
+  offline-archive render events <project> <job-id> --run <uuid> [--limit <n>] [--json]
+  offline-archive render cancel <project> <job-id> --run <uuid> [--json]
   offline-archive --help
   offline-archive --version
 
-Project, Queue, and Recovery commands are local-only. Lease Tokens are accepted as sensitive inputs and never printed. This phase does not crawl or contact a website.
+Render starts only from an existing queued Page Job; it never accepts an ad-hoc URL. Lease Tokens are sensitive and never printed. Link Discovery is not implemented in Product Phase 8.
 `;
 
 export interface CliIo {
@@ -97,6 +103,8 @@ export type ParsedArguments =
   | { kind: "run"; operation: "requestPause" | "getPauseStatus" | "resume" | "getControlState"; json: boolean; payload: Record<string, unknown> }
   | { kind: "lease"; operation: "list" | "show"; json: boolean; payload: Record<string, unknown> }
   | { kind: "checkpoint"; operation: "list" | "getLatest"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "browser"; operation: "getRuntimeInfo" | "validateInstallation" | "getHealth" | "restart"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "render"; operation: "start" | "getStatus" | "getResult" | "getEvents" | "cancel"; json: boolean; payload: Record<string, unknown> }
   | { kind: "invalid"; message: string };
 
 function invalid(message: string): ParsedArguments {
@@ -124,10 +132,11 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     "--name", "--slug", "--base-url", "--seed", "--base", "--source", "--depth", "--source-depth", "--discovery-type", "--profile-revision", "--count",
     "--run", "--idempotency-key", "--priority", "--max-attempts", "--state", "--after", "--limit", "--claimed-by", "--claim-token", "--completion-key", "--status-code",
     "--failure-key", "--failure-code", "--failure-category", "--message", "--next-eligible-at", "--reason", "--due-at", "--confirm",
-    "--owner", "--generation", "--lease-duration", "--at", "--lease-status",
+    "--owner", "--generation", "--lease-duration", "--at", "--lease-status", "--operation-id",
+    "--navigation-timeout", "--render-timeout", "--stability-timeout", "--dom-quiet", "--network-quiet", "--completion-selector",
   ];
   const filtered = arguments_.filter((argument, index) => {
-    if (argument === "--json" || argument === "--retryable" || argument === "--dry-run") return false;
+    if (argument === "--json" || argument === "--retryable" || argument === "--dry-run" || argument === "--screenshot") return false;
     if (valueOptions.includes(arguments_[index - 1] ?? "")) return false;
     return !valueOptions.includes(argument);
   });
@@ -283,6 +292,46 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     }
     return invalid(`Invalid checkpoint ${filtered[1]} arguments.`);
   }
+  if (filtered[0] === "browser" && filtered[1] !== undefined && filtered.length === 2) {
+    const operations = { info: "getRuntimeInfo", validate: "validateInstallation", health: "getHealth", restart: "restart" } as const;
+    const operation = operations[filtered[1] as keyof typeof operations];
+    return operation === undefined ? invalid(`Invalid browser ${filtered[1]} arguments.`) : { kind: "browser", operation, json, payload: {} };
+  }
+  if (filtered[0] === "render" && filtered[1] !== undefined) {
+    const projectPath = filtered[2];
+    const jobId = filtered[3];
+    const runId = optionValue(arguments_, "--run");
+    if (projectPath === undefined || jobId === undefined || runId === undefined || filtered.length !== 4) return invalid(`Render ${filtered[1]} requires a Project, Job, and --run.`);
+    if (filtered[1] === "start") {
+      const ownerId = optionValue(arguments_, "--owner");
+      const operationId = optionValue(arguments_, "--operation-id");
+      const idempotencyKey = optionValue(arguments_, "--idempotency-key");
+      const leaseDurationMs = integerOption(arguments_, "--lease-duration", 60_000);
+      const policyEntries = [
+        ["navigationTimeoutMs", "--navigation-timeout"], ["renderTimeoutMs", "--render-timeout"], ["stabilityTimeoutMs", "--stability-timeout"],
+        ["domQuietMs", "--dom-quiet"], ["networkQuietMs", "--network-quiet"],
+      ] as const;
+      const policy: Record<string, unknown> = { captureScreenshot: arguments_.includes("--screenshot") };
+      for (const [field, option] of policyEntries) {
+        const raw = optionValue(arguments_, option);
+        const value = integerOption(arguments_, option);
+        if (raw !== undefined && value === undefined) return invalid(`${option} must be a non-negative integer.`);
+        if (value !== undefined) policy[field] = value;
+      }
+      const completionSelector = optionValue(arguments_, "--completion-selector");
+      if (completionSelector !== undefined) policy["completionSelector"] = completionSelector;
+      if (ownerId === undefined || operationId === undefined || idempotencyKey === undefined || leaseDurationMs === undefined) return invalid("Render start requires --owner, --operation-id, --idempotency-key, and a valid Lease duration.");
+      return { kind: "render", operation: "start", json, payload: { projectPath, runId, jobId, ownerId, operationId, idempotencyKey, leaseDurationMs, policy } };
+    }
+    if (filtered[1] === "status") return { kind: "render", operation: "getStatus", json, payload: { projectPath, runId, jobId } };
+    if (filtered[1] === "result") return { kind: "render", operation: "getResult", json, payload: { projectPath, runId, jobId } };
+    if (filtered[1] === "events") {
+      const limit = integerOption(arguments_, "--limit", 100);
+      return limit === undefined ? invalid("Render events limit is invalid.") : { kind: "render", operation: "getEvents", json, payload: { projectPath, runId, jobId, limit } };
+    }
+    if (filtered[1] === "cancel") return { kind: "render", operation: "cancel", json, payload: { projectPath, runId, jobId } };
+    return invalid(`Invalid render ${filtered[1]} arguments.`);
+  }
   if (filtered[0] !== "project" || filtered[1] === undefined) return invalid("Unknown command.");
   const operation = filtered[1];
   if (operation === "create" && filtered.length === 3) {
@@ -404,6 +453,11 @@ export function formatHumanDescription(response: SuccessResponseEnvelope): strin
   if (result.resultType === "artifactCheckpoint.value") return [`Artifact checkpoint: ${result.checkpoint.artifactCheckpointId}`, `Job: ${result.checkpoint.jobId}`, `Kind: ${result.checkpoint.artifactKind}`, `Bytes: ${result.checkpoint.bytesWritten}`, `Committed: ${result.checkpoint.committed ? "yes" : "no"}`].join("\n");
   if (result.resultType === "artifactCheckpoint.validation") return [`Artifact checkpoint: ${result.valid ? "valid" : "invalid"}`, `Reason: ${result.reasonCode ?? "none"}`].join("\n");
   if (result.resultType === "run.control") return [`Run: ${result.run.runId}`, `State: ${result.run.controlState}`, `Active leases: ${result.run.activeLeaseCount}`, `Pause requested: ${result.run.requestedAt ?? "no"}`, `Paused at: ${result.run.pausedAt ?? "no"}`].join("\n");
+  if (result.resultType === "browser.runtimeInfo") return [`Browser installation: ${result.info.valid ? "valid" : "invalid"}`, `Playwright: ${result.info.playwrightVersion}`, `Chromium: ${result.info.chromiumVersion ?? "unavailable"}`, `Revision: ${result.info.browserRevision ?? "unavailable"}`, `Sandbox: ${result.info.sandboxEnabled ? "enabled" : "disabled"}`, `System fallback: ${result.info.systemBrowserFallback ? "enabled" : "disabled"}`].join("\n");
+  if (result.resultType === "browser.health") return [`Browser: ${result.health.state}`, `Connected: ${result.health.connected ? "yes" : "no"}`, `Active Job: ${result.health.activeJobId ?? "none"}`, `Restarts in window: ${result.health.restartCountInWindow}`].join("\n");
+  if (result.resultType === "render.status") return [`Job: ${result.status.jobId}`, `Queue state: ${result.status.jobState}`, `Render stage: ${result.status.stage ?? "not started"}`, `Result: ${result.status.resultStatus ?? "none"}`].join("\n");
+  if (result.resultType === "render.result") return [`Render result: ${result.result.renderResultId}`, `Job: ${result.result.jobId}`, `Status: ${result.result.resultStatus}`, `Quality: ${result.result.qualityClassification}`, `Final URL: ${result.result.finalUrlSafe}`, `HTTP status: ${result.result.httpStatus ?? "none"}`, `HTML: ${result.result.htmlArtifact.relativePath}`, `Screenshot: ${result.result.screenshotArtifact?.relativePath ?? "disabled"}`].join("\n");
+  if (result.resultType === "render.events") return [`Render events: ${result.events.length}`, ...result.events.map((event) => `${event.renderEventId} ${event.occurredAt} ${event.stage} ${event.eventType}`)].join("\n");
   if (result.resultType === "project.info") return [
     `Current Project: ${result.currentProject?.name ?? "none"}`,
     `Compatible: ${result.compatibility === null ? "not inspected" : result.compatibility.compatible ? "yes" : "no"}`,
@@ -443,7 +497,7 @@ function metadata() {
   };
 }
 
-async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" }>, service: ApplicationService): Promise<ResponseEnvelope> {
+async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" }>, service: ApplicationService): Promise<ResponseEnvelope> {
   if (parsed.kind === "describe") {
     return parseResponseEnvelope(await service.execute(createSystemDescribeCommand(metadata()), { transport: "cli", authorized: true }));
   }
@@ -460,6 +514,12 @@ async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe"
   }
   if (parsed.kind === "scope") {
     return parseResponseEnvelope(await service.execute(createProjectCommand(`scope.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], parsed.payload, metadata()), { transport: "cli", authorized: true }));
+  }
+  if (parsed.kind === "browser" || parsed.kind === "render") {
+    const commandMetadata = metadata();
+    const operationIdRequired = (parsed.kind === "browser" && parsed.operation === "restart") || (parsed.kind === "render" && parsed.operation === "cancel");
+    const payload = operationIdRequired ? { ...parsed.payload, operationId: commandMetadata.commandId } : parsed.payload;
+    return parseResponseEnvelope(await service.execute(createProjectCommand(`${parsed.kind}.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], payload, commandMetadata), { transport: "cli", authorized: true }));
   }
   if (parsed.kind === "queue") {
     const commandMetadata = metadata();
@@ -521,8 +581,10 @@ export async function runCli(
     io.stderr(`${parsed.message}\n`);
     return CLI_EXIT_CODES.usage;
   }
+  let service: ApplicationService | undefined;
   try {
-    const response = await executeParsed(parsed, createService(environment));
+    service = createService(environment);
+    const response = await executeParsed(parsed, service);
     if (parsed.json) io.stdout(`${JSON.stringify(redactLeaseTokens(response), null, 2)}\n`);
     else if (response.status === "success") io.stdout(`${formatHumanDescription(response)}\n`);
     else io.stderr(`${response.error.userMessage} (${response.error.code})\n`);
@@ -537,6 +599,8 @@ export async function runCli(
     }
     io.stderr("The CLI could not initialize safely.\n");
     return CLI_EXIT_CODES.internal;
+  } finally {
+    await service?.close();
   }
 }
 

@@ -1,5 +1,9 @@
 # Migration Strategy
 
+## Product Phase 8
+
+Forward migration `006_add_browser_rendering_engine` advances SQLite schema 5 to 6 after the existing verified backup-before-migration flow. It creates `render_results`, `render_events`, and `render_failures` with strict checks, foreign keys, uniqueness, bounded JSON/text, and lookup indexes. Migrations 001–005 remain byte/checksum immutable. Transaction failure rolls back migration 006; application compatibility now requires schema 6.
+
 ## Migration 005
 
 `005_add_checkpoint_lease_recovery` is forward-only and additive. It does not edit migrations 001–004, backfills Run control for existing Runs, and new Run creation inserts control explicitly. Tests cover schema 4→5, schema 1→5, rollback/integrity, exact migration IDs, and final schema assertions.
@@ -19,4 +23,4 @@ Open first validates without mutation and acquires the Project writer lock. If m
 
 Migration logs contain IDs, sequences, versions, duration, and status—not SQL data, Project paths, or secrets. Backup retention/restore UX remains open for Product Phase 17.
 
-Tests cover definition validation, recorded checksum alteration, unknown/mismatched state, injected failure rollback, real legacy upgrades through schema 5, backup presence/metadata, Queue/Lease/Checkpoint/Recovery tables/indexes/constraints, preserved migrations 001–004, and post-upgrade integrity.
+Tests cover definition validation, recorded checksum alteration, unknown/mismatched state, injected failure rollback, real legacy upgrades through schema 6, backup presence/metadata, Queue/Lease/Checkpoint/Recovery/Render tables/indexes/constraints, preserved migrations 001–005, and post-upgrade integrity.

@@ -1,50 +1,49 @@
 # Handoff
 
-**Document status:** Product Phase 7 completion handoff
+**Document status:** Product Phase 8 completion handoff
 
 **Current branch:** `main`
 
-**Product phase:** Product Phase 7 — Checkpoint, Lease, and Crash Recovery (`complete`)
+**Product phase:** Product Phase 8 — Browser Lifecycle and Rendering Engine (`complete`)
 
-**OKF phase:** synchronized through Product Phase 7 (`verified`)
+**OKF phase:** synchronized through Product Phase 8 (`verified`)
 
-**Next product phase:** Product Phase 8 — Browser Lifecycle and Rendering Engine (`not started`)
+**Next product phase:** Product Phase 9 — Link Discovery and SPA Support (`not started`)
 
 **Last updated:** 2026-08-01
 
-## Product Phase 7 result
+## Product Phase 8 result
 
-Application/workspaces `0.7.0`, contract `1.4.0`, SQLite schema `5`, Queue state machine `2`, and Recovery/Checkpoint/Lease models `1` are implemented. Forward migration `005_add_checkpoint_lease_recovery` preserves migrations 001–004 and adds Run control, Job Leases, Job/Run/Artifact Checkpoints, completed-output descriptors, recovery operations/events, execution sessions, compatibility recovery fields, and ownership/index constraints.
+Application/workspaces `0.8.0`, contract `1.5.0`, SQLite schema `6`, Render Engine `1`, and Browser Context profile `1` are implemented. Playwright Core `1.56.1` uses owned Chromium `141.0.7390.37` revision `1194`; its relative manifest and executable SHA-256 are validated with no normal-launch download or system fallback. Forward migration `006_add_browser_rendering_engine` preserves migrations 001–005 and adds Render Result, Event, and Failure ledgers.
 
-An atomic claim issues one active Lease, stores its verification digest in `job_leases`, increments Fencing Generation, starts the attempt, and moves the Job to processing. The active credential is also retained in the Phase 6 Queue/attempt/idempotency ledgers so an identical claim can replay after restart; the Project database must therefore be treated as sensitive. Heartbeat records liveness without extension; renewal explicitly extends from the renewal time; expiration is `now >= expiresAt`. Every protected write validates Project/Run/Job/owner/token/generation/active/non-expired ownership. Stale owners cannot commit.
+Rendering begins only from an approved queued Page Job. Application Service claims it with a Lease, creates one fresh deterministic Context/Page, persists fenced stages and Checkpoints, heartbeats/renews ownership, waits for combined DOM/network stability, extracts the final DOM, optionally captures one bounded PNG, and commits SHA-256-described artifacts and relational state. Every protected write revalidates Project/Run/Job/owner/token/generation/active/non-expired ownership.
 
-Recovery inspection is read-only, including on Project open. Confirmed recovery is Project/Run-scoped, idempotent, bounded, transactional, reason-coded, and resumable from a persisted cursor. Abandoned attempts become logically interrupted and safely requeue while retaining history. Cooperative pause checkpoints and releases ownership before paused; resume requires a fresh higher-generation Lease.
+One Application Service owns one reusable Browser Process and one active Job. The Process recycles after 100 pages or 30 minutes and is limited to three restarts per five minutes. Each Job gets a fresh non-persistent Context; popups close, downloads cancel, dialogs dismiss, permissions clear, service workers block, HTTPS verification remains enabled, and Chromium Sandbox is explicit.
 
-Completed outputs validate root-bounded non-symlink relative path, length, and SHA-256 while preserving valid terminal Jobs. Partial-file policy restarts on missing Range or changed validators and safely resumes a deterministic local 206 fixture. It is only a foundation; no production downloader exists.
+CDP request interception permits only authorized GET/HEAD dispatch, revalidates redirects, resolves/classifies all DNS answers, blocks private/link-local/reserved targets, and grants loopback only to exact deterministic fixture origins in test mode. Evidence is redacted and bounded. Browser and Page crashes are separately classified, release ownership through a durable retry/failure transition, and are proven by actual Windows process termination.
 
 ## Evidence
 
-Actual child processes are terminated with `SIGKILL` around attempt/claim/checkpoint/recovery/output-commit fault points and unclean Project sessions. Fake-clock recovery passes at 5 minutes, 6 hours, 24 hours, 3 days, and 14 days. Independent SQLite connection races prove active-Lease uniqueness, fencing, and recovery serialization. CLI and real Electron smoke tests cover recovery, report, pause/resume, Lease/Checkpoint inspection, confirmation, and token omission.
+Real Chromium tests cover static HTML, JavaScript DOM changes, SPA route state, bounded lazy scroll, continuous mutation, EventSource, blank content, navigation timeout, redirects, non-GET denial, safe console/page/request evidence, optional screenshot, result replay, Browser crash, and Page crash. Artifact fault injection covers file-before-database and database-after-commit boundaries. CLI and real Electron smoke retain the isolated contract boundary.
 
-ADRs 031–040 are Accepted; AC-P07-001–039 have direct evidence. R-067–089 track residual timing, clock, growth, filesystem, performance, and future Worker integration risks. Decisions on retention, forced pause, revision reconciliation, verification frequency, production partial retention, session retention, and maximum resume age remain open.
+ADRs 041–048 are Accepted; AC-P08-001–017 have direct evidence. The Phase 2 spike remains unchanged and isolated. Browser update cadence, cross-platform packaging, DNS rebinding, memory telemetry, screenshot retention, and Phase 9 discovery boundaries remain explicit risks/decisions.
 
 ## Known limitations
 
-- Product Phase 7 remains single-host/single-Project-writer; distributed clock and shared-filesystem semantics are not proven.
-- Checkpoint/recovery/session retention and large-artifact hash performance are unresolved.
-- Pause is cooperative and has no timeout or forced-pause policy.
-- A changed Project/Profile revision is not auto-reconciled on Resume.
-- Recovery reports invalid completed output but does not silently reopen a terminal Job.
-- Active Lease credentials remain in the local Phase 6 compatibility/idempotency ledgers for durable identical-claim replay; database encryption and protected-store-backed sealing are deferred to a later security/storage review.
-- No browser lifecycle/rendering, network dispatch, link discovery, production Asset Downloader, Worker Pool, authentication, proxy, or crawler is implemented.
+- Windows x64 Browser/process-kill behavior is verified; Linux/macOS browser provisioning and packaging are deferred.
+- OS process memory and browser startup duration are not persisted; page-count and lifetime recycling are the current resource bounds.
+- The production loopback exception is unavailable; deterministic fixture scrolling is test-only.
+- Screenshot capture is opt-in, but long-term screenshot/evidence retention remains unresolved.
+- No automatic Link/Sitemap/History API/React Router/button/pagination/infinite-scroll/JSON discovery or enqueue exists.
+- No human-paced interaction, authentication/session, proxy, production Asset Downloader, HTML rewrite, API capture, or full offline archive exists.
 
 ## Exact next product phase
 
-**Product Phase 8 — Browser Lifecycle and Rendering Engine.** It must integrate a production browser boundary and lifecycle with the Phase 7 Lease/Fencing/Checkpoint contracts without weakening scope authorization, recovery, token secrecy, or Project portability. Asset downloading remains Product Phase 9.
+**Product Phase 9 — Link Discovery and SPA Support.** It must extract only from the final rendered DOM and bounded client-side route observations, evaluate every candidate through the Phase 5 Scope Engine, enqueue accepted URLs through the Phase 6 Queue, preserve Phase 7 Lease/Recovery invariants, and reuse the Phase 8 Browser/Rendering interfaces without starting Phase 10 human-paced interaction.
 
 ## References
 
-- [Phase 7 implementation report](docs/project/PHASE_07_IMPLEMENTATION_REPORT.md)
-- [Phase 7 canonical record](okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md)
-- [Crash Recovery](docs/architecture/CRASH_RECOVERY.md)
-- [Phase 7 security review](docs/architecture/PHASE_07_SECURITY_REVIEW.md)
+- [Phase 8 implementation report](docs/project/PHASE_08_IMPLEMENTATION_REPORT.md)
+- [Phase 8 canonical record](okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md)
+- [Browser Runtime](docs/architecture/BROWSER_RUNTIME.md)
+- [Phase 8 security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
