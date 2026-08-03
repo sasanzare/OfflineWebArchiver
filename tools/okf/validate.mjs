@@ -26,6 +26,10 @@ const registryNames = [
   "changes",
 ];
 
+function portable(root, file) {
+  return path.relative(root, file).split(path.sep).join("/");
+}
+
 async function exists(target) {
   try {
     await access(target);
@@ -41,6 +45,16 @@ async function jsonFiles(directory) {
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...(await jsonFiles(target)));
     if (entry.isFile() && entry.name.endsWith(".json")) files.push(target);
+  }
+  return files;
+}
+
+async function markdownFiles(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...(await markdownFiles(target)));
+    if (entry.isFile() && entry.name.endsWith(".md")) files.push(target);
   }
   return files;
 }
@@ -62,7 +76,7 @@ async function markdownAuthorityIds(root) {
   };
 }
 
-function isSafeRelative(value) {
+export function isSafeRelative(value) {
   return (
     typeof value === "string" &&
     value.length > 0 &&
@@ -70,6 +84,50 @@ function isSafeRelative(value) {
     !/^[A-Za-z]:[\\/]/.test(value) &&
     !value.split(/[\\/]/).includes("..")
   );
+}
+
+function collectRefs(value, refs = []) {
+  if (Array.isArray(value)) for (const item of value) collectRefs(item, refs);
+  else if (value && typeof value === "object") for (const [key, item] of Object.entries(value)) {
+    if (key === "$ref" && typeof item === "string") refs.push(item);
+    else collectRefs(item, refs);
+  }
+  return refs;
+}
+
+function resolvePointer(document, fragment) {
+  if (fragment === "" || fragment === "#") return true;
+  if (!fragment.startsWith("#/")) return false;
+  let value = document;
+  for (const token of fragment.slice(2).split("/").map((item) => item.replaceAll("~1", "/").replaceAll("~0", "~"))) {
+    if (!value || typeof value !== "object" || !Object.hasOwn(value, token)) return false;
+    value = value[token];
+  }
+  return true;
+}
+
+async function validateSchemas(root, errors) {
+  const directories = [path.join(root, "okf", "validation", "schemas"), path.join(root, "docs", "okf-migration", "schema")];
+  const documents = new Map();
+  const ids = new Map();
+  for (const directory of directories) for (const file of await jsonFiles(directory)) {
+    let schema;
+    try { schema = JSON.parse(await readFile(file, "utf8")); }
+    catch (error) { errors.push(`${portable(root, file)}: invalid schema JSON (${error instanceof Error ? error.message : "unknown error"})`); continue; }
+    documents.set(file, schema);
+    if (typeof schema.$id === "string") {
+      if (ids.has(schema.$id)) errors.push(`${portable(root, file)}: duplicate schema $id '${schema.$id}', first found in ${portable(root, ids.get(schema.$id))}`);
+      else ids.set(schema.$id, file);
+    }
+  }
+  for (const [file, schema] of documents) for (const reference of collectRefs(schema)) {
+    if (/^(?:https?:|urn:)/i.test(reference)) continue;
+    const [filePart, fragment = ""] = reference.split("#", 2);
+    const target = filePart === "" ? file : path.resolve(path.dirname(file), filePart);
+    const targetSchema = documents.get(target);
+    if (targetSchema === undefined) errors.push(`${portable(root, file)}: unresolved local schema reference '${reference}'`);
+    else if (!resolvePointer(targetSchema, fragment === "" ? "" : `#${fragment}`)) errors.push(`${portable(root, file)}: unresolved local schema fragment '${reference}'`);
+  }
 }
 
 function requireString(item, field, location, errors) {
@@ -105,6 +163,7 @@ function verifiedNodeHasEvidence(item) {
 export async function validateOkf(root = repositoryRoot) {
   const errors = [];
   const okfRoot = path.join(root, "okf");
+  await validateSchemas(root, errors);
   for (const file of await jsonFiles(okfRoot)) {
     try {
       JSON.parse(await readFile(file, "utf8"));
@@ -120,12 +179,21 @@ export async function validateOkf(root = repositoryRoot) {
     errors.push(`okf/manifest.json: invalid or unreadable JSON (${error instanceof Error ? error.message : "unknown error"})`);
     return errors;
   }
-  for (const field of ["schemaVersion", "frameworkVersion", "status", "activatedPhase", "registries"]) {
+  for (const field of ["schemaVersion", "extensionVersion", "okfVersion", "status", "activatedPhase", "registries"]) {
     if (manifest[field] === undefined) errors.push(`okf/manifest.json: missing required field '${field}'`);
   }
+  if (manifest.schemaVersion !== "1.0.0") errors.push("okf/manifest.json: schemaVersion must be 1.0.0");
+  if (manifest.extensionVersion !== "1.0.0") errors.push("okf/manifest.json: extensionVersion must be 1.0.0");
+  if (manifest.okfVersion !== "0.2") errors.push("okf/manifest.json: okfVersion must be 0.2");
+  if (manifest.frameworkVersion !== undefined) errors.push("okf/manifest.json: obsolete frameworkVersion must not be present");
   if (!OKF_STATUSES.has(manifest.status)) errors.push(`okf/manifest.json: unknown status '${manifest.status}'`);
   if (typeof manifest.product !== "string" || manifest.product.length === 0) errors.push("okf/manifest.json: missing required product string");
   if (manifest.activatedPhase !== 8) errors.push("okf/manifest.json: activatedPhase must be 8");
+  for (const name of registryNames) {
+    const expected = `okf/registry/${name}.json`;
+    if (manifest.registries?.[name] !== expected) errors.push(`okf/manifest.json: registry '${name}' must resolve to '${expected}'`);
+  }
+  for (const name of Object.keys(manifest.registries ?? {})) if (!registryNames.includes(name)) errors.push(`okf/manifest.json: unknown registry '${name}'`);
 
   const authorities = await markdownAuthorityIds(root);
   const registries = new Map();
@@ -180,6 +248,16 @@ export async function validateOkf(root = repositoryRoot) {
       }
     }
   }
+
+  const markdown = (await Promise.all((await markdownFiles(okfRoot)).map((file) => readFile(file, "utf8")))).join("\n");
+  const referencedEvidence = new Set();
+  for (const item of registries.get("nodes") ?? []) for (const id of item.evidenceIds ?? []) referencedEvidence.add(id);
+  for (const item of registries.get("relationships") ?? []) {
+    if (evidence.has(item.sourceId)) referencedEvidence.add(item.sourceId);
+    if (evidence.has(item.targetId)) referencedEvidence.add(item.targetId);
+  }
+  for (const id of evidence.keys()) if (markdown.includes(id)) referencedEvidence.add(id);
+  for (const id of evidence.keys()) if (!referencedEvidence.has(id)) errors.push(`${id}: orphan evidence record has no node, relationship, or Concept reference`);
 
   const referenceIds = new Set([
     ...globalIds.keys(),
@@ -255,16 +333,16 @@ export async function validateOkf(root = repositoryRoot) {
   for (const required of [
     "okf/validation/schemas/manifest.schema.json",
     "okf/validation/schemas/registry.schema.json",
-    "okf/validation/rules/SEMANTIC_RULES.md",
-    "okf/validation/reports/PHASE_03_OKF_MIGRATION_REPORT.md",
-    "okf/phases/phase-01/PHASE_01_RECORD.md",
-    "okf/phases/phase-02/PHASE_02_RECORD.md",
-    "okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md",
-    "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md",
-    "okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md",
-    "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md",
-    "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md",
-    "okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md",
+    "okf/extensions/validation/rules/semantic-rules.md",
+    "okf/extensions/validation/reports/phase-03-migration-report.md",
+    "okf/history/phase-01.md",
+    "okf/history/phase-02.md",
+    "okf/history/phase-03.md",
+    "okf/history/phase-04.md",
+    "okf/history/phase-05.md",
+    "okf/history/phase-06.md",
+    "okf/history/phase-07.md",
+    "okf/history/phase-08.md",
   ]) {
     if (!(await exists(path.join(root, required)))) errors.push(`Missing canonical OKF artifact '${required}'`);
   }

@@ -5,15 +5,11 @@ description: Defines the narrow platform adapter for normalized runtime facts an
 tags: [architecture, platform, configuration]
 status: stable
 sources:
-  - id: platform-legacy-knowledge
-    resource: okf/knowledge/platform/README.md
-    title: Legacy platform knowledge
   - id: platform-source
     resource: packages/platform/src/index.ts
     title: Platform adapter source
 owa:
   implementation_status: implemented
-  legacy_paths: [okf/knowledge/platform/README.md]
 ---
 
 # Platform Adapter

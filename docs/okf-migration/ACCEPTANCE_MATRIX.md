@@ -1,166 +1,107 @@
-# OKF Migration Acceptance Matrix
+# Final OKF Migration Acceptance Matrix
 
-## Phase 5 update
+Independent revalidation date: 2026-08-03
 
-Content migration, Concept metadata, indexes, extension documentation, evidence preservation, relationship preservation, and legacy-path classification are complete. Automated official validation and CI remain Phase 6 and 7 obligations.
+## Phase 1-7 revalidation
 
-## Phase 6 update
+Historical phase claims were compared with current files, ledgers, tests, and workflow configuration. Superseded design choices are preserved as history and corrected in final-state documents rather than silently rewritten.
 
-Layer separation, deterministic reporting, legacy extension checks, focused regression tests, and production validation are complete. Broad CI integration remains deferred.
+| Phase | Scope revalidated | Current evidence | Result | Regression or note |
+|---|---|---|---|---|
+| 1 | Baseline, requirements, inventory, authority, risks | Historical audit plus Phase 8 independent enumeration | PASSED | Original custom framework is not described as official OKF |
+| 2 | Architecture, taxonomy, path map, boundaries | Final taxonomy, source map, extension boundary, 58-row cleanup ledger | PASSED | Early `okf/bundle/` and generator designs are superseded explicitly |
+| 3 | Metadata, lifecycle, provenance, YAML, schemas | Production Concepts, YAML parser, policy tests, ten schemas | PASSED | `legacy_paths` was retired and generated-index policy corrected |
+| 4 | Core Concepts, indexes, semantic preservation | 21 core Concepts and Phase 4 ledger rechecked | PASSED | Compatibility copies later removed under Phase 8 controls |
+| 5 | Remaining content, extension bridge, evidence, relationships | 19 Concepts, 15 extension docs, 54 evidence and 61 relationship rows | PASSED | Transitional bridge completed and retired |
+| 6 | Layered validator, diagnostics, fixtures, schema integration | 45 active codes, 18 focused tests, production command results | PASSED | Restricted parser replaced by pinned full YAML 1.2 parser |
+| 7 | CI gates, security, JSON artifact, administrative guidance | Workflow static audit and local command parity | PASSED | Hosted run and branch protection remain accepted administrative exceptions |
 
-## Phase 7 update
+## Phase 8 criteria
 
-Blocking CI gates, non-blocking quality reporting, artifact publication, branch-protection guidance, and CI security documentation are complete. Hosted execution and manual branch protection remain unresolved external configuration.
+| ID | Criterion | Final status | Verification method | Final evidence | Notes / regression |
+|---:|---|---|---|---|---|
+| 1 | Git baseline and pre-existing changes are recorded | PASSED | Git branch, hash, status, and history inspection | Handoff reconciliation and implementation report | Baseline was clean at `c7e7e37...` |
+| 2 | Phase 8 handoff is reconciled against the repository | PASSED | Item-by-item current-state comparison | `PHASE_08_HANDOFF_RECONCILIATION.md` | Cleanup began only after reconciliation |
+| 3 | Every Markdown artifact under `okf/` is classified | PASSED | Recursive disk enumeration | 65 Markdown classification rows | No implicit classification |
+| 4 | Every non-Markdown OKF artifact is classified | PASSED | Recursive disk enumeration | 11 JSON classification rows | Manifest, registries, schemas |
+| 5 | No unknown production OKF artifact remains | PASSED | Discovery reconciliation | 76 discovered, 0 unknown | Unknowns are validator errors |
+| 6 | Every official mandatory requirement is independently audited | PASSED | Specification review and second audit | `COMPLIANCE_MATRIX.md` | Not based solely on validator output |
+| 7 | Production validator and independent official audit agree | PASSED | Compare independent matrix with official command | Both report conformant/pass | No mandatory disagreement |
+| 8 | Every normal Concept has valid frontmatter | PASSED | Independent parse and production validation | 40/40 valid | YAML 1.2 parser |
+| 9 | Every normal Concept has a non-empty approved `type` | PASSED | Metadata enumeration | 40/40 non-empty and approved | Approval is project policy, separate from official rule |
+| 10 | Reserved root index behavior is valid | PASSED | Root metadata/body inspection | Only `okf_version: "0.2"` | Repository requires the optional official version field |
+| 11 | Directory index behavior is valid | PASSED | Nine-file reserved inspection | No frontmatter; nonempty navigation | Maintained, not generated |
+| 12 | Log behavior is valid or not applicable | NOT_APPLICABLE | Disk enumeration | No `log.md` | Intentional omission documented |
+| 13 | Official and repository-policy conclusions are separate | PASSED | Validator and report architecture review | Separate layers and statuses | Unknown type/field tolerance tested officially |
+| 14 | Repository metadata-policy validation passes or exceptions are documented | PASSED | Production policy layer and independent review | 0 policy errors | No policy exception |
+| 15 | Extension integrity validation passes or exceptions are documented | PASSED | Production extension layer and registry audit | 0 extension errors | No extension exception |
+| 16 | Manifest version semantics are correct | PASSED | Manifest/schema/procedural inspection | Extension 1.0.0, OKF 0.2, phase 8 | Official and extension versions independent |
+| 17 | Every registry family has a final treatment | PASSED | Eight-family inventory | All eight retained with purpose and controls | No unknown registry |
+| 18 | Every evidence record has a final treatment | PASSED | 54-row reconciliation | `PHASE_08_EVIDENCE_RECONCILIATION.md` | One accurately partial record retained |
+| 19 | Every relationship record has a final treatment | PASSED | 61-row reconciliation | `PHASE_08_RELATIONSHIP_RECONCILIATION.md` | All endpoints resolve |
+| 20 | No critical evidence traceability was lost | PASSED | Before/after ID and path comparison | 54 retained; orphan count 0 | No fabricated verification |
+| 21 | No critical broken relationship remains | PASSED | Endpoint and duplicate-edge checks | 61 unique resolved edges | Markdown and typed graph roles documented |
+| 22 | Every official Concept is reachable or intentionally classified | PASSED | Root traversal | 40 reachable, 0 indirect exceptions | Nine directory indexes |
+| 23 | No broken final internal Markdown link remains | PASSED | Independent scan and validator | 159 checked, 0 broken | Final paths only |
+| 24 | No canonical source uses a machine-specific absolute path | PASSED | Drive/UNC/root/home/environment scan | 0 unsafe canonical paths | Negative path tests pass |
+| 25 | No duplicate editable authoritative source remains | PASSED | Source-of-truth comparison | 0 duplicate authorities | Historical reports are reference-only |
+| 26 | Every transitional artifact has a final decision | PASSED | Baseline/final inventory reconciliation | 58 remove-now, 11 retain decisions | No undecided artifact |
+| 27 | Every removed artifact appears in the cleanup ledger | PASSED | Git deletion vs ledger comparison | 58/58 documented | Replacement/rationale recorded individually |
+| 28 | Every retained compatibility artifact has a documented reason | PASSED | Final classification | No compatibility artifact retained | Criterion satisfied vacuously |
+| 29 | Every deprecated artifact is clearly marked | NOT_APPLICABLE | Final classification | No deprecated artifact retained | Historical reports are not deprecated production artifacts |
+| 30 | Complete content migration ledger matches the repository | PASSED | Row/count reconciliation | 58 sources, 40 Concepts, 10 indexes, 15 extension docs | Final compatibility count 0 |
+| 31 | Source-of-truth map matches the repository | PASSED | Authority/path review | `SOURCE_OF_TRUTH_MAP.md` | No planned state represented as implemented |
+| 32 | Extension artifact inventory matches the repository | PASSED | Disk vs inventory comparison | 11/11 rows | Producer, consumer, validation, retention present |
+| 33 | Production validator discovers all relevant artifacts | PASSED | Discovery API and disk enumeration | 76/76 | Symlinks/unknowns cannot be silently ignored |
+| 34 | Validator discovery counts reconcile with disk counts | PASSED | Independent count comparison | Disk 76, discovered 76, validated 76 | Ignored 0, unknown 0 |
+| 35 | Every production diagnostic code is unique | PASSED | Static code/catalog scan | 45 active, 0 duplicate | `OFFICIAL-009` intentionally unused |
+| 36 | Every production diagnostic code is documented | PASSED | Source/catalog comparison | 45 documented, 0 missing | Layer counts reconcile |
+| 37 | Every reachable error diagnostic has coverage or justification | PASSED | Test/code reachability reconciliation | Every active code has negative coverage | Internal exception path is not a diagnostic |
+| 38 | All production schemas parse | PASSED | JSON parse/schema enumeration | 2/2 production and 8/8 design schemas parse | All ten are included in the integration audit |
+| 39 | All local schema references resolve | PASSED | `$id` and `$ref` audit | 28 resolved/approved references | Ten unique IDs |
+| 40 | Production validation commands pass | PASSED | Run all validator modes | All selected modes exit 0 | Human and JSON output checked |
+| 41 | Validator unit tests pass | PASSED | Focused Node test suite | 18 passed | Pure helper/parser behavior covered |
+| 42 | Validator integration tests pass | PASSED | Production discovery and CLI tests | 18-suite integration cases pass | In-process migration prerequisites included |
+| 43 | Validator regression tests pass | PASSED | Negative fixtures and deterministic output | 18 passed, 0 failed/skipped | All active code families covered |
+| 44 | Full repository tests pass | PASSED | `npm test` | 100 passed, 0 failed | Application runtime unchanged |
+| 45 | Documentation validation passes | PASSED | `npm run docs:validate` | Exit 0 | Canonical paths and new reports included |
+| 46 | Formatting checks pass | PASSED | `npm run format:check` | Exit 0 | Independent trailing-whitespace check also passes |
+| 47 | Lint passes | PASSED | `npm run lint` | Exit 0 | No runtime lint regression |
+| 48 | Type checking passes | PASSED | `npm run typecheck` | Exit 0 | Validator test typing included |
+| 49 | Workflow YAML is valid | PASSED | YAML 1.2 parse and static inspection | One valid workflow | GitHub expressions treated as data |
+| 50 | CI quality gates match documented policy | PASSED | Workflow/local command parity | Focused tests, validator, docs, format, lint, typecheck | Stable check documented |
+| 51 | Blocking validator failures cannot pass CI | PASSED | Shell step/exit behavior inspection | Blocking command has no continue-on-error | Artifact still uploads with `always()` |
+| 52 | Quality warnings remain separately reported | PASSED | Layer/severity and CLI inspection | Quality layer non-blocking | Errors remain blocking by design |
+| 53 | CI workflow permissions are minimal | PASSED | Workflow security review | `contents: read` only | No write permission |
+| 54 | Unsafe pull-request execution is absent | PASSED | Trigger/action review | No `pull_request_target` | No secrets used |
+| 55 | Conformance artifacts are generated correctly | PASSED | Local parity generation and JSON parse | Relative pure JSON artifact | Upload name and retention documented |
+| 56 | Hosted CI status is reported truthfully | ACCEPTED_EXCEPTION | Local and remote-evidence availability review | `ADMIN-CI-001`: NOT_VERIFIED | Owner: repository administrator; verify next hosted run |
+| 57 | Branch-protection status is reported truthfully | ACCEPTED_EXCEPTION | Repository-file boundary review | `ADMIN-BP-001`: NOT_VERIFIED_FROM_LOCAL_REPOSITORY | Owner: repository administrator; configure/verify required check |
+| 58 | All critical migration risks are closed or block completion | PASSED | Final risk review | 0 critical open | No blocker hidden by exception |
+| 59 | Remaining high risks are mitigated and owned | PASSED | Risk register reconciliation | 0 high open | Three low/medium mitigated risks have owners/triggers |
+| 60 | Compliance matrix reflects the final implementation | PASSED | Requirement-to-current-file review | Final values use allowed vocabulary | Official/project results separate |
+| 61 | Acceptance matrix is independently revalidated | PASSED | Current evidence used for all 72 rows | This matrix | Earlier future-gate text removed |
+| 62 | Public documentation uses correct OKF terminology | PASSED | README/handoff/root/tool docs review | Google OKF v0.2 and project extensions named correctly | Original framework described historically only |
+| 63 | Maintainer documentation is complete | PASSED | Workflow/process checklist review | `FINAL_MAINTAINER_HANDOFF.md` | Covers special changes and diagnostics |
+| 64 | Final conformance report is complete | PASSED | Required-section review | `FINAL_OKF_CONFORMANCE_REPORT.md` | Includes limitations and separated statuses |
+| 65 | Migration closure report is complete | PASSED | Required-section review | `FINAL_MIGRATION_CLOSURE_REPORT.md` | History preserved accurately |
+| 66 | Final maintainer handoff is complete | PASSED | Practical-path/command review | `FINAL_MAINTAINER_HANDOFF.md` | Shorter than closure report |
+| 67 | No historical migration report was improperly rewritten | PASSED | Git diff scope review | Historical Phase 1-7 reports preserved | Current-state control docs were updated |
+| 68 | No unrelated application behavior changed | PASSED | Scoped Git diff and full tests | No app/package runtime source changed | Validator/docs/package dependency only |
+| 69 | All created or modified files are English-only | PASSED | Arabic/Persian-script scan | 0 matches in Phase 8 diff | Code, fixtures, JSON, and docs checked |
+| 70 | No trailing whitespace remains | PASSED | `git diff --check` and independent scan | 0 findings | Final files checked |
+| 71 | No commit or push occurred | PASSED | Starting/ending HEAD and reflog/status | HEAD unchanged | Working changes remain reviewable |
+| 72 | Working tree contains only intended migration changes plus preserved user work | PASSED | Final status and diff inspection | Intended Phase 8 plus committed Phase 1-7 baseline; no unrelated work | Starting tree was clean |
 
-## Phase 1 Summary
+## Totals
 
-| ID | Criterion | Status | Evidence |
-|---|---|---|---|
-| OKF-MIG-P1-001 | Git baseline, current artifacts, consumers, official requirements, gaps, authorities, and risks were recorded. | PASSED | `CURRENT_STATE_AUDIT.md`, `FILE_INVENTORY.md`, `COMPLIANCE_MATRIX.md`, `VALIDATOR_GAP_ANALYSIS.md`, `SOURCE_OF_TRUTH_MAP.md`, `MIGRATION_RISK_REGISTER.md` |
-| OKF-MIG-P1-002 | Existing implementation remained unchanged and no conformance claim was made. | PASSED | Phase 1 final Git inspection and validation record |
+| Status | Count |
+|---|---:|
+| PASSED | 68 |
+| NOT_APPLICABLE | 2 |
+| ACCEPTED_EXCEPTION | 2 |
+| FAILED | 0 |
+| BLOCKED | 0 |
+| Total | 72 |
 
-## Phase 2 Criteria
-
-| ID | Criterion | Verification method | Expected result | Status | Evidence |
-|---|---|---|---|---|---|
-| OKF-MIG-P2-001 | Current Git state and baseline commit are recorded. | Compare initial and final Git inspection. | Branch, hash, and pre-existing Phase 1 files are known. | PASSED | Phase 2 validation record below |
-| OKF-MIG-P2-002 | Phase 1 inputs are reviewed and revalidated. | Recount files/artifacts and inspect consumers/entry points. | Baseline still matches repository evidence or corrections are recorded. | PASSED | `TARGET_BUNDLE_ARCHITECTURE.md`; validation record |
-| OKF-MIG-P2-003 | Final target directory architecture is documented. | Review complete proposed tree and directory contracts. | Later phases can implement without path redesign. | PASSED | `TARGET_BUNDLE_ARCHITECTURE.md` |
-| OKF-MIG-P2-004 | Official and project-extension boundaries are explicit. | Review physical roots and validation scope. | `okf/bundle/` and `okf/extensions/` have distinct contracts. | PASSED | `TARGET_BUNDLE_ARCHITECTURE.md`, `EXTENSION_BOUNDARY.md` |
-| OKF-MIG-P2-005 | Dependency direction is defined. | Inspect source and generation arrows. | Concepts feed derived indexes and validation, not the reverse. | PASSED | `EXTENSION_BOUNDARY.md`, `SOURCE_OF_TRUTH_MAP.md` |
-| OKF-MIG-P2-006 | Stable Concept taxonomy is approved. | Count and review canonical types. | 14 stable semantic types are fixed. | PASSED | `CONCEPT_TAXONOMY.md`, `PHASE_02_DECISIONS.md` |
-| OKF-MIG-P2-007 | Every type has inclusion and exclusion criteria. | Parse each type section. | All 14 definitions contain required classification guidance. | PASSED | `CONCEPT_TAXONOMY.md` |
-| OKF-MIG-P2-008 | Every current Markdown source appears in the map. | Compare recursive `okf/**/*.md` list to source rows. | Each source appears exactly once. | PASSED | `CONTENT_MIGRATION_MAP.md`; validation record |
-| OKF-MIG-P2-009 | Migration-map totals reconcile. | Count mutually exclusive actions. | Counts sum to actual source count 58. | PASSED | `CONTENT_MIGRATION_MAP.md`; validation record |
-| OKF-MIG-P2-010 | Every source has an action and classification. | Check required table cells. | No blank action/type/path/disposition. | PASSED | `CONTENT_MIGRATION_MAP.md` |
-| OKF-MIG-P2-011 | Root and directory index policies are defined. | Review reserved-file sections. | Authored root and generated shallow directory indexes are fixed. | PASSED | `TARGET_BUNDLE_ARCHITECTURE.md`, `AUTHORING_AND_GENERATION_POLICY.md` |
-| OKF-MIG-P2-012 | Official `log.md` use is decided. | Review architecture decision. | Log is explicitly omitted with rationale. | PASSED | `PHASE_02_DECISIONS.md` (OKF-P2-D006) |
-| OKF-MIG-P2-013 | Path and naming rules are deterministic. | Review rules and examples. | Stable lowercase kebab-case identity and rename policy are complete. | PASSED | `PATH_AND_NAMING_CONVENTIONS.md` |
-| OKF-MIG-P2-014 | Authored/generated artifact policies are defined. | Review category table and controls. | Ownership, markers, overwrite, regeneration, stale, and CI expectations are explicit. | PASSED | `AUTHORING_AND_GENERATION_POLICY.md` |
-| OKF-MIG-P2-015 | Current extension families have future classifications. | Reconcile JSON, evidence, maps, reports, rules, and schemas. | Every current family has authority, producer, consumer, treatment, retention, and risk. | PASSED | `EXTENSION_BOUNDARY.md` |
-| OKF-MIG-P2-016 | Source-of-truth boundaries are actionable. | Review target authority table. | No knowledge category has two independently editable authorities. | PASSED | `SOURCE_OF_TRUTH_MAP.md` |
-| OKF-MIG-P2-017 | Major decisions are individually recorded. | Review decision IDs and required fields. | All required topics have explicit accepted decisions. | PASSED | `PHASE_02_DECISIONS.md` |
-| OKF-MIG-P2-018 | Material unresolved decisions are documented. | Review unresolved list. | No hidden blocker; deferred work has phase ownership. | PASSED | `PHASE_02_UNRESOLVED_ITEMS.md` |
-| OKF-MIG-P2-019 | Phase 3 receives stable inputs. | Review fixed-input and must-not-redesign sections. | Metadata work can proceed without architecture redesign. | PASSED | `MIGRATION_PLAN.md` |
-| OKF-MIG-P2-020 | Eight-phase plan reflects Phase 2 design. | Review all future phase scopes. | Targets, prohibitions, dependencies, and acceptance are aligned. | PASSED | `MIGRATION_PLAN.md` |
-| OKF-MIG-P2-021 | Risk register reflects Phase 2 decisions. | Review new boundary/generation/compatibility risks. | Controls and target phases are assigned. | PASSED | `MIGRATION_RISK_REGISTER.md` |
-| OKF-MIG-P2-022 | Acceptance matrix is accurately updated. | Review this matrix against requested criteria. | No criterion is omitted or prematurely passed. | PASSED | This file |
-| OKF-MIG-P2-023 | Existing `okf/` files remain unchanged. | Inspect `git diff -- okf` and file count. | Empty diff and 58 current Markdown files. | PASSED | Phase 2 validation record below |
-| OKF-MIG-P2-024 | Validator behavior remains unchanged. | Inspect diff scope and run existing validator. | No tool/script change; current validator passes. | PASSED | Phase 2 validation record below |
-| OKF-MIG-P2-025 | Production code, tests, scripts, and CI remain unchanged. | Inspect complete Git diff/status. | Only migration-planning documentation differs from baseline. | PASSED | Phase 2 validation record below |
-| OKF-MIG-P2-026 | Created and modified repository documentation is English-only. | Scan Phase 1-2 files for non-English scripts. | No Persian/Arabic-script text exists. | PASSED | Phase 2 documentation check |
-| OKF-MIG-P2-027 | Safe repository commands are executed and recorded. | Run available package commands from inspected `package.json`. | Results and exit codes are recorded without unrelated fixes. | PASSED | Phase 2 validation record below |
-| OKF-MIG-P2-028 | No commit or push occurs. | Compare starting/ending HEAD and inspect Git state. | HEAD remains `dd0fb00fd869dee2a808f48fc157f45c00c98cb0`. | PASSED | Phase 2 final Git inspection |
-| OKF-MIG-P2-029 | Working tree contains only intended migration docs and preserved prior changes. | Inspect `git status --short` and path scope. | No Phase 2 repository change exists outside `docs/okf-migration/`. | PASSED | Phase 2 final Git inspection |
-
-## Phase 3 Criteria
-
-| ID | Criterion | Status | Evidence |
-|---|---|---|---|
-| OKF-MIG-P3-001 | Git baseline and pre-existing state are recorded. | PASSED | Phase 3 validation record |
-| OKF-MIG-P3-002 | Phase 2 architecture/taxonomy/mapping inputs are validated. | PASSED | `PHASE_04_METADATA_HANDOFF.md` and structural checks |
-| OKF-MIG-P3-003 | Every approved metadata field has exactly one category. | PASSED | `METADATA_CONTRACT.md` |
-| OKF-MIG-P3-004 | Every field has type and validation behavior. | PASSED | `FRONTMATTER_FIELD_REFERENCE.md`, schemas |
-| OKF-MIG-P3-005 | Normal Concept minimum is complete. | PASSED | `METADATA_CONTRACT.md` |
-| OKF-MIG-P3-006 | Generated Concept minimum is complete. | PASSED | `METADATA_CONTRACT.md`, generated schema |
-| OKF-MIG-P3-007 | Type enumeration exactly matches 14 Phase 2 types. | PASSED | Common schema/type check |
-| OKF-MIG-P3-008 | Official lifecycle is separate from project state. | PASSED | `STATUS_AND_LIFECYCLE_MODEL.md` |
-| OKF-MIG-P3-009 | All nine current status values have mappings. | PASSED | `STATUS_AND_LIFECYCLE_MODEL.md`, migration map |
-| OKF-MIG-P3-010 | Actor syntax and provenance are complete. | PASSED | `ACTOR_AND_PROVENANCE_MODEL.md` |
-| OKF-MIG-P3-011 | AI-assisted authorship is documented. | PASSED | `ACTOR_AND_PROVENANCE_MODEL.md` |
-| OKF-MIG-P3-012 | Generated semantics are complete. | PASSED | Actor model and generated schema |
-| OKF-MIG-P3-013 | Verification semantics are complete. | PASSED | Freshness policy and verification schema |
-| OKF-MIG-P3-014 | Source semantics are complete. | PASSED | Source/evidence model and source schema |
-| OKF-MIG-P3-015 | Evidence registry integration is defined. | PASSED | `SOURCE_AND_EVIDENCE_MODEL.md` |
-| OKF-MIG-P3-016 | Portable source-resource rules are defined. | PASSED | Source/evidence model and invalid fixture |
-| OKF-MIG-P3-017 | `stale_after` policy is defined. | PASSED | `FRESHNESS_AND_VERIFICATION_POLICY.md` |
-| OKF-MIG-P3-018 | Project extension fields are minimized and documented. | PASSED | Field reference and project extension schema |
-| OKF-MIG-P3-019 | Root-index metadata is defined. | PASSED | Reserved-file contract/root schema |
-| OKF-MIG-P3-020 | Directory-index metadata is defined. | PASSED | Reserved-file contract/directory schema |
-| OKF-MIG-P3-021 | Log metadata is explicitly not applicable for production. | PASSED | Reserved-file contract and fixtures |
-| OKF-MIG-P3-022 | Canonical YAML normalization is complete. | PASSED | `METADATA_CONTRACT.md` |
-| OKF-MIG-P3-023 | Validation severities/layers are separated. | PASSED | Metadata contract and decisions |
-| OKF-MIG-P3-024 | Valid examples cover all types/reserved categories. | PASSED | `VALID_FRONTMATTER_EXAMPLES.md` |
-| OKF-MIG-P3-025 | Invalid fixtures cover major failure classes. | PASSED | `INVALID_FRONTMATTER_FIXTURES.md` |
-| OKF-MIG-P3-026 | Proposed schemas exist and parse. | PASSED | Phase 3 schema check |
-| OKF-MIG-P3-027 | All local schema references resolve. | PASSED | Phase 3 schema check |
-| OKF-MIG-P3-028 | Procedural schema limitations are documented. | PASSED | Schema comments and metadata contract |
-| OKF-MIG-P3-029 | Current-to-future metadata map is complete/reconciled. | PASSED | `METADATA_MIGRATION_MAP.md` |
-| OKF-MIG-P3-030 | Major metadata decisions are recorded. | PASSED | `PHASE_03_DECISIONS.md` |
-| OKF-MIG-P3-031 | No unresolved item blocks Phase 4. | PASSED | `PHASE_03_UNRESOLVED_ITEMS.md` |
-| OKF-MIG-P3-032 | Phase 4 execution handoff is complete. | PASSED | `PHASE_04_METADATA_HANDOFF.md` |
-| OKF-MIG-P3-033 | Migration plan and risk register are updated. | PASSED | `MIGRATION_PLAN.md`, `MIGRATION_RISK_REGISTER.md` |
-| OKF-MIG-P3-034 | Phase 3 acceptance criteria are updated accurately. | PASSED | This matrix |
-| OKF-MIG-P3-035 | Current production `okf/` files remain unchanged. | PASSED | Final scope check |
-| OKF-MIG-P3-036 | Production validator behavior remains unchanged. | PASSED | Existing validator run and scoped diff |
-| OKF-MIG-P3-037 | Production code/tests/scripts/CI remain unchanged. | PASSED | Final scope check |
-| OKF-MIG-P3-038 | Created/modified repository files are English-only. | PASSED | Script scan |
-| OKF-MIG-P3-039 | Safe repository and specific checks are recorded. | PASSED | Phase 3 validation record |
-| OKF-MIG-P3-040 | No commit or push occurred. | PASSED | Final Git inspection |
-| OKF-MIG-P3-041 | Working tree contains only intended Phase 3 migration docs and preserved changes. | PASSED | Final Git inspection |
-
-## Phase 3 Validation Record
-
-| Command or method | Exit code/result | Finding | Relationship to Phase 3 |
-|---|---:|---|---|
-| Initial Git inspection | 0 | Branch `main`, start commit `63d26acba69c7a9bee72494aecc16178b2562d20`, clean tree, all 19 Phase 1-2 documents present. | Establishes preserved baseline |
-| Official specification refresh | Success | Re-read official v0.2 frontmatter, trust, source, lifecycle, path, actor, reserved-file, conformance, and versioning rules. | Normative semantic input |
-| Phase 2 input/current metadata revalidation | 0 | 58 mapped Markdown sources, 14 types, sibling official/extension roots, no unresolved blocker; nine legacy statuses and every registry item field inventoried. | Prevents silent redesign or guessed mappings |
-| Proposed schema JSON/reference check | 0 | 8/8 schemas parsed, 8 unique `$id` values, and zero unresolved local `$ref` targets. | Validates machine-readable design artifacts |
-| Phase 3 contract coverage check | 0 | 14 schema/taxonomy/example types match; 9 status values mapped; 10 extension fields documented; 20 valid examples, 28 invalid fixtures, 48 migration rows, 24 decisions, and 41 criteria found. | Validates required design coverage |
-| English/trailing-whitespace scan | 0 | Zero Arabic-script matches and zero trailing-whitespace matches in migration files. | Validates language/format scope |
-| `npm run okf:validate` | 0 | Existing 8-registry custom validation passed with zero orphaned critical requirements and broken references. | Confirms unchanged production validator behavior |
-| `npm run docs:validate` | 0 | 124 required artifacts and 160 relative links passed. | Validates updated documentation links |
-| `npm run format:check` | 0 | Production format checks passed. | Confirms no production formatting regression |
-| `npm run lint` | 0 | Production lint passed. | Confirms no source regression |
-| `npm run typecheck` | 0 | TypeScript build check passed. | Confirms no type regression |
-| `npm test` (sandbox attempt) | 1 | Sandbox blocked esbuild child-process creation with `spawn EPERM`; no assertion failed. | Environmental limitation, not Phase 3 failure |
-| `npm test` (approved execution) | 0 | All 84 tests passed; zero failed, skipped, cancelled, or todo. | Full regression validation |
-| `git diff --check` and scoped production diff | 0 | No whitespace error and no change under `okf/`, apps, packages, tools, tests, package scripts, or CI. | Confirms design-only scope |
-| Final Git/head/frontmatter/reserved-file check | 0 | HEAD unchanged, no current frontmatter, no production root index/log, and all changes limited to migration documentation. | Confirms Phase 3 prohibitions and no commit/push |
-
-## Phase 1-2 Validation Record
-
-| Command or check | Exit code | Result | Pre-existing or Phase 2-caused failure |
-|---|---:|---|---|
-| Initial `git branch --show-current`, `git rev-parse HEAD`, and `git status --short` | 0 | `main`; start commit `dd0fb00fd869dee2a808f48fc157f45c00c98cb0`; expected untracked Phase 1 directory only. | No failure |
-| Baseline artifact/consumer revalidation | 0 | 58 Markdown and 11 JSON files; custom validator/tooling consumers confirmed; no production or CI consumer found. | No failure |
-| `npm run okf:validate` | 0 | 8 registries passed with zero orphaned critical requirements and zero broken references. | No failure |
-| `npm run docs:validate` | 0 | 124 required artifacts and 146 relative links passed. | No failure |
-| `npm run format:check` | 0 | Production format checks passed. | No failure |
-| `npm run lint` | 0 | Production source lint checks passed. | No failure |
-| `npm run typecheck` | 0 | TypeScript build check passed. | No failure |
-| `npm test` (sandbox attempt) | 1 | Environment blocked esbuild child-process creation with `spawn EPERM`; no test assertion ran or failed. | Sandbox limitation, not a repository or Phase 2 failure |
-| `npm test` (approved process execution) | 0 | All 84 tests passed; 0 failed, skipped, or cancelled. | No failure |
-| Phase 2 documentation structural check | 0 | 58 unique map rows match 58 sources; action totals reconcile; 14 complete type definitions; no Arabic-script text or trailing whitespace. | No failure |
-| Final scope/frontmatter/reserved-file inspection | 0 | No `okf/` diff, no current frontmatter delimiters, no production root index/log, and all 19 untracked files are under `docs/okf-migration/`. | No failure |
-
-## Future Phase Gates
-
-| Phase | Gate | Status |
-|---:|---|---|
-| 3 | Metadata/frontmatter contract and fixture corpus implement fixed Phase 2 inputs. | PASSED |
-| 4 | Reviewed core Concepts and indexes conform without removing current authorities. | PASSED |
-| 5 | All mapped content and extension data have implemented dispositions and compatibility coverage. | NOT_STARTED |
-| 6 | Official and extension validators/generators are separate and testable. | NOT_STARTED |
-| 7 | Deterministic local/approved CI quality controls pass. | NOT_STARTED |
-| 8 | Final official and extension audits pass; cleanup is explicitly approved. | NOT_STARTED |
-
-## Phase 4 Criteria
-
-| ID | Criterion | Status | Evidence |
-|---|---|---|---|
-| OKF-MIG-P4-001 | Baseline branch, commit, and clean starting status are recorded. | PASSED | `PHASE_04_IMPLEMENTATION_REPORT.md` |
-| OKF-MIG-P4-002 | The Phase 2 and Phase 3 contracts and exact handoff are revalidated. | PASSED | `PHASE_04_METADATA_HANDOFF.md`, `PHASE_04_IMPLEMENTATION_REPORT.md` |
-| OKF-MIG-P4-003 | The explicit root amendment is documented before production files are created. | PASSED | `PHASE_02_DECISIONS.md`, `PHASE_03_DECISIONS.md` |
-| OKF-MIG-P4-004 | `okf/index.md` follows the root reserved-file contract. | PASSED | `okf/index.md`, `PHASE_04_CONFORMANCE_REPORT.md` |
-| OKF-MIG-P4-005 | Required product, architecture, data, workflow, recovery, and history indexes exist without frontmatter. | PASSED | Six directory indexes and link audit |
-| OKF-MIG-P4-006 | The exact 23 source documents produce 21 Concepts plus the required indexes. | PASSED | `PHASE_04_CORE_MIGRATION_LEDGER.md` |
-| OKF-MIG-P4-007 | Every migrated Concept has valid frontmatter, an approved type, canonical field order, and lifecycle separation. | PASSED | Manual metadata validation and conformance report |
-| OKF-MIG-P4-008 | Every migrated Concept has portable source attribution and no machine-specific path. | PASSED | `PHASE_04_LINK_AND_SOURCE_AUDIT.md` |
-| OKF-MIG-P4-009 | Markdown relationships introduced by Phase 4 resolve. | PASSED | `PHASE_04_LINK_AND_SOURCE_AUDIT.md` |
-| OKF-MIG-P4-010 | The Phase 3 architecture duplicate is merged without deleting either source. | PASSED | `okf/history/phase-03.md`, semantic preservation report |
-| OKF-MIG-P4-011 | Existing registries, manifest, validator, application code, tests, scripts, and CI are unchanged. | PASSED | Scoped Git diff and implementation report |
-| OKF-MIG-P4-012 | Remaining legacy content and full-bundle non-conformance are explicitly reported. | PASSED | Conformance report and Phase 5 handoff |
-| OKF-MIG-P4-013 | Six Phase 4 reports are complete and counts reconcile. | PASSED | Report set under `docs/okf-migration/` |
-| OKF-MIG-P4-014 | No commit or push occurs during Phase 4. | PASSED | Final Git inspection |
+The two accepted exceptions are administrative verification tasks with explicit owners and triggers. They do not waive an official, metadata, extension, cleanup, evidence, validator, test, or security requirement.

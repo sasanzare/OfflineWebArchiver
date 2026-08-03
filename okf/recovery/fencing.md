@@ -5,9 +5,6 @@ description: Defines monotonic generation checks that prevent stale Job owners f
 tags: [recovery, fencing, leases, concurrency]
 status: stable
 sources:
-  - id: fencing-knowledge
-    resource: okf/knowledge/fencing/README.md
-    title: Legacy fencing knowledge
   - id: recovery-source
     resource: packages/recovery/src/index.ts
     title: Recovery fencing policy source
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-069, R-070]
   evidence_ids: [OKF-EV-P07-DOMAIN, OKF-EV-P07-CONCURRENCY]
   legacy_ids: [OKF-DOM-049]
-  legacy_paths: [okf/knowledge/fencing/README.md]
 ---
 
 # Fencing

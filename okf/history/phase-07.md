@@ -5,9 +5,6 @@ description: Preserves the historical Product Phase 7 ownership, checkpoint, and
 tags: [history, phase-record, recovery, leases]
 status: stable
 sources:
-  - id: phase-07-legacy-record
-    resource: okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md
-    title: Legacy Product Phase 7 record
   - id: phase-07-report
     resource: docs/project/PHASE_07_IMPLEMENTATION_REPORT.md
     title: Product Phase 7 implementation report
@@ -19,9 +16,8 @@ sources:
     title: Product Phase 7 process-kill tests
 owa:
   verification_status: verified
-  evidence_ids: [OKF-EV-P07-DOMAIN, OKF-EV-P07-PERSISTENCE, OKF-EV-P07-LIFECYCLE, OKF-EV-P07-PROCESS-KILL, OKF-EV-P07-RECORD]
+  evidence_ids: [OKF-EV-P07-DOMAIN, OKF-EV-P07-PERSISTENCE, OKF-EV-P07-LIFECYCLE, OKF-EV-P07-PROCESS-KILL, OKF-EV-P07-DOCS, OKF-EV-P07-RECORD]
   legacy_ids: [OKF-PHASE-007]
-  legacy_paths: [okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md]
 ---
 
 # Product Phase 7 - Checkpoint, Lease, and Crash Recovery
@@ -41,4 +37,3 @@ Forward migration `005_add_checkpoint_lease_recovery` preserved migrations 001 t
 Evidence included `packages/recovery/src/index.ts`, `packages/persistence-sqlite/src/recovery.ts`, Core, Application Service, contracts, CLI, and Desktop changes, recovery lifecycle and concurrency tests, actual process-kill boundaries, 5-minute, 6-hour, 24-hour, 3-day, and 14-day horizons, and the phase implementation report. Governance included ADR-031 through ADR-040, AC-P07-001 through AC-P07-039, and R-067 through R-089.
 
 Token output and logging were forbidden; ownership, fencing, expiry, payload and path bounds, root containment, and recovery confirmation failed closed. Browser rendering and lifecycle were planned for Phase 8. Production Asset Downloader and production Range integration were planned for Phase 9. Worker Pool, distributed clocks, retention and compaction, forced pause, and revision reconciliation remained unresolved. The living rules are represented by [Leases](../recovery/leases.md), [Fencing](../recovery/fencing.md), and [Checkpoint Recovery](../recovery/checkpoint-recovery.md).
-

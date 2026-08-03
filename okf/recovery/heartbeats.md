@@ -5,9 +5,6 @@ description: Defines Lease liveness recording, explicit renewal, and expiry sema
 tags: [recovery, leases, heartbeats, concurrency]
 status: stable
 sources:
-  - id: heartbeats-legacy-knowledge
-    resource: okf/knowledge/heartbeats/README.md
-    title: Legacy Heartbeats knowledge
   - id: recovery-concurrency-evidence
     resource: tests/concurrency/recovery-concurrency.test.ts
     title: Recovery concurrency tests
@@ -15,7 +12,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P07-CONCURRENCY]
-  legacy_paths: [okf/knowledge/heartbeats/README.md]
 ---
 
 # Heartbeats

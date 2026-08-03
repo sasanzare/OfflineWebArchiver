@@ -5,9 +5,6 @@ description: Preserves the historical Product Phase 8 owned browser and renderin
 tags: [history, phase-record, browser, rendering]
 status: stable
 sources:
-  - id: phase-08-legacy-record
-    resource: okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md
-    title: Legacy Product Phase 8 record
   - id: phase-08-report
     resource: docs/project/PHASE_08_IMPLEMENTATION_REPORT.md
     title: Product Phase 8 implementation report
@@ -22,9 +19,8 @@ sources:
     title: Product Phase 8 persistence fault tests
 owa:
   verification_status: verified
-  evidence_ids: [OKF-EV-P08-BROWSER, OKF-EV-P08-RENDER, OKF-EV-P08-PERSISTENCE, OKF-EV-P08-INTEGRATION, OKF-EV-P08-FAULTS, OKF-EV-P08-RECORD]
+  evidence_ids: [OKF-EV-P08-BROWSER, OKF-EV-P08-RENDER, OKF-EV-P08-PERSISTENCE, OKF-EV-P08-INTEGRATION, OKF-EV-P08-FAULTS, OKF-EV-P08-DOCS, OKF-EV-P08-RECORD]
   legacy_ids: [OKF-PHASE-008]
-  legacy_paths: [okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md]
 ---
 
 # Product Phase 8 - Browser Lifecycle and Rendering Engine
@@ -46,4 +42,3 @@ Production sources were `packages/browser-runtime`, `packages/rendering`, `packa
 Every request and redirect was pre-dispatch authorized; private, loopback, link-local, reserved, mixed-DNS, and non-GET/HEAD requests failed closed. Context state was ephemeral and the renderer had no Browser privilege. Linux and macOS provisioning, OS memory telemetry, DNS connection pinning, and retention policy remained unresolved. Link Discovery, human-paced interaction, authentication, proxies, assets, rewriting, API capture, and a complete archive remained planned.
 
 The living browser and render behavior is represented by [Browser Runtime](../architecture/browser-runtime.md) and [Rendering](../workflow/rendering.md), with [Queue](../workflow/queue.md) and [Checkpoint Recovery](../recovery/checkpoint-recovery.md) providing the surrounding ownership rules.
-

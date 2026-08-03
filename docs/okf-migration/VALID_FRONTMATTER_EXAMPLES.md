@@ -296,8 +296,6 @@ owa:
   verification_status: verified
   legacy_ids:
     - OKF-PHASE-007
-  legacy_paths:
-    - okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md
 ---
 # Product Phase 7 Recovery Record
 ```
@@ -381,7 +379,7 @@ Only the bundle-root index may use this frontmatter.
 ## VFM-018 — Generated Directory Index
 
 ```markdown
-<!-- GENERATED FILE. DO NOT EDIT. Source: Concept frontmatter in this directory. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 # Workflow
 
 * Persistent Queue - durable scheduling and transition behavior.
@@ -437,8 +435,6 @@ owa:
     - OKF-EV-P06-DOMAIN
   legacy_ids:
     - OKF-NODE-P06-STATE-1
-  legacy_paths:
-    - okf/knowledge/job-state-machine/README.md
 ---
 # Page Job State Machine
 ```

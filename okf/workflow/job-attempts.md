@@ -5,9 +5,6 @@ description: Defines when Job attempts advance and how interruption and pause re
 tags: [workflow, queue, attempts, recovery]
 status: stable
 sources:
-  - id: job-attempts-legacy-knowledge
-    resource: okf/knowledge/job-attempts/README.md
-    title: Legacy Job Attempts knowledge
   - id: queue-lifecycle-evidence
     resource: tests/integration/queue-lifecycle.test.ts
     title: Queue lifecycle tests
@@ -15,7 +12,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P06-INTEGRATION, OKF-EV-P07-LIFECYCLE]
-  legacy_paths: [okf/knowledge/job-attempts/README.md]
 ---
 
 # Job Attempts

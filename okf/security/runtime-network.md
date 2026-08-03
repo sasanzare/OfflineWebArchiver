@@ -5,9 +5,6 @@ description: Defines runtime request authorization, redirect revalidation, and c
 tags: [security, network, ssrf, rendering]
 status: stable
 sources:
-  - id: runtime-network-legacy-knowledge
-    resource: okf/knowledge/runtime-network/README.md
-    title: Legacy Runtime Network knowledge
   - id: runtime-network-policy
     resource: docs/architecture/RUNTIME_NETWORK_POLICY.md
     title: Runtime network policy authority
@@ -21,7 +18,6 @@ owa:
   risk_ids: [R-096]
   decision_ids: [OD-073]
   evidence_ids: [OKF-EV-P08-SECURITY]
-  legacy_paths: [okf/knowledge/runtime-network/README.md]
 ---
 
 # Runtime Network Policy

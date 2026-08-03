@@ -58,10 +58,9 @@ Verification method and evidence links do not extend the official record. Put th
 | `owa.decision_ids` | Decision traceability | Unique non-empty ID array | ADR/decision authority | `decisionIds` | Yes when mapped | No | Resolve in extension validation |
 | `owa.risk_ids` | Risk traceability | Unique non-empty ID array | Risk authority | `riskIds` | Yes when mapped | No | Resolve in extension validation |
 | `owa.evidence_ids` | Evidence bridge | Unique non-empty ID array | Authored evidence registry | `evidenceIds` and evidence mappings | Yes for selected evidence links | No | Registry resolution `ERROR`; evidence details stay JSON |
-| `owa.legacy_ids` | Compatibility identity | Unique non-empty ID array | Migration mapping/change ledger | Registry `id` values | Conditional during migration | Migration-generated | Retain until Phase 8 compatibility decision |
-| `owa.legacy_paths` | Compatibility path | Unique portable repository-relative path array | Content migration map | Current paths/recordPath | Conditional during migration | Migration-generated | Local absolute/traversal `ERROR`; Phase 8 retention review |
+| `owa.legacy_ids` | Stable extension identity | Unique non-empty ID array | Retained registry identities | Registry `id` values | Conditional when a stable pre-migration ID remains in use | Human-maintained | Does not identify a path or alternate authority |
 
-No `evidence_status`, `migration_status`, `phase`, registry synchronization hash, relationship graph, or generic arbitrary metadata field is approved in Concept frontmatter. Those facts already have another authority or belong in generated extension JSON.
+No `legacy_paths`, `evidence_status`, `migration_status`, `phase`, registry synchronization hash, relationship graph, or generic arbitrary metadata field is approved in Concept frontmatter. Those facts already have another authority or belong in extension JSON.
 
 ## Title, Description, and Tags Rules
 

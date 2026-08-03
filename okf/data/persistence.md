@@ -5,9 +5,6 @@ description: Defines durable storage guarantees for queue, recovery, and portabl
 tags: [data, persistence, sqlite, recovery]
 status: stable
 sources:
-  - id: persistence-knowledge
-    resource: okf/knowledge/persistence/README.md
-    title: Legacy persistence knowledge
   - id: persistence-architecture
     resource: docs/architecture/SQLITE_PERSISTENCE.md
     title: SQLite persistence architecture authority
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-012, R-045, R-046]
   evidence_ids: [OKF-EV-P04-PERSISTENCE, OKF-EV-P06-PERSISTENCE, OKF-EV-P07-PERSISTENCE]
   legacy_ids: [OKF-DOM-011]
-  legacy_paths: [okf/knowledge/persistence/README.md]
 ---
 
 # Persistence

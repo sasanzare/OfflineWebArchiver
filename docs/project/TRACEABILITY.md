@@ -8,8 +8,9 @@
 | FR-RECOVERY-001, FR-QUEUE-003, NFR-REL-001..002 | AC-P08-012..014 | fenced Render repository, schema 6, stage Checkpoints/Heartbeats/Pause/Resume | render lifecycle/fault plus recovery/concurrency/process-kill suites | R-098..099 | OD-074; ADR-046 | OKF-NODE-P08-FENCED-RESULTS |
 | FR-CLI-001, FR-UX-002, NFR-MAINT-001 | AC-P08-017 | contract 1.5, CLI, isolated Desktop, architecture/docs/OKF | unit/CLI/Electron/architecture/security/docs/OKF gates | R-091, R-101 | ADR-041..048 | OKF-CHG-P08-001 |
 
-**Document status:** Proposed baseline  
-**Owner:** QA Lead  
+**Document status:** Proposed baseline
+
+**Owner:** QA Lead
 **Last updated:** 2026-07-31
 
 This document maps each requirement from
@@ -158,7 +159,7 @@ the production mappings above.
 ## OKF traceability dimensions
 
 Current traceability is the join of this document and
-[canonical OKF registries](../../okf/README.md), with bootstrap traceability retained historically at `okf-bootstrap/BOOTSTRAP_TRACEABILITY.md`:
+[canonical OKF extensions](../../okf/extensions/README.md), with bootstrap traceability retained historically at `okf-bootstrap/BOOTSTRAP_TRACEABILITY.md`:
 
 ```text
 Requirement

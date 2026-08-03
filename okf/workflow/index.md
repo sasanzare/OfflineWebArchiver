@@ -1,6 +1,6 @@
 # Workflow
 
-<!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
 This directory contains the selected queue, job-state, and rendering workflow Concepts.
 

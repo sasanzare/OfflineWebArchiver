@@ -5,9 +5,6 @@ description: Defines the additive SQLite migration process and its compatibility
 tags: [operations, migrations, sqlite, compatibility]
 status: stable
 sources:
-  - id: migration-legacy-knowledge
-    resource: okf/knowledge/migration/README.md
-    title: Legacy Migration knowledge
   - id: migration-strategy
     resource: docs/architecture/MIGRATION_STRATEGY.md
     title: Migration strategy authority
@@ -16,7 +13,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P08-PERSISTENCE, OKF-EV-P04-TESTS]
-  legacy_paths: [okf/knowledge/migration/README.md]
 ---
 
 # Database Migration

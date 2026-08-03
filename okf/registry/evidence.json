@@ -18,14 +18,14 @@
     { "id": "OKF-EV-P04-DESKTOP", "name": "Product Phase 4 real Electron lifecycle smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:electron" },
     { "id": "OKF-EV-P04-DOCS", "name": "Product Phase 4 implementation and ADR records", "status": "VERIFIED", "path": "docs/project/PHASE_04_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
     { "id": "OKF-EV-P04-SECURITY", "name": "Product Phase 4 security review", "status": "VERIFIED", "path": "docs/architecture/PHASE_04_SECURITY_REVIEW.md", "method": "security gate and adversarial test review" },
-    { "id": "OKF-EV-P04-RECORD", "name": "Product Phase 4 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P04-RECORD", "name": "Product Phase 4 canonical record", "status": "VERIFIED", "path": "okf/history/phase-04.md", "method": "npm run okf:validate" },
     { "id": "OKF-EV-P05-ENGINE", "name": "Scope Engine 1 and Site Profile schema 1 source", "status": "VERIFIED", "path": "packages/scope-engine/src/index.ts", "method": "source, typecheck, architecture and scope validation" },
     { "id": "OKF-EV-P05-GOLDEN", "name": "Versioned normalization golden fixture", "status": "VERIFIED", "path": "tests/fixtures/scope/normalization.golden.json", "method": "npm run scope:golden" },
     { "id": "OKF-EV-P05-PERSISTENCE", "name": "Profile revision and migration integration", "status": "VERIFIED", "path": "tests/integration/profile-lifecycle.test.ts", "method": "npm run test:integration" },
     { "id": "OKF-EV-P05-CLI-DESKTOP", "name": "Built CLI and real Electron Profile Scope smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P05-SECURITY", "name": "Product Phase 5 security review", "status": "VERIFIED", "path": "docs/architecture/PHASE_05_SECURITY_REVIEW.md", "method": "npm run security:check and adversarial test review" },
     { "id": "OKF-EV-P05-DOCS", "name": "Product Phase 5 implementation and ADR records", "status": "VERIFIED", "path": "docs/project/PHASE_05_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P05-RECORD", "name": "Product Phase 5 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P05-RECORD", "name": "Product Phase 5 canonical record", "status": "VERIFIED", "path": "okf/history/phase-05.md", "method": "npm run okf:validate" },
     { "id": "OKF-EV-P06-DOMAIN", "name": "Queue domain model state machine and contracts", "status": "VERIFIED", "path": "packages/queue/src/index.ts", "method": "typecheck unit state-machine contract and architecture validation" },
     { "id": "OKF-EV-P06-PERSISTENCE", "name": "SQLite schema 4 queue repository and atomic transactions", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/queue.ts", "method": "migration integration security and source review" },
     { "id": "OKF-EV-P06-INTEGRATION", "name": "Queue lifecycle identity retry history and reopen evidence", "status": "VERIFIED", "path": "tests/integration/queue-lifecycle.test.ts", "method": "npm run test:integration" },
@@ -33,7 +33,7 @@
     { "id": "OKF-EV-P06-CLI-DESKTOP", "name": "Built CLI and real Electron queue smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P06-SECURITY", "name": "Queue ownership limits redaction and SQL boundary evidence", "status": "VERIFIED", "path": "tests/integration/queue-security.test.ts", "method": "npm run security:check and npm run test:integration" },
     { "id": "OKF-EV-P06-DOCS", "name": "Product Phase 6 implementation and ADR record", "status": "VERIFIED", "path": "docs/project/PHASE_06_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P06-RECORD", "name": "Product Phase 6 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P06-RECORD", "name": "Product Phase 6 canonical record", "status": "VERIFIED", "path": "okf/history/phase-06.md", "method": "npm run okf:validate" },
     { "id": "OKF-EV-P07-DOMAIN", "name": "Lease Checkpoint Recovery and fencing policy source", "status": "VERIFIED", "path": "packages/recovery/src/index.ts", "method": "npm run typecheck and npm run test:unit" },
     { "id": "OKF-EV-P07-PERSISTENCE", "name": "SQLite schema 5 migration and recovery repository", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/recovery.ts", "method": "npm run migrations:validate and npm run test:integration" },
     { "id": "OKF-EV-P07-LIFECYCLE", "name": "Lease Checkpoint pause recovery output and multi-day lifecycle", "status": "VERIFIED", "path": "tests/integration/recovery-lifecycle.test.ts", "method": "npm run test:recovery" },
@@ -44,7 +44,7 @@
     { "id": "OKF-EV-P07-INTERFACES", "name": "Built CLI and real Electron recovery smoke", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P07-SECURITY", "name": "Recovery ownership token redaction payload and path security", "status": "VERIFIED", "path": "tools/security/check.mjs", "method": "npm run security:check" },
     { "id": "OKF-EV-P07-DOCS", "name": "Product Phase 7 ADRs security and implementation report", "status": "VERIFIED", "path": "docs/project/PHASE_07_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P07-RECORD", "name": "Product Phase 7 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P07-RECORD", "name": "Product Phase 7 canonical record", "status": "VERIFIED", "path": "okf/history/phase-07.md", "method": "npm run okf:validate" },
     { "id": "OKF-EV-P08-BROWSER", "name": "Owned Playwright Chromium runtime and lifecycle", "status": "VERIFIED", "path": "packages/browser-runtime/src/index.ts", "method": "npm run browser:verify and npm run test:browser" },
     { "id": "OKF-EV-P08-RENDER", "name": "Render Engine stability and extraction policy", "status": "VERIFIED", "path": "packages/rendering/src/index.ts", "method": "npm run render:validate and npm run test:rendering" },
     { "id": "OKF-EV-P08-PERSISTENCE", "name": "SQLite schema 6 fenced Render repository", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/render.ts", "method": "npm run migrations:validate and npm run test:integration" },
@@ -54,6 +54,6 @@
     { "id": "OKF-EV-P08-INTERFACES", "name": "Browser Render contract CLI and Desktop surfaces", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:unit, npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P08-SECURITY", "name": "Product Phase 8 Browser and Render security gate", "status": "VERIFIED", "path": "docs/architecture/PHASE_08_SECURITY_REVIEW.md", "method": "npm run security:check and adversarial browser tests" },
     { "id": "OKF-EV-P08-DOCS", "name": "Product Phase 8 implementation ADR and architecture record", "status": "VERIFIED", "path": "docs/project/PHASE_08_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P08-RECORD", "name": "Product Phase 8 canonical record", "status": "VERIFIED", "path": "okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md", "method": "npm run okf:validate" }
+    { "id": "OKF-EV-P08-RECORD", "name": "Product Phase 8 canonical record", "status": "VERIFIED", "path": "okf/history/phase-08.md", "method": "npm run okf:validate" }
   ]
 }

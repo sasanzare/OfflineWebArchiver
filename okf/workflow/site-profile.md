@@ -5,9 +5,6 @@ description: Defines the portable Site Profile policy authority and its immutabl
 tags: [workflow, profile, scope, persistence]
 status: stable
 sources:
-  - id: site-profile-legacy-knowledge
-    resource: okf/knowledge/site-profile/README.md
-    title: Legacy Site Profile knowledge
   - id: site-profile-authority
     resource: docs/architecture/SITE_PROFILE.md
     title: Site Profile architecture authority
@@ -18,7 +15,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P05-ENGINE, OKF-EV-P05-PERSISTENCE]
-  legacy_paths: [okf/knowledge/site-profile/README.md]
 ---
 
 # Site Profile

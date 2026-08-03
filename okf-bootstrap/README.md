@@ -1,14 +1,18 @@
 # OKF Bootstrap
 
-**Project:** Offline Web Archive Builder  
-**OKF stage:** Historical OKF Phase 0 bootstrap; migrated and preserved  
-**Product status:** Product Phase 3 complete; Product Phase 4 next  
-**Knowledge status:** `DEPRECATED` as current structure, `VERIFIED` as preserved bootstrap/Phase 2 evidence  
-**Canonical activation:** Completed in Product Phase 3 at `okf/`  
+**Project:** Offline Web Archive Builder
+
+**OKF stage:** Historical OKF Phase 0 bootstrap; migrated and preserved
+
+**Product status:** Product Phase 3 complete; Product Phase 4 next
+
+**Knowledge status:** `DEPRECATED` as current structure, `VERIFIED` as preserved bootstrap/Phase 2 evidence
+
+**Canonical activation:** Completed in Product Phase 3 at `okf/`
 **Last updated:** 2026-07-31
 
 > **Migrated in Product Phase 3.** Canonical authority is now
-> [`okf/README.md`](../okf/README.md). This complete bootstrap remains preserved
+> [`okf/index.md`](../okf/index.md). This complete bootstrap remains preserved
 > as historical governance/migration evidence. Its proposed target structure is
 > superseded; unresolved questions remain active through the canonical decision
 > registry and are not silently resolved.

@@ -5,9 +5,6 @@ description: Preserves the historical Product Phase 6 durable queue and Page Job
 tags: [history, phase-record, queue, state-machine]
 status: stable
 sources:
-  - id: phase-06-legacy-record
-    resource: okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md
-    title: Legacy Product Phase 6 record
   - id: phase-06-report
     resource: docs/project/PHASE_06_IMPLEMENTATION_REPORT.md
     title: Product Phase 6 implementation report
@@ -21,7 +18,6 @@ owa:
   verification_status: verified
   evidence_ids: [OKF-EV-P06-DOMAIN, OKF-EV-P06-PERSISTENCE, OKF-EV-P06-INTEGRATION, OKF-EV-P06-RECORD]
   legacy_ids: [OKF-PHASE-006]
-  legacy_paths: [okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md]
 ---
 
 # Product Phase 6 - Persistent Queue and Job State Machine

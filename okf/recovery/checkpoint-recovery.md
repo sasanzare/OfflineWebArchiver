@@ -5,9 +5,6 @@ description: Defines bounded inspection, confirmation, resume, and partial-file 
 tags: [recovery, checkpoints, resume, partial-files]
 status: stable
 sources:
-  - id: checkpoint-recovery-knowledge
-    resource: okf/knowledge/checkpoint-recovery/README.md
-    title: Legacy checkpoint recovery knowledge
   - id: recovery-source
     resource: packages/recovery/src/index.ts
     title: Recovery model source
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-065, R-073, R-074]
   evidence_ids: [OKF-EV-P07-DOMAIN, OKF-EV-P07-PERSISTENCE, OKF-EV-P07-LIFECYCLE, OKF-EV-P07-PROCESS-KILL]
   legacy_ids: [OKF-DOM-046]
-  legacy_paths: [okf/knowledge/checkpoint-recovery/README.md]
 ---
 
 # Checkpoint Recovery

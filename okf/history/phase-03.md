@@ -5,12 +5,6 @@ description: Preserves the historical architecture, workspace, and layer-contrac
 tags: [history, phase-record, architecture, monorepo]
 status: stable
 sources:
-  - id: phase-03-legacy-record
-    resource: okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md
-    title: Legacy Product Phase 3 record
-  - id: phase-03-architecture-knowledge
-    resource: okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md
-    title: Merged Phase 3 architecture context
   - id: phase-03-application-service-adr
     resource: docs/project/adr/ADR-003-local-application-service-transport-boundary.md
     title: Local application-service transport decision
@@ -19,9 +13,8 @@ sources:
     title: Canonical OKF validation source
 owa:
   verification_status: verified
-  evidence_ids: [OKF-EV-P03-SOURCE, OKF-EV-P03-TESTS, OKF-EV-P03-OKF]
+  evidence_ids: [OKF-EV-P03-SOURCE, OKF-EV-P03-TESTS, OKF-EV-P03-DECISIONS, OKF-EV-P03-OKF]
   legacy_ids: [OKF-PHASE-003]
-  legacy_paths: [okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md, okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md]
 ---
 
 # Product Phase 3 - Architecture, Monorepo, and Layer Contracts
@@ -57,4 +50,3 @@ Requirements affected were NFR-MAINT-001, NFR-TEST-001, NFR-KNOW-001 through NFR
 The renderer was sandboxed and isolated, Node integration was disabled, the bridge was allowlisted, and navigation, windows, webviews, downloads, permissions, and remote content were denied. Windows x64 development and the real Electron smoke were verified; Linux and macOS execution and release packaging remained unverified. No crawler, database, authentication, OTP, proxy, browser-rendering, archive-generation, final UI, release packaging, or hostile-archive runtime existed at this phase. SQLite and library selection were deferred to Product Phase 4.
 
 Canonical OKF activation was `VERIFIED` for the historical phase: eight registries, three completed phase records plus planned Phase 4, schemas, repository-relative evidence, and automated validation existed. Product Phase 3 was complete, with Product Phase 4 as the exact next phase. The living architecture is now linked from the [Architecture index](../architecture/index.md), while this file remains a historical record.
-

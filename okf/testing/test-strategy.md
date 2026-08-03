@@ -5,9 +5,6 @@ description: Defines the local evidence strategy for product behavior, browser r
 tags: [testing, strategy, browser, recovery]
 status: stable
 sources:
-  - id: testing-legacy-knowledge
-    resource: okf/knowledge/testing/README.md
-    title: Legacy Testing knowledge
   - id: test-architecture
     resource: docs/architecture/TEST_ARCHITECTURE.md
     title: Test architecture authority
@@ -18,7 +15,6 @@ owa:
   implementation_status: partial
   verification_status: verified
   evidence_ids: [OKF-EV-P08-INTEGRATION, OKF-EV-P08-FAULTS, OKF-EV-P08-PROCESS-KILL]
-  legacy_paths: [okf/knowledge/testing/README.md]
 ---
 
 # Test Strategy

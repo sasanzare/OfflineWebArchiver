@@ -5,9 +5,6 @@ description: Records the scope, requirements, acceptance, risks, and traceabilit
 tags: [history, phase-record, planning]
 status: stable
 sources:
-  - id: phase-01-legacy-record
-    resource: okf/phases/phase-01/PHASE_01_RECORD.md
-    title: Legacy Product Phase 1 record
   - id: phase-01-scope
     resource: docs/product/PROJECT_SCOPE.md
     title: Product Phase 1 scope authority
@@ -18,7 +15,6 @@ owa:
   verification_status: verified
   evidence_ids: [OKF-EV-P01-SCOPE, OKF-EV-P01-ACCEPTANCE]
   legacy_ids: [OKF-PHASE-001]
-  legacy_paths: [okf/phases/phase-01/PHASE_01_RECORD.md]
 ---
 
 # Product Phase 1 Record

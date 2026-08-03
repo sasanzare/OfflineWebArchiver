@@ -5,9 +5,6 @@ description: Defines durable Job ownership, expiry, token verification, and prot
 tags: [recovery, leases, ownership, concurrency]
 status: stable
 sources:
-  - id: leases-knowledge
-    resource: okf/knowledge/leases/README.md
-    title: Legacy Lease knowledge
   - id: recovery-source
     resource: packages/recovery/src/index.ts
     title: Recovery policy source
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-067, R-068, R-070]
   evidence_ids: [OKF-EV-P07-DOMAIN, OKF-EV-P07-PERSISTENCE, OKF-EV-P07-CONCURRENCY]
   legacy_ids: [OKF-DOM-047]
-  legacy_paths: [okf/knowledge/leases/README.md]
 ---
 
 # Leases

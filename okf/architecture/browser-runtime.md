@@ -5,9 +5,6 @@ description: Defines the owned Chromium runtime, context lifecycle, and browser 
 tags: [architecture, browser, chromium, security]
 status: stable
 sources:
-  - id: browser-runtime-knowledge
-    resource: okf/knowledge/browser-runtime/README.md
-    title: Legacy browser runtime knowledge
   - id: browser-runtime-docs
     resource: docs/architecture/BROWSER_RUNTIME.md
     title: Browser runtime architecture authority
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-090, R-091, R-092, R-093, R-094, R-101]
   evidence_ids: [OKF-EV-P08-BROWSER, OKF-EV-P08-SECURITY, OKF-EV-P08-PROCESS-KILL]
   legacy_ids: [OKF-DOM-057]
-  legacy_paths: [okf/knowledge/browser-runtime/README.md]
 ---
 
 # Browser Runtime

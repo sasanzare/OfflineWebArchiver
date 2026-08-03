@@ -5,9 +5,6 @@ description: Defines URL normalization, identity, classification, limits, and pr
 tags: [workflow, scope, url-normalization, security]
 status: stable
 sources:
-  - id: scope-engine-legacy-knowledge
-    resource: okf/knowledge/scope-engine/README.md
-    title: Legacy Scope Engine knowledge
   - id: scope-engine-source
     resource: packages/scope-engine/src/index.ts
     title: Scope Engine source
@@ -18,7 +15,6 @@ owa:
   implementation_status: partial
   verification_status: verified
   evidence_ids: [OKF-EV-P05-ENGINE, OKF-EV-P05-GOLDEN]
-  legacy_paths: [okf/knowledge/scope-engine/README.md]
 ---
 
 # Scope Engine

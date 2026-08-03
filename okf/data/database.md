@@ -5,9 +5,6 @@ description: Defines SQLite schema progression, constraints, and durable identit
 tags: [data, sqlite, migrations, persistence]
 status: stable
 sources:
-  - id: database-knowledge
-    resource: okf/knowledge/database/README.md
-    title: Legacy database knowledge
   - id: sqlite-authority
     resource: docs/architecture/SQLITE_PERSISTENCE.md
     title: SQLite persistence architecture authority
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-012, R-013]
   evidence_ids: [OKF-EV-P04-PERSISTENCE, OKF-EV-P08-PERSISTENCE]
   legacy_ids: [OKF-DOM-009]
-  legacy_paths: [okf/knowledge/database/README.md]
 ---
 
 # Database

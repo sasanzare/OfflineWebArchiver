@@ -5,9 +5,6 @@ description: Defines the portable Project layout, versioning rules, and artifact
 tags: [data, project-format, portability]
 status: stable
 sources:
-  - id: project-format-knowledge
-    resource: okf/knowledge/project-format/README.md
-    title: Legacy project format knowledge
   - id: project-format-docs
     resource: docs/architecture/PROJECT_FORMAT.md
     title: Project format architecture authority
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-013, R-031, R-045]
   evidence_ids: [OKF-EV-P04-FORMAT, OKF-EV-P04-TESTS]
   legacy_ids: [OKF-DOM-008]
-  legacy_paths: [okf/knowledge/project-format/README.md]
 ---
 
 # Project Format

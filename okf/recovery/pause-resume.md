@@ -5,9 +5,6 @@ description: Defines cooperative pause acknowledgement, checkpointing, Lease rel
 tags: [recovery, pause, resume, leases]
 status: stable
 sources:
-  - id: pause-resume-legacy-knowledge
-    resource: okf/knowledge/pause-resume/README.md
-    title: Legacy Pause and Resume knowledge
   - id: recovery-lifecycle-evidence
     resource: tests/integration/recovery-lifecycle.test.ts
     title: Recovery lifecycle tests
@@ -15,7 +12,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P07-LIFECYCLE]
-  legacy_paths: [okf/knowledge/pause-resume/README.md]
 ---
 
 # Pause and Resume

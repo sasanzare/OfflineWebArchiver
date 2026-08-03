@@ -1,6 +1,6 @@
 # Product
 
-<!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
 This directory contains the reviewed product overview Concept. Requirements and detailed product authorities remain in their current project documentation until Phase 5.
 

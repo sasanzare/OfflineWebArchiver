@@ -5,9 +5,6 @@ description: Describes the current development-artifact packaging boundary and r
 tags: [operations, packaging, release]
 status: stable
 sources:
-  - id: packaging-legacy-knowledge
-    resource: okf/knowledge/packaging/README.md
-    title: Legacy Packaging knowledge
   - id: phase-three-build-evidence
     resource: tools/build/build.mjs
     title: Development build definition
@@ -16,7 +13,6 @@ owa:
   implementation_status: partial
   verification_status: partial
   evidence_ids: [OKF-EV-P03-BUILD]
-  legacy_paths: [okf/knowledge/packaging/README.md]
 ---
 
 # Packaging

@@ -5,9 +5,6 @@ description: Defines bounded browser rendering, stability evaluation, final DOM 
 tags: [workflow, rendering, browser, artifacts]
 status: stable
 sources:
-  - id: rendering-knowledge
-    resource: okf/knowledge/rendering/README.md
-    title: Legacy rendering knowledge
   - id: rendering-authority
     resource: docs/architecture/RENDERING_ENGINE.md
     title: Rendering architecture authority
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-009, R-095, R-100]
   evidence_ids: [OKF-EV-P08-RENDER, OKF-EV-P08-INTEGRATION, OKF-EV-P08-FAULTS]
   legacy_ids: [OKF-DOM-058]
-  legacy_paths: [okf/knowledge/rendering/README.md]
 ---
 
 # Rendering

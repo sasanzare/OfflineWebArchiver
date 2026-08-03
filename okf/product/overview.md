@@ -11,17 +11,10 @@ sources:
   - id: product-acceptance
     resource: docs/product/ACCEPTANCE_MATRIX.md
     title: Product acceptance authority
-  - id: legacy-product-overview
-    resource: okf/knowledge/product/README.md
-    title: Legacy product knowledge
-  - id: legacy-next-phase
-    resource: okf/knowledge/product/NEXT_PHASE.md
-    title: Legacy durable next-phase scope
 owa:
   implementation_status: partial
   verification_status: verified
   evidence_ids: [OKF-EV-P01-SCOPE, OKF-EV-P01-ACCEPTANCE]
-  legacy_paths: [okf/knowledge/product/README.md, okf/knowledge/product/NEXT_PHASE.md]
 ---
 
 # Product Overview

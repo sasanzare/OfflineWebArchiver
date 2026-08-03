@@ -5,9 +5,6 @@ description: Preserves the historical Product Phase 4 Project and SQLite foundat
 tags: [history, phase-record, project-format, sqlite]
 status: stable
 sources:
-  - id: phase-04-legacy-record
-    resource: okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md
-    title: Legacy Product Phase 4 record
   - id: phase-04-report
     resource: docs/project/PHASE_04_IMPLEMENTATION_REPORT.md
     title: Product Phase 4 implementation report
@@ -18,7 +15,6 @@ owa:
   verification_status: verified
   evidence_ids: [OKF-EV-P04-FORMAT, OKF-EV-P04-PERSISTENCE, OKF-EV-P04-TESTS, OKF-EV-P04-RECORD]
   legacy_ids: [OKF-PHASE-004]
-  legacy_paths: [okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md]
 ---
 
 # Product Phase 4 Project Format Record

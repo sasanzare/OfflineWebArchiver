@@ -5,9 +5,6 @@ description: Defines durable Page Job identity, ordering, idempotency, and prote
 tags: [workflow, queue, jobs, idempotency]
 status: stable
 sources:
-  - id: queue-knowledge
-    resource: okf/knowledge/queue/README.md
-    title: Legacy queue knowledge
   - id: queue-domain-source
     resource: packages/queue/src/index.ts
     title: Queue domain source
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-056, R-058, R-059, R-061, R-062, R-063, R-064, R-065, R-066, R-069, R-070, R-073]
   evidence_ids: [OKF-EV-P06-DOMAIN, OKF-EV-P06-PERSISTENCE, OKF-EV-P06-INTEGRATION, OKF-EV-P06-CONCURRENCY, OKF-EV-P07-PERSISTENCE]
   legacy_ids: [OKF-DOM-044]
-  legacy_paths: [okf/knowledge/queue/README.md]
 ---
 
 # Queue

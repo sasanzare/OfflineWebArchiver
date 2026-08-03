@@ -120,14 +120,14 @@ const required = [
   "docs/project/adr/ADR-046-fenced-artifact-first-render-commit.md",
   "docs/project/adr/ADR-047-opt-in-bounded-render-screenshot.md",
   "docs/project/adr/ADR-048-browser-and-page-crash-recovery.md",
-  "okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md",
-  "okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md",
-  "okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md",
-  "okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md",
-  "okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md",
-  "okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md",
-  "okf/knowledge/queue/README.md",
-  "okf/knowledge/job-state-machine/README.md",
+  "okf/history/phase-03.md",
+  "okf/history/phase-04.md",
+  "okf/history/phase-05.md",
+  "okf/history/phase-06.md",
+  "okf/history/phase-07.md",
+  "okf/history/phase-08.md",
+  "okf/workflow/queue.md",
+  "okf/workflow/job-state-machine.md",
 ];
 const errors = [];
 let checkedLinks = 0;

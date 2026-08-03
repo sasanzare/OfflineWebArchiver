@@ -5,9 +5,6 @@ description: Preserves the historical Product Phase 5 Profile, Scope, and URL No
 tags: [history, phase-record, scope, normalization]
 status: stable
 sources:
-  - id: phase-05-legacy-record
-    resource: okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md
-    title: Legacy Product Phase 5 record
   - id: phase-05-report
     resource: docs/project/PHASE_05_IMPLEMENTATION_REPORT.md
     title: Product Phase 5 implementation report
@@ -18,7 +15,6 @@ owa:
   verification_status: verified
   evidence_ids: [OKF-EV-P05-ENGINE, OKF-EV-P05-GOLDEN, OKF-EV-P05-PERSISTENCE, OKF-EV-P05-RECORD]
   legacy_ids: [OKF-PHASE-005]
-  legacy_paths: [okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md]
 ---
 
 # Product Phase 5 Scope and Normalization Record

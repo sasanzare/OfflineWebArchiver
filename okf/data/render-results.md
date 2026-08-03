@@ -5,9 +5,6 @@ description: Defines durable Render result, event, failure, and artifact descrip
 tags: [data, rendering, artifacts, sqlite]
 status: stable
 sources:
-  - id: render-results-legacy-knowledge
-    resource: okf/knowledge/render-results/README.md
-    title: Legacy Render Results knowledge
   - id: render-persistence-source
     resource: packages/persistence-sqlite/src/render.ts
     title: Render persistence source
@@ -18,7 +15,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P08-PERSISTENCE, OKF-EV-P08-FAULTS]
-  legacy_paths: [okf/knowledge/render-results/README.md]
 ---
 
 # Render Results

@@ -5,9 +5,6 @@ description: Defines persistent Page Job states, transitions, attempts, and reco
 tags: [workflow, queue, state-machine, recovery]
 status: stable
 sources:
-  - id: job-state-machine-knowledge
-    resource: okf/knowledge/job-state-machine/README.md
-    title: Legacy Page Job state-machine knowledge
   - id: queue-domain-source
     resource: packages/queue/src/index.ts
     title: Queue state-machine source
@@ -26,7 +23,6 @@ owa:
   risk_ids: [R-057, R-058, R-059, R-064, R-065, R-069, R-078]
   evidence_ids: [OKF-EV-P06-DOMAIN, OKF-EV-P06-TESTS, OKF-EV-P07-LIFECYCLE]
   legacy_ids: [OKF-DOM-045]
-  legacy_paths: [okf/knowledge/job-state-machine/README.md]
 ---
 
 # Page Job State Machine

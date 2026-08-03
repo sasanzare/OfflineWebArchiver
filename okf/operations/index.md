@@ -1,6 +1,6 @@
 # Operations
 
-<!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
 This directory contains operational procedures and current release limitations.
 

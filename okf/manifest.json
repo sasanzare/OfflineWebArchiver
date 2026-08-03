@@ -1,12 +1,13 @@
 {
   "$schema": "./validation/schemas/manifest.schema.json",
   "schemaVersion": "1.0.0",
-  "frameworkVersion": "1.0.0",
+  "extensionVersion": "1.0.0",
+  "okfVersion": "0.2",
   "product": "Offline Web Archive Builder",
   "status": "VERIFIED",
   "activatedPhase": 8,
   "activatedAt": "2026-08-01",
-  "authority": "okf/README.md",
+  "authority": "okf/extensions/README.md",
   "bootstrapHistory": "okf-bootstrap/README.md",
   "registries": {
     "domains": "okf/registry/domains.json",

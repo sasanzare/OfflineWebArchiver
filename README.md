@@ -74,7 +74,21 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Render stability](docs/architecture/RENDER_STABILITY.md)
 - [Security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
-- [Canonical OKF](okf/README.md)
+- [Canonical Google OKF v0.2 knowledge](okf/index.md)
+- [OKF migration closure](docs/okf-migration/FINAL_MIGRATION_CLOSURE_REPORT.md)
 - [Current handoff](HANDOFF.md)
+
+## Open Knowledge Format
+
+The canonical knowledge bundle follows Google Open Knowledge Format v0.2 and starts at [`okf/index.md`](okf/index.md). OfflineWebArchiver-specific metadata, typed relationships, evidence IDs, registries, and schemas are a separately validated extension layer documented at [`okf/extensions/README.md`](okf/extensions/README.md).
+
+To add or edit knowledge, choose an approved Concept type and stable subject path, use the metadata contract, add portable `sources` and meaningful Markdown links, update the directory index and affected extension mappings, then run:
+
+```text
+npm run test:okf
+npm run okf:validate
+```
+
+CI runs the same blocking validator, documentation, formatting, lint, and type-check gates in the `OKF Validation` workflow. The repository has no automatically generated OKF artifacts; indexes and registries are maintained and reviewed with their authoritative inputs. See the [final maintainer handoff](docs/okf-migration/FINAL_MAINTAINER_HANDOFF.md) for renames, deprecation, verification invalidation, taxonomy changes, and new diagnostics. Hosted CI execution and branch protection are not claimed as verified from the local repository.
 
 The exact next phase is **Product Phase 9 — Link Discovery and SPA Support**.

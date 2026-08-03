@@ -1,6 +1,6 @@
 # Security
 
-<!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
 This directory contains the security controls that constrain Scope and Browser runtime behavior.
 

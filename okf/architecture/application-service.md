@@ -5,9 +5,6 @@ description: Defines the application-service orchestration boundary for local co
 tags: [architecture, application-service, orchestration]
 status: stable
 sources:
-  - id: application-service-knowledge
-    resource: okf/knowledge/application-service/README.md
-    title: Legacy application-service knowledge
   - id: application-service-source
     resource: packages/application-service/src/index.ts
     title: Application Service production source
@@ -23,7 +20,6 @@ owa:
   risk_ids: [R-002, R-029, R-013]
   evidence_ids: [OKF-EV-P03-SOURCE, OKF-EV-P03-TESTS]
   legacy_ids: [OKF-DOM-005]
-  legacy_paths: [okf/knowledge/application-service/README.md]
 ---
 
 # Application Service
@@ -32,4 +28,4 @@ The Application Service is the orchestration boundary for the versioned command 
 
 `render.start` accepts an existing queued Job rather than an ad-hoc URL. The service owns stage events, heartbeat and lease renewal, pause observation, fenced commit or failure, error translation, and cleanup. Desktop and CLI invoke the same service. Raw Browser, Playwright, and SQLite handles do not cross the service boundary.
 
-Automatic discovery, automatic enqueue, and later network workflows remain planned. The legacy application-service document remains unchanged while this Concept becomes the future semantic representation.
+Automatic discovery, automatic enqueue, and later network workflows remain planned. This Concept is the authoritative human-readable application-service knowledge source; production code remains authoritative for executable behavior.

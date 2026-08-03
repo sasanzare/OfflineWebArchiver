@@ -1,6 +1,6 @@
 # History
 
-<!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
 This directory contains durable Phase Record Concepts. A Phase Record is historical context and does not replace current product, architecture, workflow, data, or recovery authority.
 
@@ -13,4 +13,4 @@ This directory contains durable Phase Record Concepts. A Phase Record is histori
 - [Product Phase 7](phase-07.md)
 - [Product Phase 8](phase-08.md)
 
-This generated-style index lists direct Phase Record children only. The official log is intentionally not created.
+This maintained index lists direct Phase Record children only. The official log is intentionally not created.

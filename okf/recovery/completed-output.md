@@ -5,9 +5,6 @@ description: Defines verification of terminal artifact descriptors without silen
 tags: [recovery, output, artifacts, integrity]
 status: stable
 sources:
-  - id: completed-output-legacy-knowledge
-    resource: okf/knowledge/completed-output/README.md
-    title: Legacy Completed Output knowledge
   - id: output-verification-evidence
     resource: tests/unit/recovery.test.ts
     title: Completed output verification tests
@@ -15,7 +12,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P07-OUTPUT]
-  legacy_paths: [okf/knowledge/completed-output/README.md]
 ---
 
 # Completed Output

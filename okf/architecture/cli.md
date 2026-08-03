@@ -5,9 +5,6 @@ description: Defines the bounded command-line interface and its relationship to 
 tags: [architecture, cli, interfaces]
 status: stable
 sources:
-  - id: cli-legacy-knowledge
-    resource: okf/knowledge/cli/README.md
-    title: Legacy CLI knowledge
   - id: cli-interface-evidence
     resource: tests/cli/cli-smoke.test.ts
     title: CLI smoke tests
@@ -15,7 +12,6 @@ owa:
   implementation_status: implemented
   verification_status: verified
   evidence_ids: [OKF-EV-P04-CLI, OKF-EV-P07-INTERFACES, OKF-EV-P08-INTERFACES]
-  legacy_paths: [okf/knowledge/cli/README.md]
 ---
 
 # Command-Line Interface

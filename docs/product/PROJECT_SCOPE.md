@@ -4,9 +4,11 @@
 
 Product Phase 8 is verified. `FR-RENDER-001` and the bounded Phase 8 portion of `FR-RENDER-002` now have owned Playwright/Chromium lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML, optional screenshot, safe evidence, runtime-network authorization, and Browser/Page crash recovery under Lease/Fencing/Checkpoint ownership. Link discovery, production asset download, HTML rewrite, API capture, Worker Pool scheduling, authentication, and proxies remain planned. The exact next phase is **Product Phase 9 — Link Discovery and SPA Support**.
 
-**Project:** Offline Web Archive Builder  
-**Document status:** Proposed baseline  
-**Owner / decision authority:** Product Owner, except where another owner is named  
+**Project:** Offline Web Archive Builder
+
+**Document status:** Proposed baseline
+
+**Owner / decision authority:** Product Owner, except where another owner is named
 **Current product phase:** Product Phase 8 complete; Product Phase 9 — Link Discovery and SPA Support is next and not started
 **Last updated:** 2026-07-31
 
@@ -339,7 +341,7 @@ A Project archive succeeds only when:
 
 ### OKF maintainability and governance
 
-Canonical [`okf/`](../../okf/README.md) is the current structured knowledge
+Canonical [`okf/`](../../okf/index.md) is the current structured knowledge
 entry point. It complements these authoritative requirements rather than
 replacing them. The historical [OKF Bootstrap](../../okf-bootstrap/README.md)
 records the migration and activation path completed in Product Phase 3.

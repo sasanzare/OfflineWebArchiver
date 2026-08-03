@@ -5,9 +5,6 @@ description: Defines the active product security controls and known incomplete s
 tags: [security, browser, recovery, privacy]
 status: stable
 sources:
-  - id: security-legacy-knowledge
-    resource: okf/knowledge/security/README.md
-    title: Legacy Security knowledge
   - id: phase-eight-security-review
     resource: docs/architecture/PHASE_08_SECURITY_REVIEW.md
     title: Phase 8 security review
@@ -16,7 +13,6 @@ owa:
   implementation_status: partial
   verification_status: partial
   evidence_ids: [OKF-EV-P08-SECURITY, OKF-EV-P07-SECURITY]
-  legacy_paths: [okf/knowledge/security/README.md]
 ---
 
 # Security Boundaries

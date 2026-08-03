@@ -1,6 +1,6 @@
 # Recovery
 
-<!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
+<!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
 This directory contains the selected lease, fencing, and checkpoint recovery Concepts.
 

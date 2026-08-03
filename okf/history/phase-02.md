@@ -5,9 +5,6 @@ description: Records the bounded technical feasibility spike and its development
 tags: [history, phase-record, feasibility]
 status: stable
 sources:
-  - id: phase-02-legacy-record
-    resource: okf/phases/phase-02/PHASE_02_RECORD.md
-    title: Legacy Product Phase 2 record
   - id: phase-02-report
     resource: docs/project/PHASE_02_FEASIBILITY_REPORT.md
     title: Product Phase 2 feasibility report
@@ -21,7 +18,6 @@ owa:
   verification_status: verified
   evidence_ids: [OKF-EV-P02-RECORD, OKF-EV-P02-SPIKE]
   legacy_ids: [OKF-PHASE-002]
-  legacy_paths: [okf/phases/phase-02/PHASE_02_RECORD.md]
 ---
 
 # Product Phase 2 Record

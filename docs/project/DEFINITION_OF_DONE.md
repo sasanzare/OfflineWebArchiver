@@ -10,9 +10,11 @@ Product Phase 6 is done only when Page Job identity and database uniqueness, sch
 
 Product Phase 5 remains a completed inherited gate: Site Profile revisions, Scope Engine identity/policy, migration 003, contract 1.2.0, and no-network evidence must continue passing.
 
-**Document status:** Proposed baseline  
-**Owner / approval authority:** Product Owner and QA Lead; Security Owner for security gates  
-**Applies to:** every phase, feature, defect fix, release artifact, and Project-format change  
+**Document status:** Proposed baseline
+
+**Owner / approval authority:** Product Owner and QA Lead; Security Owner for security gates
+
+**Applies to:** every phase, feature, defect fix, release artifact, and Project-format change
 **Last updated:** 2026-07-31
 
 “Done” means the change is reviewable, traceable, tested in proportion to its
@@ -127,11 +129,11 @@ exception that does not waive a critical safety/security requirement. The
 ## OKF Synchronization
 
 Every Product Phase 2–25 and material intervening change must follow the current
-[canonical OKF entry point](../../okf/README.md) and the preserved
+[canonical OKF entry point](../../okf/index.md) and the preserved
 [OKF Phase Evolution Contract](../../okf-bootstrap/PHASE_EVOLUTION_CONTRACT.md).
 A future phase is not complete until:
 
-- [ ] The current canonical [`okf/README.md`](../../okf/README.md) has been read;
+- [ ] The current canonical [`okf/index.md`](../../okf/index.md) has been read;
       bootstrap is consulted only for retained history and unresolved decisions.
 - [ ] OKF impact has been assessed before editing and changed knowledge domains,
       owners, consumers, requirements, acceptance, risks, and decisions have been

@@ -6,11 +6,11 @@
 
 **Product phase:** Product Phase 8 — Browser Lifecycle and Rendering Engine (`complete`)
 
-**OKF phase:** synchronized through Product Phase 8 (`verified`)
+**OKF migration:** Phase 8 final audit and cleanup (`complete_with_accepted_exceptions`)
 
 **Next product phase:** Product Phase 9 — Link Discovery and SPA Support (`not started`)
 
-**Last updated:** 2026-08-01
+**Last updated:** 2026-08-03
 
 ## Product Phase 8 result
 
@@ -41,9 +41,17 @@ ADRs 041–048 are Accepted; AC-P08-001–017 have direct evidence. The Phase 2 
 
 **Product Phase 9 — Link Discovery and SPA Support.** It must extract only from the final rendered DOM and bounded client-side route observations, evaluate every candidate through the Phase 5 Scope Engine, enqueue accepted URLs through the Phase 6 Queue, preserve Phase 7 Lease/Recovery invariants, and reuse the Phase 8 Browser/Rendering interfaces without starting Phase 10 human-paced interaction.
 
+## OKF migration closure
+
+The independent migration audit classified all 76 final artifacts, removed 58 obsolete compatibility Markdown paths, preserved 54 evidence records and 61 typed relationships, and reconciled all 40 official Concepts. Official Google OKF v0.2 validation, OfflineWebArchiver metadata policy, extension integrity, knowledge quality, formatting, focused validator tests, and repository tests pass locally.
+
+The only accepted exceptions are administrative: no hosted GitHub Actions run or branch-protection configuration was available as local evidence. Require `OKF Validation / OKF validation and quality gates` in branch protection and verify the next hosted run before reporting either control as verified. Use the [final maintainer handoff](docs/okf-migration/FINAL_MAINTAINER_HANDOFF.md) for routine knowledge work.
+
 ## References
 
 - [Phase 8 implementation report](docs/project/PHASE_08_IMPLEMENTATION_REPORT.md)
-- [Phase 8 canonical record](okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md)
+- [Phase 8 canonical record](okf/history/phase-08.md)
 - [Browser Runtime](docs/architecture/BROWSER_RUNTIME.md)
 - [Phase 8 security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
+- [Final OKF conformance report](docs/okf-migration/FINAL_OKF_CONFORMANCE_REPORT.md)
+- [Final OKF maintainer handoff](docs/okf-migration/FINAL_MAINTAINER_HANDOFF.md)

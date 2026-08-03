@@ -5,9 +5,6 @@ description: Defines the safe policy for resuming, restarting, discarding, and c
 tags: [recovery, files, range-requests, downloads]
 status: stable
 sources:
-  - id: partial-files-legacy-knowledge
-    resource: okf/knowledge/partial-files/README.md
-    title: Legacy Partial Files knowledge
   - id: partial-file-evidence
     resource: tests/integration/partial-file-recovery.test.ts
     title: Partial file recovery tests
@@ -15,7 +12,6 @@ owa:
   implementation_status: partial
   verification_status: partial
   evidence_ids: [OKF-EV-P07-RANGE]
-  legacy_paths: [okf/knowledge/partial-files/README.md]
 ---
 
 # Partial File Recovery

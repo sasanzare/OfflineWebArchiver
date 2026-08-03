@@ -2,7 +2,7 @@
 
 ## Purpose and Authority
 
-This document freezes the Phase 3 producer contract for future Concepts. The Phase 2 design named `okf/bundle/`; `OKF-P4-A001` records that the Phase 4 production slice is realized at `okf/` because its execution contract requires `okf/index.md`. The field, lifecycle, actor, source, evidence, and reserved-file rules remain unchanged. Phase 3 itself created no production Concept, index, log, parser, or validator integration.
+This document records the final producer contract for Concepts under the realized `okf/` root. Early references to a proposed `okf/bundle/` root are historical and are superseded by the Phase 4 root decision and Phase 8 closure. The production implementation uses the pinned YAML 1.2 parser and layered validator under `tools/okf/`.
 
 Rules are labeled by validation layer:
 
@@ -41,7 +41,7 @@ Every approved top-level field has one primary contract category.
 | `sources` | `REPOSITORY_CONDITIONAL` | Optional provenance family | Required when content derives from identifiable sources and for specified Concept types |
 | `usage_window` | `OFFICIAL_OPTIONAL` | Optional provenance signal | Shared time window for source usage counts |
 | `stale_after` | `REPOSITORY_CONDITIONAL` | Optional lifecycle/freshness family | Required for volatile operational/security knowledge selected by policy |
-| `owa` | `PROJECT_EXTENSION` | Producer-defined extension | Minimal project state, traceability, and legacy bridge |
+| `owa` | `PROJECT_EXTENSION` | Producer-defined extension | Minimal project state and stable traceability identifiers |
 | `okf_version` | `RESERVED_FILE_ONLY` | Root index only | Exactly `"0.2"` in root `index.md` |
 | `timestamp` | `DEPRECATED_LEGACY` | v0.1 fallback | Never produced; migrate to `generated.at` only when it truly represented content generation |
 
@@ -54,15 +54,15 @@ Nested record fields inherit the category of their parent except official requir
 | Normal authored Concept | `type`, `title`, `description`, `status` | `tags`, `verified`, `sources`, `stale_after`, `owa` as applicable | No `generated` for human-owned editing |
 | Generated Concept | Normal fields plus `generated.by` and `generated.at` | `sources` normally required; `verified` independent | Body is not manually edited |
 | Reference Concept | Normal fields | `resource` required when mirroring one underlying asset; `sources` required when derived | May be generated only for an explicitly reproducible mirror |
-| Historical Phase Record | Normal fields; `type: Phase Record` | `sources` required; `owa.legacy_ids/paths` during migration | No `stale_after`; historical correction uses an amendment |
+| Historical Phase Record | Normal fields; `type: Phase Record` | `sources` required; `owa.legacy_ids` when a stable registry identity is retained | No `stale_after`; historical correction uses an amendment |
 | Operational Runbook | Normal fields; `type: Operational Runbook` | `sources` and `stale_after` required; verification recommended | Freshness warning affects operator trust, not official conformance |
 | Security Control | Normal fields | `sources` and `stale_after` required; verification strongly recommended | Missing required repository metadata is a policy error |
 | Architecture Decision | Normal fields; `type: Architecture Decision` | `sources` required; `owa.decision_ids` required when bridging current IDs | Lifecycle is not ADR decision status |
 | Product Requirement | Normal fields; `type: Product Requirement` | `sources` required; `owa.requirement_ids` required for migrated requirements | Implementation state stays in `owa` |
-| Directory `index.md` | No frontmatter | Generated body marker | Reserved navigation file, not a Concept |
+| Directory `index.md` | No frontmatter | Maintained-navigation body marker | Reserved navigation file, not a Concept |
 | Root `index.md` | Only `okf_version: "0.2"` | No other frontmatter | Authored body and top-level navigation |
 | `log.md` | No frontmatter | Not used by this repository | If later adopted, body follows official date grouping |
-| Extension documentation | No official contract | Project documentation conventions | It is outside `okf/bundle/` and is not a Concept |
+| Extension documentation | No official contract | Project documentation conventions | It is under `okf/extensions/`, outside normal Concept classification |
 
 ## Canonical Field Order
 
@@ -114,7 +114,7 @@ The proposed producer schema is intentionally closed. That closure must never be
 
 ## Extension Policy
 
-All Concept-level project metadata is under the single `owa` mapping. Approved children are three independent project state fields, five traceability ID arrays, and two migration bridge arrays. Data stays in extension JSON instead of Concept frontmatter when it is generated registry synchronization, full relationship graphs, evidence methods/details, risk/decision bodies, or migration ledger state.
+All Concept-level project metadata is under the single `owa` mapping. Approved children are three independent project state fields and six ID arrays: requirements, acceptance criteria, decisions, risks, evidence, and stable legacy identities. The migration-only path bridge was retired in Phase 8. Full relationship graphs, evidence methods/details, risk/decision bodies, and migration ledger state remain in extension JSON rather than Concept frontmatter.
 
 Official consumers may ignore `owa`. Phase 6 extension validation treats unknown `owa` keys as errors and validates referenced IDs. The body must express any relationship needed for human understanding.
 
@@ -122,7 +122,7 @@ Official consumers may ignore `owa`. Phase 6 extension validation treats unknown
 
 Human-authored and human-owned AI-assisted Concepts omit `generated`; Git records editing history. A fully generated Concept carries `generated` and is regenerated, not manually patched. A materially transformed migration output carries a migration producer actor until a human takes ownership through substantive review; human verification does not erase its generation provenance.
 
-Reserved directory indexes cannot carry `generated` frontmatter. Their body begins with the generated-file marker specified in `AUTHORING_AND_GENERATION_POLICY.md`. The root index is authored.
+Reserved directory indexes cannot carry `generated` frontmatter. The final indexes are human-maintained navigation and use the marker specified in `AUTHORING_AND_GENERATION_POLICY.md`. The root index is also authored.
 
 ## Validation Layers and Severities
 
@@ -130,18 +130,18 @@ Reserved directory indexes cannot carry `generated` frontmatter. Their body begi
 |---|---|---|---|
 | Official conformance | No/malformed frontmatter; missing/empty `type`; invalid reserved-file structure | Optional-family semantic concern where official wording is `SHOULD` | Trust tier and staleness observations |
 | Repository policy | Missing title/description/status; unknown repository type; invalid canonical enum; local absolute resource | Missing recommended tags/verification; stale Concept | Noncanonical ordering/style |
-| Project extension | Invalid `owa` field/value; unresolved required traceability ID | Legacy ID retained longer than planned | Generated index coverage summary |
+| Project extension | Invalid `owa` field/value; unresolved required traceability ID | Stable legacy identity requiring review | Extension coverage summary |
 | Quality | Not applicable | Weak summary, old source, broken project link | Suggestions and derived trust tier |
 
 One finding has one primary layer. Aggregate commands preserve layer and severity rather than relabeling project policy as official failure.
 
 ## Compatibility Rules
 
-- Phase 4 creates only new target files; current 58 files stay unchanged.
-- Current uppercase status values are transformed according to `STATUS_AND_LIFECYCLE_MODEL.md`, never copied into official `status`.
-- Existing evidence IDs remain authored extension authority and may be referenced by `owa.evidence_ids`.
-- Legacy paths are repository-relative values in `owa.legacy_paths`; machine-local paths are rejected.
-- A target Concept becomes authoritative only at its recorded cutover.
+- The 58 transitional Markdown paths and every `owa.legacy_paths` entry were removed in Phase 8 after canonical cutover.
+- Historical uppercase status values were transformed according to `STATUS_AND_LIFECYCLE_MODEL.md`; they are never copied into official `status`.
+- Evidence IDs remain extension authority and may be referenced by `owa.evidence_ids`.
+- `owa.legacy_ids` may retain a stable registry identity; it is not a path or alternate authority.
+- Canonical Concept paths and the final source-of-truth map control all future renames.
 
 ## Contract Versioning and Change Control
 

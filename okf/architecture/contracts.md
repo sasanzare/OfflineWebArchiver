@@ -5,9 +5,6 @@ description: Defines the versioned command, result, event, and error boundary ac
 tags: [architecture, contracts, ipc, cli]
 status: stable
 sources:
-  - id: contracts-knowledge
-    resource: okf/knowledge/contracts/README.md
-    title: Legacy contracts knowledge
   - id: contracts-source
     resource: packages/contracts/src/index.ts
     title: Contracts production source
@@ -23,7 +20,6 @@ owa:
   risk_ids: [R-070, R-089, R-091]
   evidence_ids: [OKF-EV-P08-INTERFACES, OKF-EV-P06-DOMAIN]
   legacy_ids: [OKF-DOM-056]
-  legacy_paths: [okf/knowledge/contracts/README.md]
 ---
 
 # Contracts
