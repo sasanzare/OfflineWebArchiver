@@ -62,7 +62,7 @@ Nested record fields inherit the category of their parent except official requir
 | Directory `index.md` | No frontmatter | Maintained-navigation body marker | Reserved navigation file, not a Concept |
 | Root `index.md` | Only `okf_version: "0.2"` | No other frontmatter | Authored body and top-level navigation |
 | `log.md` | No frontmatter | Not used by this repository | If later adopted, body follows official date grouping |
-| Extension documentation | No official contract | Project documentation conventions | It is under `okf/extensions/`, outside normal Concept classification |
+| Extension documentation | No official contract | Project documentation conventions | It is under `okf-extension/`, outside normal Concept classification |
 
 ## Canonical Field Order
 

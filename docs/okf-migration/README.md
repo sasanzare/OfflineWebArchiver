@@ -13,7 +13,7 @@ The eight-phase migration from OfflineWebArchiver's custom Organizational Knowle
 - Hosted CI and branch protection: explicitly unverified from the local repository
 - Migration program: complete with accepted administrative exceptions
 
-The official bundle starts at [`okf/index.md`](../../okf/index.md). Project-specific semantics are documented at [`okf/extensions/README.md`](../../okf/extensions/README.md). The [final source-of-truth map](SOURCE_OF_TRUTH_MAP.md) explains the authority boundary.
+The official bundle starts at [`okf/index.md`](../../okf/index.md). Project-specific semantics are documented at [`okf-extension/README.md`](../../okf-extension/README.md). The [final source-of-truth map](SOURCE_OF_TRUTH_MAP.md) explains the authority boundary.
 
 ## Maintainer commands
 

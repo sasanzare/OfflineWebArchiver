@@ -6,7 +6,7 @@ The production layered validator now covers official frontmatter and reserved fi
 
 ## Current Validator
 
-Entry points are `npm run okf:validate` and `npm run okf:migrate` in `package.json`. `tools/okf/validate.mjs` recursively parses JSON under `okf/`, reads `okf/manifest.json`, then loads eight named registries: domains, nodes, evidence, relationships, phases, decisions, risks, and changes.
+Entry points are `npm run okf:validate` and `npm run okf:migrate` in `package.json`. `tools/okf/validate.mjs` recursively parses JSON under `okf/`, reads `okf-extension/manifest.json`, then loads eight named registries: domains, nodes, evidence, relationships, phases, decisions, risks, and changes.
 
 Confirmed checks include JSON parseability, custom manifest fields, custom status membership, registry item shape, globally unique IDs, safe existing repository paths, mapping IDs against selected Markdown authorities, verified-node evidence links, relationship endpoints, phase numbers, required phase/change records, and selected critical requirement coverage. Errors are collected and produce exit code `1`; unknown suite/input selection produces exit code `2` in the test runner. The validator emits no warning channel and never repairs records.
 
@@ -43,4 +43,4 @@ The two validators should report separately and may share parsing utilities only
 
 ## False-Positive and Compatibility Risks
 
-The present validator would falsely reject official unknown frontmatter if it were extended with its closed JSON-schema mentality. Conversely, an official-only validator would miss orphaned project requirements and evidence mappings. Existing `okf/validation/schemas/manifest.schema.json` has a stale phase constant and is not invoked by the current Node validator; Phase 6 must distinguish that custom defect from official conformance.
+The present validator would falsely reject official unknown frontmatter if it were extended with its closed JSON-schema mentality. Conversely, an official-only validator would miss orphaned project requirements and evidence mappings. Existing `okf-extension/validation/schemas/manifest.schema.json` has a stale phase constant and is not invoked by the current Node validator; Phase 6 must distinguish that custom defect from official conformance.

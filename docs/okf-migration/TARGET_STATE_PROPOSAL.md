@@ -2,6 +2,10 @@
 
 > Approved Phase 2 design, not an implemented structure. `TARGET_BUNDLE_ARCHITECTURE.md` is the detailed architecture contract.
 
+> Superseded by Phase 1: use `okf/` for the official bundle and
+> `okf-extension/` for OfflineWebArchiver-specific extensions. The proposal
+> below is retained as historical design evidence.
+
 ## Final Boundary
 
 ```text

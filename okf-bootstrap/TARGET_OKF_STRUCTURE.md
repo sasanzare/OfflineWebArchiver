@@ -11,6 +11,10 @@ a schema, choose tooling, or prove architecture. Product Phase 3 must adjust the
 layout to actual packages, layer contracts, and accepted decisions while
 preserving bootstrap identifiers and history.
 
+Phase 1 later established the implemented physical boundary: `okf/` is the
+official bundle and `okf-extension/` contains project-specific extensions. The
+paths in this bootstrap proposal remain historical planning material.
+
 ## Proposed tree
 
 ```text

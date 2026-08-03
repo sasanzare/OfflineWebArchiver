@@ -20,7 +20,7 @@ The migration from OfflineWebArchiver's custom Organizational Knowledge Framewor
 - `okf/index.md` is the Google OKF v0.2 root.
 - Forty human-authored Concepts live in nine subject directories.
 - One root and nine maintained directory indexes provide progressive disclosure.
-- Fifteen project-specific Markdown documents live under `okf/extensions/`.
+- Fifteen project-specific Markdown documents live under `okf-extension/`.
 - One manifest, eight registries, and two production schemas retain project-specific semantics.
 - The layered validator reports official, policy, extension, quality, and format results separately.
 - `.github/workflows/okf-validation.yml` enforces the blocking local gates and emits JSON.

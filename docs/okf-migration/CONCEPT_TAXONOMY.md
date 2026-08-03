@@ -176,7 +176,7 @@ Phase 3 has now frozen that serialization: values use the exact capitalization b
 - **Exclusion criteria:** Tool-specific implementation details, generated reports, test plans, or general architecture.
 - **Expected content:** Policy scope, normative rules, exceptions, enforcement boundary, ownership, and verification.
 - **Typical relationships:** Links to Test Strategy, Operational Runbooks, References, and extension validation policy.
-- **Existing repository examples:** No current `okf/knowledge/` file maps directly; future official quality policy may summarize approved portions of `okf/validation/rules/SEMANTIC_RULES.md` without absorbing project-only rules.
+- **Existing repository examples:** No current `okf/knowledge/` file maps directly; future official quality policy may summarize approved portions of `okf-extension/validation/rules/semantic-rules.md` without absorbing project-only rules.
 - **Target location:** `bundle/testing/` or the subject directory governed by the policy.
 - **Authored/generated policy:** Human-authored only.
 - **Common classification mistakes:** Promoting every validator implementation rule to an official Quality Policy.

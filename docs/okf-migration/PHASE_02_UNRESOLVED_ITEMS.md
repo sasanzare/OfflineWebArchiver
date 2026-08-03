@@ -6,7 +6,7 @@ No material architecture, taxonomy, path, preservation, or compatibility questio
 
 The repository evidence was sufficient to choose:
 
-- `okf/bundle/` as the official root and `okf/extensions/` as its sibling extension root;
+- `okf/bundle/` as the official root and `okf-extension/` as its sibling extension root;
 - a 14-type taxonomy;
 - no official `log.md`;
 - authored official Concepts with generated extension indexes;

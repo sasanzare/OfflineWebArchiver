@@ -35,10 +35,6 @@ export async function discoverOkf(root) {
       if (relativePath === "okf/index.md") kind = "root-index";
       else if (relativePath.endsWith("/index.md")) kind = "directory-index";
       else if (relativePath.endsWith("/log.md")) kind = "log";
-      else if (relativePath === "okf/manifest.json") kind = "manifest";
-      else if (/^okf\/registry\/[^/]+\.json$/.test(relativePath)) kind = "registry";
-      else if (/^okf\/validation\/schemas\/[^/]+\.json$/.test(relativePath)) kind = "schema";
-      else if (relativePath.startsWith("okf/extensions/")) kind = "extension-documentation";
       else if (text?.includes("Transitional Legacy Artifact")) kind = "transitional-legacy";
       else if (text !== undefined && hasFrontmatter(text)) kind = "concept";
     }

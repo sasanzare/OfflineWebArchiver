@@ -18,8 +18,10 @@ This root index is the progressive-disclosure entry point for the repository's G
 - [Testing](testing/index.md)
 - [History](history/index.md)
 
-## Extensions and maintenance
+## Scope
 
-Project-specific registries, evidence, maps, and validation artifacts are documented under [OfflineWebArchiver Extensions](extensions/README.md). They are validated separately from official OKF conformance. The migration is closed; historical migration reports remain under `docs/okf-migration/`, while the 58 obsolete compatibility paths were removed in Phase 8.
+This directory is the official Google OKF v0.2 bundle. OfflineWebArchiver-specific
+registries, evidence, maps, reports, and validation artifacts live outside this
+bundle under `okf-extension/` and are validated separately.
 
 The official `log.md` is intentionally omitted. Phase Records provide durable historical context, while Git records file evolution.

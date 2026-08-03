@@ -80,7 +80,7 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 
 ## Open Knowledge Format
 
-The canonical knowledge bundle follows Google Open Knowledge Format v0.2 and starts at [`okf/index.md`](okf/index.md). OfflineWebArchiver-specific metadata, typed relationships, evidence IDs, registries, and schemas are a separately validated extension layer documented at [`okf/extensions/README.md`](okf/extensions/README.md).
+The canonical knowledge bundle follows Google Open Knowledge Format v0.2 and starts at [`okf/index.md`](okf/index.md). OfflineWebArchiver-specific metadata, typed relationships, evidence IDs, registries, and schemas are a separately validated extension layer documented at [`okf-extension/README.md`](okf-extension/README.md).
 
 To add or edit knowledge, choose an approved Concept type and stable subject path, use the metadata contract, add portable `sources` and meaningful Markdown links, update the directory index and affected extension mappings, then run:
 

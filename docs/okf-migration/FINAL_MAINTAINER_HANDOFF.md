@@ -7,9 +7,9 @@ Last updated: 2026-08-03
 | Purpose | Path |
 |---|---|
 | Official bundle and navigation | `okf/index.md` and nine subject directories |
-| Project extension contract | `okf/extensions/README.md` |
-| Extension manifest and registries | `okf/manifest.json`, `okf/registry/*.json` |
-| Production schemas | `okf/validation/schemas/*.json` |
+| Project extension contract | `okf-extension/README.md` |
+| Extension manifest and registries | `okf-extension/manifest.json`, `okf-extension/registry/*.json` |
+| Production schemas | `okf-extension/validation/schemas/*.json` |
 | Validator | `tools/okf/` |
 | Focused tests | `tests/okf/` and `tests/fixtures/okf/` |
 | CI workflow | `.github/workflows/okf-validation.yml` |

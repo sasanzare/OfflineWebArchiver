@@ -59,8 +59,8 @@ The following list is the complete deferred set from `CONTENT_MIGRATION_MAP.md`.
 | Source | Proposed disposition |
 |---|---|
 | `okf/README.md` | Extension boundary and consumer README |
-| `okf/validation/reports/PHASE_03_OKF_MIGRATION_REPORT.md` | Extension validation report |
-| `okf/validation/rules/SEMANTIC_RULES.md` | Extension validation policy |
+| `okf-extension/validation/reports/phase-03-migration-report.md` | Extension validation report |
+| `okf-extension/validation/rules/semantic-rules.md` | Extension validation policy |
 
 ## Required Phase 5 work
 
@@ -89,4 +89,3 @@ The following list is the complete deferred set from `CONTENT_MIGRATION_MAP.md`.
 ## Phase 5 non-goals
 
 Do not redesign the 14-type taxonomy, metadata contract, status model, actor syntax, source model, or relationship representation. Do not introduce a new official log, delete registries, change application code, or claim conformance based only on the existence of the Phase 4 core.
-

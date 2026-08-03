@@ -5,8 +5,8 @@ Audit date: 2026-08-03
 ## Physical boundary
 
 - `okf/index.md` and normal Concepts in the nine subject directories form the official Google OKF v0.2 Markdown bundle.
-- `okf/extensions/` contains project-specific explanatory and historical Markdown. It is deliberately excluded from normal Concept classification.
-- `okf/manifest.json`, `okf/registry/*.json`, and `okf/validation/schemas/*.json` form the OfflineWebArchiver extension data layer.
+- `okf-extension/` contains project-specific explanatory and historical Markdown. It is deliberately excluded from normal Concept classification.
+- `okf-extension/manifest.json`, `okf-extension/registry/*.json`, and `okf-extension/validation/schemas/*.json` form the OfflineWebArchiver extension data layer.
 - `docs/okf-migration/` and `okf-bootstrap/` are migration history and bootstrap reference, outside the production bundle.
 
 ## Dependency direction

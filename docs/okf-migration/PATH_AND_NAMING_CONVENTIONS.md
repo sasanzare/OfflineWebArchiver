@@ -2,7 +2,7 @@
 
 ## Scope
 
-These rules govern future files in the official `okf/bundle/` tree and the project-specific `okf/extensions/` tree. They freeze path design for Phase 3 and later migration. They do not rename current files.
+These rules govern future files in the official `okf/bundle/` tree and the project-specific `okf-extension/` tree. They freeze path design for Phase 3 and later migration. They do not rename current files.
 
 ## Normative Rules
 
@@ -58,7 +58,7 @@ Invalid: `bundle/references/misc.md`
 
 ## Extension Paths
 
-Extension paths begin at `okf/extensions/` and use a family directory: `registry/`, `evidence/`, `maps/`, `reports/`, `validation/`, `generated/`, or `compatibility/`. They never masquerade as official Concept paths.
+Extension paths begin at `okf-extension/` and use a family directory: `registry/`, `evidence/`, `maps/`, `reports/`, `validation/`, `generated/`, or `compatibility/`. They never masquerade as official Concept paths.
 
 JSON filenames are lowercase kebab-case. Existing stable plural registry names are retained (`domains.json`, `nodes.json`, `relationships.json`). Generated reports may include a stable report name, but date-stamped outputs belong outside versioned authoritative paths unless they are intentionally immutable audit records.
 

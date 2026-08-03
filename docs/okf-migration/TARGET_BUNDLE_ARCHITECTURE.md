@@ -6,9 +6,13 @@ The Phase 2 design below remains the historical target-state proposal. `OKF-P4-A
 
 > Phase 2 design only. None of the paths below is created or activated by this phase.
 
+> Superseded by Phase 1: the implemented official bundle root is `okf/`, and
+> the implemented project extension root is `okf-extension/`. The proposed
+> `okf/bundle/` examples below are retained as historical design evidence only.
+
 ## Executive Summary
 
-The final design makes `okf/bundle/` the root of the official Google Open Knowledge Format v0.2 bundle and keeps every OfflineWebArchiver-specific artifact in the sibling `okf/extensions/` tree. This physical boundary prevents private JSON contracts and extension documentation from becoming accidental official Concepts. Official authored Concepts remain understandable as Markdown without loading a registry. Extension indexes may be generated from the Concepts, never the reverse.
+The final design makes `okf/bundle/` the root of the official Google Open Knowledge Format v0.2 bundle and keeps every OfflineWebArchiver-specific artifact in the sibling `okf-extension/` tree. This physical boundary prevents private JSON contracts and extension documentation from becoming accidental official Concepts. Official authored Concepts remain understandable as Markdown without loading a registry. Extension indexes may be generated from the Concepts, never the reverse.
 
 The hierarchy is intentionally shallow. Stable subject areas contain Concepts directly, while `history/` is the only phase-numbered area because phase identity is intrinsic to historical records. The design omits an official `log.md`: Git history and dedicated Phase Record Concepts already provide change history without maintaining a second chronology.
 
@@ -171,7 +175,7 @@ okf/
 | `bundle/testing/` | Test and quality strategy | Individual generated test results | Authored; derived results stay in extensions | Index required | 5 |
 | `bundle/history/` | Historical Phase Record Concepts | Current product requirements or live operational status | Authored historical records | Index required and generated | 4-5 |
 | `bundle/references/` | Curated reference entries or source mirrors needed to understand Concepts | Registries, reports, arbitrary attachments | Authored unless a source mirror is explicitly generated | Index required before references are added | 5 |
-| `okf/extensions/` | Project-specific machine data, evidence guides, maps, schemas, reports, and compatibility artifacts | Official Concepts presented as extension authorities | Mixed; every family is classified in `EXTENSION_BOUNDARY.md` | Its README is not an official reserved index | 5-6 |
+| `okf-extension/` | Project-specific machine data, evidence guides, maps, schemas, reports, and compatibility artifacts | Official Concepts presented as extension authorities | Mixed; every family is classified in `EXTENSION_BOUNDARY.md` | Its README is not an official reserved index | 5-6 |
 | `extensions/generated/` | Reproducible, disposable generated outputs | Hand-authored facts | Generated and non-authoritative | None | 6 |
 | `extensions/compatibility/` | Temporary mappings for legacy paths and consumers | Permanent Concept identity | Generated from migration decisions | None | 5-8 |
 | `okf/legacy/` | Optional retained pre-cutover artifacts | New knowledge or long-term authority | Migration-only, read-only | No official index | 5-8 |
@@ -186,7 +190,7 @@ Non-Markdown attachments may be linked when justified, but extension registries 
 
 ## Extension-Layer Boundary
 
-The sibling `okf/extensions/` subtree is explicitly outside the official bundle root. It may contain Markdown documentation, JSON, schemas, generated data, and reports governed by project rules. Those Markdown files are not official Concepts because they are outside `okf/bundle/`. Extension validation may require stricter link, evidence, path, and traceability rules than the official specification.
+The sibling `okf-extension/` subtree is explicitly outside the official bundle root. It may contain Markdown documentation, JSON, schemas, generated data, and reports governed by project rules. Those Markdown files are not official Concepts because they are outside `okf/bundle/`. Extension validation may require stricter link, evidence, path, and traceability rules than the official specification.
 
 The boundary is semantic as well as physical: an official Concept may link to an extension artifact as evidence, but its meaning cannot depend on private fields in that artifact. Extension artifacts may index or validate official Concepts by stable path.
 

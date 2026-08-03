@@ -200,14 +200,11 @@ test("production discovery reconciles every retained artifact with no unknowns",
   const expected = new Map([
     ["concept", 40],
     ["directory-index", 9],
-    ["extension-documentation", 15],
-    ["manifest", 1],
-    ["registry", 8],
     ["root-index", 1],
-    ["schema", 2],
   ]);
-  assert.equal(items.length, 76);
+  assert.equal(items.length, 50);
   for (const [kind, count] of expected) assert.equal(counts.get(kind), count, kind);
+  assert.equal(items.some((item) => item.path.startsWith("okf-extension/")), false);
   assert.ok(items.every((item) => !["unknown-markdown", "unknown-artifact", "unsafe-symlink", "transitional-legacy"].includes(item.kind)));
 });
 

@@ -62,24 +62,24 @@ This inventory is based on recursive content inspection. “Authored” means re
 | `okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md` | Markdown | Phase record | Authored | Narrative record | Registry/docs validator | Log/reference | Medium | Required by docs validator. |
 | `okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md` | Markdown | Phase record | Authored | Narrative record | Registry/docs validator | Log/reference | Medium | Required by docs validator. |
 | `okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md` | Markdown | Phase record | Authored | Narrative record | Registry/docs validator | Log/reference | Medium | Required by docs validator. |
-| `okf/validation/reports/PHASE_03_OKF_MIGRATION_REPORT.md` | Markdown | Historical migration report | Authored | Historical evidence | `tools/okf/validate.mjs` | Legacy artifact | High | Required by current validator; preserve. |
-| `okf/validation/rules/SEMANTIC_RULES.md` | Markdown | Custom validator policy | Authored | Reference-only | Humans | Validator policy | High | Describes custom behavior, not official conformance. |
+| `okf-extension/validation/reports/phase-03-migration-report.md` | Markdown | Historical migration report | Authored | Historical evidence | `tools/okf/validate.mjs` | Legacy artifact | High | Required by current validator; preserve. |
+| `okf-extension/validation/rules/semantic-rules.md` | Markdown | Custom validator policy | Authored | Reference-only | Humans | Validator policy | High | Describes custom behavior, not official conformance. |
 
 ## Active Custom JSON and Tooling
 
 | Path | Format | Role | Authored or generated | Current source-of-truth status | Consumers | Migration classification | Risk | Notes |
 |---|---|---|---|---|---|---|---|---|
-| `okf/manifest.json` | JSON | Custom manifest | Authored | Machine authority | `validate.mjs`, `migrate.mjs`, humans | Manifest / project extension | High | Selects registries; not official `okf_version`. |
-| `okf/registry/domains.json` | JSON | Domain registry | Authored | Machine authority | validator/maps | Registry | High | 35 items. |
-| `okf/registry/nodes.json` | JSON | Knowledge-node registry | Authored | Machine authority | validator | Registry | High | 32 items; verified evidence policy. |
-| `okf/registry/evidence.json` | JSON | Evidence registry | Authored | Machine authority | validator | Evidence / registry | High | 54 repository-path records. |
-| `okf/registry/relationships.json` | JSON | Relationship registry | Authored | Machine authority | validator/maps | Registry | High | 61 typed edges. |
-| `okf/registry/phases.json` | JSON | Phase registry | Authored | Machine authority | validator | Registry | High | 8 phase records. |
-| `okf/registry/decisions.json` | JSON | Decision registry | Authored | Machine authority | validator | Registry | High | 101 items. |
-| `okf/registry/risks.json` | JSON | Risk registry | Authored | Machine authority | validator | Registry | High | 102 items. |
-| `okf/registry/changes.json` | JSON | Change registry | Authored | Machine authority | validator | Registry | High | 6 items. |
-| `okf/validation/schemas/manifest.schema.json` | JSON Schema | Custom schema | Authored | Reference-only | Future/manual consumers | Schema | High | Stale phase-7 constant; not called by Node validator. |
-| `okf/validation/schemas/registry.schema.json` | JSON Schema | Custom schema | Authored | Reference-only | Future/manual consumers | Schema | Medium | Closed custom extension schema. |
+| `okf-extension/manifest.json` | JSON | Custom manifest | Authored | Machine authority | `validate.mjs`, `migrate.mjs`, humans | Manifest / project extension | High | Selects registries; not official `okf_version`. |
+| `okf-extension/registry/domains.json` | JSON | Domain registry | Authored | Machine authority | validator/maps | Registry | High | 35 items. |
+| `okf-extension/registry/nodes.json` | JSON | Knowledge-node registry | Authored | Machine authority | validator | Registry | High | 32 items; verified evidence policy. |
+| `okf-extension/registry/evidence.json` | JSON | Evidence registry | Authored | Machine authority | validator | Evidence / registry | High | 54 repository-path records. |
+| `okf-extension/registry/relationships.json` | JSON | Relationship registry | Authored | Machine authority | validator/maps | Registry | High | 61 typed edges. |
+| `okf-extension/registry/phases.json` | JSON | Phase registry | Authored | Machine authority | validator | Registry | High | 8 phase records. |
+| `okf-extension/registry/decisions.json` | JSON | Decision registry | Authored | Machine authority | validator | Registry | High | 101 items. |
+| `okf-extension/registry/risks.json` | JSON | Risk registry | Authored | Machine authority | validator | Registry | High | 102 items. |
+| `okf-extension/registry/changes.json` | JSON | Change registry | Authored | Machine authority | validator | Registry | High | 6 items. |
+| `okf-extension/validation/schemas/manifest.schema.json` | JSON Schema | Custom schema | Authored | Reference-only | Future/manual consumers | Schema | High | Stale phase-7 constant; not called by Node validator. |
+| `okf-extension/validation/schemas/registry.schema.json` | JSON Schema | Custom schema | Authored | Reference-only | Future/manual consumers | Schema | Medium | Closed custom extension schema. |
 | `tools/okf/validate.mjs` | JavaScript | Custom validator | Authored | Executable authority | npm/test/migrate | Validator | Critical | Preserve behavior until dual validator is verified. |
 | `tools/okf/migrate.mjs` | JavaScript | Prerequisite verifier | Authored | Executable authority | npm/test | Generator/validator bridge | High | Does not transform files. |
 | `tests/okf/validator.test.ts` | TypeScript | Validator tests | Authored | Test evidence | `npm test` | CI integration candidate | High | Covers negative policy probes. |

@@ -18,21 +18,21 @@ Independent disk enumeration was reconciled with validator discovery. Every reta
 | `okf/data/persistence.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/data/project-format.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/data/render-results.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
-| `okf/extensions/evidence/builds.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/evidence/decisions.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/evidence/runtime.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/evidence/source.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/evidence/tests.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/maps/dependencies.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/maps/domains.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/maps/system.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/maps/traceability.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/README.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/reports/decisions.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/reports/evidence.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/reports/risks.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/validation/reports/phase-03-migration-report.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
-| `okf/extensions/validation/rules/semantic-rules.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/evidence/builds.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/evidence/decisions.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/evidence/runtime.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/evidence/source.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/evidence/tests.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/maps/dependencies.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/maps/domains.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/maps/system.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/maps/traceability.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/README.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/reports/decisions.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/reports/evidence.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/reports/risks.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/validation/reports/phase-03-migration-report.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
+| `okf-extension/validation/rules/semantic-rules.md` | `.md` | Extension documentation | Project-specific explanatory or historical view; retain |
 | `okf/history/index.md` | `.md` | Directory index | Navigation authority; retain |
 | `okf/history/phase-01.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/history/phase-02.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
@@ -43,7 +43,7 @@ Independent disk enumeration was reconciled with validator discovery. Every reta
 | `okf/history/phase-07.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/history/phase-08.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/index.md` | `.md` | Root index | Navigation authority; retain |
-| `okf/manifest.json` | `.json` | Manifest | Authored extension configuration; retain |
+| `okf-extension/manifest.json` | `.json` | Manifest | Authored extension configuration; retain |
 | `okf/operations/index.md` | `.md` | Directory index | Navigation authority; retain |
 | `okf/operations/migration.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/operations/observability.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
@@ -60,21 +60,21 @@ Independent disk enumeration was reconciled with validator discovery. Every reta
 | `okf/recovery/partial-files.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/recovery/pause-resume.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/recovery/run-control.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
-| `okf/registry/changes.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/decisions.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/domains.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/evidence.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/nodes.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/phases.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/relationships.json` | `.json` | Registry | Authored or derived extension data; retain |
-| `okf/registry/risks.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/changes.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/decisions.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/domains.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/evidence.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/nodes.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/phases.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/relationships.json` | `.json` | Registry | Authored or derived extension data; retain |
+| `okf-extension/registry/risks.json` | `.json` | Registry | Authored or derived extension data; retain |
 | `okf/security/index.md` | `.md` | Directory index | Navigation authority; retain |
 | `okf/security/runtime-network.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/security/security-boundaries.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/testing/index.md` | `.md` | Directory index | Navigation authority; retain |
 | `okf/testing/test-strategy.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
-| `okf/validation/schemas/manifest.schema.json` | `.json` | Schema | Authored extension validation schema; retain |
-| `okf/validation/schemas/registry.schema.json` | `.json` | Schema | Authored extension validation schema; retain |
+| `okf-extension/validation/schemas/manifest.schema.json` | `.json` | Schema | Authored extension validation schema; retain |
+| `okf-extension/validation/schemas/registry.schema.json` | `.json` | Schema | Authored extension validation schema; retain |
 | `okf/workflow/index.md` | `.md` | Directory index | Navigation authority; retain |
 | `okf/workflow/job-attempts.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |
 | `okf/workflow/job-state-machine.md` | `.md` | Normal official Concept | Authoritative human-readable knowledge; retain |

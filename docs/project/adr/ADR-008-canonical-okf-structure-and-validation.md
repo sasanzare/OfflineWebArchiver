@@ -38,7 +38,7 @@ Phases 1–2 are migrated without changing authority; Phase 3 creates the first 
 
 ## Evidence
 
-`okf/manifest.json`, eight registries, schemas/rules/reports, phase records, migration and validation commands.
+`okf-extension/manifest.json`, eight registries, schemas/rules/reports, phase records, migration and validation commands.
 
 ## Phase Impact
 

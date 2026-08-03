@@ -20,7 +20,7 @@ The official specification permits a root `index.md` at the chosen bundle root, 
 
 - **Status:** ACCEPTED
 - **Context:** Every non-reserved Markdown file inside an official bundle is a Concept, while the repository has private Markdown, JSON registries, schemas, and reports.
-- **Decision:** Define `okf/bundle/` as the official root and `okf/extensions/` as a sibling outside that root.
+- **Decision:** Define `okf/bundle/` as the official root and `okf-extension/` as a sibling outside that root.
 - **Alternatives considered:** Use `okf/` as the official root with an extension subtree; store extensions outside `okf/`; encode extensions in frontmatter.
 - **Rationale:** A sibling boundary is easy for people and tools to identify, keeps related assets under `okf/`, and prevents extension Markdown from becoming accidental Concepts.
 - **Consequences:** Validator commands must declare `okf/bundle/` as their root. Current paths need a compatibility bridge.

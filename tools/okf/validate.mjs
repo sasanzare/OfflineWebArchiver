@@ -107,7 +107,7 @@ function resolvePointer(document, fragment) {
 }
 
 async function validateSchemas(root, errors) {
-  const directories = [path.join(root, "okf", "validation", "schemas"), path.join(root, "docs", "okf-migration", "schema")];
+  const directories = [path.join(root, "okf-extension", "validation", "schemas"), path.join(root, "docs", "okf-migration", "schema")];
   const documents = new Map();
   const ids = new Map();
   for (const directory of directories) for (const file of await jsonFiles(directory)) {
@@ -162,59 +162,60 @@ function verifiedNodeHasEvidence(item) {
 
 export async function validateOkf(root = repositoryRoot) {
   const errors = [];
-  const okfRoot = path.join(root, "okf");
+  const officialRoot = path.join(root, "okf");
+  const extensionRoot = path.join(root, "okf-extension");
   await validateSchemas(root, errors);
-  for (const file of await jsonFiles(okfRoot)) {
+  for (const file of await jsonFiles(extensionRoot)) {
     try {
       JSON.parse(await readFile(file, "utf8"));
     } catch (error) {
       errors.push(`${path.relative(root, file).split(path.sep).join("/")}: invalid JSON (${error instanceof Error ? error.message : "unknown error"})`);
     }
   }
-  const manifestPath = path.join(okfRoot, "manifest.json");
+  const manifestPath = path.join(extensionRoot, "manifest.json");
   let manifest;
   try {
     manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   } catch (error) {
-    errors.push(`okf/manifest.json: invalid or unreadable JSON (${error instanceof Error ? error.message : "unknown error"})`);
+    errors.push(`okf-extension/manifest.json: invalid or unreadable JSON (${error instanceof Error ? error.message : "unknown error"})`);
     return errors;
   }
   for (const field of ["schemaVersion", "extensionVersion", "okfVersion", "status", "activatedPhase", "registries"]) {
-    if (manifest[field] === undefined) errors.push(`okf/manifest.json: missing required field '${field}'`);
+    if (manifest[field] === undefined) errors.push(`okf-extension/manifest.json: missing required field '${field}'`);
   }
-  if (manifest.schemaVersion !== "1.0.0") errors.push("okf/manifest.json: schemaVersion must be 1.0.0");
-  if (manifest.extensionVersion !== "1.0.0") errors.push("okf/manifest.json: extensionVersion must be 1.0.0");
-  if (manifest.okfVersion !== "0.2") errors.push("okf/manifest.json: okfVersion must be 0.2");
-  if (manifest.frameworkVersion !== undefined) errors.push("okf/manifest.json: obsolete frameworkVersion must not be present");
-  if (!OKF_STATUSES.has(manifest.status)) errors.push(`okf/manifest.json: unknown status '${manifest.status}'`);
-  if (typeof manifest.product !== "string" || manifest.product.length === 0) errors.push("okf/manifest.json: missing required product string");
-  if (manifest.activatedPhase !== 8) errors.push("okf/manifest.json: activatedPhase must be 8");
+  if (manifest.schemaVersion !== "1.0.0") errors.push("okf-extension/manifest.json: schemaVersion must be 1.0.0");
+  if (manifest.extensionVersion !== "1.0.0") errors.push("okf-extension/manifest.json: extensionVersion must be 1.0.0");
+  if (manifest.okfVersion !== "0.2") errors.push("okf-extension/manifest.json: okfVersion must be 0.2");
+  if (manifest.frameworkVersion !== undefined) errors.push("okf-extension/manifest.json: obsolete frameworkVersion must not be present");
+  if (!OKF_STATUSES.has(manifest.status)) errors.push(`okf-extension/manifest.json: unknown status '${manifest.status}'`);
+  if (typeof manifest.product !== "string" || manifest.product.length === 0) errors.push("okf-extension/manifest.json: missing required product string");
+  if (manifest.activatedPhase !== 8) errors.push("okf-extension/manifest.json: activatedPhase must be 8");
   for (const name of registryNames) {
-    const expected = `okf/registry/${name}.json`;
-    if (manifest.registries?.[name] !== expected) errors.push(`okf/manifest.json: registry '${name}' must resolve to '${expected}'`);
+    const expected = `okf-extension/registry/${name}.json`;
+    if (manifest.registries?.[name] !== expected) errors.push(`okf-extension/manifest.json: registry '${name}' must resolve to '${expected}'`);
   }
-  for (const name of Object.keys(manifest.registries ?? {})) if (!registryNames.includes(name)) errors.push(`okf/manifest.json: unknown registry '${name}'`);
+  for (const name of Object.keys(manifest.registries ?? {})) if (!registryNames.includes(name)) errors.push(`okf-extension/manifest.json: unknown registry '${name}'`);
 
   const authorities = await markdownAuthorityIds(root);
   const registries = new Map();
   const globalIds = new Map();
   for (const name of registryNames) {
-    const registryPath = path.join(okfRoot, "registry", `${name}.json`);
+    const registryPath = path.join(extensionRoot, "registry", `${name}.json`);
     let registry;
     try {
       registry = JSON.parse(await readFile(registryPath, "utf8"));
     } catch (error) {
-      errors.push(`okf/registry/${name}.json: invalid or unreadable JSON (${error instanceof Error ? error.message : "unknown error"})`);
+      errors.push(`okf-extension/registry/${name}.json: invalid or unreadable JSON (${error instanceof Error ? error.message : "unknown error"})`);
       continue;
     }
-    if (registry.schemaVersion !== "1.0.0") errors.push(`okf/registry/${name}.json: unsupported schemaVersion`);
+    if (registry.schemaVersion !== "1.0.0") errors.push(`okf-extension/registry/${name}.json: unsupported schemaVersion`);
     if (!Array.isArray(registry.items)) {
-      errors.push(`okf/registry/${name}.json: missing required items array`);
+      errors.push(`okf-extension/registry/${name}.json: missing required items array`);
       continue;
     }
     registries.set(name, registry.items);
     for (const [index, item] of registry.items.entries()) {
-      const location = `okf/registry/${name}.json items[${index}]`;
+      const location = `okf-extension/registry/${name}.json items[${index}]`;
       requireString(item, "id", location, errors);
       requireString(item, "name", location, errors);
       requireString(item, "status", location, errors);
@@ -232,7 +233,7 @@ export async function validateOkf(root = repositoryRoot) {
     for (const [index, item] of items.entries()) {
       for (const field of pathFields) {
         if (item[field] === undefined) continue;
-        const location = `okf/registry/${name}.json items[${index}].${field}`;
+        const location = `okf-extension/registry/${name}.json items[${index}].${field}`;
         if (!isSafeRelative(item[field])) errors.push(`${location}: path must be repository-relative without parent traversal`);
         else if (!(await exists(path.join(root, item[field])))) errors.push(`${location}: broken repository path '${item[field]}'`);
       }
@@ -249,7 +250,7 @@ export async function validateOkf(root = repositoryRoot) {
     }
   }
 
-  const markdown = (await Promise.all((await markdownFiles(okfRoot)).map((file) => readFile(file, "utf8")))).join("\n");
+  const markdown = (await Promise.all((await markdownFiles(officialRoot)).map((file) => readFile(file, "utf8")))).join("\n");
   const referencedEvidence = new Set();
   for (const item of registries.get("nodes") ?? []) for (const id of item.evidenceIds ?? []) referencedEvidence.add(id);
   for (const item of registries.get("relationships") ?? []) {
@@ -331,10 +332,10 @@ export async function validateOkf(root = repositoryRoot) {
   }
 
   for (const required of [
-    "okf/validation/schemas/manifest.schema.json",
-    "okf/validation/schemas/registry.schema.json",
-    "okf/extensions/validation/rules/semantic-rules.md",
-    "okf/extensions/validation/reports/phase-03-migration-report.md",
+    "okf-extension/validation/schemas/manifest.schema.json",
+    "okf-extension/validation/schemas/registry.schema.json",
+    "okf-extension/validation/rules/semantic-rules.md",
+    "okf-extension/validation/reports/phase-03-migration-report.md",
     "okf/history/phase-01.md",
     "okf/history/phase-02.md",
     "okf/history/phase-03.md",
@@ -353,7 +354,7 @@ async function selfTest() {
   const probes = [
     ["C:\\private\\evidence.txt", false],
     ["../outside.txt", false],
-    ["okf/README.md", true],
+    ["okf/index.md", true],
   ];
   const failed = probes.filter(([value, expected]) => isSafeRelative(value) !== expected);
   if (failed.length > 0) throw new Error("OKF path-policy self-test failed");
@@ -370,7 +371,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  const jsonCount = (await readdir(path.join(repositoryRoot, "okf", "registry"))).filter((name) => name.endsWith(".json")).length;
+  const jsonCount = (await readdir(path.join(repositoryRoot, "okf-extension", "registry"))).filter((name) => name.endsWith(".json")).length;
   process.stdout.write(`Canonical OKF validation passed: ${jsonCount} registries, zero orphaned critical requirements, zero broken references.\n`);
 }
 

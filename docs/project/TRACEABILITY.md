@@ -159,7 +159,7 @@ the production mappings above.
 ## OKF traceability dimensions
 
 Current traceability is the join of this document and
-[canonical OKF extensions](../../okf/extensions/README.md), with bootstrap traceability retained historically at `okf-bootstrap/BOOTSTRAP_TRACEABILITY.md`:
+[canonical OKF extensions](../../okf-extension/README.md), with bootstrap traceability retained historically at `okf-bootstrap/BOOTSTRAP_TRACEABILITY.md`:
 
 ```text
 Requirement

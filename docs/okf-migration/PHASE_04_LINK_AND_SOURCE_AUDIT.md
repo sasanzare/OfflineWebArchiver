@@ -69,7 +69,7 @@ Every source entry below was checked for a non-empty portable `resource`, an exi
 | `okf/history/phase-07.md` | `okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md`; `docs/project/PHASE_07_IMPLEMENTATION_REPORT.md`; `packages/recovery/src/index.ts`; `tests/process-kill/recovery-process-kill.test.ts` |
 | `okf/history/phase-08.md` | `okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md`; `docs/project/PHASE_08_IMPLEMENTATION_REPORT.md`; `packages/browser-runtime/src/index.ts`; `packages/rendering/src/index.ts`; `tests/integration/render-persistence-faults.test.ts` |
 
-**Source result:** 80/80 resources exist, 80/80 are portable, and 0/80 use a machine-specific path. Source IDs are unique within all 21 Concepts. Evidence IDs remain in the unchanged `okf/registry/evidence.json`; no registry row was rewritten. Concepts preserve registry-backed IDs in `owa.evidence_ids` and `owa.legacy_ids`; full edge-by-edge evidence reconciliation is deferred to Phase 5.
+**Source result:** 80/80 resources exist, 80/80 are portable, and 0/80 use a machine-specific path. Source IDs are unique within all 21 Concepts. Evidence IDs remain in the unchanged `okf-extension/registry/evidence.json`; no registry row was rewritten. Concepts preserve registry-backed IDs in `owa.evidence_ids` and `owa.legacy_ids`; full edge-by-edge evidence reconciliation is deferred to Phase 5.
 
 ## Findings and limitations
 
