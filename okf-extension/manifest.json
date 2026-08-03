@@ -8,7 +8,7 @@
   "activatedPhase": 8,
   "activatedAt": "2026-08-01",
   "authority": "okf-extension/README.md",
-  "bootstrapHistory": "okf-bootstrap/README.md",
+  "bootstrapHistory": "docs/archive/okf/bootstrap/README.md",
   "registries": {
     "domains": "okf-extension/registry/domains.json",
     "nodes": "okf-extension/registry/nodes.json",

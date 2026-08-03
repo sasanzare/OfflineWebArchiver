@@ -130,7 +130,7 @@ exception that does not waive a critical safety/security requirement. The
 
 Every Product Phase 2–25 and material intervening change must follow the current
 [canonical OKF entry point](../../okf/index.md) and the preserved
-[OKF Phase Evolution Contract](../../okf-bootstrap/PHASE_EVOLUTION_CONTRACT.md).
+[OKF Phase Evolution Contract](../../docs/archive/okf/bootstrap/PHASE_EVOLUTION_CONTRACT.md).
 A future phase is not complete until:
 
 - [ ] The current canonical [`okf/index.md`](../../okf/index.md) has been read;

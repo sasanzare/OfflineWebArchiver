@@ -2,6 +2,12 @@
 
 Status: COMPLETE after the validation commands recorded below.
 
+> **Phase 5 superseded-path note:** This Phase 1 report is an audit record and
+> retains its original path claims. The former `okf-bootstrap/` and
+> `docs/okf-migration/` roots were subsequently archived under
+> `docs/archive/okf/`; current instructions are in the Phase 5 report and
+> `MAINTENANCE_GUIDE.md`.
+
 ## Phase objective
 
 Separate the official OKF concept bundle under okf/ from all

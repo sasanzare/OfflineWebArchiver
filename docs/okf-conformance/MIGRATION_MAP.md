@@ -43,3 +43,19 @@ extension locations. Official Concepts remain under okf/.
 No compatibility copies, aliases, symlinks, or placeholders were retained in
 okf/. The old okf/extensions/ path was not retained; the canonical name is
 okf-extension/.
+
+## Phase 5 archive mappings
+
+Phase 1 mappings above are preserved unchanged. Phase 5 moved completed
+bootstrap and migration material out of the active documentation surface; the
+archive is historical and non-authoritative.
+
+| Previous path | New path | Classification | Reason |
+|---|---|---|---|
+| `okf-bootstrap/` (15 files) | `docs/archive/okf/bootstrap/` | Historical archive | Root-level bootstrap planning, evidence, and governance records are no longer operational inputs. |
+| `docs/okf-migration/` (90 files) | `docs/archive/okf/migration/` | Historical archive | Completed migration plans, ledgers, schemas, audits, reports, and handoffs remain available without competing with active maintainer documentation. |
+| `tools/okf/migrate.mjs` | `tools/okf/migrate.mjs` | Deprecated compatibility command | The package command remains callable for old workflows but no longer reads legacy paths or performs migration work. |
+
+The two former source directories are absent after the move. Current
+maintenance starts at `docs/okf-conformance/`; historical reports should be
+read from `docs/archive/okf/`.

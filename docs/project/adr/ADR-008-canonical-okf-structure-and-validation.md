@@ -12,6 +12,10 @@ OD-026 and bootstrap questions required Product Phase 3 to turn proposed narrati
 
 Activate `okf/` with JSON manifest/registries as current machine authority, Markdown knowledge/phase/report records as narrative authority, repository-relative evidence, the mandatory bootstrap status vocabulary, and a fail-closed local validator. Preserve `okf-bootstrap/` as historical evidence; unresolved owner/policy questions stay explicit. Schema/framework version starts at 1.0.0.
 
+> **Phase 5 erratum:** The historical `okf-bootstrap/` location referenced by
+> this decision is now preserved at `docs/archive/okf/bootstrap/`. The decision
+> remains a historical architecture record; the archive is non-authoritative.
+
 ## Alternatives Considered
 
 Keeping bootstrap as current, adopting a graph database, generating all knowledge from Markdown, and partial unvalidated activation were considered. Each leaves drift or tooling burden disproportionate to Phase 3.

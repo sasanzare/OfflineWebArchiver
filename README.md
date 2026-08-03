@@ -75,20 +75,33 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
 - [Canonical Google OKF v0.2 knowledge](okf/index.md)
-- [OKF migration closure](docs/okf-migration/FINAL_MIGRATION_CLOSURE_REPORT.md)
+- [OKF maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md)
+- [Current OKF structure](docs/okf-conformance/CURRENT_STRUCTURE.md)
+- [Archived OKF history](docs/archive/okf/README.md)
 - [Current handoff](HANDOFF.md)
 
 ## Open Knowledge Format
 
-The canonical knowledge bundle follows Google Open Knowledge Format v0.2 and starts at [`okf/index.md`](okf/index.md). OfflineWebArchiver-specific metadata, typed relationships, evidence IDs, registries, and schemas are a separately validated extension layer documented at [`okf-extension/README.md`](okf-extension/README.md).
+The repository uses Google Open Knowledge Format v0.2. The official Bundle is
+under [`okf/`](okf/index.md); OfflineWebArchiver extensions are under
+[`okf-extension/`](okf-extension/README.md); validator tooling is under
+[`tools/okf/`](tools/okf/README.md); focused tests are under
+[`tests/okf/`](tests/okf/); and active maintainer documentation is under
+[`docs/okf-conformance/`](docs/okf-conformance/MAINTENANCE_GUIDE.md).
 
-To add or edit knowledge, choose an approved Concept type and stable subject path, use the metadata contract, add portable `sources` and meaningful Markdown links, update the directory index and affected extension mappings, then run:
+Official conformance and OWA policy validation are separate. Run the official
+check with `npm run okf:validate:conformance`; run the complete OWA policy
+surface with `npm run okf:validate`; and run focused regressions with
+`npm run test:okf`. The broader documentation, format, lint, type, test, and
+build gates are `npm run docs:validate`, `npm run format:check`, `npm run lint`,
+`npm run typecheck`, `npm run test`, and `npm run build`.
 
-```text
-npm run test:okf
-npm run okf:validate
-```
-
-CI runs the same blocking validator, documentation, formatting, lint, and type-check gates in the `OKF Validation` workflow. The repository has no automatically generated OKF artifacts; indexes and registries are maintained and reviewed with their authoritative inputs. See the [final maintainer handoff](docs/okf-migration/FINAL_MAINTAINER_HANDOFF.md) for renames, deprecation, verification invalidation, taxonomy changes, and new diagnostics. Hosted CI execution and branch protection are not claimed as verified from the local repository.
+The archive at [`docs/archive/okf/`](docs/archive/okf/README.md) contains
+non-authoritative bootstrap and migration history. It is not active
+configuration. Indexes and registries are maintained inputs, not generated
+OKF artifacts. See the [maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md)
+for the ownership boundaries, source/provenance workflow, CI behavior, and
+review checklist. Hosted CI execution and branch protection are not claimed as
+verified from the local repository.
 
 The exact next phase is **Product Phase 9 — Link Discovery and SPA Support**.

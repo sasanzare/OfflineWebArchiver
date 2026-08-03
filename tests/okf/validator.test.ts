@@ -18,15 +18,11 @@ test("OKF validator passes canonical data and its negative path probes", async (
   assert.equal(isSafeRelative("okf/history/phase-08.md"), true);
 });
 
-test("OKF migration blocks every modeled absent prerequisite", async () => {
-  const { migrationPrerequisites, missingPrerequisites, migrationSelfTest } = await load<{
-    migrationPrerequisites: string[];
-    missingPrerequisites(available: Set<string>): string[];
-    migrationSelfTest(): number;
+test("completed OKF migration command is a deprecated compatibility wrapper", async () => {
+  const { deprecationMessage, run } = await load<{
+    deprecationMessage: string;
+    run(args?: string[]): Promise<number>;
   }>("tools/okf/migrate.mjs");
-  assert.equal(migrationSelfTest(), 12);
-  for (const omitted of migrationPrerequisites) {
-    const available = new Set(migrationPrerequisites.filter((source) => source !== omitted));
-    assert.ok(missingPrerequisites(available).includes(omitted));
-  }
+  assert.match(deprecationMessage, /migration is complete/);
+  assert.equal(await run(["--self-test"]), 2);
 });

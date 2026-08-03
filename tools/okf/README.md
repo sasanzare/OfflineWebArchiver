@@ -17,6 +17,10 @@ This read-only validator targets Google Open Knowledge Format v0.2 and the separ
 
 The conformance command has the compatibility alias npm run okf:validate:official. The extension alias npm run okf:validate:extensions is also retained. The direct JSON command is node tools/okf/cli.mjs validate --format json so its stdout is one JSON document without an npm wrapper.
 
+`npm run okf:migrate` is retained only as a deprecated compatibility command.
+The migration is closed; it performs no file discovery or repair and exits with
+code 2. Use the active maintainer guide for current changes.
+
 Exit codes are deterministic:
 
 * 0 means the requested layers completed without errors. Warnings are allowed.

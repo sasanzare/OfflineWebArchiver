@@ -179,8 +179,14 @@ for (const name of required.filter((value) => value.includes("/ADR-"))) {
   } catch {}
 }
 
-for (const file of (await repositoryFiles()).filter((value) => value.endsWith(".md") && !relative(value).startsWith("tests/okf/fixtures/"))) {
+const markdownFiles = (await repositoryFiles()).filter((value) => value.endsWith(".md") && !relative(value).startsWith("tests/okf/fixtures/"));
+const archivePrefix = "docs/archive/okf/";
+const archivedMarkdownFiles = markdownFiles.filter((value) => relative(value).startsWith(archivePrefix));
+for (const file of markdownFiles) {
   const text = await readFile(file, "utf8");
+  // Archived OKF records are read for UTF-8/readability, but their historical
+  // links may intentionally point to superseded paths and are not active docs.
+  if (relative(file).startsWith(archivePrefix)) continue;
   const pattern = /\[[^\]]*\]\(([^)]+)\)/g;
   let match;
   while ((match = pattern.exec(text)) !== null) {
@@ -209,4 +215,4 @@ if (errors.length > 0) {
   process.stderr.write(`${errors.join("\n")}\n`);
   process.exit(1);
 }
-process.stdout.write(`Documentation validation passed for ${required.length} required artifacts and ${checkedLinks} relative links.\n`);
+process.stdout.write(`Documentation validation passed for ${required.length} required artifacts, ${checkedLinks} active relative links, and ${archivedMarkdownFiles.length} readable archived Markdown files.\n`);

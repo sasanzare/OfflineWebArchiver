@@ -1,5 +1,11 @@
 # OfflineWebArchiver OKF Migration
 
+> **Archived, non-authoritative material.** The migration is closed. These
+> reports are retained for historical traceability and must not be used as
+> active configuration or current maintenance instructions. Use the [active
+> OKF maintainer guide](../../../../docs/okf-conformance/MAINTENANCE_GUIDE.md)
+> for current work.
+
 The eight-phase migration from OfflineWebArchiver's custom Organizational Knowledge Framework to Google Open Knowledge Format v0.2 closed on 2026-08-03. Historical reports remain available without being rewritten as though the original framework had been official OKF.
 
 ## Final result
@@ -13,7 +19,7 @@ The eight-phase migration from OfflineWebArchiver's custom Organizational Knowle
 - Hosted CI and branch protection: explicitly unverified from the local repository
 - Migration program: complete with accepted administrative exceptions
 
-The official bundle starts at [`okf/index.md`](../../okf/index.md). Project-specific semantics are documented at [`okf-extension/README.md`](../../okf-extension/README.md). The [final source-of-truth map](SOURCE_OF_TRUTH_MAP.md) explains the authority boundary.
+The official bundle starts at [`okf/index.md`](../../../../okf/index.md). Project-specific semantics are documented at [`okf-extension/README.md`](../../../../okf-extension/README.md). The [final source-of-truth map](SOURCE_OF_TRUTH_MAP.md) explains the authority boundary.
 
 ## Maintainer commands
 
@@ -31,7 +37,7 @@ npm run typecheck
 npm test
 ```
 
-The validator performs no network access or writes. Official, repository policy, extension integrity, quality, and formatting remain distinct layers. See the [validator README](../../tools/okf/README.md) and [final maintainer handoff](FINAL_MAINTAINER_HANDOFF.md).
+The validator performs no network access or writes. Official, repository policy, extension integrity, quality, and formatting remain distinct layers. See the [validator README](../../../../tools/okf/README.md) and [final maintainer handoff](FINAL_MAINTAINER_HANDOFF.md).
 
 ## Final audit and closure
 

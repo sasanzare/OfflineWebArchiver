@@ -87,7 +87,7 @@ The following production-status column is the preserved end-of-Phase-2 snapshot.
 No open item authorizes later-phase implementation before its deadline.
 
 Detailed OKF-specific questions are maintained in
-[`okf-bootstrap/OPEN_QUESTIONS.md`](../../okf-bootstrap/OPEN_QUESTIONS.md) as
+[`docs/archive/okf/bootstrap/OPEN_QUESTIONS.md`](../../docs/archive/okf/bootstrap/OPEN_QUESTIONS.md) as
 `OKF-OD-001..025`. They do not replace or renumber this project decision register.
 
 ## Product Phase 7 recovery decisions

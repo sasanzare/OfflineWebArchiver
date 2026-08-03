@@ -73,7 +73,7 @@ function assertRule(diagnostics: Diagnostic[], ruleId: string, severity?: string
 
 async function extensionFixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "owa-okf-extension-"));
-  const directories = ["okf-extension", "okf", "docs", "packages", "apps", "tests", "tools", "okf-bootstrap"];
+  const directories = ["okf-extension", "okf", "docs", "packages", "apps", "tests", "tools"];
   for (const directory of directories) await cp(path.resolve(directory), path.join(root, directory), { recursive: true });
   for (const file of ["package.json", "package-lock.json", "README.md"]) await cp(path.resolve(file), path.join(root, file));
   await mkdir(path.join(root, "spikes", "phase-02-feasibility"), { recursive: true });

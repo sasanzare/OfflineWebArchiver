@@ -343,11 +343,11 @@ A Project archive succeeds only when:
 
 Canonical [`okf/`](../../okf/index.md) is the current structured knowledge
 entry point. It complements these authoritative requirements rather than
-replacing them. The historical [OKF Bootstrap](../../okf-bootstrap/README.md)
+replacing them. The historical [OKF Bootstrap](../../docs/archive/okf/bootstrap/README.md)
 records the migration and activation path completed in Product Phase 3.
 
 Every Product Phase 2–25 must follow the
-[OKF Phase Evolution Contract](../../okf-bootstrap/PHASE_EVOLUTION_CONTRACT.md).
+[OKF Phase Evolution Contract](../../docs/archive/okf/bootstrap/PHASE_EVOLUTION_CONTRACT.md).
 The responsible task identifies affected knowledge domains before editing,
 registers actual evidence after implementation/testing, preserves unknowns and
 conflicts, handles removed/superseded evidence, validates links/identifiers, and

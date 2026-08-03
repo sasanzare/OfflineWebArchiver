@@ -1,5 +1,9 @@
 # OKF Bootstrap
 
+> **Archived, non-authoritative material.** This directory preserves the
+> completed bootstrap history. Do not use it as active configuration or as the
+> current OKF maintenance guide. Start with the [active maintainer guide](../../../../docs/okf-conformance/MAINTENANCE_GUIDE.md).
+
 **Project:** Offline Web Archive Builder
 
 **OKF stage:** Historical OKF Phase 0 bootstrap; migrated and preserved
@@ -12,7 +16,7 @@
 **Last updated:** 2026-07-31
 
 > **Migrated in Product Phase 3.** Canonical authority is now
-> [`okf/index.md`](../okf/index.md). This complete bootstrap remains preserved
+> [`okf/index.md`](../../../../okf/index.md). This complete bootstrap remains preserved
 > as historical governance/migration evidence. Its proposed target structure is
 > superseded; unresolved questions remain active through the canonical decision
 > registry and are not silently resolved.

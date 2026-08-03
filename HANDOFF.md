@@ -6,7 +6,7 @@
 
 **Product phase:** Product Phase 8 — Browser Lifecycle and Rendering Engine (`complete`)
 
-**OKF migration:** Phase 8 final audit and cleanup (`complete_with_accepted_exceptions`)
+**OKF maintenance:** Phase 5 legacy cleanup and maintainer documentation (`complete_with_accepted_exceptions`)
 
 **Next product phase:** Product Phase 9 — Link Discovery and SPA Support (`not started`)
 
@@ -45,7 +45,7 @@ ADRs 041–048 are Accepted; AC-P08-001–017 have direct evidence. The Phase 2 
 
 The independent migration audit classified all 76 final artifacts, removed 58 obsolete compatibility Markdown paths, preserved 54 evidence records and 61 typed relationships, and reconciled all 40 official Concepts. Official Google OKF v0.2 validation, OfflineWebArchiver metadata policy, extension integrity, knowledge quality, formatting, focused validator tests, and repository tests pass locally.
 
-The only accepted exceptions are administrative: no hosted GitHub Actions run or branch-protection configuration was available as local evidence. Require `OKF Validation / OKF validation and quality gates` in branch protection and verify the next hosted run before reporting either control as verified. Use the [final maintainer handoff](docs/okf-migration/FINAL_MAINTAINER_HANDOFF.md) for routine knowledge work.
+The only accepted exceptions are administrative: no hosted GitHub Actions run or branch-protection configuration was available as local evidence. Require `OKF Validation / OKF validation and quality gates` in branch protection and verify the next hosted run before reporting either control as verified. Use the [active maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md) for routine knowledge work; the completed migration reports remain in the [OKF archive](docs/archive/okf/README.md).
 
 ## References
 
@@ -53,5 +53,7 @@ The only accepted exceptions are administrative: no hosted GitHub Actions run or
 - [Phase 8 canonical record](okf/history/phase-08.md)
 - [Browser Runtime](docs/architecture/BROWSER_RUNTIME.md)
 - [Phase 8 security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
-- [Final OKF conformance report](docs/okf-migration/FINAL_OKF_CONFORMANCE_REPORT.md)
-- [Final OKF maintainer handoff](docs/okf-migration/FINAL_MAINTAINER_HANDOFF.md)
+- [Active OKF maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md)
+- [Current OKF structure](docs/okf-conformance/CURRENT_STRUCTURE.md)
+- [Phase 5 cleanup report](docs/okf-conformance/PHASE_05_LEGACY_CLEANUP_AND_DOCUMENTATION.md)
+- [Archived final OKF conformance report](docs/archive/okf/migration/FINAL_OKF_CONFORMANCE_REPORT.md)

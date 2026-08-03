@@ -76,6 +76,16 @@ node tools/okf/cli.mjs validate --format json emits:
 
 All paths in the report are repository-relative. Snapshot comparisons must normalize generated_at.
 
+## Archive policy
+
+`docs/archive/okf/` is a single historical archive root. Its Markdown files
+remain readable and are retained for traceability, but they are not official
+OKF input, active extension input, current configuration, or current
+maintainer guidance. Documentation validation reads archived Markdown as UTF-8
+but does not classify historical relative links as active documentation
+failures; links in active documentation remain fully checked. Use
+`docs/okf-conformance/` as the current entry point.
+
 ## CI contract
 
 The OKF workflow runs separate named steps for conformance, references, provenance, extension, quality, format, combined policy, OKF tests, documentation, formatting, lint, and typecheck. Validator-focused tests run on Ubuntu and Windows. The optional remote job runs only on manual dispatch or the scheduled workflow. Each matrix run uploads its JSON report artifact when the workflow completes.

@@ -159,7 +159,7 @@ the production mappings above.
 ## OKF traceability dimensions
 
 Current traceability is the join of this document and
-[canonical OKF extensions](../../okf-extension/README.md), with bootstrap traceability retained historically at `okf-bootstrap/BOOTSTRAP_TRACEABILITY.md`:
+[canonical OKF extensions](../../okf-extension/README.md), with bootstrap traceability retained historically at `docs/archive/okf/bootstrap/BOOTSTRAP_TRACEABILITY.md`:
 
 ```text
 Requirement
@@ -185,8 +185,8 @@ canonical registries activate in Product Phase 3.
 | Test category | Fixture/target strategy and this map | Test/fixture nodes and existing test evidence | Fixture plan is Level 3; no fake test evidence |
 | Risk | `docs/project/RISK_REGISTER.md` | Risk/control/evidence registry | Risk exists; control is not mitigated without tests |
 | Decision | `docs/project/OPEN_DECISIONS.md` and OKF question register | Decision/ADR registry | Recommendation is not outcome |
-| OKF domain | `okf-bootstrap/KNOWLEDGE_DOMAIN_MODEL.md` | Domain and node registries | Planned implementation domain is not verified |
-| Evidence | `okf-bootstrap/EVIDENCE_POLICY.md` | Evidence/relationship registries | Current implementation evidence is absent by design |
+| OKF domain | `docs/archive/okf/bootstrap/KNOWLEDGE_DOMAIN_MODEL.md` | Domain and node registries | Planned implementation domain is not verified |
+| Evidence | `docs/archive/okf/bootstrap/EVIDENCE_POLICY.md` | Evidence/relationship registries | Current implementation evidence is absent by design |
 
 All functional/non-functional/acceptance families, fixtures, risks, decisions,
 coverage, phase plan, DoD and target plan are mapped in the bootstrap traceability

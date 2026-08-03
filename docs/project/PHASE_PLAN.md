@@ -21,7 +21,7 @@ and a current handoff.
 
 OKF Phase 0 does not change the 25 Product Phases. The detailed synchronization
 workflow is authoritative in the
-[OKF Phase Evolution Contract](../../okf-bootstrap/PHASE_EVOLUTION_CONTRACT.md).
+[OKF Phase Evolution Contract](../../docs/archive/okf/bootstrap/PHASE_EVOLUTION_CONTRACT.md).
 
 | Phase | Name | Objective | Dependencies | Main deliverables | Acceptance gate | Security considerations | Expected test types |
 |---:|---|---|---|---|---|---|---|
@@ -59,7 +59,7 @@ phase-specific responsibility below.
 
 | Product phase | Required OKF responsibility |
 |---|---|
-| P02 | Record the Technical Spike as experimental feasibility evidence under `okf-bootstrap/PHASE_EVIDENCE/`; update bootstrap domains, gaps, risks and decisions; do not create canonical OKF or call the spike final architecture. |
+| P02 | Record the Technical Spike as experimental feasibility evidence under `docs/archive/okf/bootstrap/PHASE_EVIDENCE/`; update bootstrap domains, gaps, risks and decisions; do not create canonical OKF or call the spike final architecture. |
 | P03 | Run AC-OKF-006 prerequisites; activate canonical `okf/`; migrate bootstrap records/history; register actual repository/packages/layers/contracts/ADRs and initial schemas/registries/validation. |
 | P04 | Register Project-format versions, relative paths, SQLite schema/migrations, atomic writes, compatibility and integrity evidence. |
 | P05 | Register authorization snapshot, URL identity/normalization, allow/deny/redirect/method policy and evidence. |
