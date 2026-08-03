@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/root-index.schema.json",
+  "title": "OKF v0.2 bundle-root index metadata",
+  "$comment": "Applies only to the frontmatter mapping of the bundle-root index.md. Body navigation and filename/root location require procedural validation.",
+  "type": "object",
+  "required": ["okf_version"],
+  "additionalProperties": false,
+  "properties": {
+    "okf_version": { "const": "0.2" }
+  }
+}

@@ -47,7 +47,7 @@ The repository must have one editable authority for each fact. Generated artifac
 
 ## Generated-File Markers
 
-Phase 3 must choose syntax appropriate to each format. The marker must communicate:
+Phase 3 freezes the required marker semantics. The final Phase 6 syntax appropriate to each output format must communicate:
 
 - that manual edits are prohibited;
 - the owning generator command;
@@ -55,7 +55,7 @@ Phase 3 must choose syntax appropriate to each format. The marker must communica
 - the generator version or contract version;
 - the source commit or content digest when useful.
 
-Proposed examples, not implemented contracts:
+Frozen design examples, not implemented production markers:
 
 ```text
 <!-- GENERATED FILE. DO NOT EDIT. Source: official Concepts. -->
@@ -71,6 +71,8 @@ Proposed examples, not implemented contracts:
 ```
 
 Phase 3 must not add timestamps that make otherwise identical generation nondeterministic.
+
+Official generated Concepts use `generated.by` and repository-required UTC `generated.at`. Human-authored or human-owned AI-assisted Concepts omit `generated`; Git remains their authoring history. Fully generated Concepts are never manually patched. Reserved directory indexes cannot carry frontmatter and therefore use only the body marker. The authored root index is denylisted.
 
 ## Overwrite Protection
 

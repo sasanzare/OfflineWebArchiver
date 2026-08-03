@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/common.schema.json",
+  "title": "OfflineWebArchiver OKF v0.2 common definitions",
+  "$comment": "Design-only Phase 3 schema. Filename, body, link, duplicate-ID, and material-change rules require procedural validation.",
+  "$defs": {
+    "conceptType": {
+      "type": "string",
+      "enum": [
+        "Project Overview",
+        "Product Requirement",
+        "Architecture Overview",
+        "Architecture Component",
+        "Architecture Decision",
+        "Workflow",
+        "Data Model",
+        "Security Control",
+        "Operational Runbook",
+        "Recovery Procedure",
+        "Test Strategy",
+        "Quality Policy",
+        "Phase Record",
+        "Reference"
+      ]
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": ["draft", "stable", "deprecated"]
+    },
+    "actor": {
+      "type": "string",
+      "oneOf": [
+        { "pattern": "^human:[a-z0-9][a-z0-9._-]{0,63}$" },
+        { "pattern": "^process:[a-z0-9][a-z0-9._-]{0,63}$" },
+        { "pattern": "^[a-z0-9][a-z0-9._-]{0,63}/[a-z0-9][a-z0-9.+_-]{0,63}$" }
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 48
+    },
+    "portableResource": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^(?![A-Za-z]:[\\\\/])(?!\\\\\\\\).+"
+    },
+    "portableRepositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?![A-Za-z]:[\\\\/])(?!\\\\\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "identifierArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "usageWindow": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "$ref": "#/$defs/date" },
+        "to": { "$ref": "#/$defs/date" }
+      }
+    }
+  }
+}

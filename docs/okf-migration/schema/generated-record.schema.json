@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/generated-record.schema.json",
+  "title": "OKF generated record",
+  "$comment": "Repository producer policy requires both by and at although OKF v0.2 explicitly requires only by within generated.",
+  "type": "object",
+  "required": ["by", "at"],
+  "additionalProperties": false,
+  "properties": {
+    "by": { "$ref": "common.schema.json#/$defs/actor" },
+    "at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

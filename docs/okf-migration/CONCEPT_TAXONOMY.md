@@ -4,6 +4,8 @@
 
 The repository uses 14 semantic Concept types. Type names describe why a Concept exists, not its file format, completion state, verification state, or implementation phase. Phase 3 must serialize these canonical names exactly but will define the frontmatter syntax separately.
 
+Phase 3 has now frozen that serialization: values use the exact capitalization below, singular names, and no aliases. Unknown non-empty values remain consumable under official OKF but are repository producer errors until an evidence-backed taxonomy amendment updates the decisions, schema enumeration, examples, mapping, and migration handoff. Directory placement is a recommendation except where the Phase 2 migration map fixes a target path.
+
 | Canonical type | Primary mode | Typical target location | Generated? |
 |---|---|---|---|
 | Project Overview | Descriptive | `product/` | No |

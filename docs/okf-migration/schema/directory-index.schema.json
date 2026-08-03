@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/directory-index.schema.json",
+  "title": "OKF v0.2 directory index metadata absence",
+  "$comment": "Non-root index.md files must contain no frontmatter. This empty-object model documents the absence; validators must procedurally reject a frontmatter delimiter in the file.",
+  "type": "object",
+  "maxProperties": 0,
+  "additionalProperties": false
+}

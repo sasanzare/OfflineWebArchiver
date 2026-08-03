@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/source-record.schema.json",
+  "title": "OKF source record",
+  "$comment": "Duplicate source IDs, footnote joins, existence, and path resolution require procedural validation.",
+  "type": "object",
+  "required": ["resource"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "resource": { "$ref": "common.schema.json#/$defs/portableResource" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "author": { "$ref": "common.schema.json#/$defs/actor" },
+    "usage_count": { "type": "integer", "minimum": 0 },
+    "last_modified": { "$ref": "common.schema.json#/$defs/date" },
+    "usage_window": { "$ref": "common.schema.json#/$defs/usageWindow" }
+  }
+}

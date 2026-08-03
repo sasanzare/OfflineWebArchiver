@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/concept-frontmatter.schema.json",
+  "title": "OfflineWebArchiver OKF v0.2 Concept frontmatter",
+  "$comment": "Design-only producer schema. Official conformance remains permissive for unknown types and fields. H1 equality, source-ID uniqueness, source existence, path/type recommendations, and material-change invalidation require procedural validation.",
+  "type": "object",
+  "required": ["type", "title", "description", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "$ref": "common.schema.json#/$defs/conceptType" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "\\S" },
+    "description": { "type": "string", "minLength": 1, "maxLength": 240, "pattern": "\\S" },
+    "resource": { "$ref": "common.schema.json#/$defs/portableResource" },
+    "tags": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/tag" }
+    },
+    "status": { "$ref": "common.schema.json#/$defs/lifecycle" },
+    "generated": { "$ref": "generated-record.schema.json" },
+    "verified": {
+      "oneOf": [
+        { "$ref": "verification-record.schema.json" },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "verification-record.schema.json" }
+        }
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "source-record.schema.json" }
+    },
+    "usage_window": { "$ref": "common.schema.json#/$defs/usageWindow" },
+    "stale_after": { "$ref": "common.schema.json#/$defs/date" },
+    "owa": { "$ref": "project-extensions.schema.json" }
+  }
+}

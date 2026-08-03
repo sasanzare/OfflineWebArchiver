@@ -36,3 +36,11 @@ Each fact has one editable authority. An official Concept becomes the semantic k
 ## Phase 2 Resolution
 
 The Phase 1 owner questions about physical extension location, Concept granularity, phase treatment, and registry authority are resolved by the Phase 2 architecture and migration map. No unresolved authority choice blocks Phase 3.
+
+## Phase 3 Metadata Authority Rules
+
+- `type`, `title`, `description`, lifecycle, and body meaning are authored Concept authority after cutover.
+- `generated` identifies production of current content; `verified` identifies actual checks; neither is inferred from legacy status.
+- `sources` is portable reader-facing provenance. The evidence registry remains authority for evidence IDs, locations, methods, and project traceability.
+- `owa` state fields summarize the applicable project dimension from its existing authority; traceability arrays bridge rather than replace external requirement, acceptance, decision, risk, and evidence authorities.
+- Proposed schemas describe producer shape only. They are design artifacts until Phase 6 and never override official permissive consumption.

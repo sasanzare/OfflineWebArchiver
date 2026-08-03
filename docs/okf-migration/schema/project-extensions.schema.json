@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/project-extensions.schema.json",
+  "title": "OfflineWebArchiver Concept extensions",
+  "$comment": "Project extension data is optional to official consumers and must not be needed to understand a Concept body.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": false,
+  "properties": {
+    "implementation_status": {
+      "type": "string",
+      "enum": ["planned", "partial", "implemented", "blocked", "not-applicable", "unknown"]
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": ["unverified", "partial", "verified", "conflict", "unknown"]
+    },
+    "governance_status": {
+      "type": "string",
+      "enum": ["open", "needs-owner-confirmation", "resolved", "blocked", "not-applicable", "unknown"]
+    },
+    "requirement_ids": { "$ref": "common.schema.json#/$defs/identifierArray" },
+    "acceptance_ids": { "$ref": "common.schema.json#/$defs/identifierArray" },
+    "decision_ids": { "$ref": "common.schema.json#/$defs/identifierArray" },
+    "risk_ids": { "$ref": "common.schema.json#/$defs/identifierArray" },
+    "evidence_ids": { "$ref": "common.schema.json#/$defs/identifierArray" },
+    "legacy_ids": { "$ref": "common.schema.json#/$defs/identifierArray" },
+    "legacy_paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/portableRepositoryPath" }
+    }
+  }
+}

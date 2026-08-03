@@ -66,3 +66,9 @@ The design permits only two explicit upstream sources outside the official bundl
 2. authored extension vocabularies and evidence identities that define project-only identifiers.
 
 Neither makes a Concept unreadable. Any bridge field added in Phase 3 points outward; private JSON is not required to parse the Concept's narrative or official metadata.
+
+## Phase 3 Concept Metadata Namespace
+
+Concept-level project metadata uses one closed `owa` mapping. Approved children are `implementation_status`, `verification_status`, `governance_status`, `requirement_ids`, `acceptance_ids`, `decision_ids`, `risk_ids`, `evidence_ids`, `legacy_ids`, and `legacy_paths`. Official consumers may ignore and preserve it; extension validation resolves its IDs and paths.
+
+Full evidence methods, generated registry synchronization, typed graph edges, phase/change ledgers, and report state remain extension JSON rather than Concept frontmatter. This keeps dependency direction unchanged and prevents registry structure from becoming necessary to read a Concept.

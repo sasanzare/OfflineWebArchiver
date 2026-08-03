@@ -46,3 +46,17 @@ Concept relationships use ordinary Markdown links. Bundle-relative links beginni
 ## Quality Recommendations
 
 Use UTF-8 Markdown, structural body sections, concise descriptions in indexes, stable source IDs when body footnotes attribute claims, and an explicit actor convention: `<producer>/<version>`, `human:<id>`, or `process:<id>`.
+
+## Phase 3 Interpretation Freeze
+
+Phase 3 rechecked the current official specification and freezes these distinctions:
+
+- `type` is the only always-required Concept key; OfflineWebArchiver's additional title/description/status requirements are repository policy.
+- Official consumers must tolerate unknown non-empty types, unknown extra keys, missing optional families, broken links, and missing indexes. The closed proposed producer schema is not an official conformance schema.
+- `status` absence means `stable`; repository producers nevertheless write it explicitly to avoid unsafe migration defaults.
+- `generated.by` is required when `generated` appears. Repository policy additionally requires `generated.at` and UTC canonical form.
+- `verified` may officially be one mapping or a list; repository output uses a list while consumers accept both.
+- `stale_after` is an absolute date, stale on or after that day, never a relative duration.
+- Shared/entry `usage_window` frames source `usage_count`; lineage remains Markdown links rather than a dedicated official field.
+- Only bundle-root `index.md` may carry frontmatter, limited here to `okf_version: "0.2"`; non-root indexes and logs carry none.
+- Official v0.1 `timestamp` and body citations are legacy fallbacks superseded by `generated.at` and `sources`/footnotes.

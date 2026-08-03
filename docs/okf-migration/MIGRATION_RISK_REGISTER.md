@@ -24,6 +24,13 @@
 | OKF-MIG-R020 | External authority and Concept summary drift | Product, ADR, code, migration, and test sources remain specialized authorities | Medium | High | HIGH | Phase 3 provenance/authority contract; review linked sources; later stale checks where feasible. | 3-7 |
 | OKF-MIG-R021 | Generated output is nondeterministic or stale | Future indexes/reports consume changing Concept and registry inputs | Medium | Medium | MEDIUM | Deterministic ordering, no volatile timestamps, input digest/commit, CI check mode. | 6-7 |
 | OKF-MIG-R022 | Legacy cleanup occurs before all consumers switch | Current validator and docs checks require current paths | Low | High | HIGH | No move before compatibility mapping; no deletion before Phase 8 audit and explicit approval. | 5-8 |
+| OKF-MIG-R023 | Repository schema is misreported as complete official conformance | Proposed producer schema intentionally closes types and fields | Medium | High | HIGH | Keep official and repository result layers separate and document procedural limits. | 3, 6-8 |
+| OKF-MIG-R024 | Legacy `VERIFIED` fabricates lifecycle or human trust | Current state is context-dependent and lacks actor/time in many records | High | High | CRITICAL | Contextual three-dimension mapping; no automatic stable/verified event. | 3-5 |
+| OKF-MIG-R025 | YAML parser coerces dates/booleans or accepts duplicate keys | Metadata uses timestamps, dates, enums, and IDs | Medium | High | HIGH | Quote temporal values; reject duplicate keys/unsafe constructs; pin a declared parser in Phase 6. | 3, 6 |
+| OKF-MIG-R026 | Source metadata leaks machine paths or secrets | Local repository is on a Windows drive; current paths are portable relative | Medium | High | HIGH | Reject drive/UNC/file/home/env forms; examples use the local path only as an invalid fixture. | 3-7 |
+| OKF-MIG-R027 | Verification remains after a material content change | `verified` and `generated.at` are independent | Medium | High | HIGH | Define material-change invalidation and Phase 6 digest/workflow checks. | 3, 6-7 |
+| OKF-MIG-R028 | Closed extension fields duplicate generated registries | Current graph/evidence/phase data is broad | Medium | Medium | MEDIUM | Keep only minimal state/traceability/legacy bridge in `owa`; full records remain extension JSON. | 3-6 |
+| OKF-MIG-R029 | Frontmatter is added to generated directory indexes | Phase 2 indexes are generated but official non-root indexes forbid metadata | Medium | High | HIGH | Use body marker only; reserved-file schema/procedural fixture rejects delimiters. | 3-7 |
 
 ## Phase 2 Risk Position
 

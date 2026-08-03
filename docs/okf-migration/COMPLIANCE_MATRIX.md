@@ -18,3 +18,18 @@ The evidence below reflects the repository at baseline commit `dd0fb00fd869dee2a
 | OKF-EXT-001 | Unknown fields/types are tolerated. | Extension behavior | Current JSON schemas reject extra manifest/registry properties; no frontmatter parser exists. | NON_COMPLIANT | Existing custom schema is intentionally closed. | Official validator must be permissive; extension validator may be strict for extension JSON. | 6 |
 | OKF-REC-005 | Indexes support progressive disclosure. | Quality recommendation | `okf/maps/*` and `README.md` documents provide narrative maps, not reserved indexes. | PARTIALLY_COMPLIANT | No standard index traversal. | Add generated/curated directory indexes. | 4 |
 | OKF-REC-006 | Provenance/trust/freshness fields have official semantics. | Optional | Existing evidence registry stores path and method, not official source/trust/freshness metadata. | NON_COMPLIANT | Semantics cannot be inferred from custom status. | Define explicit optional metadata and extension bridge. | 3, 5 |
+
+## Phase 3 Design Disposition
+
+Phase 3 does not change the current compliance results because it creates no production bundle. It closes the design action for future migration:
+
+| Requirement family | Frozen design result | Evidence |
+|---|---|---|
+| Frontmatter and `type` | Four-field repository minimum with official `type` isolated | `METADATA_CONTRACT.md`, proposed Concept schema |
+| Reserved files | Root-only version metadata; no directory-index/log frontmatter | `RESERVED_FILE_METADATA_CONTRACT.md` |
+| Actors/trust | Canonical actors; generated and verification records separated | `ACTOR_AND_PROVENANCE_MODEL.md` |
+| Sources/provenance | Official source structure plus evidence registry bridge | `SOURCE_AND_EVIDENCE_MODEL.md` |
+| Lifecycle/freshness | Official lifecycle and absolute staleness separated from project state | `STATUS_AND_LIFECYCLE_MODEL.md`, `FRESHNESS_AND_VERIFICATION_POLICY.md` |
+| Unknown fields/types | Official pass/preserve; repository producer policy reported separately | `METADATA_CONTRACT.md` |
+
+Current status remains nonconformant until Phase 4 creates migrated Concepts; no Phase 3 document claims otherwise.

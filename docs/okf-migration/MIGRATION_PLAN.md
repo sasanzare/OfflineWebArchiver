@@ -17,6 +17,8 @@
 
 ## Phase 3: Metadata and Frontmatter Contract
 
+**Status:** Complete after the Phase 3 validation record passes. The contract is frozen in `METADATA_CONTRACT.md`, its companion models, design examples/fixtures, modular schemas, migration map, decisions, and Phase 4 handoff.
+
 ### Fixed Inputs
 
 - Official root is `okf/bundle/`; extension root is `okf/extensions/`.

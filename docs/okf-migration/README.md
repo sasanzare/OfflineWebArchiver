@@ -10,6 +10,8 @@ Phase 1 audited the current implementation, extracted official requirements, ide
 
 Phase 2 revalidated that baseline and fixed the target architecture, official/extension boundary, 14-type Concept taxonomy, reserved-file policy, authored/generated ownership, source-of-truth direction, and exact disposition of all 58 current Markdown files. Phase 2 changes planning documentation only; it does not migrate current knowledge or implement the Phase 3 metadata contract.
 
+Phase 3 freezes the complete metadata/frontmatter producer contract, lifecycle and project state mapping, actor/provenance/evidence/freshness rules, reserved-file metadata, examples, invalid design fixtures, modular Draft 2020-12 schemas, current-to-future field mapping, and the Phase 4 handoff. It remains design-only and does not modify the current bundle or validator.
+
 ## Authoritative Specification
 
 The normative source is the official [Google Open Knowledge Format v0.2 specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md). The official [OKF directory](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf) is supporting context.
@@ -34,6 +36,20 @@ The normative source is the official [Google Open Knowledge Format v0.2 specific
 - [Authoring and generation policy](AUTHORING_AND_GENERATION_POLICY.md)
 - [Phase 2 decisions](PHASE_02_DECISIONS.md)
 - [Phase 2 unresolved items](PHASE_02_UNRESOLVED_ITEMS.md)
+- [Metadata contract](METADATA_CONTRACT.md)
+- [Frontmatter field reference](FRONTMATTER_FIELD_REFERENCE.md)
+- [Status and lifecycle model](STATUS_AND_LIFECYCLE_MODEL.md)
+- [Actor and provenance model](ACTOR_AND_PROVENANCE_MODEL.md)
+- [Source and evidence model](SOURCE_AND_EVIDENCE_MODEL.md)
+- [Freshness and verification policy](FRESHNESS_AND_VERIFICATION_POLICY.md)
+- [Reserved-file metadata contract](RESERVED_FILE_METADATA_CONTRACT.md)
+- [Metadata migration map](METADATA_MIGRATION_MAP.md)
+- [Valid frontmatter examples](VALID_FRONTMATTER_EXAMPLES.md)
+- [Invalid frontmatter fixtures](INVALID_FRONTMATTER_FIXTURES.md)
+- [Phase 3 decisions](PHASE_03_DECISIONS.md)
+- [Phase 3 unresolved items](PHASE_03_UNRESOLVED_ITEMS.md)
+- [Phase 4 metadata handoff](PHASE_04_METADATA_HANDOFF.md)
+- [Proposed design schemas](schema/)
 - [Source-of-truth map](SOURCE_OF_TRUTH_MAP.md)
 - [Migration risk register](MIGRATION_RISK_REGISTER.md)
 - [Target-state proposal](TARGET_STATE_PROPOSAL.md)
@@ -53,6 +69,15 @@ The normative source is the official [Google Open Knowledge Format v0.2 specific
 
 Phase 3 defines metadata and serialization against these inputs. It must not redesign the hierarchy, taxonomy, reserved-file policy, or dependency direction without new contradictory evidence and a superseding decision.
 
+## Fixed Phase 3 Inputs to Phase 4
+
+- Required Concept fields: `type`, `title`, `description`, and explicit `status`.
+- Canonical type enum: the 14 Phase 2 types, exact spelling, no aliases.
+- Official lifecycle: `draft`, `stable`, `deprecated`.
+- Project state namespace: `owa` with implementation, verification, governance, traceability, and legacy bridge fields only.
+- Portable actor/source/date formats and canonical field order are fixed.
+- Root index has only `okf_version`; directory indexes and logs have no frontmatter; production log remains omitted.
+
 ## Explicit Non-Implementation Statement
 
-No migration is implemented by Phases 1-2. Existing `okf/` artifacts remain in their original paths and formats, no production reserved file or frontmatter is added, and the custom validator retains its current behavior.
+No migration is implemented by Phases 1-3. Existing `okf/` artifacts remain in their original paths and formats, no production reserved file or frontmatter is added, the proposed schemas are not wired into production, and the custom validator retains its current behavior.

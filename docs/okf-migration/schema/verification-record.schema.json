@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://offlinewebarchiver.example/schemas/okf-v0.2/verification-record.schema.json",
+  "title": "OKF verification record",
+  "$comment": "Method and evidence remain in sources, Markdown, or OfflineWebArchiver evidence extensions rather than extending this official record.",
+  "type": "object",
+  "required": ["by", "at"],
+  "additionalProperties": false,
+  "properties": {
+    "by": { "$ref": "common.schema.json#/$defs/actor" },
+    "at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}
