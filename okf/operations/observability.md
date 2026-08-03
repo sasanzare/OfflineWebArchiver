@@ -11,6 +11,7 @@ sources:
   - id: logging-architecture
     resource: docs/architecture/LOGGING_AND_OBSERVABILITY.md
     title: Logging and observability architecture
+stale_after: "2026-11-01"
 owa:
   implementation_status: implemented
   legacy_paths: [okf/knowledge/observability/README.md]

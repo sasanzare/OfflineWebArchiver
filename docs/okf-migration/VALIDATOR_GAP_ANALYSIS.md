@@ -1,5 +1,9 @@
 # Validator Gap Analysis
 
+## Phase 6 update
+
+The production layered validator now covers official frontmatter and reserved files, repository producer metadata, preserved extension registries, quality links, and formatting warnings. Schema-only and CI-only controls remain intentionally deferred.
+
 ## Current Validator
 
 Entry points are `npm run okf:validate` and `npm run okf:migrate` in `package.json`. `tools/okf/validate.mjs` recursively parses JSON under `okf/`, reads `okf/manifest.json`, then loads eight named registries: domains, nodes, evidence, relationships, phases, decisions, risks, and changes.

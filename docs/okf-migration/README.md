@@ -4,6 +4,10 @@
 
 Phase 5 completes the approved content migration: 40 Concepts, 10 reserved indexes, 15 extension documents, and 58 retained transitional legacy paths. Final production-validator and CI conformance remain deferred to Phases 6 and 7.
 
+## Phase 6 completion
+
+Phase 6 implements separated official, repository-policy, extension, quality, and formatting validation with human and JSON reports. CI enforcement remains Phase 7 work.
+
 ## Purpose
 
 This directory records the evidence-based migration from the repository's custom Organizational Knowledge Framework to the official Google Open Knowledge Format (OKF) v0.2. It is planning documentation; it does not claim that the current `okf/` tree conforms.

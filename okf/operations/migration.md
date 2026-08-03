@@ -11,6 +11,7 @@ sources:
   - id: migration-strategy
     resource: docs/architecture/MIGRATION_STRATEGY.md
     title: Migration strategy authority
+stale_after: "2026-11-01"
 owa:
   implementation_status: implemented
   verification_status: verified

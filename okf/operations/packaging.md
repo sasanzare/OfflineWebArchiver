@@ -11,6 +11,7 @@ sources:
   - id: phase-three-build-evidence
     resource: tools/build/build.mjs
     title: Development build definition
+stale_after: "2026-11-01"
 owa:
   implementation_status: partial
   verification_status: partial

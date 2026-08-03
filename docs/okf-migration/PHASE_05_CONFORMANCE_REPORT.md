@@ -1,5 +1,7 @@
 # Phase 5 Conformance Report
 
+> Phase 6 supersedes the temporary validation limitation with a production layered validator. This historical report remains accurate for the Phase 5 state.
+
 | Layer | Result |
 |---|---|
 | Official content structure | PASS for migrated Concepts and reserved indexes |

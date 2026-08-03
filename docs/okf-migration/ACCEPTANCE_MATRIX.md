@@ -4,6 +4,10 @@
 
 Content migration, Concept metadata, indexes, extension documentation, evidence preservation, relationship preservation, and legacy-path classification are complete. Automated official validation and CI remain Phase 6 and 7 obligations.
 
+## Phase 6 update
+
+Layer separation, deterministic reporting, legacy extension checks, focused regression tests, and production validation are complete. Broad CI integration remains deferred.
+
 ## Phase 1 Summary
 
 | ID | Criterion | Status | Evidence |

@@ -4,6 +4,10 @@
 
 Migrated Concept and reserved-file content meets the frozen producer contract by temporary audit. Official production validation, CI enforcement, and final whole-tree conformance remain deferred and must not be reported as complete.
 
+## Phase 6 update
+
+Production validation is implemented and executed with separate official and project-specific diagnostics. CI enforcement and final cleanup remain deferred.
+
 The evidence below reflects the repository at baseline commit `dd0fb00fd869dee2a808f48fc157f45c00c98cb0`. `UNKNOWN` is used only where the audit cannot establish a result.
 
 | ID | Requirement | Level | Repository evidence | Current result | Gap | Required migration action | Target phase |

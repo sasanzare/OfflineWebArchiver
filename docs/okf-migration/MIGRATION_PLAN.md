@@ -4,6 +4,10 @@
 
 Content migration and the extension bridge are complete. Phase 6 implements distinct official and extension validators; Phase 7 adds deterministic validation and CI; Phase 8 evaluates removal of legacy compatibility paths.
 
+## Phase 6 completion
+
+The dual validator and focused tests are implemented. Phase 7 owns CI integration and stricter warning policy decisions.
+
 ## Phase 1: Audit and Migration Planning
 
 **Status:** Complete.
