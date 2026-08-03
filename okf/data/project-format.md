@@ -6,13 +6,13 @@ tags: [data, project-format, portability]
 status: stable
 sources:
   - id: project-format-docs
-    resource: docs/architecture/PROJECT_FORMAT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/PROJECT_FORMAT.md
     title: Project format architecture authority
   - id: project-format-source
-    resource: packages/project-format/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/project-format/src/index.ts
     title: Project format production source
   - id: project-format-tests
-    resource: tests/unit/project-format.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/unit/project-format.test.ts
     title: Project format unit tests
 owa:
   implementation_status: implemented

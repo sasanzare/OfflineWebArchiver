@@ -6,10 +6,10 @@ tags: [history, phase-record, planning]
 status: stable
 sources:
   - id: phase-01-scope
-    resource: docs/product/PROJECT_SCOPE.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/product/PROJECT_SCOPE.md
     title: Product Phase 1 scope authority
   - id: phase-01-acceptance
-    resource: docs/product/ACCEPTANCE_MATRIX.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/product/ACCEPTANCE_MATRIX.md
     title: Product Phase 1 acceptance authority
 owa:
   verification_status: verified

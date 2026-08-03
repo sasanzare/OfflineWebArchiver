@@ -6,13 +6,13 @@ tags: [data, sqlite, migrations, persistence]
 status: stable
 sources:
   - id: sqlite-authority
-    resource: docs/architecture/SQLITE_PERSISTENCE.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/SQLITE_PERSISTENCE.md
     title: SQLite persistence architecture authority
   - id: sqlite-source
-    resource: packages/persistence-sqlite/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/index.ts
     title: SQLite persistence production source
   - id: render-schema-source
-    resource: packages/persistence-sqlite/src/render.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/render.ts
     title: Render result persistence source
 owa:
   implementation_status: implemented

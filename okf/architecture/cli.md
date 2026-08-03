@@ -6,7 +6,7 @@ tags: [architecture, cli, interfaces]
 status: stable
 sources:
   - id: cli-interface-evidence
-    resource: tests/cli/cli-smoke.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/cli/cli-smoke.test.ts
     title: CLI smoke tests
 owa:
   implementation_status: implemented

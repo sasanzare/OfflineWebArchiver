@@ -6,7 +6,7 @@ tags: [recovery, checkpoints, artifacts, integrity]
 status: stable
 sources:
   - id: recovery-source
-    resource: packages/recovery/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/recovery/src/index.ts
     title: Recovery policy source
 owa:
   implementation_status: implemented

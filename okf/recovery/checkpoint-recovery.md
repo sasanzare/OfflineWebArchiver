@@ -6,13 +6,13 @@ tags: [recovery, checkpoints, resume, partial-files]
 status: stable
 sources:
   - id: recovery-source
-    resource: packages/recovery/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/recovery/src/index.ts
     title: Recovery model source
   - id: recovery-persistence-source
-    resource: packages/persistence-sqlite/src/recovery.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/recovery.ts
     title: Checkpoint recovery persistence source
   - id: recovery-process-kill-tests
-    resource: tests/process-kill/recovery-process-kill.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/process-kill/recovery-process-kill.test.ts
     title: Recovery process-kill tests
 owa:
   implementation_status: implemented

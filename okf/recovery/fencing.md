@@ -6,13 +6,13 @@ tags: [recovery, fencing, leases, concurrency]
 status: stable
 sources:
   - id: recovery-source
-    resource: packages/recovery/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/recovery/src/index.ts
     title: Recovery fencing policy source
   - id: fencing-adr
-    resource: docs/project/adr/ADR-032-monotonic-fencing-generation.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/adr/ADR-032-monotonic-fencing-generation.md
     title: Fencing generation decision
   - id: recovery-concurrency-tests
-    resource: tests/concurrency/recovery-concurrency.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/concurrency/recovery-concurrency.test.ts
     title: Fencing concurrency tests
 owa:
   implementation_status: implemented

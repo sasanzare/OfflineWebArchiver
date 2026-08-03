@@ -6,13 +6,13 @@ tags: [data, persistence, sqlite, recovery]
 status: stable
 sources:
   - id: persistence-architecture
-    resource: docs/architecture/SQLITE_PERSISTENCE.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/SQLITE_PERSISTENCE.md
     title: SQLite persistence architecture authority
   - id: persistence-source
-    resource: packages/persistence-sqlite/src/recovery.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/recovery.ts
     title: Recovery persistence source
   - id: queue-persistence-source
-    resource: packages/persistence-sqlite/src/queue.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/queue.ts
     title: Queue persistence source
 owa:
   implementation_status: implemented

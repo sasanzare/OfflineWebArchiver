@@ -6,13 +6,13 @@ tags: [workflow, queue, state-machine, recovery]
 status: stable
 sources:
   - id: queue-domain-source
-    resource: packages/queue/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/queue/src/index.ts
     title: Queue state-machine source
   - id: queue-tests
-    resource: tests/unit/queue.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/unit/queue.test.ts
     title: Queue state-machine tests
   - id: recovery-tests
-    resource: tests/unit/recovery.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/unit/recovery.test.ts
     title: Recovery transition tests
 owa:
   implementation_status: implemented

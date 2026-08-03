@@ -1,40 +1,79 @@
 import { diagnostic } from "./diagnostics.mjs";
 import { hasFrontmatter, parseFrontmatter } from "./frontmatter.mjs";
 
-function validRecord(value) { return value && typeof value === "object" && !Array.isArray(value); }
-const actor = /^(?:(?:human|process):[a-z0-9][a-z0-9._-]{0,63}|[a-z0-9][a-z0-9._-]{0,63}\/[a-z0-9][a-z0-9.+_-]{0,63})$/;
-const timestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
-const date = /^\d{4}-\d{2}-\d{2}$/;
+function record(layer, ruleId, message, file, severity = "error", details = {}) {
+  return diagnostic(layer, ruleId, message, file, severity, details);
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateConcept(artifact) {
+  const diagnostics = [];
+  const parsed = parseFrontmatter(artifact.text ?? "");
+  artifact.parsed = parsed;
+  if (parsed.error) {
+    diagnostics.push(record("official", hasFrontmatter(artifact.text ?? "") ? "OKF-YAML-INVALID" : "OKF-FRONTMATTER-MISSING", hasFrontmatter(artifact.text ?? "") ? `Concept frontmatter is invalid: ${parsed.error}.` : "Every non-reserved Markdown file must begin with a YAML frontmatter block.", artifact.path, "error", { line: parsed.line, column: parsed.column, suggestion: "Add a top-of-file --- YAML block with a non-empty type field." }));
+    return diagnostics;
+  }
+  if (!isRecord(parsed.metadata)) {
+    diagnostics.push(record("official", "OKF-FRONTMATTER-NOT-MAPPING", "Concept frontmatter must parse to a YAML mapping.", artifact.path, "error", { line: 1, column: 1 }));
+    return diagnostics;
+  }
+  if (!Object.hasOwn(parsed.metadata, "type")) {
+    diagnostics.push(record("official", "OKF-TYPE-MISSING", "Every Concept frontmatter mapping must contain type.", artifact.path, "error", { suggestion: "Add type: <descriptive type>." }));
+  } else if (typeof parsed.metadata.type !== "string") {
+    diagnostics.push(record("official", "OKF-TYPE-NOT-STRING", "Concept type must be a string.", artifact.path));
+  } else if (parsed.metadata.type.trim() === "") {
+    diagnostics.push(record("official", "OKF-TYPE-EMPTY", "Concept type must not be empty or whitespace-only.", artifact.path));
+  }
+  if (parsed.metadata.type === "Attested Computation" && (typeof parsed.metadata.runtime !== "string" || parsed.metadata.runtime.trim() === "")) {
+    diagnostics.push(record("official", "OKF-COMPUTATION-RUNTIME-MISSING", "An Attested Computation must declare a non-empty runtime.", artifact.path));
+  }
+  return diagnostics;
+}
+
+function validateRootIndex(artifact) {
+  if (!hasFrontmatter(artifact.text ?? "")) return [];
+  const parsed = parseFrontmatter(artifact.text ?? "");
+  artifact.parsed = parsed;
+  if (parsed.error || !isRecord(parsed.metadata) || Object.keys(parsed.metadata).length !== 1 || parsed.metadata.okf_version !== "0.2") {
+    return [record("official", "OKF-INDEX-ROOT-FRONTMATTER", "Root index frontmatter, when present, must contain only okf_version: \"0.2\".", artifact.path, "error", { suggestion: "Use ---\nokf_version: \"0.2\"\n--- or remove root-index frontmatter." })];
+  }
+  return [];
+}
+
+function validateDirectoryIndex(artifact) {
+  if (hasFrontmatter(artifact.text ?? "")) return [record("official", "OKF-INDEX-FRONTMATTER", "Directory index files must not contain frontmatter.", artifact.path, "error", { suggestion: "Remove the YAML block from this index." })];
+  return [];
+}
+
+function validateLog(artifact) {
+  const diagnostics = [];
+  if (hasFrontmatter(artifact.text ?? "")) diagnostics.push(record("official", "OKF-LOG-FRONTMATTER", "Reserved log files do not use Concept frontmatter.", artifact.path));
+  const headings = [...(artifact.text ?? "").matchAll(/^##\s+(.+)$/gm)].map((match) => match[1].trim());
+  if (headings.length === 0) diagnostics.push(record("official", "OKF-LOG-DATE-MISSING", "A log must contain at least one ISO 8601 date heading (## YYYY-MM-DD).", artifact.path));
+  else if (headings.some((heading) => !/^\d{4}-\d{2}-\d{2}$/.test(heading))) diagnostics.push(record("official", "OKF-LOG-DATE-INVALID", "Log date headings must use YYYY-MM-DD.", artifact.path));
+  return diagnostics;
+}
 
 export function validateOfficial(artifacts) {
   const diagnostics = [];
   for (const artifact of artifacts) {
-    if (artifact.kind === "concept") {
-      const parsed = parseFrontmatter(artifact.text);
-      artifact.parsed = parsed;
-      if (parsed.error) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-001", `Concept frontmatter is invalid: ${parsed.error}.`, artifact.path));
-      else if (!validRecord(parsed.metadata)) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-001", "Concept frontmatter root must be a mapping.", artifact.path));
-      else if (typeof parsed.metadata.type !== "string" || parsed.metadata.type.trim() === "") diagnostics.push(diagnostic("official", "OKF-OFFICIAL-002", "Concept type must be a non-empty string.", artifact.path));
-      else {
-        const metadata = parsed.metadata;
-        if (metadata.generated !== undefined && (!validRecord(metadata.generated) || !actor.test(metadata.generated.by ?? "") || (metadata.generated.at !== undefined && !timestamp.test(metadata.generated.at)))) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-003", "generated requires an official actor in 'by' and an ISO 8601 UTC 'at' when present.", artifact.path));
-        if (metadata.verified !== undefined) {
-          const records = Array.isArray(metadata.verified) ? metadata.verified : [metadata.verified];
-          if (records.length === 0 || records.some((record) => !validRecord(record) || !actor.test(record.by ?? "") || !timestamp.test(record.at ?? ""))) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-004", "verified must be a mapping or non-empty list of records with official actors and ISO 8601 UTC timestamps.", artifact.path));
-        }
-        if (metadata.sources !== undefined && (!Array.isArray(metadata.sources) || metadata.sources.length === 0 || metadata.sources.some((source) => !validRecord(source) || typeof source.resource !== "string" || source.resource.trim() === ""))) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-005", "sources must be a non-empty list whose entries contain a non-empty resource.", artifact.path));
-        if (metadata.status !== undefined && !["draft", "stable", "deprecated"].includes(metadata.status)) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-006", "status must be draft, stable, or deprecated when present.", artifact.path));
-        if (metadata.stale_after !== undefined && (typeof metadata.stale_after !== "string" || !date.test(metadata.stale_after))) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-007", "stale_after must be an absolute YYYY-MM-DD date when present.", artifact.path));
-        if (metadata.type === "Attested Computation" && (typeof metadata.runtime !== "string" || metadata.runtime.trim() === "")) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-008", "Attested Computation requires a non-empty runtime.", artifact.path));
-      }
-    } else if (artifact.kind === "root-index") {
-      if (hasFrontmatter(artifact.text)) {
-        const parsed = parseFrontmatter(artifact.text); artifact.parsed = parsed;
-        if (parsed.error || !validRecord(parsed.metadata) || Object.keys(parsed.metadata).length !== 1 || parsed.metadata.okf_version !== "0.2") diagnostics.push(diagnostic("official", "OKF-OFFICIAL-010", "Root index frontmatter, when present, may contain only okf_version: \"0.2\".", artifact.path));
-      }
-    } else if (artifact.kind === "directory-index" && hasFrontmatter(artifact.text)) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-011", "Directory index must not contain frontmatter.", artifact.path));
-    else if (artifact.kind === "log" && !/^# .+\n\n## \d{4}-\d{2}-\d{2}/m.test(artifact.text)) diagnostics.push(diagnostic("official", "OKF-OFFICIAL-012", "Log must use ISO date headings.", artifact.path));
-    else if (artifact.kind === "unknown-markdown") diagnostics.push(diagnostic("official", "OKF-OFFICIAL-013", "Markdown artifact has no approved classification.", artifact.path));
+    if (artifact.kind === "missing-bundle") diagnostics.push(record("official", "OKF-STRUCT-BUNDLE-MISSING", "The official okf/ bundle root does not exist.", artifact.path, "error", { suggestion: "Create the okf directory and its optional root index." }));
+    else if (artifact.kind === "invalid-bundle-root") diagnostics.push(record("official", "OKF-STRUCT-BUNDLE-ROOT", "The official okf/ path must be a directory.", artifact.path));
+    else if (artifact.kind === "missing-root-index") diagnostics.push(record("official", "OKF-INDEX-ROOT-MISSING", "The configured official bundle requires okf/index.md.", artifact.path, "error", { suggestion: "Add a root index with optional okf_version: \"0.2\" frontmatter." }));
+    else if (artifact.kind === "case-collision") diagnostics.push(record("official", "OKF-INDEX-DUPLICATE-CASE", `Case-insensitive duplicate paths are not allowed: ${(artifact.paths ?? []).join(", ")}.`, artifact.path, "error", { suggestion: "Keep one lower-case reserved filename/path." }));
+    else if (artifact.kind === "reserved-case") diagnostics.push(record("official", "OKF-INDEX-CASE", "Reserved filenames must use lower-case index.md or log.md exactly.", artifact.path));
+    else if (artifact.kind === "unsafe-link") diagnostics.push(record("official", "OKF-STRUCT-UNSAFE-LINK", "Symbolic links and junctions are not followed inside the official bundle.", artifact.path));
+    else if (artifact.kind === "markdown-directory") diagnostics.push(record("official", "OKF-STRUCT-MD-DIRECTORY", "A directory whose name ends in .md is not a valid Markdown artifact.", artifact.path));
+    else if (artifact.kind === "unknown-artifact") diagnostics.push(record("official", "OKF-STRUCT-UNEXPECTED-ARTIFACT", "Only Markdown files are allowed in the official OKF bundle.", artifact.path));
+    else if (artifact.kind === "unreadable" || artifact.kind === "unreadable-directory") diagnostics.push(record("official", "OKF-STRUCT-UNREADABLE", `Official bundle artifact cannot be read: ${artifact.error ?? "unknown read error"}.`, artifact.path));
+    else if (artifact.kind === "root-index") diagnostics.push(...validateRootIndex(artifact));
+    else if (artifact.kind === "directory-index") diagnostics.push(...validateDirectoryIndex(artifact));
+    else if (artifact.kind === "log") diagnostics.push(...validateLog(artifact));
+    else if (artifact.kind === "concept") diagnostics.push(...validateConcept(artifact));
   }
   return diagnostics;
 }

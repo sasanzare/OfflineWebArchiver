@@ -6,10 +6,10 @@ tags: [architecture, application-service, orchestration]
 status: stable
 sources:
   - id: application-service-source
-    resource: packages/application-service/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/application-service/src/index.ts
     title: Application Service production source
   - id: application-service-tests
-    resource: tests/integration/application-service.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/application-service.test.ts
     title: Application Service integration tests
 owa:
   implementation_status: partial
@@ -24,7 +24,7 @@ owa:
 
 # Application Service
 
-The Application Service is the orchestration boundary for the versioned command surface. Contract 1.5 commands are authorized and composed here. Product Phase 8 composes scope policy, the [Queue](../workflow/queue.md), [Leases](../recovery/leases.md), [Checkpoint Recovery](../recovery/checkpoint-recovery.md), [Browser Runtime](browser-runtime.md), and [Rendering](../workflow/rendering.md) capabilities through ports and adapters.
+The Application Service is the orchestration boundary for the versioned command surface. Contract 1.5 commands are authorized and composed here. The service composes scope policy, the [Queue](../workflow/queue.md), [Leases](../recovery/leases.md), [Checkpoint Recovery](../recovery/checkpoint-recovery.md), [Browser Runtime](browser-runtime.md), and [Rendering](../workflow/rendering.md) capabilities through ports and adapters.
 
 `render.start` accepts an existing queued Job rather than an ad-hoc URL. The service owns stage events, heartbeat and lease renewal, pause observation, fenced commit or failure, error translation, and cleanup. Desktop and CLI invoke the same service. Raw Browser, Playwright, and SQLite handles do not cross the service boundary.
 

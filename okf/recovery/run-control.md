@@ -6,7 +6,7 @@ tags: [recovery, runs, pause, state-machine]
 status: stable
 sources:
   - id: recovery-persistence-source
-    resource: packages/persistence-sqlite/src/recovery.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/recovery.ts
     title: Recovery persistence source
 owa:
   implementation_status: implemented

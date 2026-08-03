@@ -6,13 +6,13 @@ tags: [history, phase-record, recovery, leases]
 status: stable
 sources:
   - id: phase-07-report
-    resource: docs/project/PHASE_07_IMPLEMENTATION_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_07_IMPLEMENTATION_REPORT.md
     title: Product Phase 7 implementation report
   - id: phase-07-recovery-source
-    resource: packages/recovery/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/recovery/src/index.ts
     title: Product Phase 7 recovery source
   - id: phase-07-process-kill-tests
-    resource: tests/process-kill/recovery-process-kill.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/process-kill/recovery-process-kill.test.ts
     title: Product Phase 7 process-kill tests
 owa:
   verification_status: verified

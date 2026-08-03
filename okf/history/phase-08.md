@@ -6,16 +6,16 @@ tags: [history, phase-record, browser, rendering]
 status: stable
 sources:
   - id: phase-08-report
-    resource: docs/project/PHASE_08_IMPLEMENTATION_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_08_IMPLEMENTATION_REPORT.md
     title: Product Phase 8 implementation report
   - id: phase-08-browser-source
-    resource: packages/browser-runtime/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/browser-runtime/src/index.ts
     title: Product Phase 8 browser runtime source
   - id: phase-08-render-source
-    resource: packages/rendering/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/rendering/src/index.ts
     title: Product Phase 8 rendering source
   - id: phase-08-fault-tests
-    resource: tests/integration/render-persistence-faults.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/render-persistence-faults.test.ts
     title: Product Phase 8 persistence fault tests
 owa:
   verification_status: verified

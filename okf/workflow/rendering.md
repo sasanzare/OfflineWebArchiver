@@ -6,13 +6,13 @@ tags: [workflow, rendering, browser, artifacts]
 status: stable
 sources:
   - id: rendering-authority
-    resource: docs/architecture/RENDERING_ENGINE.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/RENDERING_ENGINE.md
     title: Rendering architecture authority
   - id: rendering-source
-    resource: packages/rendering/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/rendering/src/index.ts
     title: Render Engine production source
   - id: rendering-tests
-    resource: tests/integration/render-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/render-lifecycle.test.ts
     title: Render lifecycle integration tests
 owa:
   implementation_status: implemented

@@ -6,7 +6,7 @@ tags: [workflow, queue, attempts, recovery]
 status: stable
 sources:
   - id: queue-lifecycle-evidence
-    resource: tests/integration/queue-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/queue-lifecycle.test.ts
     title: Queue lifecycle tests
 owa:
   implementation_status: implemented

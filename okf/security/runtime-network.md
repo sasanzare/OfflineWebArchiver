@@ -6,10 +6,10 @@ tags: [security, network, ssrf, rendering]
 status: stable
 sources:
   - id: runtime-network-policy
-    resource: docs/architecture/RUNTIME_NETWORK_POLICY.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/RUNTIME_NETWORK_POLICY.md
     title: Runtime network policy authority
   - id: browser-security-review
-    resource: docs/architecture/PHASE_08_SECURITY_REVIEW.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/PHASE_08_SECURITY_REVIEW.md
     title: Browser security review
 stale_after: "2026-11-01"
 owa:

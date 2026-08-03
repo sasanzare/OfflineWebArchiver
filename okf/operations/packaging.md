@@ -6,7 +6,7 @@ tags: [operations, packaging, release]
 status: stable
 sources:
   - id: phase-three-build-evidence
-    resource: tools/build/build.mjs
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tools/build/build.mjs
     title: Development build definition
 stale_after: "2026-11-01"
 owa:
@@ -17,6 +17,6 @@ owa:
 
 # Packaging
 
-Product Phase 3 produces runnable development artifacts but does not claim release packaging. The Phase 2 unpacked Windows package is spike evidence only.
+The current build produces runnable development artifacts but does not claim release packaging. The unpacked Windows package from the Phase 2 feasibility spike remains historical evidence only.
 
 Clean-host validation, signing, licensing, SBOM generation, multi-platform packaging, and production Browser artifact work remain open.

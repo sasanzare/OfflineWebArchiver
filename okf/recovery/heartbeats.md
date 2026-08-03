@@ -6,7 +6,7 @@ tags: [recovery, leases, heartbeats, concurrency]
 status: stable
 sources:
   - id: recovery-concurrency-evidence
-    resource: tests/concurrency/recovery-concurrency.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/concurrency/recovery-concurrency.test.ts
     title: Recovery concurrency tests
 owa:
   implementation_status: implemented

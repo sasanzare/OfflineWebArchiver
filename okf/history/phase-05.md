@@ -6,10 +6,10 @@ tags: [history, phase-record, scope, normalization]
 status: stable
 sources:
   - id: phase-05-report
-    resource: docs/project/PHASE_05_IMPLEMENTATION_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_05_IMPLEMENTATION_REPORT.md
     title: Product Phase 5 implementation report
   - id: phase-05-security
-    resource: docs/architecture/PHASE_05_SECURITY_REVIEW.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/PHASE_05_SECURITY_REVIEW.md
     title: Product Phase 5 security review
 owa:
   verification_status: verified

@@ -2,7 +2,7 @@
 
 <!-- MAINTAINED NAVIGATION. Update when direct Concept children change. -->
 
-This directory contains the reviewed product overview Concept. Requirements and detailed product authorities remain in their current project documentation until Phase 5.
+This directory contains the reviewed product overview Concept. Requirements and detailed product authorities remain in their current project documentation; the Concept below summarizes the durable product boundary.
 
 - [Product Overview](overview.md) - Durable product scope and capability boundary.
 

@@ -6,13 +6,13 @@ tags: [history, phase-record, queue, state-machine]
 status: stable
 sources:
   - id: phase-06-report
-    resource: docs/project/PHASE_06_IMPLEMENTATION_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_06_IMPLEMENTATION_REPORT.md
     title: Product Phase 6 implementation report
   - id: phase-06-queue-source
-    resource: packages/queue/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/queue/src/index.ts
     title: Product Phase 6 queue source
   - id: phase-06-queue-tests
-    resource: tests/integration/queue-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/queue-lifecycle.test.ts
     title: Product Phase 6 queue lifecycle tests
 owa:
   verification_status: verified

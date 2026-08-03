@@ -6,13 +6,13 @@ tags: [history, phase-record, feasibility]
 status: stable
 sources:
   - id: phase-02-report
-    resource: docs/project/PHASE_02_FEASIBILITY_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_02_FEASIBILITY_REPORT.md
     title: Product Phase 2 feasibility report
   - id: phase-02-evidence
-    resource: okf-bootstrap/PHASE_EVIDENCE/PHASE_02_FEASIBILITY_EVIDENCE.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/okf-bootstrap/PHASE_EVIDENCE/PHASE_02_FEASIBILITY_EVIDENCE.md
     title: Preserved Product Phase 2 evidence
   - id: phase-02-spike
-    resource: spikes/phase-02-feasibility/README.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/spikes/phase-02-feasibility/README.md
     title: Preserved feasibility spike
 owa:
   verification_status: verified

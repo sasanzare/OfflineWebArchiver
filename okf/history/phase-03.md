@@ -6,10 +6,10 @@ tags: [history, phase-record, architecture, monorepo]
 status: stable
 sources:
   - id: phase-03-application-service-adr
-    resource: docs/project/adr/ADR-003-local-application-service-transport-boundary.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/adr/ADR-003-local-application-service-transport-boundary.md
     title: Local application-service transport decision
   - id: phase-03-okf-validator
-    resource: tools/okf/validate.mjs
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tools/okf/validate.mjs
     title: Canonical OKF validation source
 owa:
   verification_status: verified

@@ -6,7 +6,7 @@ tags: [architecture, desktop, electron, interfaces]
 status: stable
 sources:
   - id: desktop-interface-evidence
-    resource: tests/electron/desktop-smoke.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/electron/desktop-smoke.test.ts
     title: Desktop smoke tests
 owa:
   implementation_status: implemented

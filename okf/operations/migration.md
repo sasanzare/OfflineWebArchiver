@@ -6,7 +6,7 @@ tags: [operations, migrations, sqlite, compatibility]
 status: stable
 sources:
   - id: migration-strategy
-    resource: docs/architecture/MIGRATION_STRATEGY.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/MIGRATION_STRATEGY.md
     title: Migration strategy authority
 stale_after: "2026-11-01"
 owa:

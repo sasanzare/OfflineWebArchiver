@@ -6,13 +6,13 @@ tags: [architecture, browser, chromium, security]
 status: stable
 sources:
   - id: browser-runtime-docs
-    resource: docs/architecture/BROWSER_RUNTIME.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/BROWSER_RUNTIME.md
     title: Browser runtime architecture authority
   - id: browser-runtime-source
-    resource: packages/browser-runtime/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/browser-runtime/src/index.ts
     title: Browser runtime production source
   - id: browser-runtime-evidence
-    resource: tests/integration/render-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/render-lifecycle.test.ts
     title: Browser lifecycle integration evidence
 owa:
   implementation_status: implemented

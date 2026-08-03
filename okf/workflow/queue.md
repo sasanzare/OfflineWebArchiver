@@ -6,13 +6,13 @@ tags: [workflow, queue, jobs, idempotency]
 status: stable
 sources:
   - id: queue-domain-source
-    resource: packages/queue/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/queue/src/index.ts
     title: Queue domain source
   - id: queue-persistence-source
-    resource: packages/persistence-sqlite/src/queue.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/queue.ts
     title: Queue persistence source
   - id: queue-lifecycle-tests
-    resource: tests/integration/queue-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/queue-lifecycle.test.ts
     title: Queue lifecycle integration tests
 owa:
   implementation_status: implemented
@@ -31,5 +31,4 @@ The queue persists normalized Page Job identities, deterministic priority, idemp
 
 Claims are atomic and token-fenced. Attempts increment only on a committed claim, and completion, failure, retry, skip, or block histories survive Project reopen. Discovery provenance retains source, parent, type, and depth with a minimum effective Job depth. The [Page Job State Machine](job-state-machine.md) defines transitions, while [Leases](../recovery/leases.md) and [Fencing](../recovery/fencing.md) protect later writes.
 
-Phase 8 rendering may process only an eligible existing queued Job through the [Rendering](rendering.md) workflow. Automatic discovery, automatic enqueue, a production downloader, and a Worker Pool remain outside this Concept.
-
+Rendering may process only an eligible existing queued Job through the [Rendering](rendering.md) workflow. Automatic discovery, automatic enqueue, a production downloader, and a Worker Pool remain outside this Concept.

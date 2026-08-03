@@ -6,7 +6,7 @@ tags: [recovery, files, range-requests, downloads]
 status: stable
 sources:
   - id: partial-file-evidence
-    resource: tests/integration/partial-file-recovery.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/partial-file-recovery.test.ts
     title: Partial file recovery tests
 owa:
   implementation_status: partial

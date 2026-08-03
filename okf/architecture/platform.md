@@ -6,7 +6,7 @@ tags: [architecture, platform, configuration]
 status: stable
 sources:
   - id: platform-source
-    resource: packages/platform/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/platform/src/index.ts
     title: Platform adapter source
 owa:
   implementation_status: implemented

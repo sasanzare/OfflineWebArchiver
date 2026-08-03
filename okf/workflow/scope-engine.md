@@ -6,10 +6,10 @@ tags: [workflow, scope, url-normalization, security]
 status: stable
 sources:
   - id: scope-engine-source
-    resource: packages/scope-engine/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/scope-engine/src/index.ts
     title: Scope Engine source
   - id: scope-engine-golden-evidence
-    resource: tests/fixtures/scope/normalization.golden.json
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/fixtures/scope/normalization.golden.json
     title: Scope normalization golden fixture
 owa:
   implementation_status: partial

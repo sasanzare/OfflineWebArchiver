@@ -6,7 +6,7 @@ tags: [recovery, pause, resume, leases]
 status: stable
 sources:
   - id: recovery-lifecycle-evidence
-    resource: tests/integration/recovery-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/recovery-lifecycle.test.ts
     title: Recovery lifecycle tests
 owa:
   implementation_status: implemented

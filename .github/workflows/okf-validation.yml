@@ -29,11 +29,23 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Run validator regression tests
-        run: npm run test:okf
+      - name: Run official OKF structural validation
+        run: npm run okf:validate:official
 
-      - name: Run blocking OKF validation layers
-        run: npm run okf:validate
+      - name: Run official OKF reference validation
+        run: npm run okf:validate:references
+
+      - name: Run OWA extension validation
+        run: npm run okf:validate:extension
+
+      - name: Run OWA quality validation
+        run: npm run okf:validate:quality
+
+      - name: Run OKF formatting validation
+        run: npm run okf:validate:format
+
+      - name: Run OKF unit and regression tests
+        run: npm run test:okf
 
       - name: Run documentation and formatting gates
         run: |
@@ -57,8 +69,8 @@ jobs:
           {
             echo "## OKF validation"
             echo ""
-            echo "Blocking layers: official, repository policy, extension integrity, and formatting."
-            echo "Knowledge-quality findings remain non-blocking unless the validator emits an error."
+            echo "Layers: official structure, official references, OWA extension, OWA quality, and formatting."
+            echo "Remote URL existence checks are intentionally not required in standard CI."
             echo ""
             echo "### Conformance report"
             echo ""

@@ -6,7 +6,7 @@ tags: [security, browser, recovery, privacy]
 status: stable
 sources:
   - id: phase-eight-security-review
-    resource: docs/architecture/PHASE_08_SECURITY_REVIEW.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/PHASE_08_SECURITY_REVIEW.md
     title: Phase 8 security review
 stale_after: "2026-11-01"
 owa:

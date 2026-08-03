@@ -6,7 +6,7 @@ tags: [recovery, output, artifacts, integrity]
 status: stable
 sources:
   - id: output-verification-evidence
-    resource: tests/unit/recovery.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/unit/recovery.test.ts
     title: Completed output verification tests
 owa:
   implementation_status: implemented

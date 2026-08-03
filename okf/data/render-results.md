@@ -6,10 +6,10 @@ tags: [data, rendering, artifacts, sqlite]
 status: stable
 sources:
   - id: render-persistence-source
-    resource: packages/persistence-sqlite/src/render.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/persistence-sqlite/src/render.ts
     title: Render persistence source
   - id: render-fault-evidence
-    resource: tests/integration/render-persistence-faults.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/render-persistence-faults.test.ts
     title: Render persistence fault tests
 owa:
   implementation_status: implemented

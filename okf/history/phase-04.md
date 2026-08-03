@@ -6,10 +6,10 @@ tags: [history, phase-record, project-format, sqlite]
 status: stable
 sources:
   - id: phase-04-report
-    resource: docs/project/PHASE_04_IMPLEMENTATION_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_04_IMPLEMENTATION_REPORT.md
     title: Product Phase 4 implementation report
   - id: phase-04-security
-    resource: docs/architecture/PHASE_04_SECURITY_REVIEW.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/PHASE_04_SECURITY_REVIEW.md
     title: Product Phase 4 security review
 owa:
   verification_status: verified

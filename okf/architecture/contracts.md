@@ -6,10 +6,10 @@ tags: [architecture, contracts, ipc, cli]
 status: stable
 sources:
   - id: contracts-source
-    resource: packages/contracts/src/index.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/packages/contracts/src/index.ts
     title: Contracts production source
   - id: contracts-report
-    resource: docs/project/PHASE_08_IMPLEMENTATION_REPORT.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/project/PHASE_08_IMPLEMENTATION_REPORT.md
     title: Phase 8 contract implementation report
 owa:
   implementation_status: implemented

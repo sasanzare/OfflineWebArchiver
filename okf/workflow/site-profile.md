@@ -6,10 +6,10 @@ tags: [workflow, profile, scope, persistence]
 status: stable
 sources:
   - id: site-profile-authority
-    resource: docs/architecture/SITE_PROFILE.md
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/docs/architecture/SITE_PROFILE.md
     title: Site Profile architecture authority
   - id: profile-lifecycle-evidence
-    resource: tests/integration/profile-lifecycle.test.ts
+    resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0c323a593dbec974676dc3233dcee8b442150c43/tests/integration/profile-lifecycle.test.ts
     title: Profile lifecycle tests
 owa:
   implementation_status: implemented
