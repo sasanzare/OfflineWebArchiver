@@ -4,6 +4,35 @@
 
 This ledger classifies all 58 Markdown files currently under `okf/`, exactly once each. It is a design input only; no source file is moved, rewritten, merged, or deleted in Phase 2.
 
+`OKF-P4-A001` is the recorded Phase 4 realization amendment. The original proposed paths below retain the Phase 2 `okf/bundle/` notation for historical traceability; the Phase 4 core rows are implemented at the corresponding `okf/<category>/...` paths listed in the execution table below. No legacy source is removed or rewritten.
+
+## Phase 4 execution path realization
+
+| Source path | Phase 4 target path | Action | Type |
+|---|---|---|---|
+| `okf/knowledge/product/README.md` + `okf/knowledge/product/NEXT_PHASE.md` | `okf/product/index.md` + `okf/product/overview.md` | Convert index and merge durable scope | Project Overview |
+| `okf/knowledge/product/PHASES.md` | `okf/history/index.md` | Convert phase navigation to reserved index | Reserved index |
+| `okf/knowledge/application-service/README.md` | `okf/architecture/application-service.md` | Create target and preserve legacy | Architecture Component |
+| `okf/knowledge/browser-runtime/README.md` | `okf/architecture/browser-runtime.md` | Create target and preserve legacy | Architecture Component |
+| `okf/knowledge/contracts/README.md` | `okf/architecture/contracts.md` | Create target and preserve legacy | Architecture Component |
+| `okf/knowledge/project-format/README.md` | `okf/data/project-format.md` | Create target and preserve legacy | Data Model |
+| `okf/knowledge/database/README.md` | `okf/data/database.md` | Create target and preserve legacy | Data Model |
+| `okf/knowledge/persistence/README.md` | `okf/data/persistence.md` | Create target and preserve legacy | Data Model |
+| `okf/knowledge/queue/README.md` | `okf/workflow/queue.md` | Create target and preserve legacy | Workflow |
+| `okf/knowledge/job-state-machine/README.md` | `okf/workflow/job-state-machine.md` | Create target and preserve legacy | Workflow |
+| `okf/knowledge/rendering/README.md` | `okf/workflow/rendering.md` | Create target and preserve legacy | Workflow |
+| `okf/knowledge/leases/README.md` | `okf/recovery/leases.md` | Create target and preserve legacy | Recovery Procedure |
+| `okf/knowledge/fencing/README.md` | `okf/recovery/fencing.md` | Create target and preserve legacy | Recovery Procedure |
+| `okf/knowledge/checkpoint-recovery/README.md` | `okf/recovery/checkpoint-recovery.md` | Create target and preserve legacy | Recovery Procedure |
+| `okf/knowledge/architecture/PHASE_03_ARCHITECTURE_RECORD.md` + `okf/phases/phase-03/PHASE_03_ARCHITECTURE_RECORD.md` | `okf/history/phase-03.md` | Merge and preserve both sources | Phase Record |
+| `okf/phases/phase-01/PHASE_01_RECORD.md` | `okf/history/phase-01.md` | Create target and preserve legacy | Phase Record |
+| `okf/phases/phase-02/PHASE_02_RECORD.md` | `okf/history/phase-02.md` | Create target and preserve legacy | Phase Record |
+| `okf/phases/phase-04/PHASE_04_PROJECT_FORMAT_RECORD.md` | `okf/history/phase-04.md` | Create target and preserve legacy | Phase Record |
+| `okf/phases/phase-05/PHASE_05_SCOPE_AND_NORMALIZATION_RECORD.md` | `okf/history/phase-05.md` | Create target and preserve legacy | Phase Record |
+| `okf/phases/phase-06/PHASE_06_PERSISTENT_QUEUE_RECORD.md` | `okf/history/phase-06.md` | Create target and preserve legacy | Phase Record |
+| `okf/phases/phase-07/PHASE_07_RECOVERY_RECORD.md` | `okf/history/phase-07.md` | Create target and preserve legacy | Phase Record |
+| `okf/phases/phase-08/PHASE_08_BROWSER_RENDERING_RECORD.md` | `okf/history/phase-08.md` | Create target and preserve legacy | Phase Record |
+
 `Concept count` records the number of coherent semantic units in the source. A target type of `N/A — extension` or `N/A — reserved index` means the source will not become an ordinary official Concept. Target paths are repository-relative proposed paths. All moves wait for compatibility coverage; `No` in Owner decision means no unresolved owner choice blocks the disposition.
 
 ## Complete Source-to-Target Ledger

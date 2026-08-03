@@ -2,7 +2,9 @@
 
 ## Root `index.md`
 
-Target: `okf/bundle/index.md`.
+Target for the Phase 4 execution slice: `okf/index.md`.
+
+The Phase 2 design used `okf/bundle/index.md`; `OKF-P4-A001` records the explicit Phase 4 root amendment. The reserved-file rules below are unchanged.
 
 The root index is a reserved navigation file, not a Concept. It is human-authored and repository-required. Official v0.2 permits frontmatter here and nowhere else among index files. The complete allowed mapping is:
 

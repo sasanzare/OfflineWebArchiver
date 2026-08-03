@@ -1,5 +1,9 @@
 # Authoring and Generation Policy
 
+## Phase 4 execution amendment
+
+For the Phase 4 slice, the authored root index is `okf/index.md` and the generated-style directory indexes are its populated direct-child indexes. This realizes the handoff under `OKF-P4-A001`; the ownership rules below are unchanged, and the historical Phase 2 `bundle/` wording remains design context until Phase 5 resolves the extension bridge.
+
 ## Policy Goal
 
 The repository must have one editable authority for each fact. Generated artifacts make authoritative knowledge searchable, navigable, or testable; they do not create a second authority.

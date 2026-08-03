@@ -1,5 +1,9 @@
 # Official and Extension Boundary
 
+## Phase 4 execution amendment
+
+The frozen Phase 2 boundary names `okf/bundle/` and `okf/extensions/`. For the Phase 4 production slice, `OKF-P4-A001` realizes the selected official Concepts and reserved indexes directly under `okf/` so the required `okf/index.md` is the single production root. Existing registries, evidence, maps, validation files, and legacy Markdown remain transitional artifacts and are not silently reclassified. Phase 5 must finalize the physical extension location and bridge before any relocation.
+
 ## Boundary Contract
 
 The official Google OKF v0.2 bundle root is `okf/bundle/`. The OfflineWebArchiver extension root is its sibling `okf/extensions/`. Only the former is submitted to official conformance validation. The latter is governed by project schemas and policies and may be stricter than the official format.

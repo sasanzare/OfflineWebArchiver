@@ -2,7 +2,7 @@
 
 ## Execution Contract
 
-Phase 4 creates the reviewed core under `okf/bundle/` without editing or removing any current `okf/` artifact. It follows this contract and the Phase 2 target paths exactly. It may not redesign metadata semantics for convenience.
+Phase 4 creates the reviewed core under the production root `okf/` without editing or removing any current `okf/` artifact. `OKF-P4-A001` records the necessary physical-root amendment: the Phase 4 execution contract requires `okf/index.md`, whereas the earlier Phase 2 design reserved `okf/bundle/`. The amendment changes only the realized Phase 4 target root; it does not redesign metadata semantics, taxonomy, lifecycle, or relationship rules.
 
 Contract version: `owa-okf-metadata/1.0.0`; official target: OKF `0.2`.
 
@@ -49,7 +49,7 @@ Every source record requires portable `resource`; local absolute/UNC/file/home/e
 
 ## Reserved Files
 
-- Create authored `okf/bundle/index.md` with only `okf_version: "0.2"` frontmatter.
+- Create authored `okf/index.md` with only `okf_version: "0.2"` frontmatter.
 - Generated directory indexes have no frontmatter and contain one-level navigation plus generated body marker.
 - Do not create any `log.md`.
 
@@ -57,13 +57,13 @@ Every source record requires portable `resource`; local absolute/UNC/file/home/e
 
 Phase 4 migrates these targets first, in this order, using the source dependencies in `CONTENT_MIGRATION_MAP.md`:
 
-1. `okf/bundle/index.md`.
-2. `okf/bundle/product/index.md` and `okf/bundle/product/overview.md` from product README plus durable `NEXT_PHASE` scope only.
-3. `okf/bundle/architecture/index.md`, `application-service.md`, `browser-runtime.md`, and `contracts.md`.
-4. `okf/bundle/data/index.md`, `project-format.md`, `database.md`, and `persistence.md`.
-5. `okf/bundle/workflow/index.md`, `queue.md`, `job-state-machine.md`, and `rendering.md`.
-6. `okf/bundle/recovery/index.md`, `leases.md`, `fencing.md`, and `checkpoint-recovery.md`.
-7. `okf/bundle/history/index.md` and `phase-01.md` through `phase-08.md`, including the documented Phase 3 merge.
+1. `okf/index.md`.
+2. `okf/product/index.md` and `okf/product/overview.md` from product README plus durable `NEXT_PHASE` scope only.
+3. `okf/architecture/index.md`, `application-service.md`, `browser-runtime.md`, and `contracts.md`.
+4. `okf/data/index.md`, `project-format.md`, `database.md`, and `persistence.md`.
+5. `okf/workflow/index.md`, `queue.md`, `job-state-machine.md`, and `rendering.md`.
+6. `okf/recovery/index.md`, `leases.md`, `fencing.md`, and `checkpoint-recovery.md`.
+7. `okf/history/index.md` and `phase-01.md` through `phase-08.md`, including the documented Phase 3 merge.
 
 All current source paths remain operational. Remaining mapped Concepts and extension relocations stay in Phase 5.
 

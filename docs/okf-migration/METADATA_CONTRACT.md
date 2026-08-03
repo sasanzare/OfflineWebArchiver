@@ -2,7 +2,7 @@
 
 ## Purpose and Authority
 
-This document freezes the Phase 3 producer contract for future Concepts under `okf/bundle/`. It implements the fixed Phase 2 architecture and the official Google Open Knowledge Format v0.2 specification. It is a design contract only: Phase 3 creates no production Concept, index, log, parser, or validator integration.
+This document freezes the Phase 3 producer contract for future Concepts. The Phase 2 design named `okf/bundle/`; `OKF-P4-A001` records that the Phase 4 production slice is realized at `okf/` because its execution contract requires `okf/index.md`. The field, lifecycle, actor, source, evidence, and reserved-file rules remain unchanged. Phase 3 itself created no production Concept, index, log, parser, or validator integration.
 
 Rules are labeled by validation layer:
 

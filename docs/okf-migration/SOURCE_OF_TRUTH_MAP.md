@@ -1,5 +1,18 @@
 # Target Source-of-Truth Map
 
+## Phase 4 execution amendment
+
+Under `OKF-P4-A001`, the new core Concepts are created directly under `okf/` because the Phase 4 contract requires `okf/index.md`. They are future semantic representations, not an immediate consumer cutover: current product, ADR, source, test, registry, and legacy Markdown authorities remain operational. The Phase 4 ledger marks each duplicate legacy source as preserved and read-only for migration purposes. Phase 5 must finalize extension relocation and authority cutover before any deletion.
+
+| Phase 4 category | Realized target authority during overlap |
+|---|---|
+| Product | `okf/product/overview.md` plus the authored root and product indexes |
+| Architecture | `okf/architecture/application-service.md`, `browser-runtime.md`, and `contracts.md` |
+| Data | `okf/data/project-format.md`, `database.md`, and `persistence.md` |
+| Workflow | `okf/workflow/queue.md`, `job-state-machine.md`, and `rendering.md` |
+| Recovery | `okf/recovery/leases.md`, `fencing.md`, and `checkpoint-recovery.md` |
+| History | `okf/history/phase-01.md` through `phase-08.md` |
+
 ## Policy
 
 Each fact has one editable authority. An official Concept becomes the semantic knowledge authority only after its reviewed migration cutover. External product/governance documents and source/tests may remain authoritative for their specialized facts. Extension indexes and reports are derived unless this table explicitly identifies an authored project-only authority.

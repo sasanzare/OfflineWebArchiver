@@ -128,8 +128,27 @@
 | Phase | Gate | Status |
 |---:|---|---|
 | 3 | Metadata/frontmatter contract and fixture corpus implement fixed Phase 2 inputs. | PASSED |
-| 4 | Reviewed core Concepts and indexes conform without removing current authorities. | NOT_STARTED |
+| 4 | Reviewed core Concepts and indexes conform without removing current authorities. | PASSED |
 | 5 | All mapped content and extension data have implemented dispositions and compatibility coverage. | NOT_STARTED |
 | 6 | Official and extension validators/generators are separate and testable. | NOT_STARTED |
 | 7 | Deterministic local/approved CI quality controls pass. | NOT_STARTED |
 | 8 | Final official and extension audits pass; cleanup is explicitly approved. | NOT_STARTED |
+
+## Phase 4 Criteria
+
+| ID | Criterion | Status | Evidence |
+|---|---|---|---|
+| OKF-MIG-P4-001 | Baseline branch, commit, and clean starting status are recorded. | PASSED | `PHASE_04_IMPLEMENTATION_REPORT.md` |
+| OKF-MIG-P4-002 | The Phase 2 and Phase 3 contracts and exact handoff are revalidated. | PASSED | `PHASE_04_METADATA_HANDOFF.md`, `PHASE_04_IMPLEMENTATION_REPORT.md` |
+| OKF-MIG-P4-003 | The explicit root amendment is documented before production files are created. | PASSED | `PHASE_02_DECISIONS.md`, `PHASE_03_DECISIONS.md` |
+| OKF-MIG-P4-004 | `okf/index.md` follows the root reserved-file contract. | PASSED | `okf/index.md`, `PHASE_04_CONFORMANCE_REPORT.md` |
+| OKF-MIG-P4-005 | Required product, architecture, data, workflow, recovery, and history indexes exist without frontmatter. | PASSED | Six directory indexes and link audit |
+| OKF-MIG-P4-006 | The exact 23 source documents produce 21 Concepts plus the required indexes. | PASSED | `PHASE_04_CORE_MIGRATION_LEDGER.md` |
+| OKF-MIG-P4-007 | Every migrated Concept has valid frontmatter, an approved type, canonical field order, and lifecycle separation. | PASSED | Manual metadata validation and conformance report |
+| OKF-MIG-P4-008 | Every migrated Concept has portable source attribution and no machine-specific path. | PASSED | `PHASE_04_LINK_AND_SOURCE_AUDIT.md` |
+| OKF-MIG-P4-009 | Markdown relationships introduced by Phase 4 resolve. | PASSED | `PHASE_04_LINK_AND_SOURCE_AUDIT.md` |
+| OKF-MIG-P4-010 | The Phase 3 architecture duplicate is merged without deleting either source. | PASSED | `okf/history/phase-03.md`, semantic preservation report |
+| OKF-MIG-P4-011 | Existing registries, manifest, validator, application code, tests, scripts, and CI are unchanged. | PASSED | Scoped Git diff and implementation report |
+| OKF-MIG-P4-012 | Remaining legacy content and full-bundle non-conformance are explicitly reported. | PASSED | Conformance report and Phase 5 handoff |
+| OKF-MIG-P4-013 | Six Phase 4 reports are complete and counts reconcile. | PASSED | Report set under `docs/okf-migration/` |
+| OKF-MIG-P4-014 | No commit or push occurs during Phase 4. | PASSED | Final Git inspection |

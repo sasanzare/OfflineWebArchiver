@@ -12,6 +12,17 @@ Phase 2 revalidated that baseline and fixed the target architecture, official/ex
 
 Phase 3 freezes the complete metadata/frontmatter producer contract, lifecycle and project state mapping, actor/provenance/evidence/freshness rules, reserved-file metadata, examples, invalid design fixtures, modular Draft 2020-12 schemas, current-to-future field mapping, and the Phase 4 handoff. It remains design-only and does not modify the current bundle or validator.
 
+Phase 4 activates the reviewed core migration slice at the production root `okf/` under amendment `OKF-P4-A001`. It adds the root and core indexes, 21 Concepts, and the six Phase 4 reports while preserving all current legacy paths, registries, and validator behavior. This is a partial migration; remaining legacy Markdown and extension relocation are Phase 5 work.
+
+### Phase 4 execution reports
+
+- [Core migration ledger](PHASE_04_CORE_MIGRATION_LEDGER.md)
+- [Link and source audit](PHASE_04_LINK_AND_SOURCE_AUDIT.md)
+- [Semantic preservation report](PHASE_04_SEMANTIC_PRESERVATION_REPORT.md)
+- [Conformance report](PHASE_04_CONFORMANCE_REPORT.md)
+- [Implementation report](PHASE_04_IMPLEMENTATION_REPORT.md)
+- [Phase 5 handoff](PHASE_05_HANDOFF.md)
+
 ## Authoritative Specification
 
 The normative source is the official [Google Open Knowledge Format v0.2 specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md). The official [OKF directory](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf) is supporting context.
@@ -78,6 +89,8 @@ Phase 3 defines metadata and serialization against these inputs. It must not red
 - Portable actor/source/date formats and canonical field order are fixed.
 - Root index has only `okf_version`; directory indexes and logs have no frontmatter; production log remains omitted.
 
+For the Phase 4 execution slice, `OKF-P4-A001` realizes the root index as `okf/index.md` and the selected category paths directly under `okf/`. This is a documented physical-root amendment required by the Phase 4 execution contract; metadata semantics and the 14-type taxonomy remain frozen.
+
 ## Explicit Non-Implementation Statement
 
-No migration is implemented by Phases 1-3. Existing `okf/` artifacts remain in their original paths and formats, no production reserved file or frontmatter is added, the proposed schemas are not wired into production, and the custom validator retains its current behavior.
+Phases 1-3 were design-only. Phase 4 now adds only the approved core targets and leaves existing `okf/` artifacts in their original paths and formats. The proposed schemas remain unwired, and the custom validator retains its current behavior.

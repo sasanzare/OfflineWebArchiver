@@ -1,5 +1,11 @@
 # Phase 3 Metadata Decisions
 
+## Phase 4 Execution Amendment
+
+`OKF-P4-A001` is the recorded implementation amendment to the Phase 2 physical-root decision. Phase 4 creates the production slice at `okf/` because its approved execution contract requires `okf/index.md`, while the Phase 2 design had reserved `okf/bundle/`. No Phase 3 metadata, lifecycle, actor, source, evidence, or reserved-file semantics change: the root index still has only `okf_version: "0.2"`, directory indexes still have no frontmatter, and Concepts still use the frozen canonical field order.
+
+The amendment applies only to the selected Phase 4 paths and keeps every legacy source, registry, and current validator consumer untouched. Phase 5 must complete the extension bridge and decide the final location of extension Markdown before any cleanup or consumer cutover.
+
 ## Decision Register
 
 | ID | Title | Status | Context | Decision | Alternatives considered | Rationale / consequences | Migration impact | Future phase |

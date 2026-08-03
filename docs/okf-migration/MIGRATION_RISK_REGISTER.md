@@ -32,6 +32,15 @@
 | OKF-MIG-R028 | Closed extension fields duplicate generated registries | Current graph/evidence/phase data is broad | Medium | Medium | MEDIUM | Keep only minimal state/traceability/legacy bridge in `owa`; full records remain extension JSON. | 3-6 |
 | OKF-MIG-R029 | Frontmatter is added to generated directory indexes | Phase 2 indexes are generated but official non-root indexes forbid metadata | Medium | High | HIGH | Use body marker only; reserved-file schema/procedural fixture rejects delimiters. | 3-7 |
 
+## Phase 4 execution risks
+
+| Risk ID | Risk | Evidence | Control | Target phase |
+|---|---|---|---|---:|
+| OKF-MIG-P4-R001 | The explicit `okf/index.md` execution root diverges from the historical `okf/bundle/` design root. | Phase 4 contract and `OKF-P4-A001` amendment | Keep the amendment in both decision records, use one realized root for all selected targets, and require Phase 5 to reconcile the extension boundary before cutover. | 5 |
+| OKF-MIG-P4-R002 | Additive target and legacy copies are mistaken for dual authorities. | New Concepts and unchanged current knowledge paths | Ledger marks target Concepts as future semantic representations and legacy sources as preserved transition artifacts; no consumer is switched in Phase 4. | 5-8 |
+| OKF-MIG-P4-R003 | Core indexes become stale or are treated as authored Concepts before generator implementation. | Directory indexes are materialized before Phase 6 tooling. | Use the frozen generated-file marker, direct-child-only links, and Phase 6 deterministic regeneration checks. | 6-7 |
+| OKF-MIG-P4-R004 | Partial root conformance is overstated because legacy Markdown remains under `okf/`. | 58 legacy Markdown files remain alongside the 21 new Concepts. | Report migrated-core, reserved-file, extension, and full-bundle results separately; never claim full conformance. | 4-8 |
+
 ## Phase 2 Risk Position
 
 No critical architecture question remains open. Phase 3 may proceed with the fixed boundary, paths, taxonomy, reserved-file policy, and source direction. The highest remaining risks are implementation risks controlled by staged compatibility, separate validators, evidence preservation, and no destructive cleanup before the final audit.

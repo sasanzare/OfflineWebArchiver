@@ -21,7 +21,7 @@
 
 ### Fixed Inputs
 
-- Official root is `okf/bundle/`; extension root is `okf/extensions/`.
+- Phase 4 execution root is `okf/` under amendment `OKF-P4-A001`; the Phase 2 design root `okf/bundle/` remains historical design context until the Phase 5 extension-boundary decision.
 - Target paths are those in `CONTENT_MIGRATION_MAP.md`.
 - The 14 canonical types in `CONCEPT_TAXONOMY.md` are closed unless contradictory evidence is recorded.
 - Root index is authored; directory indexes are generated; official log is omitted.
@@ -42,9 +42,9 @@ Every approved type has valid/invalid fixtures; every current status has a non-l
 
 ## Phase 4: Core Concept Migration and Indexes
 
-Create `okf/bundle/` with the authored root index, generated directory indexes, product overview, a reviewed core across architecture/data/workflow/recovery, and Phase Records. Apply the Phase 3 contract. Use the exact target paths and merge/index decisions. Keep every current path and registry operational during overlap.
+Create `okf/index.md` with the authored root index, generated-style directory indexes, product overview, a reviewed core across architecture/data/workflow/recovery, and Phase Records. Apply the Phase 3 contract. Use the amended target paths and merge/index decisions. Keep every current path and registry operational during overlap.
 
-Acceptance requires official validation of the migrated subset, extension bridge coverage, resolved links, semantic review against source authorities, deterministic index generation, and recorded per-file cutover. No registry or legacy deletion is allowed.
+Acceptance requires manual official-contract validation of the migrated subset, extension bridge coverage, resolved links, semantic review against source authorities, deterministic index structure, and recorded per-file cutover. No registry or legacy deletion is allowed. Full-bundle conformance remains open while legacy Markdown is still present.
 
 ## Phase 5: Full Migration and Extension Bridge
 

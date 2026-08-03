@@ -32,4 +32,16 @@ Phase 3 does not change the current compliance results because it creates no pro
 | Lifecycle/freshness | Official lifecycle and absolute staleness separated from project state | `STATUS_AND_LIFECYCLE_MODEL.md`, `FRESHNESS_AND_VERIFICATION_POLICY.md` |
 | Unknown fields/types | Official pass/preserve; repository producer policy reported separately | `METADATA_CONTRACT.md` |
 
-Current status remains nonconformant until Phase 4 creates migrated Concepts; no Phase 3 document claims otherwise.
+At the Phase 3 design baseline, current status remained nonconformant because no production Concepts existed. Phase 4 now reports the reviewed subset separately below; no full-bundle conformance claim is made.
+
+## Phase 4 partial conformance result
+
+Phase 4 creates a reviewed subset at `okf/` under `OKF-P4-A001`. The result is intentionally split by layer:
+
+| Layer | Result | Evidence | Limitation |
+|---|---|---|---|
+| Migrated core Concepts | CONFORMANT WITH APPROVED REPOSITORY CONTRACT | 21 new Concepts with parseable frontmatter, approved types, canonical field order, portable sources, and separated `owa` state | Manual Phase 4 checks precede the Phase 6 production validator. |
+| Root and directory indexes | CONFORMANT WITH RESERVED-FILE CONTRACT | `okf/index.md` plus six generated-style directory indexes | The realized root is covered by the explicit Phase 4 amendment. |
+| Remaining legacy Markdown | NON_COMPLIANT FOR OFFICIAL FULL-BUNDLE CHECK | 58 pre-existing Markdown files remain unchanged; most have no official frontmatter | Phase 5 must migrate or explicitly retain every remaining map row. |
+| Project extensions and registries | PRESERVED; SEPARATE VALIDATION | Existing manifest, eight registries, evidence, maps, and validator paths are unchanged | The extension bridge and relocation are Phase 5-6 work. |
+| Full-bundle conformance | NOT ACHIEVED | Partial core only; no current full-bundle validator | Do not claim repository-wide OKF v0.2 conformance. |

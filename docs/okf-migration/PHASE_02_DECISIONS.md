@@ -1,5 +1,13 @@
 # Phase 2 Architecture Decisions
 
+## Phase 4 Execution Amendment (2026-08-03)
+
+`OKF-P4-A001` amends the physical-root portion of `OKF-P2-D001`, `OKF-P2-D002`, and `OKF-P2-D004` for the first production migration slice. The Phase 4 execution contract explicitly requires `okf/index.md` and the corresponding `okf/<category>/...` target paths, while the Phase 2 design selected `okf/bundle/`. The repository also continues to use `okf/` as the current validator and registry root. Creating a second nested production root would not satisfy the Phase 4 contract and would create two competing root indexes.
+
+For Phase 4 only, the production OKF root is therefore `okf/`. The selected core Concepts and reserved indexes are created directly below that root, and all current legacy artifacts remain in place. This is an additive execution amendment, not a taxonomy, metadata, or relationship redesign. Extension relocation and the final official/extension physical boundary remain Phase 5 work; the Phase 4 report must therefore keep full-bundle conformance open and identify the legacy Markdown that is still inside the transitional root.
+
+The official specification permits a root `index.md` at the chosen bundle root, so this amendment preserves the reserved-file behavior. Phase 5 must reconcile the remaining extension-boundary decision before moving any extension Markdown.
+
 ## Decision Status Vocabulary
 
 - **ACCEPTED:** Fixed input to later phases.

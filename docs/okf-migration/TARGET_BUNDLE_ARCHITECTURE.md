@@ -1,5 +1,9 @@
 # Target Bundle Architecture
 
+## Phase 4 execution amendment
+
+The Phase 2 design below remains the historical target-state proposal. `OKF-P4-A001` records that the first production migration slice is realized at `okf/` because the Phase 4 execution contract explicitly requires `okf/index.md`, while the repository and current validator already use `okf/` as their root. The Phase 4 implementation is additive and limited to the handoff set; it does not make the remaining legacy Markdown or extension artifacts conformant. Phase 5 must reconcile the final extension boundary before consumer cutover or cleanup.
+
 > Phase 2 design only. None of the paths below is created or activated by this phase.
 
 ## Executive Summary
@@ -212,7 +216,7 @@ The project will not create an official `log.md`. Git records file evolution, wh
 ## Transitional Compatibility Strategy
 
 1. Phases 2-3 freeze architecture and metadata without touching current files.
-2. Phase 4 creates `okf/bundle/` and migrates a reviewed core while current custom paths remain authoritative for existing tools.
+2. Phase 4 creates the reviewed core at the amended production root `okf/` while current custom paths remain authoritative for existing tools; the historical `okf/bundle/` path is not created in parallel.
 3. Phase 5 migrates the remaining Concepts and creates `extensions/compatibility/legacy-path-map.json` before changing consumers.
 4. Phase 6 runs official and extension validation separately and checks bridge completeness.
 5. Phase 7 proves deterministic regeneration and compatibility in tests.
