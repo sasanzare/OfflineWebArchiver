@@ -179,7 +179,7 @@ for (const name of required.filter((value) => value.includes("/ADR-"))) {
   } catch {}
 }
 
-for (const file of (await repositoryFiles()).filter((value) => value.endsWith(".md"))) {
+for (const file of (await repositoryFiles()).filter((value) => value.endsWith(".md") && !relative(value).startsWith("tests/okf/fixtures/"))) {
   const text = await readFile(file, "utf8");
   const pattern = /\[[^\]]*\]\(([^)]+)\)/g;
   let match;

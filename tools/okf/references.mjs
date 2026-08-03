@@ -4,47 +4,81 @@ import { promisify } from "node:util";
 import { execFile as execFileCallback } from "node:child_process";
 import { diagnostic } from "./diagnostics.mjs";
 import { parseFrontmatter } from "./frontmatter.mjs";
-import { hasParentTraversal, isFilesystemAbsolute, isWithin, portable, resolveBundlePath, isSafeRepositoryRelative } from "./paths.mjs";
+import { portable, resolveBundlePath, isSafeRepositoryRelative } from "./paths.mjs";
 
 const execFile = promisify(execFileCallback);
-const githubPermalink = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/i;
-
-export function isSafeRelative(value) {
-  return isSafeRepositoryRelative(value);
-}
+const githubHost = "github.com";
+const posixDeveloperPath = /^\/(?:home|Users|tmp|var|private|root|mnt|workspace)(?:\/|$)/i;
 
 function refDiagnostic(ruleId, message, file, severity = "error", details = {}) {
   return diagnostic("references", ruleId, message, file, severity, details);
 }
 
-function isLikelyLocalPath(resource) {
-  return resource.startsWith("/") || resource.startsWith(".") || /[\\/]/.test(resource) || /^[^\s/\\]+\.[A-Za-z0-9_-]+$/.test(resource);
+function isPathTraversal(value) {
+  return typeof value === "string" && value.split(/[\\/]/).some((segment) => segment === "..");
 }
 
 function decodePath(value) {
   try { return decodeURIComponent(value); } catch { return undefined; }
 }
 
-function parseGithubPermalink(resource) {
-  const match = githubPermalink.exec(resource);
-  if (!match) {
-    try {
-      const url = new URL(resource);
-      const segments = url.pathname.split("/").filter(Boolean);
-      if (segments[2]?.toLowerCase() === "blob") return { error: "GitHub blob permalink must use the form /owner/repository/blob/{full-commit-sha}/{path}." };
-    } catch {}
-    return undefined;
+export function parseGithubPermalink(resource) {
+  let url;
+  try { url = new URL(resource); } catch { return { error: "GitHub URL is not syntactically valid." }; }
+  if (url.hostname.toLowerCase() !== githubHost || url.protocol.toLowerCase() !== "https:") return undefined;
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments[2]?.toLowerCase() !== "blob") return undefined;
+  if (segments.length < 5) return { error: "GitHub blob URL must include a ref and non-empty repository path." };
+  const pathPart = decodePath(segments.slice(4).join("/"));
+  if (!pathPart || pathPart.split("/").some((segment) => segment === ".." || segment === "")) return { error: "GitHub blob URL must contain a non-empty repository path without traversal." };
+  const ref = segments[3];
+  const fullSha = /^[0-9a-f]{40}$/i.test(ref);
+  const immutable = fullSha && !url.search && !url.hash;
+  return {
+    owner: segments[0],
+    repository: segments[1],
+    ref,
+    sha: fullSha ? ref : undefined,
+    path: pathPart,
+    immutable,
+    hasQueryOrFragment: Boolean(url.search || url.hash),
+  };
+}
+
+function isDeveloperAbsolutePath(value) {
+  return /^[A-Za-z]:[\\/]/.test(value) || /^\\\\/.test(value) || /^~[\\/]/.test(value) || /^file:/i.test(value) || posixDeveloperPath.test(value);
+}
+
+export function classifyResource(resource) {
+  if (typeof resource !== "string") return { kind: "invalid", reason: "resource must be a string" };
+  const raw = resource.trim();
+  if (raw.length === 0) return { kind: "invalid", reason: "resource must be a non-empty string" };
+  if (isDeveloperAbsolutePath(raw)) return { kind: "filesystem-absolute-path", raw };
+  if (/^[A-Za-z]:[\\/]/.test(raw) || /^\\\\/.test(raw) || /^~[\\/]/.test(raw) || /^file:/i.test(raw)) return { kind: "filesystem-absolute-path", raw };
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
+    if (/\s/.test(raw)) return { kind: "invalid", reason: "absolute URLs must not contain unescaped whitespace", raw };
+    let url;
+    try { url = new URL(raw); } catch { return { kind: "invalid", reason: "resource is not a valid absolute URL", raw }; }
+    if ((url.protocol === "http:" || url.protocol === "https:") && url.hostname.toLowerCase() === githubHost) {
+      const github = parseGithubPermalink(raw);
+      if (github?.error) return { kind: "github-permalink", invalid: true, reason: github.error, raw };
+      if (github) return { kind: "github-permalink", ...github, raw };
+    }
+    return { kind: "absolute-url", protocol: url.protocol.slice(0, -1), raw };
   }
-  const pathPart = decodePath(match[4]);
-  if (!pathPart || pathPart.split("/").some((segment) => segment === ".." || segment === "")) return { error: "GitHub blob permalink must contain a non-empty repository path without traversal." };
-  if (!/^[0-9a-f]{40}$/i.test(match[3])) return { error: "GitHub blob permalink must use a full 40-character commit SHA, not a branch or tag." };
-  if (resource.includes("#") || resource.includes("?")) return { error: "GitHub blob permalinks must not include query or fragment state." };
-  return { owner: match[1], repository: match[2], sha: match[3], path: pathPart };
+  if (raw.startsWith("/")) return { kind: "bundle-relative-path", raw };
+  if (/\s/.test(raw)) return { kind: "scope-descriptor", raw };
+  if (raw.startsWith(".") || raw.includes("/") || raw.includes("\\") || /^[^\s/\\]+\.[A-Za-z0-9_-]+$/.test(raw)) return { kind: "relative-path", raw };
+  return { kind: "scope-descriptor", raw };
+}
+
+export function isSafeRelative(value) {
+  return isSafeRepositoryRelative(value);
 }
 
 function repositoryName(remote) {
-  const match = /github\.com[/:]([^/]+)\/([^/]+)$/i.exec(remote.trim());
-  return match ? `${match[1]}/${match[2].replace(/\.git$/i, "")}`.toLowerCase() : undefined;
+  const match = /github\.com[/:]([^/]+)\/([^/]+)$/.exec(remote.trim().replace(/\/$/, ""));
+  return match ? (match[1] + "/" + match[2].replace(/\.git$/i, "")).toLowerCase() : undefined;
 }
 
 async function localRepositoryName(root) {
@@ -57,12 +91,12 @@ async function localRepositoryName(root) {
   }
 }
 
-async function verifySameRepositoryPermalink(root, target) {
+export async function verifySameRepositoryPermalink(root, target) {
   const identity = await localRepositoryName(root);
-  if (identity === null) return { status: "local-check-unavailable" };
-  if (identity !== `${target.owner}/${target.repository}`.toLowerCase()) return { status: "not-local-repository" };
+  if (identity === null || identity === undefined) return { status: "local-check-unavailable" };
+  if (identity !== (target.owner + "/" + target.repository).toLowerCase()) return { status: "not-local-repository" };
   try {
-    await execFile("git", ["cat-file", "-e", `${target.sha}^{commit}`], { cwd: root, windowsHide: true, timeout: 3000 });
+    await execFile("git", ["cat-file", "-e", target.sha + "^{commit}"], { cwd: root, windowsHide: true, timeout: 3000 });
   } catch {
     return { status: "commit-not-present-locally" };
   }
@@ -80,69 +114,52 @@ async function checkRemote(url) {
   const timer = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetch(url, { method: "HEAD", redirect: "follow", signal: controller.signal });
-    if (response.status === 404) return { status: "remotely-not-found", statusCode: response.status };
-    if (response.status === 401 || response.status === 403 || response.status === 429) return { status: "remote-not-authoritatively-checked", statusCode: response.status };
-    if (!response.ok) return { status: "remote-error", statusCode: response.status };
-    return { status: "remotely-verified", statusCode: response.status };
+    if (response.status === 404) return { status: "remote-target-missing", statusCode: response.status };
+    if (response.status === 401 || response.status === 403 || response.status === 429) return { status: "remote-target-not-checked", statusCode: response.status };
+    if (!response.ok) return { status: "remote-check-failed", statusCode: response.status };
+    return { status: "remote-target-verified", statusCode: response.status };
   } catch (error) {
-    return { status: error?.name === "AbortError" ? "remote-timeout" : "remote-network-error" };
+    return { status: error?.name === "AbortError" ? "remote-check-timeout" : "remote-check-unavailable" };
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function validateResource(resource, artifact, root, options) {
-  const raw = resource.trim();
-  const base = { file: artifact.path, resource: raw };
-  if (raw.length === 0) return { diagnostics: [refDiagnostic("OKF-SOURCE-RESOURCE-MISSING", "A source resource must be a non-empty string.", artifact.path)], check: { ...base, status: "invalid" } };
-  if (/\s/.test(raw)) return { diagnostics: [refDiagnostic("OKF-SOURCE-URL-INVALID", "A source URL or path must not contain unescaped whitespace.", artifact.path)], check: { ...base, status: "invalid" } };
-  if (/^file:/i.test(raw) || (isFilesystemAbsolute(raw) && !raw.startsWith("/"))) return { diagnostics: [refDiagnostic("OKF-SOURCE-ABSOLUTE", "A source resource must not be an absolute filesystem path.", artifact.path, "error", { suggestion: "Use a bundle-relative path or an HTTPS URL." })], check: { ...base, status: "unsafe-absolute" } };
+export { checkRemote };
 
-  if (/^[a-z][a-z0-9+.-]*:/i.test(raw) && !raw.startsWith("/")) {
-    let url;
-    try { url = new URL(raw); } catch (error) {
-      return { diagnostics: [refDiagnostic("OKF-SOURCE-URL-INVALID", `Source resource is not a valid absolute URL: ${error instanceof Error ? error.message : "invalid URL"}.`, artifact.path)], check: { ...base, status: "invalid-url" } };
+async function validateResource(resource, artifact, root, options = {}) {
+  const classification = classifyResource(resource);
+  const raw = typeof resource === "string" ? resource.trim() : resource;
+  const base = { file: artifact.path, resource: raw, classification: classification.kind };
+  if (classification.kind === "invalid") return { diagnostics: [refDiagnostic("OWA-REF-RESOURCE-SYNTAX", "Source resource is invalid: " + classification.reason + ".", artifact.path)], check: { ...base, status: "invalid" } };
+  if (classification.kind === "filesystem-absolute-path") return { diagnostics: [], check: { ...base, status: "local-absolute-path" } };
+  if (classification.kind === "scope-descriptor") return { diagnostics: [], check: { ...base, status: "scope-descriptor" } };
+
+  if (classification.kind === "absolute-url" || classification.kind === "github-permalink") {
+    if (classification.invalid) return { diagnostics: [refDiagnostic("OWA-REF-GITHUB-URL-MALFORMED", classification.reason, artifact.path)], check: { ...base, status: "invalid-url" } };
+    if (options.remote && /^https?:$/i.test(classification.protocol ?? "https:")) {
+      const remote = await checkRemote(raw);
+      if (remote.status === "remote-target-missing") return { diagnostics: [refDiagnostic("OWA-REF-REMOTE-NOT-FOUND", "Remote reference returned HTTP 404.", artifact.path)], check: { ...base, ...remote } };
+      return { diagnostics: [], check: { ...base, ...remote } };
     }
-    if (url.protocol === "http:" || url.protocol === "https:") {
-      if (url.hostname.toLowerCase() === "github.com") {
-        const permalink = parseGithubPermalink(raw);
-        if (permalink?.error) return { diagnostics: [refDiagnostic("OKF-SOURCE-PERMALINK-NOT-IMMUTABLE", permalink.error, artifact.path, "error", { suggestion: "Use https://github.com/{owner}/{repo}/blob/{full-commit-sha}/{path}." })], check: { ...base, status: "invalid-github-permalink" } };
-        if (permalink) {
-          const local = await verifySameRepositoryPermalink(root, permalink);
-          if (local.status === "path-not-found-locally") return { diagnostics: [refDiagnostic("OKF-SOURCE-NOT-FOUND", `GitHub permalink path '${permalink.path}' does not exist at commit ${permalink.sha}.`, artifact.path)], check: { ...base, kind: "github-permalink", ...permalink, status: local.status } };
-          if (options.remote && ["not-local-repository", "commit-not-present-locally", "local-check-failed"].includes(local.status)) {
-            const remote = await checkRemote(raw);
-            if (remote.status === "remotely-not-found") return { diagnostics: [refDiagnostic("OKF-SOURCE-REMOTE-NOT-FOUND", "Remote source returned HTTP 404.", artifact.path)], check: { ...base, kind: "github-permalink", ...permalink, status: remote.status } };
-            return { diagnostics: [], check: { ...base, kind: "github-permalink", ...permalink, status: remote.status, localStatus: local.status } };
-          }
-          return { diagnostics: [], check: { ...base, kind: "github-permalink", ...permalink, status: local.status } };
-        }
-      }
-      if (options.remote) {
-        const remote = await checkRemote(raw);
-        if (remote.status === "remotely-not-found") return { diagnostics: [refDiagnostic("OKF-SOURCE-REMOTE-NOT-FOUND", "Remote source returned HTTP 404.", artifact.path)], check: { ...base, status: remote.status, statusCode: remote.statusCode } };
-        return { diagnostics: [], check: { ...base, status: remote.status, statusCode: remote.statusCode } };
-      }
-      return { diagnostics: [], check: { ...base, status: "syntactically-valid-not-checked" } };
-    }
-    return { diagnostics: [], check: { ...base, status: "syntactically-valid-not-checked", scheme: url.protocol.slice(0, -1) } };
+    return { diagnostics: [], check: { ...base, status: "remote-target-not-checked" } };
   }
 
-  if (!isLikelyLocalPath(raw)) return { diagnostics: [], check: { ...base, status: "scope-descriptor" } };
-  if (raw.startsWith("\\") || (raw.startsWith("/") && raw.startsWith("//"))) return { diagnostics: [refDiagnostic("OKF-SOURCE-ABSOLUTE", "A source resource must not be an absolute filesystem or UNC path.", artifact.path)], check: { ...base, status: "unsafe-absolute" } };
-  if (hasParentTraversal(raw) && !resolveBundlePath(path.join(root, "okf"), artifact.file, raw).inside) return { diagnostics: [refDiagnostic("OKF-SOURCE-TRAVERSAL", "Source path traversal escapes the official OKF bundle.", artifact.path, "error", { suggestion: "Keep relative source targets inside okf/." })], check: { ...base, status: "unsafe-traversal" } };
   const bundleRoot = path.join(root, "okf");
   const resolution = resolveBundlePath(bundleRoot, artifact.file, raw);
-  if (!resolution.inside) return { diagnostics: [refDiagnostic("OKF-SOURCE-TRAVERSAL", "Source path resolves outside the official OKF bundle.", artifact.path)], check: { ...base, status: "unsafe-traversal" } };
+  if (isPathTraversal(raw) && !resolution.inside) return { diagnostics: [refDiagnostic("OWA-REF-TRAVERSAL", "Reference path escapes the official OKF bundle.", artifact.path, "error", { suggestion: "Keep local reference targets inside okf/." })], check: { ...base, status: "reference-target-unsafe" } };
+  if (!resolution.inside) return { diagnostics: [refDiagnostic("OWA-REF-TRAVERSAL", "Reference path resolves outside the official OKF bundle.", artifact.path)], check: { ...base, status: "reference-target-unsafe" } };
   try {
     const sourceStat = await lstat(resolution.candidate);
-    if (sourceStat.isSymbolicLink()) return { diagnostics: [refDiagnostic("OKF-SOURCE-UNSAFE-LINK", "Source resources must not resolve through a symbolic link or junction.", artifact.path)], check: { ...base, status: "unsafe-link" } };
-    if (!(await stat(resolution.candidate)).isFile()) return { diagnostics: [refDiagnostic("OKF-SOURCE-NOT-FILE", `Source resource is not a regular file: '${raw}'.`, artifact.path)], check: { ...base, status: "not-a-file" } };
-    return { diagnostics: [], check: { ...base, status: "locally-verified", resolvedPath: portable(root, resolution.candidate) } };
+    if (sourceStat.isSymbolicLink()) return { diagnostics: [refDiagnostic("OWA-REF-UNSAFE-LINK", "Reference targets must not resolve through a symbolic link or junction.", artifact.path)], check: { ...base, status: "reference-target-unsafe" } };
+    if (!(await stat(resolution.candidate)).isFile()) return { diagnostics: [refDiagnostic("OWA-REF-LOCAL-NOT-FILE", "Reference target is not a regular file: '" + raw + "'.", artifact.path)], check: { ...base, status: "reference-target-invalid" } };
+    return { diagnostics: [], check: { ...base, status: "local-target-verified", resolvedPath: portable(root, resolution.candidate) } };
   } catch {
-    return { diagnostics: [refDiagnostic("OKF-SOURCE-NOT-FOUND", `Local source resource does not exist: '${raw}'.`, artifact.path)], check: { ...base, status: "not-found" } };
+    return { diagnostics: [refDiagnostic("OWA-REF-LOCAL-NOT-FOUND", "Local reference target does not exist: '" + raw + "'.", artifact.path)], check: { ...base, status: "reference-target-missing" } };
   }
 }
+
+export { validateResource };
 
 function resolveLinkTarget(artifactPath, raw, paths) {
   const withoutFragment = raw.split("#", 1)[0].split("?", 1)[0];
@@ -152,7 +169,7 @@ function resolveLinkTarget(artifactPath, raw, paths) {
     ? path.posix.normalize(path.posix.join("okf", normalizedRaw.slice(1)))
     : path.posix.normalize(path.posix.join(path.posix.dirname(artifactPath), normalizedRaw));
   if (target !== "okf" && !target.startsWith("okf/")) return { traversal: true };
-  const candidates = [target, target.endsWith("/") ? `${target}index.md` : `${target}/index.md`];
+  const candidates = [target, target.endsWith("/") ? target + "index.md" : target + "/index.md"];
   return { target: candidates.find((candidate) => paths.has(candidate)) ?? target };
 }
 
@@ -164,8 +181,8 @@ function validateLinks(artifacts) {
       const raw = match[1].trim().replace(/^<|>$/g, "");
       const resolution = resolveLinkTarget(artifact.path, raw, paths);
       if (resolution.ignored) continue;
-      if (resolution.traversal) diagnostics.push(refDiagnostic("OKF-LINK-TRAVERSAL", `Internal Markdown link '${raw}' escapes the official bundle.`, artifact.path));
-      else if (!paths.has(resolution.target)) diagnostics.push(refDiagnostic("OKF-LINK-BROKEN", `Internal Markdown link '${raw}' has no target in the bundle.`, artifact.path, "warning", { suggestion: "Add the target Concept/index or use an external URL." }));
+      if (resolution.traversal) diagnostics.push(refDiagnostic("OWA-REF-TRAVERSAL", "Internal Markdown link '" + raw + "' escapes the official bundle.", artifact.path));
+      else if (!paths.has(resolution.target)) diagnostics.push(refDiagnostic("OWA-REF-LINK-BROKEN", "Internal Markdown link '" + raw + "' has no target in the bundle.", artifact.path, "warning", { suggestion: "Add the target Concept/index or use an external URL." }));
     }
   }
   return diagnostics;
@@ -180,11 +197,11 @@ export async function validateReferences(artifacts, root, options = {}) {
     if (parsed.error || !parsed.metadata || typeof parsed.metadata !== "object" || Array.isArray(parsed.metadata)) continue;
     const metadata = parsed.metadata;
     if (metadata.sources !== undefined) {
-      if (!Array.isArray(metadata.sources)) diagnostics.push(refDiagnostic("OKF-SOURCE-INVALID", "sources must be a list when present.", artifact.path));
+      if (!Array.isArray(metadata.sources)) diagnostics.push(refDiagnostic("OWA-REF-SOURCES-NOT-LIST", "sources must be a list when present.", artifact.path));
       else {
         for (const source of metadata.sources) {
-          if (!source || typeof source !== "object" || typeof source.resource !== "string") {
-            diagnostics.push(refDiagnostic("OKF-SOURCE-RESOURCE-MISSING", "Each sources entry must contain a resource string.", artifact.path));
+          if (!source || typeof source !== "object" || typeof source.resource !== "string" || source.resource.trim() === "") {
+            diagnostics.push(refDiagnostic("OWA-REF-SOURCE-RESOURCE-MISSING", "Each sources entry must contain a non-empty resource string.", artifact.path));
             continue;
           }
           const result = await validateResource(source.resource, artifact, root, options);
@@ -203,7 +220,7 @@ export async function validateReferences(artifacts, root, options = {}) {
       if (!metadata[owner] || typeof metadata[owner] !== "object" || typeof metadata[owner].resource !== "string") continue;
       const result = await validateResource(metadata[owner].resource, artifact, root, options);
       diagnostics.push(...result.diagnostics);
-      checks.push({ ...result.check, field: `${owner}.resource` });
+      checks.push({ ...result.check, field: owner + ".resource" });
     }
   }
   diagnostics.push(...validateLinks(artifacts));

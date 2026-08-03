@@ -3,6 +3,9 @@ name: OKF Validation
 on:
   pull_request:
   push:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
 
 permissions:
   contents: read
@@ -13,9 +16,15 @@ concurrency:
 
 jobs:
   validate:
-    name: OKF validation and quality gates
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    name: OKF validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,59 +38,87 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Run official OKF structural validation
-        run: npm run okf:validate:official
+      - name: Official OKF v0.2 conformance
+        run: npm run okf:validate:conformance
 
-      - name: Run official OKF reference validation
+      - name: OWA reference integrity
         run: npm run okf:validate:references
 
-      - name: Run OWA extension validation
+      - name: OWA provenance policy
+        run: npm run okf:validate:provenance
+
+      - name: OWA extension validation
         run: npm run okf:validate:extension
 
-      - name: Run OWA quality validation
+      - name: OWA quality validation
         run: npm run okf:validate:quality
 
-      - name: Run OKF formatting validation
+      - name: OWA format validation
         run: npm run okf:validate:format
 
-      - name: Run OKF unit and regression tests
+      - name: Combined repository OKF policy
+        run: npm run okf:validate
+
+      - name: OKF unit and regression tests
         run: npm run test:okf
 
-      - name: Run documentation and formatting gates
-        run: |
-          npm run docs:validate
-          npm run format:check
+      - name: Documentation validation
+        run: npm run docs:validate
 
-      - name: Run static quality gates
+      - name: Repository formatting validation
+        run: npm run format:check
+
+      - name: Static quality gates
         run: |
           npm run lint
           npm run typecheck
 
-      - name: Generate conformance report
+      - name: Generate machine-readable OKF report
         if: always()
+        shell: bash
         run: |
           mkdir -p .artifacts/okf
           node tools/okf/cli.mjs validate --format json > .artifacts/okf/conformance.json
 
       - name: Write workflow summary
         if: always()
+        shell: bash
         run: |
           {
             echo "## OKF validation"
-            echo ""
-            echo "Layers: official structure, official references, OWA extension, OWA quality, and formatting."
-            echo "Remote URL existence checks are intentionally not required in standard CI."
-            echo ""
-            echo "### Conformance report"
-            echo ""
-            echo "`conformance.json` is attached as the `okf-conformance-report` artifact."
+            echo
+            echo "Official OKF v0.2 conformance, OWA reference integrity, provenance, extension, quality, and format layers run independently on ${RUNNER_OS}."
+            echo "Default validation performs no uncontrolled remote requests."
+            echo
+            echo "The machine-readable report is attached as the okf-conformance-report artifact."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload conformance report
+      - name: Upload machine-readable OKF report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: okf-conformance-report
+          name: okf-conformance-report-${{ matrix.os }}
           path: .artifacts/okf/conformance.json
           if-no-files-found: error
           retention-days: 14
+
+  optional-remote:
+    name: Optional remote provenance checks
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.17.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run optional bounded remote validation
+        run: npm run okf:validate:remote

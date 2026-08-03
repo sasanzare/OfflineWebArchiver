@@ -228,3 +228,11 @@ The first default-sandbox `npm run test` attempt returned esbuild `spawn EPERM`.
 | All required repository checks pass | PASS |
 | No commit, push, reset, stash, or rebase occurred | PASS |
 | Phase 3 reports are complete and truthful | PASS |
+
+## Phase 4 correction erratum
+
+Phase 3 incorrectly treated a missing root index as invalid through the historical OKF-INDEX-ROOT-MISSING rule. The authoritative OKF v0.2 specification permits the root index.md to be absent; root and directory indexes are optional and are validated only when present.
+
+Phase 3 also classified immutable GitHub permalink enforcement as an official/reference requirement. Full commit-SHA GitHub provenance is an OfflineWebArchiver policy, not a basic official OKF v0.2 conformance requirement. Phase 4 moves that enforcement to the OWA provenance layer and permits branch-based GitHub URLs under official URL syntax.
+
+Phase 4 also reclassifies reference-integrity diagnostics under OWA-REF- and separates source existence from official structure. Historical Phase 3 test totals, rule IDs, and acceptance results remain historical and are not silently rewritten.

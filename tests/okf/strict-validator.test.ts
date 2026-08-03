@@ -76,6 +76,8 @@ async function extensionFixture() {
   const directories = ["okf-extension", "okf", "docs", "packages", "apps", "tests", "tools", "okf-bootstrap"];
   for (const directory of directories) await cp(path.resolve(directory), path.join(root, directory), { recursive: true });
   for (const file of ["package.json", "package-lock.json", "README.md"]) await cp(path.resolve(file), path.join(root, file));
+  await mkdir(path.join(root, "spikes", "phase-02-feasibility"), { recursive: true });
+  await cp(path.resolve("spikes/phase-02-feasibility/README.md"), path.join(root, "spikes", "phase-02-feasibility", "README.md"));
   return root;
 }
 
@@ -100,39 +102,40 @@ test("current official bundle passes strict structural and reference validation"
   const report = await references.validateReferences(artifacts, process.cwd());
   assert.equal(report.diagnostics.filter((item) => item.severity === "error").length, 0);
   assert.equal(report.checks.length, 81);
-  assert.ok(report.checks.some((item) => ["locally-verified", "local-check-unavailable", "not-local-repository"].includes(item.status)));
+  assert.ok(report.checks.some((item) => ["remote-target-not-checked", "remote-target-verified"].includes(item.status)));
 });
 
 test("concept without frontmatter is rejected instead of treated as exempt", async () => {
   assertRule(await officialDiagnostics(async (bundle) => {
     await mkdir(path.join(bundle, "arbitrary"), { recursive: true });
     await writeFile(path.join(bundle, "arbitrary", "example.md"), "# No metadata\n", "utf8");
-  }), "OKF-FRONTMATTER-MISSING");
+  }), "OKF-CONFORMANCE-FRONTMATTER-MISSING");
 });
 
 test("malformed YAML is rejected with a YAML diagnostic", async () => {
   assertRule(await officialDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "malformed.md"), "---\ntype: [Workflow\n---\n# Broken\n", "utf8");
-  }), "OKF-YAML-INVALID");
+  }), "OKF-CONFORMANCE-YAML-INVALID");
 });
 
 test("missing and empty Concept type are rejected", async () => {
   assertRule(await officialDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "missing-type.md"), "---\ntitle: Missing\n---\n# Missing\n", "utf8");
     await writeFile(path.join(bundle, "empty-type.md"), "---\ntype: '  '\n---\n# Empty\n", "utf8");
-  }), "OKF-TYPE-MISSING");
+  }), "OKF-CONFORMANCE-TYPE-MISSING");
   assertRule(await officialDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "empty-type.md"), "---\ntype: '  '\n---\n# Empty\n", "utf8");
-  }), "OKF-TYPE-EMPTY");
+  }), "OKF-CONFORMANCE-TYPE-EMPTY");
 });
 
-test("invalid and missing root indexes are rejected", async () => {
+test("invalid existing root indexes are rejected while missing root indexes pass", async () => {
   assertRule(await officialDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "index.md"), "---\nokf_version: '0.1'\n---\n# Invalid\n", "utf8");
-  }), "OKF-INDEX-ROOT-FRONTMATTER");
-  assertRule(await officialDiagnostics(async (bundle) => {
+  }), "OKF-CONFORMANCE-INDEX-ROOT-FRONTMATTER");
+  const diagnostics = await officialDiagnostics(async (bundle) => {
     await rm(path.join(bundle, "index.md"));
-  }), "OKF-INDEX-ROOT-MISSING");
+  });
+  assert.equal(diagnostics.length, 0);
 });
 
 test("arbitrary nested Markdown and copied extension documentation are not exempt", async () => {
@@ -140,7 +143,7 @@ test("arbitrary nested Markdown and copied extension documentation are not exemp
     await mkdir(path.join(bundle, "nested", "extensions"), { recursive: true });
     await writeFile(path.join(bundle, "nested", "extensions", "copied.md"), "# Copied project documentation\n", "utf8");
   });
-  assertRule(diagnostics, "OKF-FRONTMATTER-MISSING");
+  assertRule(diagnostics, "OKF-CONFORMANCE-FRONTMATTER-MISSING");
   assert.equal(diagnostics.some((item) => item.message.includes("exempt")), false);
 });
 
@@ -149,34 +152,45 @@ test("a directory named extensions cannot bypass official discovery", async () =
     await mkdir(path.join(bundle, "extensions"), { recursive: true });
     await writeFile(path.join(bundle, "extensions", "example.md"), "Transitional Legacy Artifact\n", "utf8");
   });
-  assertRule(diagnostics, "OKF-FRONTMATTER-MISSING");
+  assertRule(diagnostics, "OKF-CONFORMANCE-FRONTMATTER-MISSING");
 });
 
 test("broken local sources and bundle-escaping traversal are rejected", async () => {
   assertRule(await referenceDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "source.md"), "---\ntype: Source\nsources:\n  - resource: references/missing.md\n---\n# Source\n", "utf8");
-  }), "OKF-SOURCE-NOT-FOUND");
+  }), "OWA-REF-LOCAL-NOT-FOUND");
   assertRule(await referenceDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "source.md"), "---\ntype: Source\nsources:\n  - resource: ../../outside.md\n---\n# Source\n", "utf8");
-  }), "OKF-SOURCE-TRAVERSAL");
+  }), "OWA-REF-TRAVERSAL");
 });
 
-test("invalid and mutable GitHub blob references are not reported as immutable", async () => {
+test("GitHub branch URLs pass references but fail OWA provenance", async () => {
   const invalid = await referenceDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "source.md"), "---\ntype: Source\nsources:\n  - resource: https://github.com/owner/repo/blob/not-a-sha/file.md\n---\n# Source\n", "utf8");
   });
-  assertRule(invalid, "OKF-SOURCE-PERMALINK-NOT-IMMUTABLE");
+  assert.equal(invalid.some((item) => item.severity === "error"), false);
   const branch = await referenceDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "source.md"), "---\ntype: Source\nsources:\n  - resource: https://github.com/owner/repo/blob/main/file.md\n---\n# Source\n", "utf8");
   });
-  assertRule(branch, "OKF-SOURCE-PERMALINK-NOT-IMMUTABLE");
+  assert.equal(branch.some((item) => item.severity === "error"), false);
+  const provenance = await load<{ validateProvenance(artifacts: Artifact[], root: string): Promise<{ diagnostics: Diagnostic[] }> }>("tools/okf/provenance.mjs");
+  const { discovery } = await officialModules();
+  const root = await mkdtemp(path.join(os.tmpdir(), "owa-okf-provenance-"));
+  try {
+    await cp(fixture, path.join(root, "okf"), { recursive: true });
+    await writeFile(path.join(root, "okf", "source.md"), "---\ntype: Source\nsources:\n  - resource: https://github.com/owner/repo/blob/main/file.md\n---\n# Source\n", "utf8");
+    const report = await provenance.validateProvenance(await discovery.discoverOkf(root), root);
+    assertRule(report.diagnostics, "OWA-PROVENANCE-MUTABLE-GITHUB-URL");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("broken internal Markdown links produce an explicit reference diagnostic", async () => {
   const diagnostics = await referenceDiagnostics(async (bundle) => {
     await writeFile(path.join(bundle, "links.md"), "---\ntype: Link Test\n---\n# Links\n\n[Missing](missing.md)\n", "utf8");
   });
-  assertRule(diagnostics, "OKF-LINK-BROKEN", "warning");
+  assertRule(diagnostics, "OWA-REF-LINK-BROKEN", "warning");
 });
 
 test("same-repository immutable permalink and external URL syntax are accepted without network", async () => {
@@ -186,7 +200,7 @@ test("same-repository immutable permalink and external URL syntax are accepted w
   official.validateOfficial(artifacts);
   const current = await references.validateReferences(artifacts, process.cwd());
   assert.equal(current.diagnostics.filter((item) => item.severity === "error").length, 0);
-  assert.ok(current.checks.some((item) => ["locally-verified", "local-check-unavailable"].includes(item.status)));
+  assert.ok(current.checks.some((item) => item.status === "remote-target-not-checked"));
   let externalChecks: Array<{ status: string }> = [];
   await withOfficialFixture(async (bundle) => {
     await writeFile(path.join(bundle, "external.md"), "---\ntype: External\nsources:\n  - resource: https://example.com/reference\n---\n# External\n", "utf8");
@@ -195,7 +209,7 @@ test("same-repository immutable permalink and external URL syntax are accepted w
     official.validateOfficial(items);
     externalChecks = (await references.validateReferences(items, root)).checks;
   });
-  assert.ok(externalChecks.some((item) => item["status"] === "syntactically-valid-not-checked"));
+  assert.ok(externalChecks.some((item) => item["status"] === "remote-target-not-checked"));
 });
 
 test("extension manifest schema violations are isolated to the OWA extension layer", async () => {
@@ -252,23 +266,197 @@ test("official validation succeeds independently when extension validation is no
 
 test("warning-only validation passes by default and strict warnings fail", async () => {
   const { run } = await load<{ run(args: string[], dependencies?: { validateAll: () => Promise<{ artifacts: Artifact[]; referenceChecks: unknown[]; diagnostics: Diagnostic[] }> }): Promise<number> }>("tools/okf/cli.mjs");
-  const validateAll = async () => ({ artifacts: [], referenceChecks: [], diagnostics: [{ layer: "references", severity: "warning", ruleId: "OKF-LINK-BROKEN", code: "OKF-LINK-BROKEN", message: "fixture warning" }] });
+  const validateAll = async () => ({ artifacts: [], referenceChecks: [], diagnostics: [{ layer: "references", severity: "warning", ruleId: "OWA-REF-LINK-BROKEN", code: "OWA-REF-LINK-BROKEN", message: "fixture warning" }] });
   assert.equal(await run(["validate", "--layer", "references"], { validateAll }), 0);
-  assert.equal(await run(["validate", "--layer", "references", "--strict-warnings"], { validateAll }), 1);
+  assert.equal(await run(["validate", "--layer", "references", "--warnings-as-errors"], { validateAll }), 1);
 });
 
 test("unexpected validator exceptions become non-zero internal diagnostics", async () => {
   const { run } = await load<{ run(args: string[], dependencies?: { validateAll: () => Promise<never> }): Promise<number> }>("tools/okf/cli.mjs");
-  assert.equal(await run(["validate", "--format", "json"], { validateAll: async () => { throw new Error("injected fixture failure"); } }), 1);
+  assert.equal(await run(["validate", "--format", "json"], { validateAll: async () => { throw new Error("injected fixture failure"); } }), 3);
 });
 
 test("JSON output is machine-readable and unknown CLI arguments fail predictably", async () => {
   const { buildJsonReport, run } = await load<{
-    buildJsonReport(report: { artifacts: Artifact[]; diagnostics: Diagnostic[]; referenceChecks: unknown[] }, diagnostics?: Diagnostic[], options?: { strictWarnings?: boolean }): Record<string, unknown>;
+    buildJsonReport(report: { artifacts: Artifact[]; diagnostics: Diagnostic[]; referenceChecks: unknown[] }, diagnostics?: Diagnostic[], options?: { warningsAsErrors?: boolean }): Record<string, unknown>;
     run(args: string[], dependencies?: { validateAll: () => Promise<{ artifacts: Artifact[]; diagnostics: Diagnostic[]; referenceChecks: unknown[] }> }): Promise<number>;
   }>("tools/okf/cli.mjs");
   const report = buildJsonReport({ artifacts: [], diagnostics: [], referenceChecks: [] });
   assert.equal(report["result"], "pass");
   assert.doesNotThrow(() => JSON.parse(JSON.stringify(report)));
   assert.equal(await run(["validate", "--made-up"]), 2);
+});
+
+test("optional root and directory indexes plus optional logs do not block official conformance", async () => {
+  const { validateAll } = await load<{ validateAll(root: string, options?: { onlyLayer?: string }): Promise<{ diagnostics: Diagnostic[] }> }>("tools/okf/validate-all.mjs");
+  const root = await mkdtemp(path.join(os.tmpdir(), "owa-okf-optional-files-"));
+  try {
+    await cp(fixture, path.join(root, "okf"), { recursive: true });
+    await rm(path.join(root, "okf", "index.md"));
+    await rm(path.join(root, "okf", "area", "index.md"));
+    await rm(path.join(root, "okf", "log.md"));
+    const report = await validateAll(root, { onlyLayer: "official" });
+    assert.equal(report.diagnostics.length, 0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("existing valid directory indexes and logs pass, while malformed reserved files fail", async () => {
+  const validDirectory = await officialDiagnostics(async () => {});
+  assert.equal(validDirectory.length, 0);
+  assertRule(await officialDiagnostics(async (bundle) => {
+    await writeFile(path.join(bundle, "area", "index.md"), "---\ntype: Not a Concept\n---\n# Area\n", "utf8");
+  }), "OKF-CONFORMANCE-INDEX-FRONTMATTER");
+  assertRule(await officialDiagnostics(async (bundle) => {
+    await writeFile(path.join(bundle, "log.md"), "# Log\n\n## Not a date\n", "utf8");
+  }), "OKF-CONFORMANCE-LOG-DATE-INVALID");
+});
+
+test("root indexes reject Concept frontmatter but accept an omitted frontmatter block", async () => {
+  assertRule(await officialDiagnostics(async (bundle) => {
+    await writeFile(path.join(bundle, "index.md"), "---\ntype: Index Concept\n---\n# Root\n", "utf8");
+  }), "OKF-CONFORMANCE-INDEX-ROOT-FRONTMATTER");
+  const diagnostics = await officialDiagnostics(async (bundle) => {
+    await writeFile(path.join(bundle, "index.md"), "# Root without metadata\n", "utf8");
+  });
+  assert.equal(diagnostics.length, 0);
+});
+
+test("unknown types, custom fields, owa metadata, and absent optional metadata pass official conformance", async () => {
+  const diagnostics = await officialDiagnostics(async (bundle) => {
+    await writeFile(path.join(bundle, "minimal.md"), "---\ntype: Producer Defined Type\nowa:\n  implementation_status: active\ncustom_key: preserved\n---\n# Minimal\n", "utf8");
+  });
+  assert.equal(diagnostics.length, 0);
+});
+
+test("broken Markdown links are warnings in references and do not affect official conformance", async () => {
+  const { discovery, official } = await officialModules();
+  const references = await load<{ validateReferences(artifacts: Artifact[], root: string): Promise<{ diagnostics: Diagnostic[] }> }>("tools/okf/references.mjs");
+  await withOfficialFixture(async (bundle) => {
+    await writeFile(path.join(bundle, "links.md"), "---\ntype: Link Test\n---\n# Links\n\n[Missing](missing.md)\n", "utf8");
+  }, async (root) => {
+    const artifacts = await discovery.discoverOkf(root);
+    assert.equal(official.validateOfficial(artifacts).length, 0);
+    assertRule((await references.validateReferences(artifacts, root)).diagnostics, "OWA-REF-LINK-BROKEN", "warning");
+  });
+});
+
+test("absolute HTTPS and mutable GitHub URLs are structurally valid official source values", async () => {
+  const diagnostics = await officialDiagnostics(async (bundle) => {
+    await writeFile(path.join(bundle, "urls.md"), "---\ntype: Source Test\nsources:\n  - resource: https://example.com/reference\n  - resource: https://github.com/example/project/blob/main/docs/source.md\n---\n# URLs\n", "utf8");
+  });
+  assert.equal(diagnostics.length, 0);
+});
+
+test("full-SHA external GitHub permalinks pass provenance syntax without network", async () => {
+  const provenance = await load<{ validateProvenance(artifacts: Artifact[], root: string, options?: { verifySameRepositoryPermalink?: (root: string, target: Record<string, unknown>) => Promise<{ status: string }> }): Promise<{ diagnostics: Diagnostic[]; checks: Array<{ status: string; classification: string }> }> }>("tools/okf/provenance.mjs");
+  await withOfficialFixture(async (bundle) => {
+    await writeFile(path.join(bundle, "source.md"), "---\ntype: Source\nsources:\n  - resource: https://github.com/example/project/blob/0123456789abcdef0123456789abcdef01234567/docs/source.md\n---\n# Source\n", "utf8");
+  }, async (root) => {
+    const { discovery } = await officialModules();
+    const report = await provenance.validateProvenance(await discovery.discoverOkf(root), root, {
+      verifySameRepositoryPermalink: async () => ({ status: "not-local-repository" }),
+    });
+    assert.equal(report.diagnostics.length, 0);
+    assert.ok(report.checks.some((item) => item.classification === "github-permalink" && item.status === "not-local-repository"));
+  });
+});
+
+test("same-repository provenance checks classify missing commits and paths with stable OWA rules", async () => {
+  const provenance = await load<{ validateProvenance(artifacts: Artifact[], root: string, options?: { verifySameRepositoryPermalink?: (root: string, target: Record<string, unknown>) => Promise<{ status: string }> }): Promise<{ diagnostics: Diagnostic[] }> }>("tools/okf/provenance.mjs");
+  await withOfficialFixture(async (bundle) => {
+    await writeFile(path.join(bundle, "source.md"), "---\ntype: Source\nsources:\n  - resource: https://github.com/sasanzare/OfflineWebArchiver/blob/0123456789abcdef0123456789abcdef01234567/docs/source.md\n---\n# Source\n", "utf8");
+  }, async (root) => {
+    const { discovery } = await officialModules();
+    const artifacts = await discovery.discoverOkf(root);
+    assertRule((await provenance.validateProvenance(artifacts, root, { verifySameRepositoryPermalink: async () => ({ status: "commit-not-present-locally" }) })).diagnostics, "OWA-PROVENANCE-COMMIT-NOT-FOUND");
+    assertRule((await provenance.validateProvenance(artifacts, root, { verifySameRepositoryPermalink: async () => ({ status: "path-not-found-locally" }) })).diagnostics, "OWA-PROVENANCE-PATH-NOT-IN-COMMIT");
+  });
+});
+
+test("source values are classified as paths, bundle-relative paths, scope descriptors, or local absolute paths", async () => {
+  const { classifyResource } = await load<{ classifyResource(value: string): { kind: string } }>("tools/okf/references.mjs");
+  assert.equal(classifyResource("docs/source.md").kind, "relative-path");
+  assert.equal(classifyResource("/references/source.md").kind, "bundle-relative-path");
+  assert.equal(classifyResource("all queries in BigQuery project X").kind, "scope-descriptor");
+  assert.equal(classifyResource("C:\\Users\\developer\\source.md").kind, "filesystem-absolute-path");
+  assert.equal(classifyResource("/home/developer/source.md").kind, "filesystem-absolute-path");
+});
+
+test("scope descriptors do not trigger local file resolution", async () => {
+  const { discovery, official } = await officialModules();
+  const references = await load<{ validateReferences(artifacts: Artifact[], root: string): Promise<{ diagnostics: Diagnostic[]; checks: Array<{ status: string }> }> }>("tools/okf/references.mjs");
+  await withOfficialFixture(async (bundle) => {
+    await writeFile(path.join(bundle, "scope.md"), "---\ntype: Scope\nsources:\n  - resource: all queries in BigQuery project X\n---\n# Scope\n", "utf8");
+  }, async (root) => {
+    const artifacts = await discovery.discoverOkf(root);
+    assert.equal(official.validateOfficial(artifacts).length, 0);
+    const report = await references.validateReferences(artifacts, root);
+    assert.equal(report.diagnostics.some((item) => item.ruleId === "OWA-REF-LOCAL-NOT-FOUND"), false);
+    assert.ok(report.checks.some((item) => item.status === "scope-descriptor"));
+  });
+});
+
+test("developer-local absolute paths fail only OWA provenance", async () => {
+  const { discovery, official } = await officialModules();
+  const references = await load<{ validateReferences(artifacts: Artifact[], root: string): Promise<{ diagnostics: Diagnostic[] }> }>("tools/okf/references.mjs");
+  const provenance = await load<{ validateProvenance(artifacts: Artifact[], root: string): Promise<{ diagnostics: Diagnostic[] }> }>("tools/okf/provenance.mjs");
+  await withOfficialFixture(async (bundle) => {
+    await writeFile(path.join(bundle, "local.md"), "---\ntype: Local\nsources:\n  - resource: C:\\\\Users\\\\developer\\\\source.md\n  - resource: /home/developer/source.md\n---\n# Local\n", "utf8");
+  }, async (root) => {
+    const artifacts = await discovery.discoverOkf(root);
+    assert.equal(official.validateOfficial(artifacts).length, 0);
+    assert.equal((await references.validateReferences(artifacts, root)).diagnostics.length, 0);
+    const diagnostics = (await provenance.validateProvenance(artifacts, root)).diagnostics;
+    assert.equal(diagnostics.filter((item) => item.ruleId === "OWA-PROVENANCE-LOCAL-ABSOLUTE-PATH").length, 2);
+  });
+});
+
+test("remote rate-limit and timeout states are deterministic and optional", async () => {
+  const { checkRemote } = await load<{ checkRemote(url: string): Promise<{ status: string }> }>("tools/okf/references.mjs");
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(null, { status: 429 });
+    assert.deepEqual(await checkRemote("https://example.com/rate-limited"), { status: "remote-target-not-checked", statusCode: 429 });
+    globalThis.fetch = (async () => { const error = new Error("timeout"); error.name = "AbortError"; throw error; }) as typeof fetch;
+    assert.deepEqual(await checkRemote("https://example.com/timeout"), { status: "remote-check-timeout" });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("official, provenance, quality, and extension results remain isolated in combined output", async () => {
+  const { buildHumanOutput, buildJsonReport } = await load<{
+    buildHumanOutput(diagnostics: Diagnostic[], layer?: string): string;
+    buildJsonReport(report: { artifacts: Artifact[]; diagnostics: Diagnostic[]; referenceChecks: unknown[]; provenanceChecks?: unknown[] }, diagnostics?: Diagnostic[], options?: { warningsAsErrors?: boolean }): Record<string, unknown>;
+  }>("tools/okf/cli.mjs");
+  const { validateAll } = await load<{ validateAll(root: string): Promise<{ artifacts: Artifact[]; diagnostics: Diagnostic[]; referenceChecks: unknown[]; provenanceChecks: unknown[] }> }>("tools/okf/validate-all.mjs");
+  const root = await extensionFixture();
+  try {
+    await writeFile(path.join(root, "okf", "policy.md"), "---\ntype: Producer Type\n---\n# Policy\n", "utf8");
+    await writeFile(path.join(root, "okf", "mutable.md"), "---\ntype: Source\nsources:\n  - resource: https://github.com/example/project/blob/main/docs/source.md\n---\n# Mutable\n", "utf8");
+    const report = await validateAll(root);
+    const json = buildJsonReport(report);
+    const layerResults = json["layer_results"] as Record<string, { result: string }>;
+    assert.equal(layerResults["official"]?.result, "pass");
+    assert.equal(layerResults["provenance"]?.result, "fail");
+    assert.equal(layerResults["quality"]?.result, "fail");
+    assert.match(buildHumanOutput(report.diagnostics), /Official OKF v0\.2 Conformance: PASS/);
+    assert.doesNotMatch(buildHumanOutput(report.diagnostics), /Official OKF v0\.2 Conformance: FAIL/);
+    const serialized = JSON.stringify(json);
+    assert.doesNotMatch(serialized, /[A-Za-z]:\\\\(?:Users|home|workspace)\\\\/i);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("current normalized sources remain provenance-valid without required network access", async () => {
+  const provenance = await load<{ validateProvenance(artifacts: Artifact[], root: string): Promise<{ diagnostics: Diagnostic[]; checks: Array<{ classification: string }> }> }>("tools/okf/provenance.mjs");
+  const { discovery } = await officialModules();
+  const artifacts = await discovery.discoverOkf(process.cwd());
+  const report = await provenance.validateProvenance(artifacts, process.cwd());
+  assert.equal(report.diagnostics.length, 0);
+  assert.equal(report.checks.length, 81);
+  assert.equal(report.checks.every((item) => item.classification === "github-permalink"), true);
 });

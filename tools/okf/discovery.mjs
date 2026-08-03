@@ -116,6 +116,5 @@ export async function discoverOkf(root) {
   for (const [key, paths] of byCaseInsensitivePath) {
     if (new Set(paths).size > 1) artifacts.push({ file: undefined, path: key, kind: "case-collision", text: undefined, paths: [...new Set(paths)].sort() });
   }
-  if (!artifacts.some((artifact) => artifact.kind === "root-index")) artifacts.push({ file: path.join(okfRoot, "index.md"), path: "okf/index.md", kind: "missing-root-index", text: undefined });
   return artifacts.sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
 }

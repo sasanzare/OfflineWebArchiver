@@ -1,17 +1,25 @@
-export const layers = new Set(["official", "references", "extension", "quality", "format", "internal"]);
+export const layers = new Set(["official", "references", "provenance", "extension", "quality", "format", "internal"]);
+
+const layerAliases = new Map([["conformance", "official"]]);
+
+export function canonicalLayer(layer) {
+  return layerAliases.get(layer) ?? layer;
+}
 
 export function diagnostic(layer, ruleId, message, file = undefined, severity = "error", details = {}) {
-  if (!layers.has(layer)) throw new Error(`Unknown diagnostic layer '${layer}'`);
+  const normalizedLayer = canonicalLayer(layer);
+  if (!layers.has(normalizedLayer)) throw new Error(`Unknown diagnostic layer '${layer}'`);
   if (!["error", "warning", "info"].includes(severity)) throw new Error(`Unknown diagnostic severity '${severity}'`);
   return {
-    layer,
+    layer: normalizedLayer,
     severity,
     ruleId,
     code: ruleId,
-    ...(file === undefined ? {} : { file }),
+    ...(file === undefined ? {} : { path: file, file }),
     ...(details.line === undefined ? {} : { line: details.line }),
     ...(details.column === undefined ? {} : { column: details.column }),
     message,
+    ...(details.remediation === undefined && details.suggestion === undefined ? {} : { remediation: details.remediation ?? details.suggestion }),
     ...(details.suggestion === undefined ? {} : { suggestion: details.suggestion }),
     ...(details.sourceLayer === undefined ? {} : { sourceLayer: details.sourceLayer }),
     ...(details.data === undefined ? {} : { data: details.data }),
