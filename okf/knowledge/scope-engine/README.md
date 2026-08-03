@@ -1,3 +1,3 @@
-# Scope Engine Knowledge
+# Scope Engine Knowledge — Transitional Legacy Artifact
 
-Verified Product Phase 5 knowledge covers Scope Engine 1 normalization, contextual discovery inputs, identity, rule precedence, canonical-cycle/redirect classification, limits, sensitive query/fragment removal, and literal-address SSRF preparation. Golden/unit/integration/CLI/Electron evidence is local-only. Persistent discovered identities, jobs, DNS, and dispatch remain planned.
+This file is not authoritative. The migrated Concept is [Scope Engine](../../workflow/scope-engine.md). It remains for legacy-path compatibility until Phase 8 cleanup.

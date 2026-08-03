@@ -1,5 +1,9 @@
 # Target Source-of-Truth Map
 
+## Phase 5 execution update
+
+Migrated Concepts are the authoritative human-readable semantic representation for their subjects. Legacy Markdown paths are transitional compatibility artifacts only. Manifest and registries remain extension authorities or transitional derived indexes as classified in `PHASE_05_EXTENSION_BRIDGE_REPORT.md`.
+
 ## Phase 4 execution amendment
 
 Under `OKF-P4-A001`, the new core Concepts are created directly under `okf/` because the Phase 4 contract requires `okf/index.md`. They are future semantic representations, not an immediate consumer cutover: current product, ADR, source, test, registry, and legacy Markdown authorities remain operational. The Phase 4 ledger marks each duplicate legacy source as preserved and read-only for migration purposes. Phase 5 must finalize extension relocation and authority cutover before any deletion.

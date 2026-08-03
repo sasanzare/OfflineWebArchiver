@@ -1,4 +1,6 @@
-# Dependency Map
+# Dependency Map — Transitional Legacy Artifact
+
+> This file is not authoritative. Its extension documentation is [Dependency Map](../../extensions/maps/dependencies.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 Product Phase 5 adds one direct runtime dependency: `@offline-web-archive/scope-engine -> tldts@7.4.9` (MIT, bundled Public Suffix List, no runtime network). Scope Engine also uses existing exact `zod@4.4.3`. Application Service and SQLite persistence depend on the Scope Engine public package; apps still depend on Application Service/contracts rather than persistence internals.
 

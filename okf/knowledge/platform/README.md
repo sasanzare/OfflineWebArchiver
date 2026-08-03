@@ -1,3 +1,3 @@
-# Platform Knowledge
+# Platform Knowledge — Transitional Legacy Artifact
 
-The platform package returns minimal normalized runtime and operating-system facts and reads only the allowlisted `OWAB_LOG_LEVEL` configuration variable. Platform-specific implementation remains behind this adapter.
+This file is not authoritative. The migrated Concept is [Platform Adapter](../../architecture/platform.md). It remains for legacy-path compatibility until Phase 8 cleanup.

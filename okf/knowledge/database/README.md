@@ -1,4 +1,6 @@
-# Database Knowledge
+# Database Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Database](../../data/database.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED through SQLite schema 6.
 

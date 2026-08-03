@@ -1,3 +1,3 @@
-# Runtime Evidence
+# Runtime Evidence — Transitional Legacy Artifact
 
-The real Electron smoke verifies the local Windows renderer-to-Core path. Phase 2 runtime evidence remains linked without becoming a production dependency.
+This file is not authoritative. Its extension documentation is [Runtime Evidence](../../extensions/evidence/runtime.md). It remains for legacy-path compatibility until Phase 8 cleanup.

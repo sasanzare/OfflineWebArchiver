@@ -1,3 +1,3 @@
-# Completed Output
+# Completed Output — Transitional Legacy Artifact
 
-**Status:** VERIFIED foundation through Product Phase 7. Descriptors use root-bounded non-symlink relative paths, size and SHA-256. Valid terminal Jobs remain completed; missing/mismatched output is reported without silent reopen.
+This file is not authoritative. The migrated Concept is [Completed Output](../../recovery/completed-output.md). It remains for legacy-path compatibility until Phase 8 cleanup.

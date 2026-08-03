@@ -1,3 +1,3 @@
-# Decision Evidence
+# Decision Evidence — Transitional Legacy Artifact
 
-Accepted ADRs and open-decision records are indexed through the decision and evidence registries.
+This file is not authoritative. Its extension documentation is [Decision Evidence](../../extensions/evidence/decisions.md). It remains for legacy-path compatibility until Phase 8 cleanup.

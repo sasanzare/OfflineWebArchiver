@@ -1,5 +1,9 @@
 # Migration Risk Register
 
+## Phase 5 update
+
+Legacy JSON and Markdown paths remain until Phase 6 confirms consumer cutover. This avoids current-validator breakage but prevents a final whole-tree official conformance claim before Phase 8 cleanup.
+
 | Risk ID | Risk | Evidence | Probability | Impact | Severity | Phase 2 control / mitigation | Target phase |
 |---|---|---|---|---|---|---|---|
 | OKF-MIG-R001 | Loss of historical knowledge or bootstrap context | `okf-bootstrap/` is referenced by migration tooling | Medium | High | HIGH | Preserve bootstrap read-only through final audit; no cleanup before explicit Phase 8 approval. | 3-8 |

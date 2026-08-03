@@ -1,4 +1,6 @@
-# Application Service Knowledge
+# Application Service Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Application Service](../../architecture/application-service.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** PARTIAL product service, VERIFIED through Product Phase 8 scope.
 

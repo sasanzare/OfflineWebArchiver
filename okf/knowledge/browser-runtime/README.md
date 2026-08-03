@@ -1,4 +1,6 @@
-# Browser Runtime Knowledge
+# Browser Runtime Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Browser Runtime](../../architecture/browser-runtime.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED through Product Phase 8.
 

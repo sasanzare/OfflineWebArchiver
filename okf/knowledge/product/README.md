@@ -1,4 +1,6 @@
-# Product Knowledge
+# Product Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Product Overview](../../product/overview.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 Product Phase 7 is verified with Lease, Heartbeat, Fencing, Checkpoint, Pause/Resume, Crash Recovery, process-kill, multi-day, output verification, and partial-file foundation evidence. The exact next phase is Product Phase 8 — Browser Lifecycle and Rendering Engine.
 

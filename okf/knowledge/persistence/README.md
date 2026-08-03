@@ -1,4 +1,6 @@
-# Persistence Knowledge
+# Persistence Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Persistence](../../data/persistence.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 Product Phase 7 persists Lease ownership using a token verifier and Fencing Generation, immutable Checkpoints, cooperative Run control, bounded resumable recovery reports/cursors, completed-output verification state, and clean/unclean execution sessions. Phase 6 compatibility/idempotency rows retain active credentials for durable claim replay, making Project database confidentiality an explicit residual concern. Retention remains open.
 

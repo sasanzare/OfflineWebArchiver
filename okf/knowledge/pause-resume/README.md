@@ -1,3 +1,3 @@
-# Pause and Resume
+# Pause and Resume — Transitional Legacy Artifact
 
-**Status:** VERIFIED through Product Phase 7. Pause is cooperative: request, owner Checkpoint, acknowledgement and Lease release. Resume explicitly requeues paused work and a fresh claim receives a higher generation. Forced pause remains planned.
+This file is not authoritative. The migrated Concept is [Pause and Resume](../../recovery/pause-resume.md). It remains for legacy-path compatibility until Phase 8 cleanup.

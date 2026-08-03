@@ -1,5 +1,9 @@
 # Authoring and Generation Policy
 
+## Phase 5 execution update
+
+Extension Markdown is authored documentation under `okf/extensions/`. Existing JSON registry paths are retained transitional inputs; no generated registry was hand-edited in Phase 5.
+
 ## Phase 4 execution amendment
 
 For the Phase 4 slice, the authored root index is `okf/index.md` and the generated-style directory indexes are its populated direct-child indexes. This realizes the handoff under `OKF-P4-A001`; the ownership rules below are unchanged, and the historical Phase 2 `bundle/` wording remains design context until Phase 5 resolves the extension bridge.

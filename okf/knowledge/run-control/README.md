@@ -1,3 +1,3 @@
-# Run Control
+# Run Control — Transitional Legacy Artifact
 
-**Status:** VERIFIED through Product Phase 7. Persistent states are `active`, `pause_requested`, `paused`, `resuming`, `recovering`, `stopped`, `completed`, and `failed`. Migration 005 backfills existing Runs; commands are Project/Run scoped and Run Checkpoints preserve control snapshots.
+This file is not authoritative. The migrated Concept is [Run Control](../../recovery/run-control.md). It remains for legacy-path compatibility until Phase 8 cleanup.

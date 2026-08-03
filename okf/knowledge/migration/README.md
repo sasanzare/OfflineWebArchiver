@@ -1,4 +1,6 @@
-# Migration Knowledge
+# Migration Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Database Migration](../../operations/migration.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED through migration 006/schema 6.
 

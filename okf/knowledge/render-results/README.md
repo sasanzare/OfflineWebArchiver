@@ -1,4 +1,6 @@
-# Render Results Knowledge
+# Render Results Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Render Results](../../data/render-results.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED through SQLite schema 6.
 

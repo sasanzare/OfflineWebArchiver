@@ -7,5 +7,6 @@ This directory contains the selected portable Project, SQLite, and persistence C
 - [Project Format](project-format.md) - Portable project layout and artifact rules.
 - [Database](database.md) - SQLite schema and persistence constraints.
 - [Persistence](persistence.md) - Durable queue, recovery, and atomic storage guarantees.
+- [Render Results](render-results.md) - Durable Render result, event, failure, and artifact descriptors.
 
 The index does not replace implementation authorities or the current registry data.

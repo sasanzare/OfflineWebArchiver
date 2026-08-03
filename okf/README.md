@@ -1,4 +1,6 @@
-# Canonical OKF
+# Canonical OKF — Transitional Legacy Artifact
+
+> This file is not authoritative. The extension boundary is [OfflineWebArchiver Extensions](extensions/README.md), and official navigation begins at [the OKF root index](index.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 Canonical OKF is synchronized and `VERIFIED` through Product Phase 8 (2026-08-01). Activated versions are application 0.8.0, contract 1.5.0, SQLite schema 6/migration 006, Render Engine/Context/Stability model 1, Playwright 1.56.1, and Chromium 141.0.7390.37 revision 1194. Product Phase 9 Link Discovery and SPA Support and Product Phase 10 Human-paced Interaction remain `PLANNED`.
 

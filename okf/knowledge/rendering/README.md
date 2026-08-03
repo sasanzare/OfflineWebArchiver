@@ -1,4 +1,6 @@
-# Rendering Knowledge
+# Rendering Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Rendering](../../workflow/rendering.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED for Product Phase 8; discovery remains PLANNED.
 

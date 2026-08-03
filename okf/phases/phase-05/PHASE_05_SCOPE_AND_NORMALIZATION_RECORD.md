@@ -1,4 +1,6 @@
-# Product Phase 5 Scope and Normalization Record
+# Product Phase 5 Scope and Normalization Record — Transitional Legacy Artifact
+
+> This file is not authoritative. Its historical Concept is [Product Phase 5 Scope and Normalization Record](../../history/phase-05.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 ## Status
 

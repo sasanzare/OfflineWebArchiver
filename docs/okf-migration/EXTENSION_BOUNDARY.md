@@ -1,5 +1,9 @@
 # Official and Extension Boundary
 
+## Phase 5 execution update
+
+The amended production root remains `okf/`. `okf/extensions/` is the explicitly excluded project-extension documentation subtree; it is not an official Concept area. Existing JSON remains at legacy root paths solely for current-validator compatibility until Phase 6 consumer cutover.
+
 ## Phase 4 execution amendment
 
 The frozen Phase 2 boundary names `okf/bundle/` and `okf/extensions/`. For the Phase 4 production slice, `OKF-P4-A001` realizes the selected official Concepts and reserved indexes directly under `okf/` so the required `okf/index.md` is the single production root. Existing registries, evidence, maps, validation files, and legacy Markdown remain transitional artifacts and are not silently reclassified. Phase 5 must finalize the physical extension location and bridge before any relocation.

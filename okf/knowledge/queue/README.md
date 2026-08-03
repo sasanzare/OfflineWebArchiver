@@ -1,4 +1,6 @@
-# Queue
+# Queue — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Queue](../../workflow/queue.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED through Product Phase 7
 

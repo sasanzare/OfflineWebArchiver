@@ -1,4 +1,6 @@
-# Runtime Network Knowledge
+# Runtime Network Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Runtime Network Policy](../../security/runtime-network.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED for the Phase 8 request boundary.
 

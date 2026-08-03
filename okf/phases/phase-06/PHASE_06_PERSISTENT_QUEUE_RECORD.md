@@ -1,4 +1,6 @@
-# Product Phase 6 — Persistent Queue and Job State Machine
+# Product Phase 6 Persistent Queue Record — Transitional Legacy Artifact
+
+> This file is not authoritative. Its historical Concept is [Product Phase 6 Persistent Queue Record](../../history/phase-06.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED  
 **Activated:** 2026-07-31  

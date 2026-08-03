@@ -1,4 +1,6 @@
-# Product Phase 8 — Browser Lifecycle and Rendering Engine
+# Product Phase 8 Browser Rendering Record — Transitional Legacy Artifact
+
+> This file is not authoritative. Its historical Concept is [Product Phase 8 Browser Rendering Record](../../history/phase-08.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED  
 **Activated:** 2026-08-01  

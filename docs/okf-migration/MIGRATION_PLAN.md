@@ -1,5 +1,9 @@
 # Eight-Phase Migration Plan
 
+## Phase 5 completion
+
+Content migration and the extension bridge are complete. Phase 6 implements distinct official and extension validators; Phase 7 adds deterministic validation and CI; Phase 8 evaluates removal of legacy compatibility paths.
+
 ## Phase 1: Audit and Migration Planning
 
 **Status:** Complete.

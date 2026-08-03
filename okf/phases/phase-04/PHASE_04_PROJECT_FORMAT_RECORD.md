@@ -1,4 +1,6 @@
-# Product Phase 4 Project Format Record
+# Product Phase 4 Project Format Record — Transitional Legacy Artifact
+
+> This file is not authoritative. Its historical Concept is [Product Phase 4 Project Format Record](../../history/phase-04.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 ## Status
 

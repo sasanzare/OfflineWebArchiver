@@ -1,3 +1,3 @@
-# Job Attempts
+# Job Attempts — Transitional Legacy Artifact
 
-**Status:** VERIFIED through Product Phase 7. Attempts still increment only on claim. Crash recovery closes abandoned work as interrupted; cooperative pause closes it as paused; neither erases attempt history.
+This file is not authoritative. The migrated Concept is [Job Attempts](../../workflow/job-attempts.md). It remains for legacy-path compatibility until Phase 8 cleanup.

@@ -1,3 +1,3 @@
-# Observability Knowledge
+# Observability Knowledge — Transitional Legacy Artifact
 
-Structured JSON events carry component, correlation ID, command ID, event name, level, and optional error code. Secret-like metadata keys are recursively redacted.
+This file is not authoritative. The migrated Concept is [Observability](../../operations/observability.md). It remains for legacy-path compatibility until Phase 8 cleanup.

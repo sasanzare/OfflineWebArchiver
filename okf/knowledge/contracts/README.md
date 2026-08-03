@@ -1,4 +1,6 @@
-# Contracts Knowledge
+# Contracts Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Contracts](../../architecture/contracts.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED through contract 1.5.0.
 

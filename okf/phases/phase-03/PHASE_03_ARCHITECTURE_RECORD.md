@@ -1,4 +1,6 @@
-# Product Phase 3 — Architecture, Monorepo, and Layer Contracts
+# Product Phase 3 Architecture Record — Transitional Legacy Artifact
+
+> This file is not authoritative. Its merged historical Concept is [Product Phase 3 Architecture Record](../../history/phase-03.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 ## Initial Repository State
 

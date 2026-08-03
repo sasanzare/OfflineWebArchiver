@@ -1,3 +1,3 @@
-# Source Evidence
+# Source Evidence — Transitional Legacy Artifact
 
-Canonical source evidence is indexed in `okf/registry/evidence.json`; paths point to immutable-in-scope repository sources rather than copied artifacts.
+This file is not authoritative. Its extension documentation is [Source Evidence](../../extensions/evidence/source.md). It remains for legacy-path compatibility until Phase 8 cleanup.

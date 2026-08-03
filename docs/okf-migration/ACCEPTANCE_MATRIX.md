@@ -1,5 +1,9 @@
 # OKF Migration Acceptance Matrix
 
+## Phase 5 update
+
+Content migration, Concept metadata, indexes, extension documentation, evidence preservation, relationship preservation, and legacy-path classification are complete. Automated official validation and CI remain Phase 6 and 7 obligations.
+
 ## Phase 1 Summary
 
 | ID | Criterion | Status | Evidence |

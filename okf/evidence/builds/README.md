@@ -1,3 +1,3 @@
-# Build Evidence
+# Build Evidence — Transitional Legacy Artifact
 
-Build definitions and final validation results establish the Phase 3 development build only, not release packaging.
+This file is not authoritative. Its extension documentation is [Build Evidence](../../extensions/evidence/builds.md). It remains for legacy-path compatibility until Phase 8 cleanup.

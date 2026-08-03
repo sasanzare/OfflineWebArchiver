@@ -1,3 +1,3 @@
-# Heartbeats
+# Heartbeats — Transitional Legacy Artifact
 
-**Status:** VERIFIED through Product Phase 7. Heartbeat default is 15s and records liveness without changing expiry. Renewal is explicit, before expiry, and extends from renewal time. Exact expiry is `now >= expiresAt`.
+This file is not authoritative. The migrated Concept is [Heartbeats](../../recovery/heartbeats.md). It remains for legacy-path compatibility until Phase 8 cleanup.

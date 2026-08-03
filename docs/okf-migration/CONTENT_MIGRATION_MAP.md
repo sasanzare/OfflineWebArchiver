@@ -2,7 +2,7 @@
 
 ## Scope and Interpretation
 
-This ledger classifies all 58 Markdown files currently under `okf/`, exactly once each. It is a design input only; no source file is moved, rewritten, merged, or deleted in Phase 2.
+This ledger classifies all 58 original Markdown files under `okf/`, exactly once each. Phase 5 implements every row using additive targets and retained transitional source paths; the complete result is recorded in `COMPLETE_CONTENT_MIGRATION_LEDGER.md`.
 
 `OKF-P4-A001` is the recorded Phase 4 realization amendment. The original proposed paths below retain the Phase 2 `okf/bundle/` notation for historical traceability; the Phase 4 core rows are implemented at the corresponding `okf/<category>/...` paths listed in the execution table below. No legacy source is removed or rewritten.
 

@@ -1,4 +1,6 @@
-# Product Phase 7 — Checkpoint, Lease, and Crash Recovery
+# Product Phase 7 Recovery Record — Transitional Legacy Artifact
+
+> This file is not authoritative. Its historical Concept is [Product Phase 7 Recovery Record](../../history/phase-07.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 **Status:** VERIFIED  
 **Activated:** 2026-08-01  

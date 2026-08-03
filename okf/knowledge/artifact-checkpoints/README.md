@@ -1,3 +1,3 @@
-# Artifact Checkpoints
+# Artifact Checkpoints — Transitional Legacy Artifact
 
-**Status:** VERIFIED foundation through Product Phase 7. Model 1 persists portable path, byte counts, expected length, SHA-256, validator, resume offset, generation and committed flag under current Lease ownership.
+This file is not authoritative. The migrated Concept is [Artifact Checkpoints](../../recovery/artifact-checkpoints.md). It remains for legacy-path compatibility until Phase 8 cleanup.

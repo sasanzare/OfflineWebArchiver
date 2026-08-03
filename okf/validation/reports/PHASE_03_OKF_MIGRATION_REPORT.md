@@ -1,4 +1,6 @@
-# Product Phase 3 OKF Migration Report
+# Product Phase 3 OKF Migration Report — Transitional Legacy Artifact
+
+> This file is not authoritative. Its extension documentation is [Product Phase 3 OKF Migration Report](../../extensions/validation/reports/phase-03-migration-report.md). It remains because the current validator requires this legacy path until Phase 6 cutover.
 
 Date: 2026-07-31. Status: `VERIFIED`. Commit: `NOT_COMMITTED`.
 

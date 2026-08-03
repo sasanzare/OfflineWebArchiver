@@ -1,3 +1,3 @@
-# Partial Files
+# Partial Files — Transitional Legacy Artifact
 
-**Status:** PARTIAL. Phase 7 verifies a pure safe resume/restart/discard/complete policy and local HTTP Range/no-Range fixture. Production Asset Downloader integration, retention, remote policy, and scale remain `PLANNED` for Phase 9.
+This file is not authoritative. The migrated Concept is [Partial File Recovery](../../recovery/partial-files.md). It remains for legacy-path compatibility until Phase 8 cleanup.

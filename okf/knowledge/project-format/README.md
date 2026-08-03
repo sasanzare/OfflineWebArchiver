@@ -1,4 +1,6 @@
-# Project Format Knowledge
+# Project Format Knowledge — Transitional Legacy Artifact
+
+> This file is not authoritative. The migrated Concept is [Project Format](../../data/project-format.md). It remains for legacy-path compatibility until Phase 8 cleanup.
 
 Project format 1.1.0 remains compatible with 1.0.0 and enables portable `profile/config.json` plus the declared `crawlQueue` feature. Queue/Lease/Checkpoint/Recovery/Render rows live in SQLite schema 6; final HTML/optional PNG use fixed Project-relative paths. Browser resources never enter Project data.
 
