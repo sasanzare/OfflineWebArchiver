@@ -8,6 +8,10 @@ Migrated Concept and reserved-file content meets the frozen producer contract by
 
 Production validation is implemented and executed with separate official and project-specific diagnostics. CI enforcement and final cleanup remain deferred.
 
+## Phase 7 update
+
+CI enforcement is implemented for official, policy, extension, and formatting failures. Quality warnings remain non-blocking; final cleanup remains deferred.
+
 The evidence below reflects the repository at baseline commit `dd0fb00fd869dee2a808f48fc157f45c00c98cb0`. `UNKNOWN` is used only where the audit cannot establish a result.
 
 | ID | Requirement | Level | Repository evidence | Current result | Gap | Required migration action | Target phase |

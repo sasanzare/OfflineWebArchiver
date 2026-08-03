@@ -1,0 +1,75 @@
+name: OKF Validation
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: okf-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: OKF validation and quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.17.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run validator regression tests
+        run: npm run test:okf
+
+      - name: Run blocking OKF validation layers
+        run: npm run okf:validate
+
+      - name: Run documentation and formatting gates
+        run: |
+          npm run docs:validate
+          npm run format:check
+
+      - name: Run static quality gates
+        run: |
+          npm run lint
+          npm run typecheck
+
+      - name: Generate conformance report
+        if: always()
+        run: |
+          mkdir -p .artifacts/okf
+          node tools/okf/cli.mjs validate --format json > .artifacts/okf/conformance.json
+
+      - name: Write workflow summary
+        if: always()
+        run: |
+          {
+            echo "## OKF validation"
+            echo ""
+            echo "Blocking layers: official, repository policy, extension integrity, and formatting."
+            echo "Knowledge-quality findings remain non-blocking unless the validator emits an error."
+            echo ""
+            echo "### Conformance report"
+            echo ""
+            echo "`conformance.json` is attached as the `okf-conformance-report` artifact."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload conformance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: okf-conformance-report
+          path: .artifacts/okf/conformance.json
+          if-no-files-found: error
+          retention-days: 14

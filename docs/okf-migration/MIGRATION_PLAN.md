@@ -8,6 +8,10 @@ Content migration and the extension bridge are complete. Phase 6 implements dist
 
 The dual validator and focused tests are implemented. Phase 7 owns CI integration and stricter warning policy decisions.
 
+## Phase 7 completion
+
+The CI quality gate and conformance artifact are implemented. Phase 8 owns independent hosted-run verification, legacy cleanup, and final audit.
+
 ## Phase 1: Audit and Migration Planning
 
 **Status:** Complete.

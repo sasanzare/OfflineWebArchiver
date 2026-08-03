@@ -8,6 +8,10 @@ Legacy JSON and Markdown paths remain until Phase 6 confirms consumer cutover. T
 
 The legacy validator is retained as the extension layer. The restricted safe YAML parser rejects unsupported YAML constructs; a future dependency-based parser requires a locked, reproducible installation decision.
 
+## Phase 7 update
+
+Hosted workflow execution and branch protection require manual GitHub configuration or verification. The workflow uses no secrets and uploads only a repository-relative JSON report.
+
 | Risk ID | Risk | Evidence | Probability | Impact | Severity | Phase 2 control / mitigation | Target phase |
 |---|---|---|---|---|---|---|---|
 | OKF-MIG-R001 | Loss of historical knowledge or bootstrap context | `okf-bootstrap/` is referenced by migration tooling | Medium | High | HIGH | Preserve bootstrap read-only through final audit; no cleanup before explicit Phase 8 approval. | 3-8 |

@@ -8,6 +8,10 @@ Phase 5 completes the approved content migration: 40 Concepts, 10 reserved index
 
 Phase 6 implements separated official, repository-policy, extension, quality, and formatting validation with human and JSON reports. CI enforcement remains Phase 7 work.
 
+## Phase 7 completion
+
+Phase 7 adds a least-privilege GitHub Actions quality gate, JSON conformance artifact, branch-protection guide, CI security review, and Phase 8 audit handoff. Hosted workflow execution remains unverified.
+
 ## Purpose
 
 This directory records the evidence-based migration from the repository's custom Organizational Knowledge Framework to the official Google Open Knowledge Format (OKF) v0.2. It is planning documentation; it does not claim that the current `okf/` tree conforms.

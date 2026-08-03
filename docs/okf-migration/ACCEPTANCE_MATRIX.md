@@ -8,6 +8,10 @@ Content migration, Concept metadata, indexes, extension documentation, evidence 
 
 Layer separation, deterministic reporting, legacy extension checks, focused regression tests, and production validation are complete. Broad CI integration remains deferred.
 
+## Phase 7 update
+
+Blocking CI gates, non-blocking quality reporting, artifact publication, branch-protection guidance, and CI security documentation are complete. Hosted execution and manual branch protection remain unresolved external configuration.
+
 ## Phase 1 Summary
 
 | ID | Criterion | Status | Evidence |
