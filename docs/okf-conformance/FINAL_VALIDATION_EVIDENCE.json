@@ -1,0 +1,295 @@
+{
+  "schema_version": "1.0.0",
+  "audit_date": "2026-08-04",
+  "repository": "sasanzare/OfflineWebArchiver",
+  "branch": "main",
+  "head_commit": "cf33924b82043544b3315edcc8271cbb6ceff474",
+  "baseline_commit": "b273bf3e22a50262d77c46b5061d140ed8c81229",
+  "working_tree_clean": false,
+  "pre_evidence_working_tree_clean": true,
+  "phase6_evidence_files_untracked": true,
+  "specification": {
+    "name": "Google Open Knowledge Format",
+    "version": "0.2",
+    "revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96",
+    "canonical_url": "https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/3fcbb9f828c2f23d109c855ee403c3a4c81f3a96/okf/SPEC.md"
+  },
+  "bundle_inventory": {
+    "root": "okf/",
+    "total_files": 50,
+    "markdown_files": 50,
+    "concepts": 40,
+    "root_indexes": 1,
+    "directory_indexes": 9,
+    "logs": 0,
+    "unexpected_files": 0,
+    "unsafe_entries": 0,
+    "case_collisions": 0
+  },
+  "concept_inventory": {
+    "total": 40,
+    "status_counts": {
+      "stable": 40
+    },
+    "source_entries": 81,
+    "custom_owa_concepts": 40,
+    "semantic_knowledge_changes": 0,
+    "historical_reference_corrections": 1
+  },
+  "extension_inventory": {
+    "root": "okf-extension/",
+    "files": 26,
+    "markdown_files": 15,
+    "json_files": 11,
+    "parsed_json_files": 11,
+    "registries": 8,
+    "registry_items": 399,
+    "duplicate_registry_ids": 0,
+    "missing_registry_paths": 0,
+    "official_discovery_member": false
+  },
+  "archive_inventory": {
+    "root": "docs/archive/okf/",
+    "total_files": 106,
+    "markdown_files": 98,
+    "json_files": 8,
+    "bootstrap_material_files": 15,
+    "migration_material_files": 90,
+    "archived_material_files": 105,
+    "non_authoritative_control_files": 1,
+    "readable_markdown_files": 98,
+    "unreadable_files": 0,
+    "active_input": false
+  },
+  "source_inventory": {
+    "source_entries": 81,
+    "unique_resources": 54,
+    "immutable_full_sha_github_permalinks": 81,
+    "locally_verified_commit_path_pairs": 81,
+    "external_source_permalinks": 0,
+    "unresolved": 0,
+    "mutable_current_sources": 0,
+    "relative_current_sources": 0,
+    "remote_verification": "not_run_default_network_disabled"
+  },
+  "link_audit": {
+    "active_markdown_files_before_phase6_evidence": 211,
+    "relative_links_before_phase6_evidence": 269,
+    "valid_relative_links_before_phase6_evidence": 269,
+    "broken_relative_links_before_phase6_evidence": 0,
+    "external_links_before_phase6_evidence": 10,
+    "malformed_links_before_phase6_evidence": 0,
+    "active_markdown_files_after_phase6_evidence": 213,
+    "relative_links_after_phase6_evidence": 286,
+    "valid_relative_links_after_phase6_evidence": 286,
+    "broken_relative_links_after_phase6_evidence": 0,
+    "external_links_after_phase6_evidence": 11,
+    "archive_links": "readable but excluded from active-link failure classification"
+  },
+  "rule_inventory": {
+    "active_diagnostic_ids": 98,
+    "explicitly_recorded_historical_superseded_ids": 1,
+    "current_production_diagnostics": 0
+  },
+  "validation_commands": [
+    {
+      "command": "npm ci",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "package installation",
+      "notes": "Electron binary was restored for the desktop test runner before full-suite execution."
+    },
+    {
+      "command": "npm run okf:validate:conformance",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:validate:references",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:validate:provenance",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:validate:extension",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:validate:quality",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:validate:format",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:validate",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled",
+      "notes": "All six layers and internal failure handling pass."
+    },
+    {
+      "command": "node tools/okf/cli.mjs validate --format json",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled",
+      "notes": "JSON report parsed with zero diagnostics."
+    },
+    {
+      "command": "npm run test:okf",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled",
+      "notes": "43 tests passed."
+    },
+    {
+      "command": "npm run docs:validate",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run format:check",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run lint",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run test",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled",
+      "notes": "125 tests passed."
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "exit_code": 0,
+      "network_mode": "disabled"
+    },
+    {
+      "command": "npm run okf:migrate",
+      "status": "EXPECTED_NONZERO",
+      "exit_code": 2,
+      "network_mode": "disabled",
+      "notes": "Intentional completed-migration compatibility wrapper."
+    }
+  ],
+  "test_results": {
+    "focused_okf": {
+      "passed": 43,
+      "failed": 0
+    },
+    "full_suite": {
+      "passed": 125,
+      "failed": 0
+    },
+    "temporary_fixture_cleanup": "covered by finally blocks",
+    "parallel_safety": "deterministic serial test runner and isolated temporary roots",
+    "build": "PASS"
+  },
+  "layer_results": {
+    "official_conformance": "PASS",
+    "references": "PASS",
+    "provenance": "PASS",
+    "extension": "PASS",
+    "quality": "PASS",
+    "format": "PASS",
+    "combined": "PASS",
+    "internal": "PASS"
+  },
+  "diagnostic_counts": {
+    "official": 0,
+    "references": 0,
+    "provenance": 0,
+    "extension": 0,
+    "quality": 0,
+    "format": 0,
+    "internal": 0,
+    "errors": 0,
+    "warnings": 0,
+    "info": 0,
+    "total": 0
+  },
+  "ci_configuration": {
+    "workflow": ".github/workflows/okf-validation.yml",
+    "matrix": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "node": "24.17.0",
+    "package_install": "npm ci",
+    "named_layer_steps": true,
+    "combined_validation": true,
+    "focused_tests": true,
+    "documentation_validation": true,
+    "format_lint_typecheck": true,
+    "json_artifact_upload": true,
+    "default_network_mode": "disabled",
+    "optional_remote_job": "manual_or_schedule_only"
+  },
+  "hosted_ci_status": {
+    "status": "NOT_VERIFIED",
+    "current_evidence_run": "not_accessible",
+    "pass_claimed": false,
+    "reason": "Hosted Actions status was not accessible in the audit environment."
+  },
+  "branch_protection_status": {
+    "status": "NOT_VERIFIED",
+    "settings_access": "not_accessible",
+    "pass_claimed": false
+  },
+  "git_audit": {
+    "files_changed_since_baseline": 131,
+    "official_bundle_files_changed_since_baseline": 1,
+    "official_change_classification": "historical reference correction",
+    "phase6_source_changes": 0,
+    "phase6_application_changes": 0,
+    "phase6_evidence_files": 7
+  },
+  "file_hashes": {
+    "manifest": "docs/okf-conformance/FINAL_AUDIT_HASHES.sha256",
+    "algorithm": "SHA-256",
+    "input_entries": 138,
+    "excludes": [
+      "node_modules",
+      "build output",
+      "historical archive",
+      "Phase 6 evidence artifacts"
+    ]
+  },
+  "limitations": [
+    "Local execution was on Windows only; the workflow statically covers Ubuntu and Windows.",
+    "Hosted CI for the current evidence set was not accessible and is not claimed passed.",
+    "Branch-protection settings were not accessible and are not claimed verified.",
+    "Remote GitHub source availability was not checked by default.",
+    "Historical archive links are preserved as historical material and are excluded from active documentation failure classification."
+  ],
+  "final_result": "CONFORMANT_WITH_EXTERNAL_VERIFICATION_PENDING"
+}
