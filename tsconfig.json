@@ -3,6 +3,7 @@
   "references": [
     { "path": "packages/contracts" },
     { "path": "packages/archive-core" },
+    { "path": "packages/secrets" },
     { "path": "packages/queue" },
     { "path": "packages/recovery" },
     { "path": "packages/browser-runtime" },

@@ -2,7 +2,7 @@
 
 Desktop Renderer flows through the Preload Bridge and Electron IPC Adapter to the Application Service and Archive Core. CLI uses an in-process adapter to the same Application Service and Archive Core.
 
-Requests and responses use transport-neutral Contracts 1.6.0 at the documented
+Requests and responses use transport-neutral Contracts 1.7.0 at the documented
 interface boundary. Phase 10 interaction commands remain bounded and carry
 typed character counts rather than raw text.
 

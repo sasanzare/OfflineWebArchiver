@@ -13,5 +13,6 @@ This directory contains durable Phase Record Concepts. A Phase Record is histori
 - [Product Phase 7](phase-07.md)
 - [Product Phase 8](phase-08.md)
 - [Product Phase 10](phase-10.md)
+- [Product Phase 11](phase-11.md)
 
 This maintained index lists direct Phase Record children only. The official log is intentionally not created.

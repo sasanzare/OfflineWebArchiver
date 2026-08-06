@@ -1,8 +1,8 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest completed baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations are present, but the Phase 9 Discovery Engine prerequisite is not present in this baseline, so Phase 10 is not claimed complete.
+Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest fully gated baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations and the Product Phase 11 Secret Store foundation are present, but the Phase 9 Discovery Engine prerequisite is not present in this baseline, so the Phase 10/11 product gates are not claimed fully verified.
 
-Current versions are application/workspaces `0.8.0`, transport contract `1.6.0`, Project format `1.1.0`, SQLite schema `7`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Playwright `1.56.1`, and Chromium `141.0.7390.37` revision `1194`. The implemented interaction surface is bounded and approved-plan-only; without Phase 9 it does not discover or enqueue links. The product still does not download production assets, rewrite HTML, capture APIs, authenticate, use proxies, or create a full crawl/archive.
+Current versions are application/workspaces `0.8.0`, transport contract `1.7.0`, Project format `1.1.0`, SQLite schema `7`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store surface is metadata-only at transport boundaries and uses a privileged Portable Vault/OS adapter. Without Phase 9 it does not discover or enqueue links. The product still does not implement manual login/session capture, OTP workflows, production asset downloading, HTML rewrite, API capture, proxy management, or a full crawl/archive.
 
 ## Safety and authorization
 
@@ -20,7 +20,8 @@ packages/recovery        pure Lease/Checkpoint/Recovery/partial-file policy
 packages/queue           pure Queue state/idempotency policy
 packages/persistence-sqlite  SQLite schema 7 and repositories
 packages/application-service use-case and ownership orchestration
-packages/contracts       runtime-validated contract 1.6.0
+packages/contracts       runtime-validated contract 1.7.0
+packages/secrets         encrypted Secret Store adapters and sensitive-data policy
 ```
 
 Use Node 24 and npm 11:
@@ -48,6 +49,11 @@ npm run browser:install
 npm run browser:verify
 npm run browser:info
 npm run render:validate
+npm run test:secrets
+npm run secret-store:validate
+npm run vault:validate
+npm run diagnostics:validate
+npm run test:secret-leakage
 npm run security:check
 npm run docs:validate
 npm run okf:validate
@@ -78,6 +84,9 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
 - [Human-Paced Interaction architecture](docs/architecture/BROWSER_INTERACTION.md)
 - [Phase 10 implementation report](docs/project/PHASE_10_IMPLEMENTATION_REPORT.md)
+- [Phase 11 implementation report](docs/project/PHASE_11_IMPLEMENTATION_REPORT.md)
+- [Secret Store architecture](docs/architecture/SECRET_STORE.md)
+- [Phase 11 security review](docs/architecture/PHASE_11_SECURITY_REVIEW.md)
 - [Phase 10 security review](docs/architecture/PHASE_10_SECURITY_REVIEW.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
 - [Canonical Google OKF v0.2 knowledge](okf/index.md)

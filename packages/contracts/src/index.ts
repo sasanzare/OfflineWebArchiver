@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.6.0" as const;
+export const CONTRACT_VERSION = "1.7.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -11,6 +11,10 @@ export const COMMAND_TYPES = [
   "project.export",
   "project.import",
   "project.info",
+  "secret.backend.status",
+  "secret.list",
+  "secret.vault.lock",
+  "secret.delete",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -203,6 +207,37 @@ export const ERROR_CODES = [
   "INTERACTION_DIALOG_BLOCKED",
   "INTERACTION_TRACE_LIMIT",
   "INTERACTION_PERSISTENCE_FAILED",
+  "SECRET_REFERENCE_INVALID",
+  "SECRET_REFERENCE_VERSION_UNSUPPORTED",
+  "SECRET_REFERENCE_PROJECT_MISMATCH",
+  "SECRET_KIND_INVALID",
+  "SECRET_SCOPE_INVALID",
+  "SECRET_PURPOSE_INVALID",
+  "SECRET_PURPOSE_NOT_ALLOWED",
+  "SECRET_METADATA_INVALID",
+  "SECRET_VALUE_INVALID",
+  "SECRET_VALUE_TOO_LARGE",
+  "SECRET_NOT_FOUND",
+  "SECRET_ALREADY_EXISTS",
+  "SECRET_STORE_LOCKED",
+  "SECRET_STORE_UNINITIALIZED",
+  "SECRET_STORE_BUSY",
+  "SECRET_UNLOCK_FAILED",
+  "SECRET_UNLOCK_RATE_LIMITED",
+  "SECRET_TAMPER_DETECTED",
+  "SECRET_FORMAT_UNSUPPORTED",
+  "SECRET_ALGORITHM_UNSUPPORTED",
+  "SECRET_KDF_INVALID",
+  "SECRET_EXPORT_FORBIDDEN",
+  "SECRET_EXPORT_CONFIRMATION_REQUIRED",
+  "SECRET_EXPORT_FAILED",
+  "SECRET_IMPORT_FAILED",
+  "SECRET_BACKEND_UNAVAILABLE",
+  "SECRET_INSECURE_BACKEND",
+  "SECRET_BACKEND_UNSUPPORTED",
+  "SECRET_PRODUCTION_TEST_BACKEND",
+  "SECRET_PROJECT_CONTEXT_REQUIRED",
+  "SECRET_OPERATION_FAILED",
 ] as const;
 
 const identifierSchema = z
@@ -294,6 +329,18 @@ export const ProjectInfoCommandSchema = z.object({
   commandType: z.literal("project.info"),
   payload: z.object({ projectPath: localPathSchema.optional() }).strict(),
 }).strict();
+
+const secretRefSchema = z.string().min(1).max(256).regex(/^secret:\/\/v1\/project\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+const secretProjectPayload = z.object({ projectPath: localPathSchema }).strict();
+const secretKindSchema = z.enum(["proxy_credential", "authentication_credential", "session_storage", "api_credential", "portable_export_key", "generic_project_secret"]);
+const secretScopeSchema = z.object({ scopeType: z.enum(["application", "project", "profile", "session", "login_flow"]), projectId: z.string().uuid(), scopeId: z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/) }).strict();
+const secretBackendSchema = z.enum(["portable_vault", "os_protected", "memory_test"]);
+const secretLifecycleStateSchema = z.enum(["active", "rotation_required", "disabled", "deleted", "migration_required"]);
+
+export const SecretBackendStatusCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.backend.status"), payload: secretProjectPayload }).strict();
+export const SecretListCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.list"), payload: secretProjectPayload }).strict();
+export const SecretVaultLockCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.vault.lock"), payload: secretProjectPayload }).strict();
+export const SecretDeleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.delete"), payload: z.object({ projectPath: localPathSchema, ref: secretRefSchema }).strict() }).strict();
 
 const profileDraftFields = {
   name: z.string().trim().min(1).max(120),
@@ -520,6 +567,10 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   ProjectExportCommandSchema,
   ProjectImportCommandSchema,
   ProjectInfoCommandSchema,
+  SecretBackendStatusCommandSchema,
+  SecretListCommandSchema,
+  SecretVaultLockCommandSchema,
+  SecretDeleteCommandSchema,
   ProfileCreateCommandSchema,
   ProfileGetCommandSchema,
   ProfileUpdateCommandSchema,
@@ -677,6 +728,51 @@ export const ProjectInfoResultSchema = z.object({
   currentProject: ProjectSummarySchema.nullable(),
   compatibility: ProjectCompatibilitySchema.nullable(),
 }).strict();
+
+export const SecretMetadataContractSchema = z.object({
+  ref: secretRefSchema,
+  secretId: z.string().uuid(),
+  projectId: z.string().uuid(),
+  scope: secretScopeSchema,
+  kind: secretKindSchema,
+  backend: secretBackendSchema,
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
+  lastRotatedAt: timestampSchema.nullable(),
+  version: z.number().int().positive(),
+  lifecycleState: secretLifecycleStateSchema,
+  displayLabel: z.string().max(120).nullable(),
+  secureExportPolicy: z.enum(["allowed", "forbidden"]),
+  encryptionEnvelopeVersion: z.literal(1),
+  keySlotId: identifierSchema,
+  migrationState: z.enum(["current", "migration_required"]),
+}).strict();
+export const SecretBackendStatusContractSchema = z.object({
+  backend: secretBackendSchema,
+  state: z.enum(["available", "unavailable", "degraded", "insecure_backend_rejected", "unsupported"]),
+  vaultState: z.enum(["uninitialized", "locked", "unlocking", "unlocked", "rotating", "error"]),
+  initialized: z.boolean(),
+  locked: z.boolean(),
+  selectedProvider: z.string().max(120).nullable(),
+  referenceVersion: z.literal(1),
+  vaultFormatVersion: z.literal(1),
+  encryptionEnvelopeVersion: z.literal(1),
+  reasonCode: z.string().max(120).nullable(),
+}).strict();
+export const SecretStoreCapabilityContractSchema = z.object({
+  capabilityVersion: z.literal(1),
+  backend: secretBackendSchema,
+  state: z.enum(["available", "unavailable", "degraded", "insecure_backend_rejected", "unsupported"]),
+  canCreate: z.boolean(),
+  canResolve: z.boolean(),
+  canSecureExport: z.boolean(),
+  supportsLock: z.boolean(),
+  supportsRotation: z.boolean(),
+}).strict();
+export const SecretBackendStatusResultSchema = z.object({ resultType: z.literal("secret.backend.status"), status: SecretBackendStatusContractSchema, capability: SecretStoreCapabilityContractSchema }).strict();
+export const SecretListResultSchema = z.object({ resultType: z.literal("secret.list"), metadata: z.array(SecretMetadataContractSchema).max(1_000) }).strict();
+export const SecretVaultLockResultSchema = z.object({ resultType: z.literal("secret.vault.lock"), status: SecretBackendStatusContractSchema }).strict();
+export const SecretDeleteResultSchema = z.object({ resultType: z.literal("secret.delete"), ref: secretRefSchema }).strict();
 
 export const ProfileResultSchema = z.object({ resultType: z.literal("profile.value"), profile: SiteProfileContractSchema, changedPaths: z.array(z.string()).optional() }).strict();
 export const ProfileValidationResultSchema = z.object({
@@ -850,6 +946,10 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   ProjectExportResultSchema,
   ProjectImportResultSchema,
   ProjectInfoResultSchema,
+  SecretBackendStatusResultSchema,
+  SecretListResultSchema,
+  SecretVaultLockResultSchema,
+  SecretDeleteResultSchema,
   ProfileResultSchema,
   ProfileValidationResultSchema,
   ProfileComparisonResultSchema,
@@ -967,6 +1067,9 @@ export type CommandType = CommandEnvelope["commandType"];
 export type SystemDescribeCommand = z.infer<typeof SystemDescribeCommandSchema>;
 export type SystemDescription = z.infer<typeof SystemDescriptionSchema>;
 export type ProjectSummaryContract = z.infer<typeof ProjectSummarySchema>;
+export type SecretMetadataContract = z.infer<typeof SecretMetadataContractSchema>;
+export type SecretBackendStatusContract = z.infer<typeof SecretBackendStatusContractSchema>;
+export type SecretStoreCapabilityContract = z.infer<typeof SecretStoreCapabilityContractSchema>;
 export type SiteProfileContract = z.infer<typeof SiteProfileContractSchema>;
 export type PageJobContract = z.infer<typeof PageJobContractSchema>;
 export type JobLeaseContract = z.infer<typeof JobLeaseContractSchema>;

@@ -61,6 +61,15 @@
     { "id": "OKF-EV-P10-BROWSER", "name": "Phase 10 real Playwright interaction adapter and fixture", "status": "PARTIAL", "path": "tests/browser/interaction.test.ts", "method": "npm run test:browser" },
     { "id": "OKF-EV-P10-INTERFACES", "name": "Phase 10 contract and CLI interaction surfaces", "status": "PARTIAL", "path": "packages/contracts/src/index.ts", "method": "npm run contracts:check and npm run test:unit" },
     { "id": "OKF-EV-P10-TESTS", "name": "Phase 10 interaction lifecycle integration evidence", "status": "PARTIAL", "path": "tests/integration/interaction-lifecycle.test.ts", "method": "npm run test:integration" },
-    { "id": "OKF-EV-P10-DISCOVERY-GATE", "name": "Phase 10 Phase 9 discovery prerequisite audit", "status": "BLOCKED", "path": "docs/project/PHASE_10_IMPLEMENTATION_REPORT.md", "method": "Phase 9 prerequisite audit" }
+    { "id": "OKF-EV-P10-DISCOVERY-GATE", "name": "Phase 10 Phase 9 discovery prerequisite audit", "status": "BLOCKED", "path": "docs/project/PHASE_10_IMPLEMENTATION_REPORT.md", "method": "Phase 9 prerequisite audit" },
+    { "id": "OKF-EV-P11-DOMAIN", "name": "Phase 11 Secret Store source and domain boundary", "status": "PARTIAL", "path": "packages/archive-core/src/secrets.ts", "method": "source and typecheck review" },
+    { "id": "OKF-EV-P11-VAULT", "name": "Phase 11 Portable Vault and cryptography source", "status": "PARTIAL", "path": "packages/secrets/src/vault.ts", "method": "source, crypto, and focused Vault tests" },
+    { "id": "OKF-EV-P11-BOUNDARY", "name": "Phase 11 metadata-only application and transport boundary", "status": "PARTIAL", "path": "packages/application-service/src/index.ts", "method": "contract, CLI, Electron, and integration boundary review" },
+    { "id": "OKF-EV-P11-EXPORT", "name": "Phase 11 ordinary and Secure Export controls", "status": "PARTIAL", "path": "packages/project-format/src/index.ts", "method": "ordinary export exclusion and Secure Export tests" },
+    { "id": "OKF-EV-P11-DIAGNOSTICS", "name": "Phase 11 diagnostics, redaction, temporary, and screenshot controls", "status": "PARTIAL", "path": "packages/secrets/src/diagnostics.ts", "method": "sanitization and cleanup tests" },
+    { "id": "OKF-EV-P11-DECISION", "name": "Phase 11 security and architecture decision", "status": "PARTIAL", "path": "docs/project/adr/ADR-050-secret-store-and-sensitive-data-protection.md", "method": "ADR review" },
+    { "id": "OKF-EV-P11-TESTS", "name": "Phase 11 focused Secret Store test suite", "status": "PARTIAL", "path": "tests/secrets/secret-store.test.ts", "method": "npm run test:secrets" },
+    { "id": "OKF-EV-P11-DOCS", "name": "Phase 11 architecture, acceptance, and implementation documentation", "status": "PARTIAL", "path": "docs/project/PHASE_11_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
+    { "id": "OKF-EV-P11-GATE", "name": "Phase 11 conditional Phase 9/10 gate audit", "status": "BLOCKED", "path": "docs/project/PHASE_11_IMPLEMENTATION_REPORT.md", "method": "prerequisite gate audit" }
   ]
 }

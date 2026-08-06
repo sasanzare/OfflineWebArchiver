@@ -39,6 +39,15 @@ const packageRules = new Map([
     "fflate",
   ])],
   ["packages/observability/", new Set()],
+  ["packages/secrets/", new Set([
+    "node:crypto",
+    "node:fs",
+    "node:fs/promises",
+    "node:path",
+    "@offline-web-archive/archive-core",
+    "@offline-web-archive/observability",
+    "fflate",
+  ])],
   ["packages/platform/", new Set(["@offline-web-archive/contracts"])],
   ["packages/application-service/", new Set([
     "node:dns/promises",
@@ -51,6 +60,7 @@ const packageRules = new Map([
     "@offline-web-archive/queue",
     "@offline-web-archive/scope-engine",
     "@offline-web-archive/rendering",
+    "@offline-web-archive/secrets",
   ])],
   ["packages/test-support/", new Set([
     "@offline-web-archive/contracts",
@@ -80,6 +90,7 @@ const packageRules = new Map([
     "@offline-web-archive/contracts",
     "@offline-web-archive/observability",
     "@offline-web-archive/platform",
+    "@offline-web-archive/secrets",
   ])],
 ]);
 
@@ -120,6 +131,7 @@ const manifests = [
   "packages/project-format/package.json",
   "packages/persistence-sqlite/package.json",
   "packages/observability/package.json",
+  "packages/secrets/package.json",
   "packages/platform/package.json",
   "packages/application-service/package.json",
   "packages/test-support/package.json",

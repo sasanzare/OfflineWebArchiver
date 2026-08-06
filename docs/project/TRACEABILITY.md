@@ -242,3 +242,19 @@ applicable phase and must be reflected in `HANDOFF.md`.
 - Removing or superseding an item preserves history and states the replacement.
 - New high/critical risks cannot pass a phase gate without owner, mitigation,
   contingency, and relevant requirement/phase links.
+
+## Product Phase 11 Secret Store traceability
+
+| Capability | Acceptance | Requirements | Evidence | Risks | Decision / record |
+|---|---|---|---|---|---|
+| Opaque project-scoped Secret References and metadata-only access | AC-P11-001, AC-P11-006, AC-P11-007 | NFR-SEC-002, NFR-SEC-003 | `packages/archive-core/src/secrets.ts`; `tests/secrets/secret-store.test.ts` | R-108 | ADR-050; `docs/architecture/CREDENTIAL_REFERENCES.md` |
+| Portable Vault, AEAD envelopes, KDF, locking, generation, and rotation | AC-P11-003, AC-P11-004, AC-P11-009 | NFR-SEC-002, NFR-REL-001 | `packages/secrets/src/crypto.ts`; `packages/secrets/src/vault.ts`; `tools/secrets/validate.mjs` | R-109, R-110 | ADR-050; `docs/architecture/PORTABLE_VAULT.md` |
+| OS provider capability and fail-closed insecure backend policy | AC-P11-005 | NFR-SEC-002, NFR-PORT-001 | `packages/secrets/src/os.ts`; Secret Store tests | R-109 | ADR-050; `docs/architecture/SECRET_OS_STORAGE.md` |
+| Redaction, audit metadata, diagnostics, temporary cleanup, and screenshot policy | AC-P11-010, AC-P11-011 | FR-DIAG-001, NFR-PRIV-001, NFR-SEC-002 | `packages/observability/src/index.ts`; `packages/secrets/src/diagnostics.ts`; `packages/secrets/src/temp.ts` | R-108 | ADR-050; `docs/architecture/SECRET_LOGGING_AND_REDACTION.md` |
+| Ordinary export exclusion and explicit Secure Export/Import | AC-P11-008, AC-P11-009 | FR-PROJECT-004, NFR-SEC-002 | `packages/project-format/src/index.ts`; `packages/persistence-sqlite/src/archive.ts`; Secret Store tests | R-108, R-110 | ADR-050; `docs/architecture/SECRET_EXPORT_AND_DIAGNOSTICS.md` |
+| Application Service, Electron, CLI, contract, tests, docs, and conditional gate | AC-P11-002, AC-P11-012, AC-P11-013, AC-P11-014 | NFR-MAINT-001, NFR-TEST-001, NFR-KNOW-001..004 | `packages/application-service/src/index.ts`; `packages/contracts/src/index.ts`; Phase 11 report; OKF registry | R-108, R-109, R-110 | ADR-050; `okf/history/phase-11.md` |
+
+`AC-P11-013` is intentionally blocked: this is a prerequisite status, not a
+claim that the Secret Store behavior is missing. The Phase 11 implementation is
+available as a foundation while Product Phase 9 and the remaining Product Phase
+10 evidence are completed.

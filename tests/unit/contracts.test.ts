@@ -52,6 +52,10 @@ test("all Project, Queue, Recovery, Browser, and Render command contracts surviv
     createProjectCommand("project.export", { projectPath: "/archive", archivePath: "/archive.zip" }, metadata),
     createProjectCommand("project.import", { archivePath: "/archive.zip", destinationPath: "/copy" }, metadata),
     createProjectCommand("project.info", {}, metadata),
+    createProjectCommand("secret.backend.status", { projectPath: "/archive" }, metadata),
+    createProjectCommand("secret.list", { projectPath: "/archive" }, metadata),
+    createProjectCommand("secret.vault.lock", { projectPath: "/archive" }, metadata),
+    createProjectCommand("secret.delete", { projectPath: "/archive", ref: "secret://v1/project/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000010" }, metadata),
     createProjectCommand("profile.create", { projectPath: "/archive", name: "Profile", seedUrl: "https://example.com/" }, metadata),
     createProjectCommand("profile.get", { projectPath: "/archive" }, metadata),
     createProjectCommand("profile.update", { projectPath: "/archive", expectedRevisionId: "00000000-0000-4000-8000-000000000001", draft }, metadata),
@@ -120,6 +124,38 @@ test("unknown fields, malformed payloads, and unsupported versions fail closed",
   assert.throws(() => createProjectCommand("queue.get", { ...queueOwner, jobId: "' OR 1=1 --" }, metadata));
   assert.throws(() => createProjectCommand("queue.list", { ...queueOwner, state: "leased", limit: 25 }, metadata));
   assert.throws(() => createProjectCommand("render.start", { ...queueOwner, jobId: leaseOwnership.jobId, ownerId: "renderer", leaseDurationMs: 60_000, idempotencyKey: "render-001", operationId: "render-001", url: "https://example.com/" }, metadata));
+  assert.throws(() => createProjectCommand("secret.delete", { projectPath: "/archive", ref: "secret://v1/project/not-a-project/not-a-secret" }, metadata));
+  assert.throws(() => createProjectCommand("secret.list", { projectPath: "/archive", value: "raw-secret" }, metadata));
+});
+
+test("Secret results remain metadata-only", () => {
+  const base = { contractVersion: CONTRACT_VERSION, commandId: metadata.commandId, correlationId: metadata.correlationId, timestamp: metadata.timestamp, status: "success" as const, error: null };
+  const response = parseResponseEnvelope({
+    ...base,
+    result: {
+      resultType: "secret.list",
+      metadata: [{
+        ref: "secret://v1/project/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000010",
+        secretId: "00000000-0000-4000-8000-000000000010",
+        projectId: "00000000-0000-4000-8000-000000000001",
+        scope: { scopeType: "project", projectId: "00000000-0000-4000-8000-000000000001", scopeId: "00000000-0000-4000-8000-000000000001" },
+        kind: "generic_project_secret",
+        backend: "portable_vault",
+        createdAt: metadata.timestamp,
+        updatedAt: metadata.timestamp,
+        lastRotatedAt: null,
+        version: 1,
+        lifecycleState: "active",
+        displayLabel: "fixture",
+        secureExportPolicy: "allowed",
+        encryptionEnvelopeVersion: 1,
+        keySlotId: "slot-fixture",
+        migrationState: "current",
+      }],
+    },
+  });
+  assert.equal(response.status, "success");
+  assert.equal(JSON.stringify(response).includes("value"), false);
 });
 
 test("Queue Job, statistics, transition event, and stable Queue error responses validate", () => {

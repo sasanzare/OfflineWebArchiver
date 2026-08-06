@@ -7,6 +7,10 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "project.export",
   "project.import",
   "project.info",
+  "secret.backend.status",
+  "secret.list",
+  "secret.vault.lock",
+  "secret.delete",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -71,6 +75,8 @@ export const PLANNED_CORE_CAPABILITIES = [
   "authentication",
   "proxy.management",
 ] as const;
+
+export * from "./secrets.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"

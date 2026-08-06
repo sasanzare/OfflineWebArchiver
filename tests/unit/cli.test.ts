@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CLI_EXIT_CODES, formatHumanDescription, parseCliArguments } from "../../apps/cli/src/index.js";
-import { parseResponseEnvelope } from "@offline-web-archive/contracts";
+import { CONTRACT_VERSION, parseResponseEnvelope } from "@offline-web-archive/contracts";
 
 test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, and Interaction command surface", () => {
   assert.deepEqual(parseCliArguments(["system", "describe", "--json"]), { kind: "describe", json: true });
@@ -25,6 +25,11 @@ test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, 
   assert.equal(parseCliArguments(["lease", "list", "C:\\demo", "--run", "00000000-0000-4000-8000-000000000002"]).kind, "lease");
   assert.equal(parseCliArguments(["checkpoint", "show", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--run", "00000000-0000-4000-8000-000000000002"]).kind, "checkpoint");
   assert.equal(parseCliArguments(["browser", "validate", "--json"]).kind, "browser");
+  const secret = parseCliArguments(["secret", "backend-status", "C:\\demo", "--json"]);
+  assert.equal(secret.kind, "secret");
+  if (secret.kind === "secret") assert.equal(secret.operation, "backend.status");
+  const malformedSecret = parseCliArguments(["secret", "delete", "C:\\demo", "secret://v1/project/not-a-project/not-a-secret"]);
+  assert.equal(malformedSecret.kind, "secret");
   const render = parseCliArguments(["render", "start", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--run", "00000000-0000-4000-8000-000000000002", "--owner", "cli-renderer", "--operation-id", "render-op-1", "--idempotency-key", "render-idem-1", "--screenshot"]);
   assert.equal(render.kind, "render");
   if (render.kind === "render") {
@@ -43,7 +48,7 @@ test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, 
 
 test("human formatting distinguishes implemented and future capabilities", () => {
   const response = parseResponseEnvelope({
-    contractVersion: "1.6.0",
+    contractVersion: CONTRACT_VERSION,
     commandId: "command-1",
     correlationId: "correlation-1",
     timestamp: "2026-07-31T12:00:00.000Z",
@@ -52,7 +57,7 @@ test("human formatting distinguishes implemented and future capabilities", () =>
       resultType: "system.description",
       applicationName: "Offline Web Archive Builder",
       applicationVersion: "0.8.0",
-      contractVersion: "1.6.0",
+      contractVersion: CONTRACT_VERSION,
       coreStatus: "rendering-engine-ready",
       implementedCapabilities: ["system.describe", "project.create", "queue.enqueue", "browser.getHealth", "render.start"],
       plannedCapabilities: ["link.discovery", "crawl.execution"],

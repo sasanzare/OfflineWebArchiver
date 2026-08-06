@@ -23,7 +23,7 @@ Phase 4 adds main-owned native path grants; renderer can request only an exact P
 | SQLite Queue | No extensions, defensive/trusted-schema, prepared data, ownership FKs, unique identity, immediate short transactions, integrity/migration checks | Scale/retention policy open; stale processing is P7 |
 | ZIP import | Central preinspection, collision/special/limit/checksum/inventory checks, staging | Bounded in-memory; no ZIP64/encryption/authenticity |
 | Single writer | Owned lock plus SQLite immediate transaction | Coordination, not access control; PID/network-FS limitations |
-| Secrets | No secret schema; auth/proxy/log/temp/backups excluded from export | Future secret storage needs P12/P14/P20 reviews |
+| Secrets | Project-scoped Secret Store, AES-GCM Vault envelopes, OS-provider rejection, scoped access, recursive redaction, temp/diagnostic/export exclusions | Runtime copies, storage-media remnants, native provider qualification, and later login/proxy integration remain separate reviews |
 | Network/browser | Implemented absence | Queue state is not crawl evidence; dispatch/rendering remains future work |
 | Cross-platform | Portable path corpus | Packaged Linux/macOS/cross-OS execution remains unverified |
 

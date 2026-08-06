@@ -10,6 +10,7 @@
     { "path": "../persistence-sqlite" },
     { "path": "../queue" },
     { "path": "../rendering" },
+    { "path": "../secrets" },
     { "path": "../scope-engine" }
   ]
 }

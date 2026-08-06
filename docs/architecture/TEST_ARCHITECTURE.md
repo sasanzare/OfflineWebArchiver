@@ -10,7 +10,7 @@ Unit tests cover Queue vocabulary, 10 allowed/39 rejected state pairs, priority/
 
 Concurrency tests use real Worker Threads and separate database connections for concurrent equivalent enqueue, claim, identical terminal retries, complete/fail races, retry/release/claim behavior, attempt-number uniqueness, integrity, and reopen persistence. They do not use an application-only mutex or fake in-memory repository.
 
-Fitness gates independently validate build/type safety, formatting/lint, package allowlists/cycles/public entries/Core/Queue/Recovery/Rendering/Interaction purity, Playwright ownership, contract 1.6.0, Project format/schema 7, Browser provisioning, Render and Interaction policy, Queue/Recovery/Checkpoint, Desktop security, documentation/ADRs, security, and OKF. Linux/macOS browser/process-kill, Phase 9 discovery, real targets, auth, proxy, downloader, and crawler evidence are not claimed.
+Fitness gates independently validate build/type safety, formatting/lint, package allowlists/cycles/public entries/Core/Queue/Recovery/Rendering/Interaction/Secret purity, Playwright ownership, contract 1.7.0, Project format/schema 7, Browser provisioning, Render/Interaction/Secret policy, Queue/Recovery/Checkpoint, Desktop security, documentation/ADRs, security, and OKF. Linux/macOS browser/process-kill, Phase 9 discovery, real targets, auth, session, OTP, proxy, downloader, and crawler evidence are not claimed.
 
 The repository test runner serializes test-file execution with Node's bounded
 test concurrency setting so real Chromium Browser, Render, and process-kill

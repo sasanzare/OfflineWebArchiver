@@ -67,6 +67,12 @@
     { "id": "OKF-REL-064", "name": "Phase 10 safety is evidenced by security review", "status": "PARTIAL", "sourceId": "OKF-NODE-P10-SAFETY", "targetId": "OKF-EV-P10-SECURITY", "type": "evidenced-by" },
     { "id": "OKF-REL-065", "name": "Phase 10 trace uses recovery fencing", "status": "PARTIAL", "sourceId": "OKF-NODE-P10-TRACE", "targetId": "OKF-NODE-P07-RECOVERY", "type": "depends-on" },
     { "id": "OKF-REL-066", "name": "Phase 9 discovery gate blocks production integration", "status": "BLOCKED", "sourceId": "OKF-NODE-P10-DISCOVERY-GATE", "targetId": "OKF-NODE-P10-INTERACTION", "type": "blocks" },
-    { "id": "OKF-REL-067", "name": "Phase 10 partial record is evidenced by the discovery audit", "status": "PARTIAL", "sourceId": "OKF-PHASE-010", "targetId": "OKF-EV-P10-DISCOVERY-GATE", "type": "evidenced-by" }
+    { "id": "OKF-REL-067", "name": "Phase 10 partial record is evidenced by the discovery audit", "status": "PARTIAL", "sourceId": "OKF-PHASE-010", "targetId": "OKF-EV-P10-DISCOVERY-GATE", "type": "evidenced-by" },
+    { "id": "OKF-REL-068", "name": "Phase 11 Secret Store depends on the production architecture boundary", "status": "PARTIAL", "sourceId": "OKF-NODE-P11-SECRET-STORE", "targetId": "OKF-NODE-P03-ARCHITECTURE", "type": "depends-on" },
+    { "id": "OKF-REL-069", "name": "Secret Store satisfies sensitive-data protection", "status": "PARTIAL", "sourceId": "OKF-NODE-P11-SECRET-STORE", "targetId": "NFR-SEC-002", "type": "satisfies" },
+    { "id": "OKF-REL-070", "name": "Portable Vault is evidenced by focused cryptography tests", "status": "PARTIAL", "sourceId": "OKF-NODE-P11-VAULT", "targetId": "OKF-EV-P11-TESTS", "type": "evidenced-by" },
+    { "id": "OKF-REL-071", "name": "Phase 11 boundaries are evidenced by export and diagnostics controls", "status": "PARTIAL", "sourceId": "OKF-NODE-P11-BOUNDARIES", "targetId": "OKF-EV-P11-DIAGNOSTICS", "type": "evidenced-by" },
+    { "id": "OKF-REL-072", "name": "Phase 11 prerequisite gate remains blocked", "status": "BLOCKED", "sourceId": "OKF-NODE-P11-GATE", "targetId": "OKF-EV-P11-GATE", "type": "blocks" },
+    { "id": "OKF-REL-073", "name": "Phase 11 record is evidenced by its implementation report", "status": "PARTIAL", "sourceId": "OKF-PHASE-011", "targetId": "OKF-EV-P11-DOCS", "type": "evidenced-by" }
   ]
 }

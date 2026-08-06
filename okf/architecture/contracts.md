@@ -24,7 +24,7 @@ owa:
 
 # Contracts
 
-The contract surface is versioned at 1.6.0. It includes strict Browser information, validation, health, and restart commands, Render start/status/result/events/cancel commands, and bounded Interaction Profile, Plan, Run, and Trace commands/results. Raw typed text, Playwright handles, and arbitrary scripts remain outside the contract.
+The contract surface is versioned at 1.7.0. It includes strict Browser information, validation, health, and restart commands, Render start/status/result/events/cancel commands, bounded Interaction Profile, Plan, Run, and Trace commands/results, and metadata-only Secret Store status/list/lock/delete commands. Raw typed text, secret values, passphrases, Playwright handles, and arbitrary scripts remain outside the contract.
 
 Render start identifies an existing Job and bounded policy. It exposes no URL override, executable path, raw Browser handle, headers, bodies, cookies, or launch arguments. Error and progress envelopes retain version and correlation fields. The [Application Service](application-service.md) is the single orchestration consumer, while Desktop and CLI are transport adapters.
 

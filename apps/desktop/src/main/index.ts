@@ -1,11 +1,12 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, type IpcMainInvokeEvent } from "electron";
 import { createApplicationService } from "@offline-web-archive/application-service";
 import { CONTRACT_VERSION, type SiteProfileContract } from "@offline-web-archive/contracts";
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
+import { createOsProtectedSecretStore } from "@offline-web-archive/secrets";
 import { createDesktopTransportHandler } from "./ipc-transport.js";
 import { isSelectionPurpose, type SelectionPurpose } from "../shared/bridge-contract.js";
 
@@ -31,11 +32,18 @@ const approvedPaths = new Set<string>();
 app.enableSandbox();
 
 const configuration = readEnvironmentConfiguration(process.env);
+const desktopSafeStorage = Object.freeze({
+  isEncryptionAvailable: () => safeStorage.isAsyncEncryptionAvailable(),
+  getSelectedStorageBackend: () => safeStorage.getSelectedStorageBackend(),
+  encryptStringAsync: (plaintext: string) => safeStorage.encryptStringAsync(plaintext),
+  decryptStringAsync: (encrypted: Uint8Array) => safeStorage.decryptStringAsync(Buffer.from(encrypted)),
+});
 const service = createApplicationService({
   configuration,
   ...readRuntimePlatformInfo(),
   renderTestMode: architectureSmoke && renderSmokeOrigin !== null,
   fixtureOrigins: architectureSmoke && renderSmokeOrigin !== null ? [renderSmokeOrigin] : [],
+  secretStoreFactory: ({ projectRoot, projectId, now }) => createOsProtectedSecretStore({ projectRoot, projectId, now, safeStorage: desktopSafeStorage }),
   logger: createDevelopmentLogger((line) => process.stderr.write(`${line}\n`)),
 });
 const transport = createDesktopTransportHandler(service);

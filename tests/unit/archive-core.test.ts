@@ -14,6 +14,8 @@ test("core exposes Phase 8 Browser and Render capability without future discover
   assert.ok(description.implementedCapabilities.includes("checkpoint.save"));
   assert.ok(description.implementedCapabilities.includes("browser.getHealth"));
   assert.ok(description.implementedCapabilities.includes("render.start"));
+  assert.ok(description.implementedCapabilities.includes("secret.backend.status"));
+  assert.ok(description.implementedCapabilities.includes("secret.list"));
   assert.ok(description.plannedCapabilities.includes("crawl.execution"));
   assert.ok(description.plannedCapabilities.includes("link.discovery"));
 });

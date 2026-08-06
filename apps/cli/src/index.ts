@@ -36,6 +36,10 @@ Usage:
   offline-archive project export <directory> <archive.zip> [--json]
   offline-archive project import <archive.zip> <directory> [--json]
   offline-archive project info [directory] [--json]
+  offline-archive secret backend-status <project> [--json]
+  offline-archive secret list <project> [--json]
+  offline-archive secret lock <project> [--json]
+  offline-archive secret delete <project> <secret-ref> [--json]
   offline-archive profile create <project> --name <name> --seed <url> [--json]
   offline-archive profile show <project> [--json]
   offline-archive profile validate <project> [--json]
@@ -97,6 +101,7 @@ export type ParsedArguments =
   | { kind: "project"; operation: "export"; json: boolean; payload: { projectPath: string; archivePath: string } }
   | { kind: "project"; operation: "import"; json: boolean; payload: { archivePath: string; destinationPath: string } }
   | { kind: "project"; operation: "info"; json: boolean; payload: { projectPath?: string } }
+  | { kind: "secret"; operation: "backend.status" | "list" | "vault.lock" | "delete"; json: boolean; payload: Record<string, unknown> }
   | { kind: "profile"; operation: "create"; json: boolean; payload: { projectPath: string; name: string; seedUrl: string } }
   | { kind: "profile"; operation: "get" | "validate"; json: boolean; payload: { projectPath: string } }
   | { kind: "profile"; operation: "update"; json: boolean; payload: { projectPath: string; configPath: string } }
@@ -157,6 +162,16 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     if (operation === "update" && filtered.length === 4) return { kind: "profile", operation: "update", json, payload: { projectPath: filtered[2]!, configPath: filtered[3]! } };
     if (operation === "compare" && filtered.length === 5 && /^\d+$/.test(filtered[3]!) && /^\d+$/.test(filtered[4]!)) return { kind: "profile", operation: "compare", json, payload: { projectPath: filtered[2]!, fromSequence: Number(filtered[3]), toSequence: Number(filtered[4]) } };
     return invalid(`Invalid profile ${operation} arguments.`);
+  }
+  if (filtered[0] === "secret" && filtered[1] !== undefined) {
+    const operation = filtered[1];
+    const projectPath = filtered[2];
+    if (projectPath === undefined) return invalid(`Secret ${operation} requires a Project.`);
+    if (operation === "backend-status" && filtered.length === 3) return { kind: "secret", operation: "backend.status", json, payload: { projectPath } };
+    if (operation === "list" && filtered.length === 3) return { kind: "secret", operation: "list", json, payload: { projectPath } };
+    if (operation === "lock" && filtered.length === 3) return { kind: "secret", operation: "vault.lock", json, payload: { projectPath } };
+    if (operation === "delete" && filtered.length === 4) return { kind: "secret", operation: "delete", json, payload: { projectPath, ref: filtered[3]! } };
+    return invalid(`Invalid secret ${operation} arguments.`);
   }
   if (filtered[0] === "scope" && filtered[1] !== undefined) {
     const operation = filtered[1];
@@ -501,6 +516,10 @@ export function formatHumanDescription(response: SuccessResponseEnvelope): strin
     `Format: ${result.compatibility?.formatVersion ?? "unknown"}`,
     `Database schema: ${result.compatibility?.schemaVersion ?? "unknown"}`,
   ].join("\n");
+  if (result.resultType === "secret.backend.status") return [`Secret backend: ${result.status.backend}`, `State: ${result.status.state}`, `Vault: ${result.status.vaultState}`, `Initialized: ${result.status.initialized ? "yes" : "no"}`, `Locked: ${result.status.locked ? "yes" : "no"}`, `Can create: ${result.capability.canCreate ? "yes" : "no"}`, `Can resolve: ${result.capability.canResolve ? "yes" : "no"}`].join("\n");
+  if (result.resultType === "secret.list") return [`Secrets: ${result.metadata.length}`, ...result.metadata.map((metadata) => `${metadata.ref} kind=${metadata.kind} state=${metadata.lifecycleState} scope=${metadata.scope.scopeType}:${metadata.scope.scopeId}`)].join("\n");
+  if (result.resultType === "secret.vault.lock") return [`Secret Vault: ${result.status.vaultState}`, `Locked: ${result.status.locked ? "yes" : "no"}`].join("\n");
+  if (result.resultType === "secret.delete") return `Deleted Secret Reference: ${result.ref}`;
   return "Command completed.";
 }
 
@@ -534,7 +553,7 @@ function metadata() {
   };
 }
 
-async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" | "interaction" }>, service: ApplicationService): Promise<ResponseEnvelope> {
+async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" | "interaction" | "secret" }>, service: ApplicationService): Promise<ResponseEnvelope> {
   if (parsed.kind === "describe") {
     return parseResponseEnvelope(await service.execute(createSystemDescribeCommand(metadata()), { transport: "cli", authorized: true }));
   }
@@ -563,6 +582,9 @@ async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe"
     if (parsed.profilePath !== undefined) payload = { ...payload, profile: JSON.parse(await readFile(parsed.profilePath, "utf8")) as unknown };
     if (parsed.planPath !== undefined) payload = { ...payload, plan: JSON.parse(await readFile(parsed.planPath, "utf8")) as unknown };
     return parseResponseEnvelope(await service.execute(createProjectCommand(`interaction.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], payload, metadata()), { transport: "cli", authorized: true }));
+  }
+  if (parsed.kind === "secret") {
+    return parseResponseEnvelope(await service.execute(createProjectCommand(`secret.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], parsed.payload, metadata()), { transport: "cli", authorized: true }));
   }
   if (parsed.kind === "queue") {
     const commandMetadata = metadata();

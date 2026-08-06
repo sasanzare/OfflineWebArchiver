@@ -10,7 +10,8 @@
     "@offline-web-archive/application-service": "0.8.0",
     "@offline-web-archive/contracts": "0.8.0",
     "@offline-web-archive/observability": "0.8.0",
-    "@offline-web-archive/platform": "0.8.0"
+    "@offline-web-archive/platform": "0.8.0",
+    "@offline-web-archive/secrets": "0.8.0"
   },
   "devDependencies": {
     "electron": "43.2.0"

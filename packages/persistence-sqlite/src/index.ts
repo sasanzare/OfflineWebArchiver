@@ -69,7 +69,7 @@ import {
 } from "./migrations.js";
 
 export { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists } from "./atomic.js";
-export { DEFAULT_ARCHIVE_LIMITS, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
+export { createProjectArchive, DEFAULT_ARCHIVE_LIMITS, exportPathIsAllowed, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
 export { acquireProjectLock } from "./locking.js";
 export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
 export { createSqliteRecoveryRepository, type RecoveryFaultPoint, type SqliteRecoveryRepositoryOptions } from "./recovery.js";

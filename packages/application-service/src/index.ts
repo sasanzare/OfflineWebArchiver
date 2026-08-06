@@ -14,6 +14,8 @@ import {
   RecoveryOperationError,
   RenderOperationError,
   RENDER_ENGINE_VERSION,
+  SecretStoreError,
+  parseSecretRef,
   type ArchiveCore,
   type ProjectStoragePort,
   type QueueEnqueueInput,
@@ -28,6 +30,8 @@ import {
   type InteractionProfileRepositoryPort,
   type InteractionTraceRepositoryPort,
   type RuntimeNetworkDecision,
+  type SecretRef,
+  type SecretStorePort,
 } from "@offline-web-archive/archive-core";
 import { createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } from "@offline-web-archive/browser-runtime";
 import {
@@ -47,6 +51,7 @@ import { createSilentLogger, type Logger } from "@offline-web-archive/observabil
 import { createSqliteProjectStorage } from "@offline-web-archive/persistence-sqlite";
 import { deriveBatchItemIdempotencyKey } from "@offline-web-archive/queue";
 import { classifyRenderFailure, createRenderEngine, DEFAULT_RENDER_POLICY } from "@offline-web-archive/rendering";
+import { createProductionSecretStore } from "@offline-web-archive/secrets";
 import {
   classifyHost,
   evaluateScope,
@@ -84,6 +89,7 @@ export interface ApplicationServiceDependencies {
   renderHeartbeatIntervalMs?: number;
   logger?: Logger;
   now?: () => string;
+  secretStoreFactory?: (input: { readonly projectRoot: string; readonly projectId: string; readonly now: () => string }) => SecretStorePort;
 }
 
 function safeIdentifiers(raw: unknown): { commandId: string; correlationId: string } {
@@ -262,6 +268,49 @@ function interactionError(error: InteractionOperationError): ErrorContract {
   };
 }
 
+function secretStoreError(error: SecretStoreError): ErrorContract {
+  const securityCodes = new Set<SecretStoreError["code"]>([
+    "SECRET_REFERENCE_PROJECT_MISMATCH",
+    "SECRET_PURPOSE_NOT_ALLOWED",
+    "SECRET_TAMPER_DETECTED",
+    "SECRET_INSECURE_BACKEND",
+    "SECRET_PRODUCTION_TEST_BACKEND",
+  ]);
+  const validationCodes = new Set<SecretStoreError["code"]>([
+    "SECRET_REFERENCE_INVALID",
+    "SECRET_REFERENCE_VERSION_UNSUPPORTED",
+    "SECRET_KIND_INVALID",
+    "SECRET_SCOPE_INVALID",
+    "SECRET_PURPOSE_INVALID",
+    "SECRET_METADATA_INVALID",
+    "SECRET_VALUE_INVALID",
+    "SECRET_VALUE_TOO_LARGE",
+    "SECRET_FORMAT_UNSUPPORTED",
+    "SECRET_ALGORITHM_UNSUPPORTED",
+    "SECRET_KDF_INVALID",
+    "SECRET_EXPORT_CONFIRMATION_REQUIRED",
+  ]);
+  const userMessages: Partial<Record<SecretStoreError["code"], string>> = {
+    SECRET_STORE_LOCKED: "Unlock the Secret Store before using protected Secret data.",
+    SECRET_STORE_UNINITIALIZED: "The Secret Store has not been initialized for this Project.",
+    SECRET_UNLOCK_FAILED: "The Secret Store could not be unlocked.",
+    SECRET_UNLOCK_RATE_LIMITED: "Unlock attempts are temporarily rate-limited.",
+    SECRET_TAMPER_DETECTED: "The Secret Store failed its integrity check.",
+    SECRET_INSECURE_BACKEND: "The selected Secret Store backend is not secure enough for protected data.",
+    SECRET_BACKEND_UNAVAILABLE: "The selected Secret Store backend is unavailable.",
+    SECRET_NOT_FOUND: "The selected Secret Reference was not found.",
+    SECRET_REFERENCE_PROJECT_MISMATCH: "The Secret Reference belongs to another Project.",
+    SECRET_EXPORT_FORBIDDEN: "The selected Secret is not eligible for Secure Export.",
+  };
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : "application",
+    message: error.message,
+    userMessage: userMessages[error.code] ?? "The Secret Store operation could not be completed safely.",
+    retryable: error.retryable,
+  };
+}
+
 function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<string, unknown> {
   if (result.resultType === "profile.value") return { resultType: result.resultType, profileId: result.profile.profileId, profileRevisionId: result.profile.revisionId, engineVersion: result.profile.engineVersion, changedPaths: result.changedPaths ?? [] };
   if (result.resultType === "profile.validation") return { resultType: result.resultType, valid: result.validation.valid, errorCodes: result.validation.errors.map((entry) => entry.code), warningCodes: result.validation.warnings.map((entry) => entry.code) };
@@ -295,6 +344,10 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "interaction.result") return { resultType: result.resultType, status: result.trace.status, traceId: result.trace.traceId, completedStepCount: result.completedStepCount, failureCode: result.failureCode };
   if (result.resultType === "interaction.traces") return { resultType: result.resultType, traceCount: result.traces.length };
   if (result.resultType === "interaction.trace") return { resultType: result.resultType, traceId: result.trace.traceId, status: result.trace.status, eventCount: result.trace.events.length };
+  if (result.resultType === "secret.backend.status") return { resultType: result.resultType, backend: result.status.backend, state: result.status.state, vaultState: result.status.vaultState, initialized: result.status.initialized, locked: result.status.locked };
+  if (result.resultType === "secret.list") return { resultType: result.resultType, metadataCount: result.metadata.length, refs: result.metadata.map((metadata) => metadata.ref) };
+  if (result.resultType === "secret.vault.lock") return { resultType: result.resultType, backend: result.status.backend, vaultState: result.status.vaultState, locked: result.status.locked };
+  if (result.resultType === "secret.delete") return { resultType: result.resultType, ref: result.ref };
   return { resultType: result.resultType };
 }
 
@@ -319,6 +372,27 @@ interface ActiveInteraction {
 }
 
 type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort;
+
+type SecretStoreFactory = NonNullable<ApplicationServiceDependencies["secretStoreFactory"]>;
+
+function secretStoreKey(projectPath: string): string {
+  return path.resolve(projectPath).toLowerCase();
+}
+
+function getOrCreateSecretStore(
+  stores: Map<string, SecretStorePort>,
+  factory: SecretStoreFactory,
+  projectPath: string,
+  projectId: string,
+  now: () => string,
+): SecretStorePort {
+  const key = secretStoreKey(projectPath);
+  const existing = stores.get(key);
+  if (existing !== undefined) return existing;
+  const created = factory({ projectRoot: path.resolve(projectPath), projectId, now });
+  stores.set(key, created);
+  return created;
+}
 
 async function authorizeRuntimeUrl(
   rawUrl: string,
@@ -562,6 +636,8 @@ function validateTransportInteractionPlan(plan: Extract<CommandEnvelope, { comma
 async function executeProjectCommand(
   command: Exclude<CommandEnvelope, { commandType: "system.describe" }>,
   storage: ApplicationStorage,
+  secretStores: Map<string, SecretStorePort>,
+  secretStoreFactory: SecretStoreFactory,
   runtime: BrowserRuntimePort,
   engine: RenderEnginePort,
   activeRenders: Map<string, ActiveRender>,
@@ -572,13 +648,22 @@ async function executeProjectCommand(
   heartbeatIntervalMs: number,
   now: () => string,
 ): Promise<unknown> {
+  const lockSecretStore = async (projectPath: string): Promise<void> => {
+    await secretStores.get(secretStoreKey(projectPath))?.lock();
+  };
+  const lockAllSecretStores = async (): Promise<void> => {
+    for (const store of secretStores.values()) await store.lock();
+  };
   const withOpenProject = async <T>(projectPath: string, operation: () => Promise<T>): Promise<T> => {
     const openedHere = storage.getCurrent() === null;
     if (openedHere) await storage.open(projectPath);
     try {
       return await operation();
     } finally {
-      if (openedHere) await storage.close();
+      if (openedHere) {
+        await lockSecretStore(projectPath);
+        await storage.close();
+      }
     }
   };
   const prepareEnqueue = async (
@@ -685,6 +770,7 @@ async function executeProjectCommand(
     case "project.open":
       return { resultType: "project.summary", project: await storage.open(command.payload.projectPath) };
     case "project.close":
+      await lockAllSecretStores();
       return { resultType: "project.summary", project: await storage.close() };
     case "project.validate":
       return { resultType: "project.validation", report: await storage.validate(command.payload.projectPath) };
@@ -700,6 +786,33 @@ async function executeProjectCommand(
           ? null
           : await storage.getCompatibility(command.payload.projectPath),
       };
+    case "secret.backend.status":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const project = storage.getCurrent()!;
+        const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+        return { resultType: "secret.backend.status", status: await store.getBackendStatus(), capability: await store.getCapability() };
+      });
+    case "secret.list":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const project = storage.getCurrent()!;
+        const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+        return { resultType: "secret.list", metadata: await store.listSecretMetadata({ projectId: project.projectId }) };
+      });
+    case "secret.vault.lock":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const project = storage.getCurrent()!;
+        const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+        await store.lock();
+        return { resultType: "secret.vault.lock", status: await store.getBackendStatus() };
+      });
+    case "secret.delete":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const project = storage.getCurrent()!;
+        const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+        const ref = parseSecretRef(command.payload.ref);
+        await store.deleteSecret({ projectId: project.projectId, ref: ref.serialized as SecretRef });
+        return { resultType: "secret.delete", ref: ref.serialized };
+      });
     case "profile.create":
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "profile.value", profile: await storage.createProfile({ projectPath: command.payload.projectPath, draft: createDefaultSiteProfileDraft({ name: command.payload.name, seedUrl: command.payload.seedUrl }) }) }));
     case "profile.get":
@@ -843,6 +956,8 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
   const core = dependencies.core ?? createArchiveCore();
   const logger = dependencies.logger ?? createSilentLogger();
   const now = dependencies.now ?? (() => new Date().toISOString());
+  const secretStores = new Map<string, SecretStorePort>();
+  const secretStoreFactory: SecretStoreFactory = dependencies.secretStoreFactory ?? ((input) => createProductionSecretStore({ backend: "portable_vault", projectRoot: input.projectRoot, projectId: input.projectId, now: input.now }));
   const storage = dependencies.projectStorage ?? createSqliteProjectStorage({
     applicationVersion: dependencies.configuration.applicationVersion,
     logger,
@@ -910,7 +1025,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               runtime: dependencies.runtime,
               platform: dependencies.platform,
             }
-          : await executeProjectCommand(command, storage, browserRuntime, renderEngine, activeRenders, activeInteractions, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
+          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, renderEngine, activeRenders, activeInteractions, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
         const completed = response(rawCommand, result, null);
         const completionMetadata = completed.status === "success" ? resultLogMetadata(completed.result) : {};
         logger.log({
@@ -934,8 +1049,10 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               ? queueError(error)
               : error instanceof RecoveryOperationError
                 ? recoveryError(error)
-                : error instanceof RenderOperationError
+              : error instanceof RenderOperationError
                   ? renderError(error)
+              : error instanceof SecretStoreError
+                ? secretStoreError(error)
               : internalError();
         const operationId = typeof command.payload === "object" && command.payload !== null && "operationId" in command.payload && typeof command.payload.operationId === "string"
           ? command.payload.operationId
@@ -957,6 +1074,11 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
     async close(): Promise<void> {
       for (const active of activeRenders.values()) active.controller.abort();
       for (const active of activeInteractions.values()) active.controller.abort();
+      for (const store of secretStores.values()) {
+        await store.lock();
+        await store.dispose();
+      }
+      secretStores.clear();
       await browserRuntime.close();
       if (storage.getCurrent() !== null) await storage.close();
     },

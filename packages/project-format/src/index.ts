@@ -30,6 +30,9 @@ export const RESERVED_PROJECT_DIRECTORIES = Object.freeze([
   "profile",
   "auth",
   "proxies",
+  "secrets",
+  "secure-exports",
+  "diagnostics",
 ] as const);
 
 export const EXPORT_EXCLUDED_PREFIXES = Object.freeze([
@@ -38,6 +41,9 @@ export const EXPORT_EXCLUDED_PREFIXES = Object.freeze([
   "database/backups/",
   "auth/",
   "proxies/",
+  "secrets/",
+  "secure-exports/",
+  "diagnostics/",
 ] as const);
 
 const utcTimestampSchema = z

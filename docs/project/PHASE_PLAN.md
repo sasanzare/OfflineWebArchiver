@@ -2,14 +2,20 @@
 
 ## Current phase position — 2026-08-06
 
-Product Phase 8 — Browser Lifecycle and Rendering Engine remains the latest completed phase. The current repository also contains a partial Product Phase 10 interaction foundation: contract `1.6.0`, SQLite schema `7`, Interaction Profile/Trace schema `1`, approved-plan validation, real browser input, bounded policy handling, and redacted traces. The Phase 9 Discovery Engine prerequisite is absent, so Phase 10 is not complete and its discovery integration gate is blocked. The exact next required implementation phase remains **Product Phase 9 — Link Discovery and SPA Support**. Phase 9 must consume, not bypass, Phase 5 Scope, Phase 6 Queue, Phase 7 Recovery, and Phase 8 Browser/Rendering contracts before Phase 10 can be closed.
+Product Phase 8 — Browser Lifecycle and Rendering Engine remains the latest fully gated product phase. The repository also contains a partial Product Phase 10 interaction foundation and the Product Phase 11 Secret Store foundation: contract `1.7.0`, SQLite schema `7`, Interaction Profile/Trace schema `1`, Secret Reference/Vault/Envelope schema `1`, approved-plan validation, real browser input, bounded policy handling, redacted traces, project-scoped encrypted storage, metadata-only transport, and safe export/diagnostic boundaries. The Phase 9 Discovery Engine prerequisite is absent, so Phase 10 is not complete and the Phase 10/11 gate remains conditional. The exact required prerequisite remains **Product Phase 9 — Link Discovery and SPA Support**. Phase 9 must consume, not bypass, Phase 5 Scope, Phase 6 Queue, Phase 7 Recovery, and Phase 8 Browser/Rendering contracts before the Phase 10/11 product sequence can be closed.
 
 **Document status:** Proposed baseline  
 **Owner:** Product Owner  
-**Current product status:** **Phase 8 complete; Phase 9 — Link Discovery and SPA Support is next and not started**
+**Current product status:** **Phase 8 complete; Phase 9 is the open prerequisite; Phase 10 partial; Phase 11 implementation present with a conditional gate**
 **Last updated:** 2026-08-06
 
-This is the authoritative concise delivery sequence. A future detailed proposal
+This is the authoritative concise delivery sequence. The attached Product Phase 11
+specification adds a cross-cutting Secret Store foundation before later
+authentication/session work; this repository records that implementation without
+claiming the missing Phase 9/10 gate. The older Local Runtime Server row remains a
+planned feature whose final placement must be reconciled by the Product Owner
+before it is treated as a replacement for the Phase 11 security foundation.
+A future detailed proposal
 may expand it but must link here or explicitly supersede a row; no detailed
 proposal exists in the Phase 1 repository. Every gate also requires the
 [Project-Wide Definition of Done](DEFINITION_OF_DONE.md), applicable entries in

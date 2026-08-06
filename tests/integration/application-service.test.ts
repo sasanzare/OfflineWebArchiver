@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { createApplicationService } from "@offline-web-archive/application-service";
 import { CONTRACT_VERSION, createProjectCommand } from "@offline-web-archive/contracts";
+import { createInMemorySecretStore } from "@offline-web-archive/secrets";
 import { createInMemoryLogger, fixedClock, systemDescribeFixture } from "@offline-web-archive/test-support";
 
 function serviceFixture() {
@@ -59,4 +60,45 @@ test("transport denial and invalid contract return safe structured errors", asyn
   const invalid = await service.execute({ ...command, payload: { unexpected: true } }, { transport: "cli", authorized: true });
   assert.equal(invalid.status, "error");
   if (invalid.status === "error") assert.equal(invalid.error.code, "CONTRACT_INVALID_PAYLOAD");
+});
+
+test("Secret commands expose only backend status and metadata across the Application Service boundary", async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), "owa-secret-service-"));
+  const stores: ReturnType<typeof createInMemorySecretStore>[] = [];
+  const service = createApplicationService({
+    configuration: { applicationName: "Offline Web Archive Builder", applicationVersion: "0.8.0", contractVersion: CONTRACT_VERSION, logLevel: "info" },
+    runtime: { name: "Node.js", version: "24.0.0" },
+    platform: { operatingSystem: "windows", architecture: "x64" },
+    now: fixedClock(),
+    secretStoreFactory: ({ projectId, now: clock }) => {
+      const store = createInMemorySecretStore({ projectId, now: clock });
+      stores.push(store);
+      return store;
+    },
+  });
+  const projectPath = path.join(temporary, "project");
+  try {
+    const created = await service.execute(createProjectCommand("project.create", { destinationPath: projectPath, name: "Secrets", slug: "secrets" }, { commandId: "command-secret-project", correlationId: "correlation-secret-project", timestamp: "2026-08-06T12:00:00.000Z" }), { transport: "cli", authorized: true });
+    assert.equal(created.status, "success");
+    if (created.status !== "success" || created.result.resultType !== "project.summary") return;
+    const status = await service.execute(createProjectCommand("secret.backend.status", { projectPath }, { commandId: "command-secret-status", correlationId: "correlation-secret-status", timestamp: "2026-08-06T12:00:00.000Z" }), { transport: "cli", authorized: true });
+    assert.equal(status.status, "success");
+    assert.equal(stores.length, 1);
+    const store = stores[0]!;
+    await store.unlock({ passphrase: Buffer.from("not-used-by-memory") });
+    const metadata = await store.createSecret({ projectId: created.result.project.projectId, scope: { scopeType: "project", projectId: created.result.project.projectId, scopeId: created.result.project.projectId }, kind: "generic_project_secret", value: Buffer.from("service-fixture-value"), displayLabel: "service-fixture" });
+    const listed = await service.execute(createProjectCommand("secret.list", { projectPath }, { commandId: "command-secret-list", correlationId: "correlation-secret-list", timestamp: "2026-08-06T12:00:00.000Z" }), { transport: "cli", authorized: true });
+    assert.equal(listed.status, "success");
+    if (listed.status === "success" && listed.result.resultType === "secret.list") {
+      assert.equal(listed.result.metadata[0]?.ref, metadata.ref);
+      assert.equal("value" in listed.result.metadata[0]!, false);
+    }
+    await store.unlock({ passphrase: Buffer.from("not-used-by-memory") });
+    const deleted = await service.execute(createProjectCommand("secret.delete", { projectPath, ref: metadata.ref }, { commandId: "command-secret-delete", correlationId: "correlation-secret-delete", timestamp: "2026-08-06T12:00:00.000Z" }), { transport: "cli", authorized: true });
+    assert.equal(deleted.status, "success");
+    assert.equal(JSON.stringify(listed).includes("service-fixture-value"), false);
+  } finally {
+    await service.close();
+    await rm(temporary, { recursive: true, force: true });
+  }
 });

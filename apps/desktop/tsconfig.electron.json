@@ -9,6 +9,7 @@
     { "path": "../../packages/application-service" },
     { "path": "../../packages/contracts" },
     { "path": "../../packages/observability" },
-    { "path": "../../packages/platform" }
+    { "path": "../../packages/platform" },
+    { "path": "../../packages/secrets" }
   ]
 }
