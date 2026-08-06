@@ -31,5 +31,4 @@ The owned runtime uses Playwright 1.56.1 with Chromium 141.0.7390.37, revision 1
 
 Each attempt receives a fresh deterministic Context and Page. Windows real-browser and process-kill evidence is recorded as verified; Linux and macOS packaging remains planned. Browser lifecycle is consumed by the [Rendering](../workflow/rendering.md) workflow and is started by the [Application Service](application-service.md) only for an eligible queued Job.
 
-The renderer does not receive a raw Browser privilege from the application boundary. Network authorization and result persistence remain governed by the [Contracts](contracts.md), [Queue](../workflow/queue.md), and [Checkpoint Recovery](../recovery/checkpoint-recovery.md) Concepts.
-
+The renderer does not receive a raw Browser privilege from the application boundary. The partial [Browser-Native Human-Paced Interaction](browser-interaction.md) component is the only approved-plan input boundary; it reuses the fixed Context and keeps raw handles inside Browser Runtime. Network authorization and result persistence remain governed by the [Contracts](contracts.md), [Queue](../workflow/queue.md), and [Checkpoint Recovery](../recovery/checkpoint-recovery.md) Concepts.

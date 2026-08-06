@@ -58,6 +58,10 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "render.getResult",
   "render.getEvents",
   "render.cancel",
+  "interaction.profile.validate",
+  "interaction.plan.validate",
+  "interaction.trace.list",
+  "interaction.trace.inspect",
 ] as const;
 
 export const PLANNED_CORE_CAPABILITIES = [
@@ -807,6 +811,8 @@ export interface BrowserPageSession {
   getTitle(): Promise<string>;
   inspectBody(): Promise<{ textLength: number; elementCount: number }>;
   captureScreenshot(): Promise<Uint8Array>;
+  executeInteractionPlan?(input: import("./interaction.js").InteractionExecutionInput): Promise<import("./interaction.js").InteractionExecutionResult>;
+  getContextProfile?(): import("./interaction.js").BrowserContextProfileDescriptor;
   getEvidence(): BrowserEvidenceSnapshot;
   isCrashed(): boolean;
   close(): Promise<void>;
@@ -972,3 +978,5 @@ export function createArchiveCore(): ArchiveCore {
     },
   });
 }
+
+export * from "./interaction.js";

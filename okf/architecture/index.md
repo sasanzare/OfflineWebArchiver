@@ -6,6 +6,7 @@ This directory contains the architecture components and cross-layer contract bou
 
 - [Application Service](application-service.md) - Orchestration boundary for local commands and rendering.
 - [Browser Runtime](browser-runtime.md) - Owned Chromium runtime and lifecycle constraints.
+- [Browser-Native Human-Paced Interaction](browser-interaction.md) - Approved browser input, pacing, and trace boundary.
 - [Contracts](contracts.md) - Versioned command, result, event, and error boundary.
 - [Command-Line Interface](cli.md) - Bounded command interface to the Application Service.
 - [Desktop Interface](desktop-interface.md) - Sandboxed Electron interface and constrained bridge.

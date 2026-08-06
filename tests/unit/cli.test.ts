@@ -3,7 +3,7 @@ import test from "node:test";
 import { CLI_EXIT_CODES, formatHumanDescription, parseCliArguments } from "../../apps/cli/src/index.js";
 import { parseResponseEnvelope } from "@offline-web-archive/contracts";
 
-test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, and Render command surface", () => {
+test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, and Interaction command surface", () => {
   assert.deepEqual(parseCliArguments(["system", "describe", "--json"]), { kind: "describe", json: true });
   const create = parseCliArguments(["project", "create", "C:\\demo", "--name", "Demo", "--slug", "demo"]);
   assert.equal(create.kind, "project");
@@ -34,13 +34,16 @@ test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, and Rend
     assert.equal("url" in render.payload, false);
   }
   assert.equal(parseCliArguments(["render", "start", "C:\\demo", "job", "--run", "run", "--owner", "owner"]).kind, "invalid");
+  const interaction = parseCliArguments(["interaction", "run", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--run", "00000000-0000-4000-8000-000000000002", "--owner", "cli-interaction", "--plan-id", "plan-10", "--operation-id", "interaction-op-1", "--idempotency-key", "interaction-idem-1"]);
+  assert.equal(interaction.kind, "interaction");
+  if (interaction.kind === "interaction") assert.equal(interaction.operation, "run");
   assert.equal(parseCliArguments(["crawl"]).kind, "invalid");
   assert.equal(CLI_EXIT_CODES.validation, 4);
 });
 
 test("human formatting distinguishes implemented and future capabilities", () => {
   const response = parseResponseEnvelope({
-    contractVersion: "1.5.0",
+    contractVersion: "1.6.0",
     commandId: "command-1",
     correlationId: "correlation-1",
     timestamp: "2026-07-31T12:00:00.000Z",
@@ -49,7 +52,7 @@ test("human formatting distinguishes implemented and future capabilities", () =>
       resultType: "system.description",
       applicationName: "Offline Web Archive Builder",
       applicationVersion: "0.8.0",
-      contractVersion: "1.5.0",
+      contractVersion: "1.6.0",
       coreStatus: "rendering-engine-ready",
       implementedCapabilities: ["system.describe", "project.create", "queue.enqueue", "browser.getHealth", "render.start"],
       plannedCapabilities: ["link.discovery", "crawl.execution"],

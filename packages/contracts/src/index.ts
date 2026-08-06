@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.5.0" as const;
+export const CONTRACT_VERSION = "1.6.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -62,6 +62,12 @@ export const COMMAND_TYPES = [
   "render.getResult",
   "render.getEvents",
   "render.cancel",
+  "interaction.profile.get",
+  "interaction.profile.validate",
+  "interaction.plan.validate",
+  "interaction.run",
+  "interaction.trace.list",
+  "interaction.trace.inspect",
 ] as const;
 
 export const SYSTEM_DESCRIBE_COMMAND = COMMAND_TYPES[0];
@@ -182,6 +188,21 @@ export const ERROR_CODES = [
   "RENDER_RESULT_NOT_FOUND",
   "RENDER_CANCELLED",
   "RENDER_INPUT_INVALID",
+  "INTERACTION_PROFILE_INVALID",
+  "INTERACTION_PLAN_INVALID",
+  "INTERACTION_TARGET_INVALID",
+  "INTERACTION_KEY_INVALID",
+  "INTERACTION_BUDGET_EXCEEDED",
+  "INTERACTION_TIMEOUT",
+  "INTERACTION_CANCELLED",
+  "INTERACTION_PAUSED",
+  "INTERACTION_BROWSER_FAILED",
+  "INTERACTION_TARGET_FAILED",
+  "INTERACTION_SIDE_EFFECT_BLOCKED",
+  "INTERACTION_POPUP_BLOCKED",
+  "INTERACTION_DIALOG_BLOCKED",
+  "INTERACTION_TRACE_LIMIT",
+  "INTERACTION_PERSISTENCE_FAILED",
 ] as const;
 
 const identifierSchema = z
@@ -427,6 +448,69 @@ export const RenderGetResultCommandSchema = z.object({ ...commandBase, commandTy
 export const RenderGetEventsCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.getEvents"), payload: z.object({ ...renderReadFields, limit: z.number().int().min(1).max(200).default(100) }).strict() }).strict();
 export const RenderCancelCommandSchema = z.object({ ...commandBase, commandType: z.literal("render.cancel"), payload: z.object({ ...renderReadFields, operationId: identifierSchema }).strict() }).strict();
 
+const interactionTargetContractSchema = z.discriminatedUnion("strategy", [
+  z.object({ strategy: z.literal("role"), role: z.string().min(1).max(64), name: z.string().max(512).optional(), exact: z.boolean().optional() }).strict(),
+  z.object({ strategy: z.literal("label"), text: z.string().min(1).max(512), exact: z.boolean().optional() }).strict(),
+  z.object({ strategy: z.literal("placeholder"), text: z.string().min(1).max(512), exact: z.boolean().optional() }).strict(),
+  z.object({ strategy: z.literal("test-id"), value: z.string().min(1).max(512) }).strict(),
+  z.object({ strategy: z.literal("css"), selector: z.string().min(1).max(512).refine((value) => !/^javascript\s*:/i.test(value) && !/[{};]/.test(value), "Unsafe CSS selector") }).strict(),
+  z.object({ strategy: z.literal("discovery-ref"), reference: z.string().min(1).max(512).regex(/^[A-Za-z0-9._:-]+$/) }).strict(),
+]);
+const interactionProfileContractSchema = z.object({
+  schemaVersion: z.literal(1), profileId: z.string().min(1).max(128), profileRevisionId: z.string().min(1).max(128), projectId: z.string().uuid().nullable(),
+  enabled: z.boolean(), mode: z.enum(["disabled", "human-paced"]), seed: z.string().min(1).max(128),
+  actionDelayMinMs: z.number().int().min(0).max(10_000), actionDelayMaxMs: z.number().int().min(0).max(10_000),
+  typingDelayMinMs: z.number().int().min(0).max(10_000), typingDelayMaxMs: z.number().int().min(0).max(10_000),
+  pointerMoveDurationMinMs: z.number().int().min(0).max(5_000), pointerMoveDurationMaxMs: z.number().int().min(0).max(5_000),
+  incrementalScroll: z.boolean(), scrollStepMinPx: z.number().int().min(0).max(5_000), scrollStepMaxPx: z.number().int().min(0).max(5_000),
+  scrollDelayMinMs: z.number().int().min(0).max(10_000), scrollDelayMaxMs: z.number().int().min(0).max(10_000),
+  maxActionsPerPage: z.number().int().min(0).max(500), maxInteractionDurationMs: z.number().int().min(0).max(600_000),
+  maxScrollSteps: z.number().int().min(0).max(100), maxTabSteps: z.number().int().min(0).max(100), maxPopupsPerPage: z.number().int().min(0).max(10), maxDialogsPerPage: z.number().int().min(0).max(20),
+  maxTypedTextLength: z.number().int().min(0).max(4_096), maxTargetLength: z.number().int().min(1).max(512), maxTraceEvents: z.number().int().min(1).max(500), maxTraceBytes: z.number().int().min(1).max(262_144), maxScrollDistancePx: z.number().int().min(0).max(100_000),
+  dialogPolicy: z.object({ defaultAction: z.enum(["dismiss", "accept"]), byType: z.object({ alert: z.enum(["dismiss", "accept"]).optional(), confirm: z.enum(["dismiss", "accept"]).optional(), prompt: z.enum(["dismiss", "accept"]).optional(), beforeunload: z.enum(["dismiss", "accept"]).optional() }).strict(), maximumHandlingDurationMs: z.number().int().min(1).max(30_000) }).strict(),
+  popupPolicy: z.object({ defaultAction: z.enum(["observe-close", "allow-in-scope"]), allowedOrigins: z.array(z.string().url().max(256)).max(20), maximumHandlingDurationMs: z.number().int().min(1).max(30_000) }).strict(),
+  cookieBannerRules: z.array(z.object({ ruleId: z.string().min(1).max(80), bannerTarget: interactionTargetContractSchema, action: z.enum(["accept", "reject", "dismiss", "no_action"]), actionTarget: interactionTargetContractSchema.optional(), maxExecutions: z.number().int().min(1).max(3) }).strict()).max(50),
+}).strict().superRefine((value, context) => {
+  const ranges: Array<[number, number, string]> = [[value.actionDelayMinMs, value.actionDelayMaxMs, "actionDelay"], [value.typingDelayMinMs, value.typingDelayMaxMs, "typingDelay"], [value.pointerMoveDurationMinMs, value.pointerMoveDurationMaxMs, "pointerMoveDuration"], [value.scrollStepMinPx, value.scrollStepMaxPx, "scrollStep"], [value.scrollDelayMinMs, value.scrollDelayMaxMs, "scrollDelay"]];
+  for (const [minimum, maximum, name] of ranges) if (minimum > maximum) context.addIssue({ code: "custom", path: [name], message: "Minimum must not exceed maximum" });
+  if (value.enabled && value.mode !== "human-paced") context.addIssue({ code: "custom", path: ["mode"], message: "Enabled profiles must use human-paced mode" });
+  value.cookieBannerRules.forEach((rule, index) => { if (rule.action !== "no_action" && rule.actionTarget === undefined) context.addIssue({ code: "custom", path: ["cookieBannerRules", index, "actionTarget"], message: "An explicit action target is required" }); });
+});
+const interactionPreconditionContractSchema = z.object({ kind: z.enum(["visible", "enabled", "attached", "focused", "url-origin"]), target: interactionTargetContractSchema.optional(), value: z.string().max(512).optional() }).strict().superRefine((value, context) => {
+  if (value.kind === "url-origin" && value.value === undefined) context.addIssue({ code: "custom", path: ["value"], message: "URL-origin preconditions require a value" });
+  if (value.kind !== "url-origin" && value.target === undefined) context.addIssue({ code: "custom", path: ["target"], message: "Target preconditions require an approved target" });
+});
+const interactionPostconditionContractSchema = z.object({ kind: z.enum(["visible", "hidden", "enabled", "focused", "url-origin", "dom-change", "route-change"]), target: interactionTargetContractSchema.optional(), value: z.string().max(512).optional() }).strict().superRefine((value, context) => {
+  if (value.kind === "url-origin" && value.value === undefined) context.addIssue({ code: "custom", path: ["value"], message: "URL-origin postconditions require a value" });
+  if (["visible", "hidden", "enabled", "focused"].includes(value.kind) && value.target === undefined) context.addIssue({ code: "custom", path: ["target"], message: "Target postconditions require an approved target" });
+  if (["dom-change", "route-change"].includes(value.kind) && (value.target !== undefined || value.value !== undefined)) context.addIssue({ code: "custom", path: [], message: "DOM and route postconditions do not accept a target or value" });
+});
+const interactionPlanStepContractSchema = z.object({
+  stepId: z.string().min(1).max(80), stepType: z.enum(["focus", "click", "hover", "mouse_move", "type_text", "press_key", "tab_navigation", "incremental_scroll", "wait_for_state", "cookie_banner"]),
+  timeoutMs: z.number().int().min(1).max(120_000).optional(), preconditions: z.array(interactionPreconditionContractSchema).max(10).optional(), postcondition: interactionPostconditionContractSchema.optional(), failurePolicy: z.enum(["stop", "skip", "retry"]).optional(), maxExecutions: z.number().int().min(1).max(3).optional(), sideEffect: z.enum(["read-only", "navigation"]), tracePolicy: z.enum(["metadata", "none"]).optional(),
+  target: interactionTargetContractSchema.optional(), button: z.enum(["left", "middle", "right"]).optional(), clickCount: z.union([z.literal(1), z.literal(2)]).optional(), x: z.number().int().min(0).max(16_384).optional(), y: z.number().int().min(0).max(16_384).optional(), durationMs: z.number().int().min(0).max(5_000).optional(),
+  textCategory: z.enum(["non-sensitive", "ephemeral"]).optional(), characterCount: z.number().int().min(0).max(4_096).optional(), key: z.string().min(1).max(40).optional(), direction: z.enum(["forward", "backward", "up", "down"]).optional(), steps: z.number().int().min(1).max(100).optional(), distancePx: z.number().int().min(0).max(100_000).optional(), state: z.enum(["visible", "hidden", "attached", "detached"]).optional(), ruleId: z.string().min(1).max(80).optional(),
+}).strict().superRefine((value, context) => {
+  if (["focus", "click", "hover", "type_text", "wait_for_state"].includes(value.stepType) && value.target === undefined) context.addIssue({ code: "custom", path: ["target"], message: "This step requires an approved target" });
+  if (value.stepType === "type_text" && value.characterCount === undefined) context.addIssue({ code: "custom", path: ["characterCount"], message: "Raw text is intentionally excluded; provide only a character count" });
+  if (value.stepType === "type_text" && ("text" in value)) context.addIssue({ code: "custom", path: ["text"], message: "Raw typed text is forbidden on the transport boundary" });
+  if (value.stepType === "press_key" && value.key === undefined) context.addIssue({ code: "custom", path: ["key"], message: "Key is required" });
+  if (value.stepType === "mouse_move" && (value.x === undefined || value.y === undefined)) context.addIssue({ code: "custom", path: ["x"], message: "Mouse coordinates are required" });
+  if (value.stepType === "tab_navigation" && value.direction !== "forward" && value.direction !== "backward") context.addIssue({ code: "custom", path: ["direction"], message: "Tab direction is required" });
+  if (value.stepType === "cookie_banner" && value.ruleId === undefined) context.addIssue({ code: "custom", path: ["ruleId"], message: "An explicit Cookie Banner rule is required" });
+});
+const interactionPlanContractSchema = z.object({ schemaVersion: z.literal(1), planId: z.string().min(1).max(128), approved: z.literal(true), approvalReason: z.string().min(1).max(256), steps: z.array(interactionPlanStepContractSchema).max(500) }).strict();
+const interactionTraceEventContractSchema = z.object({
+  sequence: z.number().int().nonnegative().max(500), stepId: z.string().max(80).nullable(), stepType: z.enum(["focus", "click", "hover", "mouse_move", "type_text", "press_key", "tab_navigation", "incremental_scroll", "wait_for_state", "cookie_banner", "dialog", "popup", "context", "plan"]), targetId: z.string().max(80).nullable(), startedAt: timestampSchema, endedAt: timestampSchema, effectiveDelayMs: z.number().int().nonnegative().max(10_000), status: z.enum(["started", "completed", "skipped", "failed", "paused", "cancelled", "blocked"]), failureCategory: z.string().max(40).nullable(), failureCode: z.string().max(120).nullable(), navigationOutcome: z.enum(["none", "dom-change", "spa-route", "full-navigation", "popup", "dialog", "blocked"]), domChanged: z.boolean(), routeChanged: z.boolean(), popupOutcome: z.enum(["none", "observed-closed", "allowed", "blocked"]), dialogOutcome: z.enum(["none", "dismissed", "accepted", "blocked"]), discoveredUrlCount: z.number().int().nonnegative().max(500), inputCategory: z.enum(["none", "non-sensitive", "ephemeral"]), characterCount: z.number().int().nonnegative().max(4_096).nullable(), recoveryStatus: z.enum(["none", "interrupted", "uncertain"]),
+}).strict();
+const interactionTraceContractSchema = z.object({ schemaVersion: z.literal(1), traceId: z.string().min(1).max(128), projectId: z.string().uuid(), runId: z.string().uuid(), jobId: z.string().uuid(), ownerId: z.string().max(120).nullable(), fencingGeneration: z.number().int().positive(), profileId: z.string().min(1).max(128), profileRevisionId: z.string().min(1).max(128), contextProfileId: z.string().max(128).nullable(), createdAt: timestampSchema, completedAt: timestampSchema.nullable(), status: z.enum(["completed", "skipped", "failed", "paused", "cancelled", "outcome-uncertain"]), events: z.array(interactionTraceEventContractSchema).max(500), truncated: z.boolean(), serializedBytes: z.number().int().nonnegative().max(262_144) }).strict();
+export const InteractionProfileGetCommandSchema = z.object({ ...commandBase, commandType: z.literal("interaction.profile.get"), payload: projectPathPayload }).strict();
+export const InteractionProfileValidateCommandSchema = z.object({ ...commandBase, commandType: z.literal("interaction.profile.validate"), payload: z.object({ projectPath: localPathSchema, profile: interactionProfileContractSchema.optional() }).strict() }).strict();
+export const InteractionPlanValidateCommandSchema = z.object({ ...commandBase, commandType: z.literal("interaction.plan.validate"), payload: z.object({ projectPath: localPathSchema, profile: interactionProfileContractSchema, plan: interactionPlanContractSchema }).strict() }).strict();
+export const InteractionRunCommandSchema = z.object({ ...commandBase, commandType: z.literal("interaction.run"), payload: z.object({ ...renderReadFields, ownerId: z.string().min(1).max(120), leaseDurationMs: z.number().int().min(5_000).max(86_400_000).default(60_000), planId: z.string().min(1).max(128), idempotencyKey: queueKeySchema, operationId: identifierSchema }).strict() }).strict();
+export const InteractionTraceListCommandSchema = z.object({ ...commandBase, commandType: z.literal("interaction.trace.list"), payload: z.object({ ...renderReadFields, limit: z.number().int().min(1).max(200).default(100) }).strict() }).strict();
+export const InteractionTraceInspectCommandSchema = z.object({ ...commandBase, commandType: z.literal("interaction.trace.inspect"), payload: z.object({ ...renderReadFields, traceId: z.string().min(1).max(128) }).strict() }).strict();
+
 export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   SystemDescribeCommandSchema,
   ProjectCreateCommandSchema,
@@ -487,6 +571,12 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   RenderGetResultCommandSchema,
   RenderGetEventsCommandSchema,
   RenderCancelCommandSchema,
+  InteractionProfileGetCommandSchema,
+  InteractionProfileValidateCommandSchema,
+  InteractionPlanValidateCommandSchema,
+  InteractionRunCommandSchema,
+  InteractionTraceListCommandSchema,
+  InteractionTraceInspectCommandSchema,
 ]);
 
 export const RuntimeInfoSchema = z.object({
@@ -747,6 +837,11 @@ export const RenderEventContractSchema = z.object({ renderEventId: z.string().uu
 export const RenderResultResultSchema = z.object({ resultType: z.literal("render.result"), action: z.enum(["start", "get"]), result: RenderResultContractSchema }).strict();
 export const RenderStatusResultSchema = z.object({ resultType: z.literal("render.status"), action: z.enum(["status", "cancel"]), status: RenderStatusContractSchema }).strict();
 export const RenderEventsResultSchema = z.object({ resultType: z.literal("render.events"), events: z.array(RenderEventContractSchema).max(200) }).strict();
+export const InteractionProfileResultSchema = z.object({ resultType: z.literal("interaction.profile"), profile: interactionProfileContractSchema }).strict();
+export const InteractionValidationResultSchema = z.object({ resultType: z.literal("interaction.validation"), target: z.enum(["profile", "plan"]), valid: z.boolean(), errors: z.array(z.object({ code: z.string().max(120), path: z.string().max(512), message: z.string().max(800) }).strict()).max(500) }).strict();
+export const InteractionResultSchema = z.object({ resultType: z.literal("interaction.result"), action: z.literal("run"), trace: interactionTraceContractSchema, completedStepCount: z.number().int().nonnegative().max(500), failureCategory: z.string().max(40).nullable(), failureCode: z.string().max(120).nullable(), navigationOutcome: z.enum(["none", "dom-change", "spa-route", "full-navigation", "popup", "dialog", "blocked"]), discoveredUrlCount: z.number().int().nonnegative().max(500), contextProfile: z.object({ version: z.number().int().positive(), profileId: z.string().min(1).max(128), locale: z.string().min(1).max(64), timezoneId: z.string().min(1).max(64), viewport: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }).strict(), deviceScaleFactor: z.number().positive(), acceptLanguage: z.string().min(1).max(128), userAgentPolicy: z.literal("fixed"), headless: z.boolean(), digest: z.string().min(1).max(128) }).strict() }).strict();
+export const InteractionTraceListResultSchema = z.object({ resultType: z.literal("interaction.traces"), traces: z.array(interactionTraceContractSchema).max(200) }).strict();
+export const InteractionTraceInspectResultSchema = z.object({ resultType: z.literal("interaction.trace"), trace: interactionTraceContractSchema }).strict();
 
 export const ResultContractSchema = z.discriminatedUnion("resultType", [
   SystemDescriptionSchema,
@@ -782,6 +877,11 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   RenderResultResultSchema,
   RenderStatusResultSchema,
   RenderEventsResultSchema,
+  InteractionProfileResultSchema,
+  InteractionValidationResultSchema,
+  InteractionResultSchema,
+  InteractionTraceListResultSchema,
+  InteractionTraceInspectResultSchema,
 ]);
 
 const responseBase = {
@@ -877,6 +977,9 @@ export type BrowserHealthContract = z.infer<typeof BrowserHealthContractSchema>;
 export type RenderResultContract = z.infer<typeof RenderResultContractSchema>;
 export type RenderStatusContract = z.infer<typeof RenderStatusContractSchema>;
 export type RenderEventContract = z.infer<typeof RenderEventContractSchema>;
+export type InteractionProfileContract = z.infer<typeof interactionProfileContractSchema>;
+export type InteractionPlanContract = z.infer<typeof interactionPlanContractSchema>;
+export type InteractionTraceContract = z.infer<typeof interactionTraceContractSchema>;
 export type RuntimeInfo = z.infer<typeof RuntimeInfoSchema>;
 export type PlatformInfo = z.infer<typeof PlatformInfoSchema>;
 export type ResponseEnvelope = z.infer<typeof ResponseEnvelopeSchema>;

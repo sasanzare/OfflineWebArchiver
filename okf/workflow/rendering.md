@@ -29,5 +29,4 @@ owa:
 
 Render Engine 1 implements bounded navigation, a combined DOM and network stability model 1, final DOM extraction, safe evidence, and opt-in PNG for one queued Job. Rendering starts only from an eligible Job in the [Queue](queue.md); the [Application Service](../architecture/application-service.md) claims it, persists stage events and checkpoints, heartbeats and renews the Lease, observes Pause, and fences every mutation.
 
-Artifact-first writes followed by one fenced transaction and result replay prevent false or duplicate completion. The [Browser Runtime](../architecture/browser-runtime.md) supplies the owned process and fresh Context/Page. Link Discovery and SPA route discovery beyond the bounded render observation, human-paced interaction, and a complete archive remain planned.
-
+Artifact-first writes followed by one fenced transaction and result replay prevent false or duplicate completion. The [Browser Runtime](../architecture/browser-runtime.md) supplies the owned process and fresh Context/Page. The partial [Human-Paced Interaction](interaction.md) workflow is bounded and approved-plan-only; Link Discovery and SPA route discovery remain the prerequisite planned workflow, and a complete archive remains planned.

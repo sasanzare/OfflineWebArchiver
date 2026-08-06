@@ -2,7 +2,7 @@
 
 **Document status:** Proposed initial register  
 **Owner:** Product Owner coordinates; row owner manages response  
-**Last updated:** 2026-07-31
+**Last updated:** 2026-08-06
 
 Risks are future uncertainties, not claims that controls already exist. All rows
 remain `open`, `watch`, or `needs-decision` until a concrete, tested control and
@@ -204,3 +204,14 @@ continuous enforcement and canonical validation remain future controls.
 | R-099 | Fencing | Stale Render owner commits after recovery | 2 | 5 | 10 / high | generation/Lease mismatch | validate Project/Run/Job/token/expiry/generation on every write | reject without mutation; recover current owner | Reliability Owner | FR-RECOVERY-001 | AC-P08-012..014 | P8 | watch |
 | R-100 | Privacy | Screenshot/evidence retains sensitive visual text | 3 | 5 | 15 / high | sensitive fixture/target appears in artifact | screenshot opt-in/default-off, bounded safe metadata, no header/body capture | remove affected Project by user policy; define retention before production targets | Privacy / Security Owner | NFR-PRIV-001, NFR-SEC-002 | AC-P08-011, AC-P08-015 | P8, P17 | open |
 | R-101 | Portability | Browser behavior differs on Linux/macOS | 4 | 4 | 16 / critical | platform packaging/crash test differs | do not claim untested platforms; resource model is explicit | block platform release until native lifecycle/security/package evidence passes | Platform Owner | NFR-PORT-001 | AC-P08-001, AC-P08-004 | P8, P22–P23 | open |
+
+## Product Phase 10 Browser-native Interaction risks
+
+| Risk ID | Area | Risk | Likelihood | Impact | Score | Trigger | Prevention / detection | Contingency | Owner | Related requirements | Related acceptance | Phase | Status |
+|---|---|---|---:|---:|---|---|---|---|---|---|---|---|---|
+| R-102 | Interaction safety | An approved target or navigation reaches an unintended state-changing control | 2 | 5 | 10 / high | form/submit/JavaScript target or unauthorized resulting URL appears | typed targets, unique matching, read-only marker, Scope recheck, GET/HEAD interception, adversarial fixtures | cancel the operation, preserve blocked trace metadata, require a new reviewed plan | Security Owner | FR-RENDER-003, FR-SCOPE-003, NFR-SEC-003 | AC-P10-001, AC-P10-008, AC-P10-017 | P10, P20 | watch |
+| R-103 | Interaction budget | A plan loops, consumes excessive time, or produces unbounded browser work | 3 | 4 | 12 / high | action/trace/scroll budget reaches its cap or duration expires | hard limits, max executions, seeded timing, cancellation, Pause checks, bounded traces | stop and classify the result; do not extend a live plan automatically | Reliability Owner | FR-RENDER-003, NFR-REL-001 | AC-P10-006, AC-P10-007, AC-P10-008 | P10, P17 | watch |
+| R-104 | Consent policy | A Cookie Banner heuristic acts without explicit site/profile authorization | 2 | 5 | 10 / high | banner target is ambiguous or a rule is absent/malformed | explicit rule IDs/action targets, default `no_action`, uniqueness and execution caps | skip the banner, retain a safe policy result, require profile revision | Security Owner / Product Owner | FR-RENDER-003, FR-SCOPE-003 | AC-P10-009, AC-P10-017 | P10, P20 | watch |
+| R-105 | Dialog and Popup | Dialog or Popup handling leaks content, loops, or reaches an unauthorized destination | 2 | 5 | 10 / high | repeated Dialog/Popup or out-of-scope Popup URL | count/time limits, dismiss/close defaults, origin authorization, no prompt values, adapter-only handles | close/stop and classify as blocked or uncertain; never replay blindly | Security Owner | FR-RENDER-003, FR-SCOPE-003 | AC-P10-010, AC-P10-011 | P10, P20 | open |
+| R-106 | Trace privacy | Typed text or sensitive URL data is retained in a trace or report | 2 | 5 | 10 / high | canary appears in serialized trace/SQLite/CLI output | character-count-only transport, recursive redaction, URL sanitization, byte/event caps, leakage tests | quarantine/remove the affected Project artifact under reviewed privacy procedure | Privacy Owner / Security Owner | NFR-PRIV-001, NFR-SEC-002 | AC-P10-002, AC-P10-013, AC-P10-014 | P10, P20 | watch |
+| R-107 | Interaction fencing | A stale owner commits an interaction trace or resumes after an uncertain Browser boundary | 2 | 5 | 10 / high | Lease expiry, generation mismatch, or Browser crash during execution | token hash, active Lease/expiry/generation checks, outcome-uncertain state, idempotent trace identity | reject the write and require Recovery inspection; do not replay uncertain steps | Reliability Owner | FR-RECOVERY-001, FR-QUEUE-003 | AC-P10-013, AC-P10-015 | P10, P17 | watch |

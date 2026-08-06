@@ -8,6 +8,11 @@ Everything under `okf-extension/` is outside the official OKF bundle. These
 extension files are not official OKF Concepts, and no file under this directory
 should be counted when determining official OKF conformance.
 
+The extension currently indexes Product Phase 10 as `PARTIAL`: its bounded
+interaction foundation is present, while the Phase 9 Discovery/Scope/Queue
+gate remains explicitly `BLOCKED`. The manifest remains activated at Phase 8;
+Phase 10 is recorded for traceability without advancing the activated release.
+
 Official validation and extension validation are logically separate. Official
 validation scans only `okf/`; extension validation may consume both the official
 Concepts and the project-specific material in this directory. Concepts remain
@@ -39,3 +44,4 @@ validation and reporting may consume both layers.
 - [Risk report](reports/risks.md)
 - [Semantic validation rules](validation/rules/semantic-rules.md)
 - [Phase 3 migration report](validation/reports/phase-03-migration-report.md)
+- [Phase 10 partial evidence report](reports/evidence.md)

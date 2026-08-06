@@ -5,6 +5,7 @@ import path from "node:path";
 import { hostname } from "node:os";
 import {
   ProjectOperationError,
+  InteractionOperationError,
   QueueOperationError,
   RecoveryOperationError,
   RenderOperationError,
@@ -14,6 +15,8 @@ import {
   type ProjectSummary,
   type ProjectValidationIssue,
   type ProjectValidationReport,
+  type InteractionProfileRepositoryPort,
+  type InteractionTraceRepositoryPort,
   type QueueRepositoryPort,
   type RecoveryRepositoryPort,
   type RenderRepositoryPort,
@@ -55,6 +58,7 @@ import { acquireProjectLock, type ProjectLock } from "./locking.js";
 import { createSqliteQueueRepository } from "./queue.js";
 import { createSqliteRecoveryRepository } from "./recovery.js";
 import { createSqliteRenderRepository } from "./render.js";
+import { createSqliteInteractionRepository } from "./interaction.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -70,6 +74,7 @@ export { acquireProjectLock } from "./locking.js";
 export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
 export { createSqliteRecoveryRepository, type RecoveryFaultPoint, type SqliteRecoveryRepositoryOptions } from "./recovery.js";
 export { createSqliteRenderRepository, type SqliteRenderRepositoryOptions } from "./render.js";
+export { createSqliteInteractionRepository, type SqliteInteractionRepositoryOptions } from "./interaction.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -100,7 +105,7 @@ interface CurrentProject {
   sessionId: string;
 }
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -521,6 +526,11 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const renderForCurrent = (): RenderRepositoryPort => {
     if (current === null) throw new RenderOperationError("RENDER_INPUT_INVALID", "Open the selected Project before using Render operations");
     return createSqliteRenderRepository(current.database, { projectRoot: current.root, now, id, ...(options.renderCommitFault === undefined ? {} : { fault: options.renderCommitFault }) });
+  };
+
+  const interactionForCurrent = (): InteractionProfileRepositoryPort & InteractionTraceRepositoryPort => {
+    if (current === null) throw new InteractionOperationError("INTERACTION_PERSISTENCE_FAILED", "Open the selected Project before using Interaction operations");
+    return createSqliteInteractionRepository(current.database, { now });
   };
 
   const readCurrentProfile = async (active: CurrentProject): Promise<SiteProfile> => {
@@ -1131,6 +1141,26 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async listRenderEvents(input) {
       return renderForCurrent().listRenderEvents(input);
+    },
+
+    async getInteractionProfile(input) {
+      return interactionForCurrent().getInteractionProfile(input);
+    },
+
+    async saveInteractionProfile(input) {
+      return interactionForCurrent().saveInteractionProfile(input);
+    },
+
+    async saveInteractionTrace(input) {
+      return interactionForCurrent().saveInteractionTrace(input);
+    },
+
+    async getInteractionTrace(input) {
+      return interactionForCurrent().getInteractionTrace(input);
+    },
+
+    async listInteractionTraces(input) {
+      return interactionForCurrent().listInteractionTraces(input);
     },
 
     async getCompatibility(projectPath) {

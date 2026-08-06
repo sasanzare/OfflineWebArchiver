@@ -528,6 +528,44 @@ CREATE INDEX render_failures_job_time
 ON render_failures(job_id, occurred_at DESC);
 `;
 
+const ADD_BROWSER_INTERACTION_SQL = `
+CREATE TABLE interaction_profiles (
+  profile_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL UNIQUE REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  profile_revision_id TEXT NOT NULL,
+  sequence INTEGER NOT NULL CHECK (sequence > 0),
+  schema_version INTEGER NOT NULL CHECK (schema_version = 1),
+  canonical_json TEXT NOT NULL CHECK (json_valid(canonical_json) AND length(canonical_json) <= 65_536),
+  profile_hash TEXT NOT NULL CHECK (length(profile_hash) = 64),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX interaction_profiles_project_revision
+ON interaction_profiles(project_id, profile_revision_id);
+
+CREATE TABLE interaction_traces (
+  trace_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  profile_id TEXT NOT NULL,
+  profile_revision_id TEXT NOT NULL,
+  fencing_generation INTEGER NOT NULL CHECK (fencing_generation > 0),
+  owner_id TEXT NOT NULL CHECK (length(owner_id) BETWEEN 1 AND 120),
+  status TEXT NOT NULL CHECK (status IN ('completed', 'skipped', 'failed', 'paused', 'cancelled', 'outcome-uncertain')),
+  trace_schema_version INTEGER NOT NULL CHECK (trace_schema_version = 1),
+  canonical_json TEXT NOT NULL CHECK (json_valid(canonical_json) AND length(canonical_json) <= 262_144),
+  created_at TEXT NOT NULL,
+  completed_at TEXT
+) STRICT;
+
+CREATE INDEX interaction_traces_job_time
+ON interaction_traces(project_id, run_id, job_id, created_at DESC);
+CREATE INDEX interaction_traces_fencing
+ON interaction_traces(job_id, fencing_generation, created_at DESC);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -539,6 +577,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "004_add_persistent_page_queue", sequence: 4, sql: ADD_PERSISTENT_PAGE_QUEUE_SQL, checksum: checksum(ADD_PERSISTENT_PAGE_QUEUE_SQL) }),
   Object.freeze({ id: "005_add_checkpoint_lease_recovery", sequence: 5, sql: ADD_CHECKPOINT_LEASE_RECOVERY_SQL, checksum: checksum(ADD_CHECKPOINT_LEASE_RECOVERY_SQL) }),
   Object.freeze({ id: "006_add_browser_rendering_engine", sequence: 6, sql: ADD_BROWSER_RENDERING_ENGINE_SQL, checksum: checksum(ADD_BROWSER_RENDERING_ENGINE_SQL) }),
+  Object.freeze({ id: "007_add_browser_interaction", sequence: 7, sql: ADD_BROWSER_INTERACTION_SQL, checksum: checksum(ADD_BROWSER_INTERACTION_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

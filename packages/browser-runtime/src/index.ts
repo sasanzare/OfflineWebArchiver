@@ -11,6 +11,7 @@ import {
 } from "playwright-core";
 import {
   RenderOperationError,
+  type BrowserContextProfileDescriptor,
   type BrowserEvidenceSnapshot,
   type BrowserHealth,
   type BrowserInstallationInfo,
@@ -20,6 +21,7 @@ import {
   type NavigationObservation,
   type PageStabilitySnapshot,
 } from "@offline-web-archive/archive-core";
+import { executePlaywrightInteractionPlan, type PlaywrightInteractionHandlers } from "./interaction.js";
 
 export const PLAYWRIGHT_VERSION = "1.56.1" as const;
 export const BROWSER_MANIFEST_VERSION = 1 as const;
@@ -34,7 +36,10 @@ export const CONTEXT_PROFILE = Object.freeze({
   javaScriptEnabled: true,
   serviceWorkers: "block" as const,
   acceptDownloads: false,
+  acceptLanguage: "en-US,en;q=0.9",
   userAgent: "OfflineWebArchiveBuilder/0.8 PlaywrightChromium",
+  profileId: "owa-context-profile-1",
+  digest: "owa-context-profile-1-en-US-UTC-1280x720-dsf1-fixed-ua",
 });
 
 export interface BrowserResourceManifest {
@@ -116,6 +121,9 @@ class PlaywrightPageSession implements BrowserPageSession {
   private resolveCrash: () => void = () => undefined;
   private closed = false;
   private cdpSession: CDPSession | null = null;
+  private dialogHandler: ((dialog: import("playwright-core").Dialog) => Promise<void>) | null = null;
+  private popupHandler: ((popup: Page) => Promise<void>) | null = null;
+  private readonly pendingInteractionHandlers = new Set<Promise<void>>();
 
   public constructor(
     public readonly jobId: string,
@@ -165,9 +173,21 @@ class PlaywrightPageSession implements BrowserPageSession {
         occurredAt: new Date().toISOString(),
       });
     });
-    page.on("dialog", (dialog) => void dialog.dismiss().catch(() => undefined));
+    page.on("dialog", (dialog) => this.trackInteractionHandler(this.dialogHandler === null ? dialog.dismiss() : this.dialogHandler(dialog)));
     page.on("download", (download) => void download.cancel().catch(() => undefined));
-    page.on("popup", (popup) => void popup.close().catch(() => undefined));
+    context.on("page", (popup) => this.trackInteractionHandler(this.popupHandler === null ? popup.close() : this.popupHandler(popup)));
+  }
+
+  private trackInteractionHandler(task: Promise<void>): void {
+    const tracked = task.catch(() => undefined);
+    this.pendingInteractionHandlers.add(tracked);
+    void tracked.finally(() => this.pendingInteractionHandlers.delete(tracked));
+  }
+
+  private async waitForInteractionHandlers(): Promise<void> {
+    while (this.pendingInteractionHandlers.size > 0) {
+      await Promise.all([...this.pendingInteractionHandlers]);
+    }
   }
 
   private pushBounded<T>(target: T[], value: T): void {
@@ -336,6 +356,30 @@ class PlaywrightPageSession implements BrowserPageSession {
     return this.pageOperation(() => this.page.evaluate(() => ({ textLength: document.body?.innerText.trim().length ?? 0, elementCount: document.body?.querySelectorAll("*").length ?? 0 })));
   }
   public async captureScreenshot(): Promise<Uint8Array> { return this.pageOperation(() => this.page.screenshot({ type: "png", fullPage: false, animations: "disabled" })); }
+  public async executeInteractionPlan(input: import("@offline-web-archive/archive-core").InteractionExecutionInput): Promise<import("@offline-web-archive/archive-core").InteractionExecutionResult> {
+    const handlers: PlaywrightInteractionHandlers = {
+      setDialogHandler: (handler) => { this.dialogHandler = handler; },
+      setPopupHandler: (handler) => { this.popupHandler = handler; },
+      waitForHandlers: () => this.waitForInteractionHandlers(),
+      clearHandlers: () => { this.dialogHandler = null; this.popupHandler = null; },
+      isCrashed: () => this.crashed || !this.browserConnected(),
+    };
+    return executePlaywrightInteractionPlan(this.page, handlers, input);
+  }
+  public getContextProfile(): BrowserContextProfileDescriptor {
+    return {
+      version: CONTEXT_PROFILE.version,
+      profileId: CONTEXT_PROFILE.profileId,
+      locale: CONTEXT_PROFILE.locale,
+      timezoneId: CONTEXT_PROFILE.timezoneId,
+      viewport: { ...CONTEXT_PROFILE.viewport },
+      deviceScaleFactor: CONTEXT_PROFILE.deviceScaleFactor,
+      acceptLanguage: CONTEXT_PROFILE.acceptLanguage,
+      userAgentPolicy: "fixed",
+      headless: true,
+      digest: CONTEXT_PROFILE.digest,
+    };
+  }
   public getEvidence(): BrowserEvidenceSnapshot {
     return { consoleEntries: [...this.consoleEntries], pageErrors: [...this.pageErrors], failedRequests: [...this.failedRequests], redirects: [...this.redirects], blockedRequests: this.blockedRequests, evidenceTruncated: this.evidenceTruncated };
   }
@@ -474,6 +518,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
           javaScriptEnabled: CONTEXT_PROFILE.javaScriptEnabled,
           serviceWorkers: CONTEXT_PROFILE.serviceWorkers,
           acceptDownloads: CONTEXT_PROFILE.acceptDownloads,
+          extraHTTPHeaders: { "Accept-Language": CONTEXT_PROFILE.acceptLanguage },
           userAgent: CONTEXT_PROFILE.userAgent,
           bypassCSP: false,
           ignoreHTTPSErrors: false,

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Interaction fixture</title>
+    <style>
+      body { font-family: sans-serif; min-height: 2600px; margin: 0; padding: 24px; }
+      #cookie-banner { position: sticky; top: 0; padding: 12px; background: #fff2b2; }
+      #status { min-height: 24px; margin: 16px 0; }
+      .spacer { height: 1800px; }
+    </style>
+  </head>
+  <body>
+    <div id="cookie-banner" data-testid="cookie-banner" data-owa-discovery-ref="cookie-banner" role="banner">
+      <span>Cookie preferences</span>
+      <button id="cookie-accept" data-testid="cookie-accept" data-owa-read-only="true" data-owa-discovery-ref="cookie-accept" type="button" onclick="document.getElementById('cookie-banner').hidden = true">Accept cookies</button>
+    </div>
+    <main>
+      <h1>Browser-native interaction fixture</h1>
+      <label for="search">Search</label>
+      <input id="search" aria-label="Search" placeholder="Search fixture" value="">
+      <button id="toggle" data-owa-read-only="true" type="button" onclick="document.getElementById('status').textContent = 'Clicked through Playwright'">Read-only action</button>
+      <button id="hover-target" data-testid="hover-target" data-owa-read-only="true" type="button" onmouseenter="document.getElementById('status').textContent = 'Hovered'">Hover target</button>
+      <button id="dialog" data-testid="dialog" data-owa-read-only="true" type="button" onclick="alert('fixture dialog')">Show dialog</button>
+      <button id="confirm" data-testid="confirm" data-owa-read-only="true" type="button" onclick="document.body.dataset.confirm = confirm('fixture confirm') === null ? 'dismissed' : 'handled'">Show confirm</button>
+      <button id="prompt" data-testid="prompt" data-owa-read-only="true" type="button" onclick="document.body.dataset.prompt = prompt('fixture prompt') === null ? 'dismissed' : 'handled'">Show prompt</button>
+      <button id="popup" data-testid="popup" data-owa-read-only="true" type="button" onclick="window.open('/popup', 'fixture-safe-popup')">Open in-scope popup</button>
+      <button id="blocked-popup" data-testid="blocked-popup" data-owa-read-only="true" type="button" onclick="window.open('/popup', 'fixture-blocked-popup')">Open blocked popup</button>
+      <a id="navigation" data-owa-interaction="navigation" href="/spa/route">Navigate read-only</a>
+      <div id="status" data-testid="status" data-owa-discovery-ref="status">Ready</div>
+      <div class="spacer"></div>
+      <p id="bottom">Bottom of interaction fixture</p>
+    </main>
+  </body>
+</html>

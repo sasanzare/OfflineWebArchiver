@@ -14,8 +14,11 @@ const queuePersistence = await readFile(path.join(repositoryRoot, "packages/pers
 const recoveryDomain = await readFile(path.join(repositoryRoot, "packages/recovery/src/index.ts"), "utf8");
 const recoveryPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/recovery.ts"), "utf8");
 const browserRuntime = await readFile(path.join(repositoryRoot, "packages/browser-runtime/src/index.ts"), "utf8");
+const interactionCore = await readFile(path.join(repositoryRoot, "packages/archive-core/src/interaction.ts"), "utf8");
+const interactionRuntime = await readFile(path.join(repositoryRoot, "packages/browser-runtime/src/interaction.ts"), "utf8");
 const renderEngine = await readFile(path.join(repositoryRoot, "packages/rendering/src/index.ts"), "utf8");
 const renderPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/render.ts"), "utf8");
+const interactionPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/interaction.ts"), "utf8");
 const applicationService = await readFile(path.join(repositoryRoot, "packages/application-service/src/index.ts"), "utf8");
 const required = [
   [files.main, "contextIsolation: true", "context isolation"],
@@ -59,6 +62,16 @@ for (const token of ["lease_token_hash", "fencingGeneration", "assertLease", "va
 for (const token of ["chromiumSandbox: true", "Fetch.enable", "Fetch.failRequest", "BlockedByClient", "method !== \"GET\"", "serviceWorkers: CONTEXT_PROFILE.serviceWorkers", "executableSha256", "systemBrowserFallback: false", "launchDownloadAllowed: false"]) {
   if (!browserRuntime.includes(token)) errors.push(`Browser Runtime security control is missing: ${token}`);
 }
+for (const token of ["INTERACTION_HARD_LIMITS", "INTERACTION_SIDE_EFFECT_BLOCKED", "redactInteractionTrace", "INTERACTION_OUTCOME_UNCERTAIN", "INTERACTION_PLAN_NOT_APPROVED", "INTERACTION_KEY_INVALID"]) {
+  if (!interactionCore.includes(token)) errors.push(`Interaction Core security control is missing: ${token}`);
+}
+for (const token of ["page.keyboard.type", "page.mouse.wheel", "assertReadOnlyClickTarget", "dialogPolicy", "popupPolicy", "page.evaluate"]) {
+  if (!interactionRuntime.includes(token)) errors.push(`Browser Interaction security control is missing: ${token}`);
+}
+for (const token of ["assertOwnership", "fencing_generation", "BEGIN IMMEDIATE", "canonical_json", "redactInteractionTrace"]) {
+  if (!interactionPersistence.includes(token)) errors.push(`Interaction persistence control is missing: ${token}`);
+}
+if (/dispatchEvent|new\s+(?:Event|CustomEvent)|\.value\s*=(?!=)/.test(interactionRuntime)) errors.push("Browser Interaction adapter contains synthetic event dispatch or direct DOM value assignment");
 for (const token of ["domQuietMs", "networkQuietMs", "activeRequests === 0", "captureScreenshot: false", "maxHtmlBytes", "RENDER_STABILITY_TIMEOUT"]) {
   if (!renderEngine.includes(token)) errors.push(`Render Engine bound is missing: ${token}`);
 }

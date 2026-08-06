@@ -14,6 +14,22 @@ const jobId = "00000000-0000-4000-8000-000000000603";
 const leaseToken = "00000000-0000-4000-8000-000000000604";
 const recoveryOperationId = "00000000-0000-4000-8000-000000000605";
 const leaseOwnership = { jobId, leaseToken, fencingGeneration: 1, ownerId: "contract-check", operationId: "operation-owner" };
+const interactionProfile = {
+  schemaVersion: 1, profileId: "interaction-profile", profileRevisionId: "interaction-revision", projectId: "00000000-0000-4000-8000-000000000607",
+  enabled: true, mode: "human-paced", seed: "contract-seed", actionDelayMinMs: 10, actionDelayMaxMs: 20, typingDelayMinMs: 5, typingDelayMaxMs: 10,
+  pointerMoveDurationMinMs: 10, pointerMoveDurationMaxMs: 20, incrementalScroll: true, scrollStepMinPx: 10, scrollStepMaxPx: 20, scrollDelayMinMs: 5, scrollDelayMaxMs: 10,
+  maxActionsPerPage: 10, maxInteractionDurationMs: 10_000, maxScrollSteps: 10, maxTabSteps: 10, maxPopupsPerPage: 2, maxDialogsPerPage: 2,
+  maxTypedTextLength: 100, maxTargetLength: 128, maxTraceEvents: 50, maxTraceBytes: 16_384, maxScrollDistancePx: 1_000,
+  dialogPolicy: { defaultAction: "dismiss", byType: {}, maximumHandlingDurationMs: 1_000 },
+  popupPolicy: { defaultAction: "observe-close", allowedOrigins: [], maximumHandlingDurationMs: 1_000 }, cookieBannerRules: [],
+};
+const interactionPlan = {
+  schemaVersion: 1, planId: "interaction-plan", approved: true, approvalReason: "contract fixture",
+  steps: [
+    { stepId: "focus", stepType: "focus", target: { strategy: "role", role: "textbox", name: "Search" }, sideEffect: "read-only", postcondition: { kind: "focused", target: { strategy: "role", role: "textbox", name: "Search" } } },
+    { stepId: "type", stepType: "type_text", target: { strategy: "role", role: "textbox", name: "Search" }, characterCount: 3, textCategory: "non-sensitive", sideEffect: "read-only" },
+  ],
+};
 const draft = {
   name: "Profile", baseUrl: "https://example.com/", seedUrls: ["https://example.com/"], authorization: { status: "incomplete", legalBasisReference: null, approvedBy: [], approvedAt: null, expiresAt: null },
   domainRules: [{ ruleId: "seed", effect: "allow", match: "exact", hostname: "example.com", schemes: ["https"], ports: [] }], pathRules: [],
@@ -71,6 +87,12 @@ const commands = [
   createProjectCommand("run.getControlState", { projectPath: "/projects/sample", runId }, metadata),
   createProjectCommand("lease.list", { projectPath: "/projects/sample", runId, status: "active", limit: 50 }, metadata),
   createProjectCommand("lease.show", { projectPath: "/projects/sample", runId, jobId }, metadata),
+  createProjectCommand("interaction.profile.get", { projectPath: "/projects/sample" }, metadata),
+  createProjectCommand("interaction.profile.validate", { projectPath: "/projects/sample", profile: interactionProfile }, metadata),
+  createProjectCommand("interaction.plan.validate", { projectPath: "/projects/sample", profile: interactionProfile, plan: interactionPlan }, metadata),
+  createProjectCommand("interaction.run", { projectPath: "/projects/sample", runId, jobId, ownerId: "contract-check", leaseDurationMs: 60_000, planId: interactionPlan.planId, idempotencyKey: "interaction-run-001", operationId: "interaction-operation-001" }, metadata),
+  createProjectCommand("interaction.trace.list", { projectPath: "/projects/sample", runId, jobId, limit: 50 }, metadata),
+  createProjectCommand("interaction.trace.inspect", { projectPath: "/projects/sample", runId, jobId, traceId: "interaction-trace-001" }, metadata),
 ];
 commands.forEach((command) => parseCommandEnvelope(JSON.parse(JSON.stringify(command))));
 parseResponseEnvelope({

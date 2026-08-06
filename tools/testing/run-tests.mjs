@@ -14,6 +14,7 @@ const recoveryTests = [
 ];
 const browserTests = [
   "browser/browser-runtime.test.js",
+  "browser/interaction.test.js",
   "process-kill/browser-process-kill.test.js",
 ];
 const renderingTests = [
@@ -78,7 +79,7 @@ if (selected.length === 0) {
 }
 const result = spawnSync(
   process.execPath,
-  ["--test", "--test-isolation=none", ...selected],
+  ["--test", "--test-isolation=none", "--test-concurrency=1", ...selected],
   {
     cwd: repositoryRoot,
     stdio: "inherit",

@@ -101,7 +101,7 @@ test("current official bundle passes strict structural and reference validation"
   assert.equal(official.validateOfficial(artifacts).length, 0);
   const report = await references.validateReferences(artifacts, process.cwd());
   assert.equal(report.diagnostics.filter((item) => item.severity === "error").length, 0);
-  assert.equal(report.checks.length, 81);
+  assert.equal(report.checks.length, 87);
   assert.ok(report.checks.some((item) => ["remote-target-not-checked", "remote-target-verified"].includes(item.status)));
 });
 
@@ -247,9 +247,9 @@ test("registry references to removed files are rejected by extension validation"
 test("extension Markdown remains outside official Concept discovery", async () => {
   const { discovery } = await officialModules();
   const artifacts = await discovery.discoverOkf(process.cwd());
-  assert.equal(artifacts.length, 50);
+  assert.equal(artifacts.length, 53);
   assert.equal(artifacts.some((item) => item.path.startsWith("okf-extension/")), false);
-  assert.equal(artifacts.filter((item) => item.kind === "concept").length, 40);
+  assert.equal(artifacts.filter((item) => item.kind === "concept").length, 43);
 });
 
 test("official validation succeeds independently when extension validation is not requested", async () => {
@@ -457,6 +457,6 @@ test("current normalized sources remain provenance-valid without required networ
   const artifacts = await discovery.discoverOkf(process.cwd());
   const report = await provenance.validateProvenance(artifacts, process.cwd());
   assert.equal(report.diagnostics.length, 0);
-  assert.equal(report.checks.length, 81);
+  assert.equal(report.checks.length, 87);
   assert.equal(report.checks.every((item) => item.classification === "github-permalink"), true);
 });

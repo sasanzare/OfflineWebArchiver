@@ -1,8 +1,8 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 is complete: the monorepo now includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume.
+Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest completed baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations are present, but the Phase 9 Discovery Engine prerequisite is not present in this baseline, so Phase 10 is not claimed complete.
 
-Current versions are application/workspaces `0.8.0`, transport contract `1.5.0`, Project format `1.1.0`, SQLite schema `6`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Playwright `1.56.1`, and Chromium `141.0.7390.37` revision `1194`. Phase 8 renders only an already approved queued Page Job; it does not discover or enqueue links, download production assets, rewrite HTML, capture APIs, authenticate, use proxies, or create a full crawl/archive.
+Current versions are application/workspaces `0.8.0`, transport contract `1.6.0`, Project format `1.1.0`, SQLite schema `7`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Playwright `1.56.1`, and Chromium `141.0.7390.37` revision `1194`. The implemented interaction surface is bounded and approved-plan-only; without Phase 9 it does not discover or enqueue links. The product still does not download production assets, rewrite HTML, capture APIs, authenticate, use proxies, or create a full crawl/archive.
 
 ## Safety and authorization
 
@@ -18,9 +18,9 @@ packages/browser-runtime Playwright/Chromium lifecycle and interception adapter
 packages/rendering       browser-independent Render policy and orchestration
 packages/recovery        pure Lease/Checkpoint/Recovery/partial-file policy
 packages/queue           pure Queue state/idempotency policy
-packages/persistence-sqlite  SQLite schema 6 and repositories
+packages/persistence-sqlite  SQLite schema 7 and repositories
 packages/application-service use-case and ownership orchestration
-packages/contracts       runtime-validated contract 1.5.0
+packages/contracts       runtime-validated contract 1.6.0
 ```
 
 Use Node 24 and npm 11:
@@ -62,9 +62,12 @@ npm run project -- run pause D:\Archives\example --run <run-uuid>
 npm run project -- checkpoint list D:\Archives\example --run <run-uuid> --job <job-uuid>
 npm run project -- browser validate --json
 npm run project -- render start D:\Archives\example --run <run-uuid> --job <job-uuid> --owner local-renderer
+npm run project -- interaction profile show D:\Archives\example
+npm run project -- interaction plan validate D:\Archives\example plan.json --profile profile.json
+npm run project -- interaction trace list D:\Archives\example --run <run-uuid> --job <job-uuid>
 ```
 
-Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run/Lease/Checkpoint/Browser/Render commands. `npm run dev:desktop` opens the local UI. The renderer receives only the approved two-method bridge and never receives Playwright or raw Browser, filesystem, SQL, or process access. Browser installation is an explicit provisioning action; normal launch never downloads or falls back to system Chrome.
+Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run/Lease/Checkpoint/Browser/Render/Interaction commands. `npm run dev:desktop` opens the local UI. The renderer receives only the approved two-method bridge and never receives Playwright or raw Browser, filesystem, SQL, or process access. Browser installation is an explicit provisioning action; normal launch never downloads or falls back to system Chrome. Interaction execution requires a service-supplied approved plan and never accepts raw typed text on the transport boundary.
 
 ## Documentation
 
@@ -73,6 +76,9 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Rendering Engine](docs/architecture/RENDERING_ENGINE.md)
 - [Render stability](docs/architecture/RENDER_STABILITY.md)
 - [Security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
+- [Human-Paced Interaction architecture](docs/architecture/BROWSER_INTERACTION.md)
+- [Phase 10 implementation report](docs/project/PHASE_10_IMPLEMENTATION_REPORT.md)
+- [Phase 10 security review](docs/architecture/PHASE_10_SECURITY_REVIEW.md)
 - [Acceptance matrix](docs/product/ACCEPTANCE_MATRIX.md)
 - [Canonical Google OKF v0.2 knowledge](okf/index.md)
 - [OKF maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md)
@@ -104,4 +110,4 @@ for the ownership boundaries, source/provenance workflow, CI behavior, and
 review checklist. Hosted CI execution and branch protection are not claimed as
 verified from the local repository.
 
-The exact next phase is **Product Phase 9 — Link Discovery and SPA Support**.
+The exact next required phase is **Product Phase 9 — Link Discovery and SPA Support**. Product Phase 10 must not be marked complete until that prerequisite and its evidence exist.

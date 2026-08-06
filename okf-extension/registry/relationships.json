@@ -61,6 +61,12 @@
     { "id": "OKF-REL-058", "name": "Application Service owns Browser Render orchestration", "status": "VERIFIED", "sourceId": "OKF-DOM-005", "targetId": "OKF-NODE-P08-BROWSER-RENDER", "type": "owns" },
     { "id": "OKF-REL-059", "name": "Desktop uses Browser Render contract", "status": "VERIFIED", "sourceId": "OKF-DOM-006", "targetId": "OKF-NODE-P08-CONTRACT-1-5", "type": "depends-on" },
     { "id": "OKF-REL-060", "name": "CLI uses Browser Render contract", "status": "VERIFIED", "sourceId": "OKF-DOM-007", "targetId": "OKF-NODE-P08-CONTRACT-1-5", "type": "depends-on" },
-    { "id": "OKF-REL-061", "name": "Phase 8 evidenced by canonical record", "status": "VERIFIED", "sourceId": "OKF-PHASE-008", "targetId": "OKF-EV-P08-RECORD", "type": "evidenced-by" }
+    { "id": "OKF-REL-061", "name": "Phase 8 evidenced by canonical record", "status": "VERIFIED", "sourceId": "OKF-PHASE-008", "targetId": "OKF-EV-P08-RECORD", "type": "evidenced-by" },
+    { "id": "OKF-REL-062", "name": "Phase 10 interaction foundation reuses Browser Runtime", "status": "PARTIAL", "sourceId": "OKF-NODE-P10-INTERACTION", "targetId": "OKF-NODE-P08-BROWSER-RENDER", "type": "depends-on" },
+    { "id": "OKF-REL-063", "name": "Phase 10 policy is evidenced by lifecycle tests", "status": "PARTIAL", "sourceId": "OKF-NODE-P10-POLICY", "targetId": "OKF-EV-P10-TESTS", "type": "evidenced-by" },
+    { "id": "OKF-REL-064", "name": "Phase 10 safety is evidenced by security review", "status": "PARTIAL", "sourceId": "OKF-NODE-P10-SAFETY", "targetId": "OKF-EV-P10-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-065", "name": "Phase 10 trace uses recovery fencing", "status": "PARTIAL", "sourceId": "OKF-NODE-P10-TRACE", "targetId": "OKF-NODE-P07-RECOVERY", "type": "depends-on" },
+    { "id": "OKF-REL-066", "name": "Phase 9 discovery gate blocks production integration", "status": "BLOCKED", "sourceId": "OKF-NODE-P10-DISCOVERY-GATE", "targetId": "OKF-NODE-P10-INTERACTION", "type": "blocks" },
+    { "id": "OKF-REL-067", "name": "Phase 10 partial record is evidenced by the discovery audit", "status": "PARTIAL", "sourceId": "OKF-PHASE-010", "targetId": "OKF-EV-P10-DISCOVERY-GATE", "type": "evidenced-by" }
   ]
 }

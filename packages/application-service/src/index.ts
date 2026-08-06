@@ -3,6 +3,12 @@ import { lookup } from "node:dns/promises";
 import {
   BROWSER_CONTEXT_PROFILE_VERSION,
   createArchiveCore,
+  InteractionOperationError,
+  InteractionTraceBuilder,
+  isSafeInteractionKey,
+  parseInteractionPlan,
+  parseInteractionProfile,
+  validateInteractionProfile,
   ProjectOperationError,
   QueueOperationError,
   RecoveryOperationError,
@@ -17,6 +23,10 @@ import {
   type RenderEnginePort,
   type RenderPolicy,
   type RenderRepositoryPort,
+  type InteractionPlan,
+  type InteractionProfile,
+  type InteractionProfileRepositoryPort,
+  type InteractionTraceRepositoryPort,
   type RuntimeNetworkDecision,
 } from "@offline-web-archive/archive-core";
 import { createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } from "@offline-web-archive/browser-runtime";
@@ -64,9 +74,10 @@ export interface ApplicationServiceDependencies {
   runtime: RuntimeInfo;
   platform: PlatformInfo;
   core?: ArchiveCore;
-  projectStorage?: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort;
+  projectStorage?: ApplicationStorage;
   browserRuntime?: BrowserRuntimePort;
   renderEngine?: RenderEnginePort;
+  interactionPlanProvider?: (input: { projectId: string; runId: string; jobId: string; planId: string }) => Promise<InteractionPlan>;
   browserRoot?: string;
   renderTestMode?: boolean;
   fixtureOrigins?: readonly string[];
@@ -235,6 +246,22 @@ function renderError(error: RenderOperationError): ErrorContract {
   };
 }
 
+function interactionError(error: InteractionOperationError): ErrorContract {
+  const securityCodes = new Set(["INTERACTION_SIDE_EFFECT_BLOCKED", "INTERACTION_POPUP_BLOCKED", "INTERACTION_DIALOG_BLOCKED"]);
+  const validationCodes = new Set(["INTERACTION_PROFILE_INVALID", "INTERACTION_PLAN_INVALID", "INTERACTION_TARGET_INVALID", "INTERACTION_KEY_INVALID", "INTERACTION_TRACE_LIMIT"]);
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : error.code === "INTERACTION_BROWSER_FAILED" ? "platform" : "application",
+    message: error.message,
+    userMessage: validationCodes.has(error.code)
+      ? "The Human-Paced Browser Interaction request is invalid."
+      : securityCodes.has(error.code)
+        ? "The requested interaction was blocked by the safety policy."
+        : "The Human-Paced Browser Interaction could not be completed safely.",
+    retryable: error.retryable,
+  };
+}
+
 function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<string, unknown> {
   if (result.resultType === "profile.value") return { resultType: result.resultType, profileId: result.profile.profileId, profileRevisionId: result.profile.revisionId, engineVersion: result.profile.engineVersion, changedPaths: result.changedPaths ?? [] };
   if (result.resultType === "profile.validation") return { resultType: result.resultType, valid: result.validation.valid, errorCodes: result.validation.errors.map((entry) => entry.code), warningCodes: result.validation.warnings.map((entry) => entry.code) };
@@ -263,6 +290,11 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "render.result") return { resultType: result.resultType, action: result.action, renderResultId: result.result.renderResultId, jobId: result.result.jobId, status: result.result.resultStatus, quality: result.result.qualityClassification, totalDurationMs: result.result.totalDurationMs, htmlSha256: result.result.htmlArtifact.sha256 };
   if (result.resultType === "render.status") return { resultType: result.resultType, action: result.action, jobId: result.status.jobId, jobState: result.status.jobState, stage: result.status.stage, resultStatus: result.status.resultStatus };
   if (result.resultType === "render.events") return { resultType: result.resultType, eventCount: result.events.length };
+  if (result.resultType === "interaction.profile") return { resultType: result.resultType, profileId: result.profile.profileId, profileRevisionId: result.profile.profileRevisionId, enabled: result.profile.enabled, mode: result.profile.mode };
+  if (result.resultType === "interaction.validation") return { resultType: result.resultType, target: result.target, valid: result.valid, errorCount: result.errors.length };
+  if (result.resultType === "interaction.result") return { resultType: result.resultType, status: result.trace.status, traceId: result.trace.traceId, completedStepCount: result.completedStepCount, failureCode: result.failureCode };
+  if (result.resultType === "interaction.traces") return { resultType: result.resultType, traceCount: result.traces.length };
+  if (result.resultType === "interaction.trace") return { resultType: result.resultType, traceId: result.trace.traceId, status: result.trace.status, eventCount: result.trace.events.length };
   return { resultType: result.resultType };
 }
 
@@ -280,6 +312,13 @@ interface ActiveRender {
   controller: AbortController;
   operationId: string;
 }
+
+interface ActiveInteraction {
+  controller: AbortController;
+  operationId: string;
+}
+
+type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort;
 
 async function authorizeRuntimeUrl(
   rawUrl: string,
@@ -439,12 +478,95 @@ async function executeRenderStart(
   }
 }
 
+async function executeInteractionRun(
+  command: Extract<CommandEnvelope, { commandType: "interaction.run" }>,
+  storage: ApplicationStorage,
+  runtime: BrowserRuntimePort,
+  activeInteractions: Map<string, ActiveInteraction>,
+  planProvider: NonNullable<ApplicationServiceDependencies["interactionPlanProvider"]> | undefined,
+  now: () => string,
+  testMode: boolean,
+  fixtureOrigins: readonly string[],
+  heartbeatIntervalMs: number,
+): Promise<unknown> {
+  const project = storage.getCurrent();
+  if (project === null) throw new InteractionOperationError("INTERACTION_PERSISTENCE_FAILED", "Open the selected Project before starting an Interaction");
+  if (project.runId !== command.payload.runId) throw new QueueOperationError("QUEUE_RUN_NOT_FOUND", "The selected Run does not belong to the open Project");
+  if (activeInteractions.has(command.payload.jobId)) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The selected Page Job already has an active Interaction");
+  if (planProvider === undefined) throw new InteractionOperationError("INTERACTION_PLAN_INVALID", "No approved Interaction Plan provider is configured");
+  const profile = parseInteractionProfile(await storage.getInteractionProfile({ projectId: project.projectId }));
+  const plan = parseInteractionPlan(await planProvider({ projectId: project.projectId, runId: project.runId, jobId: command.payload.jobId, planId: command.payload.planId }), profile);
+  const siteProfile = await storage.getProfile(command.payload.projectPath);
+  const requestedLeaseMs = Math.min(86_400_000, Math.max(command.payload.leaseDurationMs, profile.maxInteractionDurationMs + 60_000));
+  const claim = await storage.claimJobWithLease({ projectId: project.projectId, runId: project.runId, jobId: command.payload.jobId, ownerId: command.payload.ownerId, leaseDurationMs: requestedLeaseMs, idempotencyKey: command.payload.idempotencyKey, operationId: command.payload.operationId, correlationId: command.correlationId });
+  const controller = new AbortController();
+  activeInteractions.set(command.payload.jobId, { controller, operationId: command.payload.operationId });
+  const trace = new InteractionTraceBuilder({ maxEvents: profile.maxTraceEvents, maxBytes: profile.maxTraceBytes });
+  let page: Awaited<ReturnType<BrowserRuntimePort["createPageSession"]>> | null = null;
+  let lease = claim.lease;
+  let heartbeatRunning = false;
+  let heartbeatFailure: unknown = null;
+  const heartbeat = async (): Promise<void> => {
+    if (heartbeatRunning) return;
+    heartbeatRunning = true;
+    try {
+      lease = await storage.heartbeatLease({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, operationId: `${command.payload.operationId}:heartbeat` });
+      if (Date.parse(lease.expiresAt) - Date.parse(now()) < 30_000) lease = await storage.renewLease({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, extensionMs: requestedLeaseMs, operationId: `${command.payload.operationId}:renew` });
+    } catch (error) {
+      heartbeatFailure = error;
+      controller.abort();
+    } finally {
+      heartbeatRunning = false;
+    }
+  };
+  const heartbeatTimer = setInterval(() => void heartbeat(), heartbeatIntervalMs);
+  try {
+    await storage.saveJobCheckpoint({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, phase: "interaction.pending", progress: 0, payload: { planId: plan.planId, profileId: profile.profileId, profileRevisionId: profile.profileRevisionId }, operationId: `${command.payload.operationId}:pending` });
+    const installation = await runtime.validateInstallation();
+    if (!installation.valid) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The approved Chromium runtime did not pass validation", true);
+    await runtime.start();
+    page = await runtime.createPageSession(claim.job.jobId, { testMode, allowedFixtureOrigins: fixtureOrigins, maxEvidenceEntries: 100, authorizeUrl: (url) => authorizeRuntimeUrl(url, siteProfile, testMode, fixtureOrigins) });
+    const executeInteractionPlan = page.executeInteractionPlan;
+    const getContextProfile = page.getContextProfile;
+    if (executeInteractionPlan === undefined || getContextProfile === undefined) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The selected Browser Runtime does not expose the Phase 10 Interaction adapter");
+    await page.navigate(claim.job.normalizedUrl, 15_000);
+    const result = await executeInteractionPlan.call(page, { profile, plan, signal: controller.signal, now, trace, projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, ownerId: command.payload.ownerId, fencingGeneration: claim.lease.fencingGeneration, traceId: claim.lease.leaseId, contextProfile: getContextProfile.call(page), shouldPause: async () => (await storage.getRunControlState({ projectId: project.projectId, runId: project.runId })).controlState === "pause_requested", authorizeUrl: async (url) => (await authorizeRuntimeUrl(url, siteProfile, testMode, fixtureOrigins)).allowed });
+    if (heartbeatFailure !== null) throw heartbeatFailure;
+    await storage.saveInteractionTrace({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, operationId: command.payload.operationId, trace: result.trace });
+    await storage.saveJobCheckpoint({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, phase: `interaction.${result.status}`, progress: result.status === "completed" || result.status === "skipped" ? 1 : 0, payload: { planId: plan.planId, traceId: result.trace.traceId, completedStepCount: result.completedStepCount }, operationId: `${command.payload.operationId}:completed` });
+    await storage.releaseLease({ projectId: project.projectId, runId: project.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: command.payload.ownerId, reasonCode: `INTERACTION_${result.status.replace(/-/g, "_").toUpperCase()}`, operationId: `${command.payload.operationId}:release` });
+    return { resultType: "interaction.result", action: "run", trace: result.trace, completedStepCount: result.completedStepCount, failureCategory: result.failureCategory, failureCode: result.failureCode, navigationOutcome: result.navigationOutcome, discoveredUrlCount: result.discoveredUrlCount, contextProfile: result.contextProfile };
+  } finally {
+    clearInterval(heartbeatTimer);
+    await page?.close().catch(() => undefined);
+    activeInteractions.delete(command.payload.jobId);
+  }
+}
+
+function validateTransportInteractionPlan(plan: Extract<CommandEnvelope, { commandType: "interaction.plan.validate" }> ["payload"]["plan"], profile: InteractionProfile): { valid: boolean; errors: readonly { code: string; path: string; message: string }[] } {
+  const errors: { code: string; path: string; message: string }[] = [];
+  if (plan.steps.length > Math.min(profile.maxActionsPerPage, 500)) errors.push({ code: "INTERACTION_PLAN_STEPS_INVALID", path: "steps", message: "The interaction plan exceeds the configured action bound." });
+  for (const [index, step] of plan.steps.entries()) {
+    if (step.timeoutMs !== undefined && step.timeoutMs > profile.maxInteractionDurationMs) errors.push({ code: "INTERACTION_TIMEOUT", path: `steps.${index}.timeoutMs`, message: "The step timeout exceeds the profile duration bound." });
+    if (step.stepType === "type_text" && (step.characterCount === undefined || step.characterCount > profile.maxTypedTextLength)) errors.push({ code: "INTERACTION_TEXT_LIMIT", path: `steps.${index}.characterCount`, message: "The typed text length exceeds the profile bound." });
+    if (step.stepType === "press_key" && (step.key === undefined || !isSafeInteractionKey(step.key))) errors.push({ code: "INTERACTION_KEY_INVALID", path: `steps.${index}.key`, message: "The key or key combination is not approved." });
+    if (step.stepType === "incremental_scroll") {
+      if (!profile.incrementalScroll) errors.push({ code: "INTERACTION_SCROLL_DISABLED", path: `steps.${index}`, message: "Incremental scrolling is disabled by the profile." });
+      if (step.distancePx !== undefined && step.distancePx > profile.maxScrollDistancePx) errors.push({ code: "INTERACTION_SCROLL_DISTANCE_LIMIT", path: `steps.${index}.distancePx`, message: "Scroll distance exceeds the profile bound." });
+      if (step.steps !== undefined && step.steps > profile.maxScrollSteps) errors.push({ code: "INTERACTION_SCROLL_LIMIT", path: `steps.${index}.steps`, message: "Scroll steps exceed the profile bound." });
+    }
+  }
+  return { valid: errors.length === 0, errors };
+}
+
 async function executeProjectCommand(
   command: Exclude<CommandEnvelope, { commandType: "system.describe" }>,
-  storage: ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort,
+  storage: ApplicationStorage,
   runtime: BrowserRuntimePort,
   engine: RenderEnginePort,
   activeRenders: Map<string, ActiveRender>,
+  activeInteractions: Map<string, ActiveInteraction>,
+  interactionPlanProvider: NonNullable<ApplicationServiceDependencies["interactionPlanProvider"]> | undefined,
   renderTestMode: boolean,
   fixtureOrigins: readonly string[],
   heartbeatIntervalMs: number,
@@ -529,6 +651,27 @@ async function executeProjectCommand(
         if (active !== undefined) active.controller.abort();
         return { resultType: "render.status", action: "cancel", status: await storage.getRenderStatus({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId }) };
       });
+    case "interaction.profile.get":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "interaction.profile", profile: await storage.getInteractionProfile({ projectId: storage.getCurrent()!.projectId }) }));
+    case "interaction.profile.validate":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const candidate = command.payload.profile ?? await storage.getInteractionProfile({ projectId: storage.getCurrent()!.projectId });
+        const validation = validateInteractionProfile(candidate);
+        return { resultType: "interaction.validation", target: "profile", valid: validation.valid, errors: validation.errors };
+      });
+    case "interaction.plan.validate":
+      return withOpenProject(command.payload.projectPath, async () => {
+        const profileValidation = validateInteractionProfile(command.payload.profile);
+        if (!profileValidation.valid || profileValidation.value === null) return { resultType: "interaction.validation", target: "plan", valid: false, errors: profileValidation.errors };
+        const validation = validateTransportInteractionPlan(command.payload.plan, profileValidation.value);
+        return { resultType: "interaction.validation", target: "plan", valid: validation.valid, errors: validation.errors };
+      });
+    case "interaction.run":
+      return withOpenProject(command.payload.projectPath, () => executeInteractionRun(command, storage, runtime, activeInteractions, interactionPlanProvider, now, renderTestMode, fixtureOrigins, heartbeatIntervalMs));
+    case "interaction.trace.list":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "interaction.traces", traces: await storage.listInteractionTraces({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, limit: command.payload.limit }) }));
+    case "interaction.trace.inspect":
+      return withOpenProject(command.payload.projectPath, async () => ({ resultType: "interaction.trace", trace: await storage.getInteractionTrace({ projectId: storage.getCurrent()!.projectId, runId: command.payload.runId, jobId: command.payload.jobId, traceId: command.payload.traceId }) }));
     case "project.create":
       return {
         resultType: "project.summary",
@@ -720,6 +863,8 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
     } catch { return true; }
   })) throw new RenderOperationError("RENDER_INPUT_INVALID", "Fixture origins must be explicit Loopback origins and require Render test mode");
   const activeRenders = new Map<string, ActiveRender>();
+  const activeInteractions = new Map<string, ActiveInteraction>();
+  const interactionPlanProvider = dependencies.interactionPlanProvider;
 
   const response = (raw: unknown, result: unknown, error: ErrorContract | null): ResponseEnvelope => {
     const identifiers = safeIdentifiers(raw);
@@ -765,7 +910,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               runtime: dependencies.runtime,
               platform: dependencies.platform,
             }
-          : await executeProjectCommand(command, storage, browserRuntime, renderEngine, activeRenders, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
+          : await executeProjectCommand(command, storage, browserRuntime, renderEngine, activeRenders, activeInteractions, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
         const completed = response(rawCommand, result, null);
         const completionMetadata = completed.status === "success" ? resultLogMetadata(completed.result) : {};
         logger.log({
@@ -779,7 +924,9 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
         });
         return completed;
       } catch (error) {
-        const translated = error instanceof ProjectOperationError
+        const translated = error instanceof InteractionOperationError
+          ? interactionError(error)
+          : error instanceof ProjectOperationError
           ? projectError(error)
           : error instanceof ScopeEngineError
             ? scopeError(error)
@@ -809,6 +956,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
     },
     async close(): Promise<void> {
       for (const active of activeRenders.values()) active.controller.abort();
+      for (const active of activeInteractions.values()) active.controller.abort();
       await browserRuntime.close();
       if (storage.getCurrent() !== null) await storage.close();
     },

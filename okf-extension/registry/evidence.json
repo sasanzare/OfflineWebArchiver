@@ -54,6 +54,13 @@
     { "id": "OKF-EV-P08-INTERFACES", "name": "Browser Render contract CLI and Desktop surfaces", "status": "VERIFIED", "path": "tests/electron/desktop-smoke.test.ts", "method": "npm run test:unit, npm run test:cli and npm run test:electron" },
     { "id": "OKF-EV-P08-SECURITY", "name": "Product Phase 8 Browser and Render security gate", "status": "VERIFIED", "path": "docs/architecture/PHASE_08_SECURITY_REVIEW.md", "method": "npm run security:check and adversarial browser tests" },
     { "id": "OKF-EV-P08-DOCS", "name": "Product Phase 8 implementation ADR and architecture record", "status": "VERIFIED", "path": "docs/project/PHASE_08_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P08-RECORD", "name": "Product Phase 8 canonical record", "status": "VERIFIED", "path": "okf/history/phase-08.md", "method": "npm run okf:validate" }
+    { "id": "OKF-EV-P08-RECORD", "name": "Product Phase 8 canonical record", "status": "VERIFIED", "path": "okf/history/phase-08.md", "method": "npm run okf:validate" },
+    { "id": "OKF-EV-P10-INTERACTION", "name": "Phase 10 bounded interaction domain and policy", "status": "PARTIAL", "path": "packages/archive-core/src/interaction.ts", "method": "npm run typecheck and npm run test:unit" },
+    { "id": "OKF-EV-P10-SECURITY", "name": "Phase 10 browser interaction security review", "status": "PARTIAL", "path": "docs/architecture/PHASE_10_SECURITY_REVIEW.md", "method": "npm run security:check and npm run test:architecture" },
+    { "id": "OKF-EV-P10-TRACE", "name": "Phase 10 redacted fenced interaction trace persistence", "status": "PARTIAL", "path": "packages/persistence-sqlite/src/interaction.ts", "method": "npm run migrations:validate and npm run test:integration" },
+    { "id": "OKF-EV-P10-BROWSER", "name": "Phase 10 real Playwright interaction adapter and fixture", "status": "PARTIAL", "path": "tests/browser/interaction.test.ts", "method": "npm run test:browser" },
+    { "id": "OKF-EV-P10-INTERFACES", "name": "Phase 10 contract and CLI interaction surfaces", "status": "PARTIAL", "path": "packages/contracts/src/index.ts", "method": "npm run contracts:check and npm run test:unit" },
+    { "id": "OKF-EV-P10-TESTS", "name": "Phase 10 interaction lifecycle integration evidence", "status": "PARTIAL", "path": "tests/integration/interaction-lifecycle.test.ts", "method": "npm run test:integration" },
+    { "id": "OKF-EV-P10-DISCOVERY-GATE", "name": "Phase 10 Phase 9 discovery prerequisite audit", "status": "BLOCKED", "path": "docs/project/PHASE_10_IMPLEMENTATION_REPORT.md", "method": "Phase 9 prerequisite audit" }
   ]
 }

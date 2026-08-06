@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { createApplicationService } from "@offline-web-archive/application-service";
-import type { SiteProfileContract } from "@offline-web-archive/contracts";
+import { CONTRACT_VERSION, type SiteProfileContract } from "@offline-web-archive/contracts";
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
 import { createDesktopTransportHandler } from "./ipc-transport.js";
@@ -159,7 +159,7 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
     const commandId = `smoke-${randomUUID()}`;
     const queueMutation = ["queue.enqueue", "queue.enqueueBatch", "queue.claimNext", "queue.complete", "queue.fail", "queue.scheduleRetry", "queue.releaseDueRetries", "queue.skip", "queue.block", "queue.clearPending", "recovery.recover", "run.requestPause", "run.resume", "browser.restart", "render.start", "render.cancel"].includes(commandType);
     return window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
-      contractVersion: "1.5.0",
+      contractVersion: CONTRACT_VERSION,
       commandId,
       commandType,
       correlationId: `smoke-${randomUUID()}`,

@@ -2,7 +2,7 @@
 
 **Document status:** Proposed baseline  
 **Owner:** QA Lead  
-**Last updated:** 2026-07-31
+**Last updated:** 2026-08-04
 
 This matrix is the authoritative inventory of product acceptance criteria.
 Requirements are defined in [Project Scope](PROJECT_SCOPE.md); phases are defined
@@ -391,3 +391,30 @@ These criteria prove deterministic local policy only. They do not claim DNS, req
 | AC-P08-015 | FR-RENDER-001, NFR-PRIV-001 | Optional screenshot | Render default and opt-in | Default has none; opt-in bounded PNG uses relative path and SHA-256 | unit and real Chromium integration | High | passed |
 | AC-P08-016 | NFR-REL-001 | Page crash | Kill actual owned renderer process | `PAGE_CRASHED` is durable/retryable and cleanup completes | process-kill test | Critical | passed |
 | AC-P08-017 | NFR-KNOW-001, NFR-TEST-001 | Interfaces/docs/OKF gate | Run contracts, CLI/Desktop, architecture, security, docs, OKF | Contract 1.5 and Phase 8 evidence reconcile; Phase 9 remains planned | full validators and smoke suites | Critical | passed |
+
+## Product Phase 10 browser-native human-paced interaction criteria
+
+These rows record the implemented Phase 10 foundation. `passed` means the
+bounded foundation behavior has direct local evidence; `partial` or `blocked`
+marks a requirement that depends on the missing Phase 9 Discovery Engine or on
+fault evidence not independently exercised by the focused interaction suite.
+
+| Acceptance ID | Requirement ID | Capability | Direct scenario | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P10-001 | FR-RENDER-003, NFR-SEC-003 | Browser-native click and focus | Execute approved focus/click plan in Chromium | Real Playwright input reaches the approved target; DOM event injection is absent; unsafe controls fail closed | `tests/browser/interaction.test.ts`; `packages/browser-runtime/src/interaction.ts` | Critical | passed |
+| AC-P10-002 | FR-RENDER-003, NFR-PRIV-001 | Browser-native keyboard input | Type bounded fixture text character by character | Keyboard input is real and paced; raw characters are absent from transport, trace, logs, and SQLite | `tests/browser/interaction.test.ts`; `tests/unit/interaction-persistence.test.ts`; contract tests | Critical | passed |
+| AC-P10-003 | FR-RENDER-003 | Hover and mouse movement | Hover and move over approved fixture targets | Hover state and pointer operation use real browser APIs with bounded deterministic timing | `tests/browser/interaction.test.ts` | High | passed |
+| AC-P10-004 | FR-RENDER-003 | Tab navigation | Run forward and backward bounded Tab steps | Focus changes through Tab/Shift+Tab and respects the profile bound | `tests/browser/interaction.test.ts`; `tests/unit/interaction.test.ts` | High | passed |
+| AC-P10-005 | FR-RENDER-003, NFR-PERF-001 | Incremental scrolling | Scroll a long local fixture in bounded steps | Browser-native scrolling stops at configured step/distance limits and does not loop forever | `tests/browser/interaction.test.ts`; `packages/browser-runtime/src/interaction.ts` | High | passed |
+| AC-P10-006 | FR-RENDER-003 | Configurable timing | Validate delay and pointer/scroll ranges | Non-negative min/max ranges and hard upper bounds are enforced before execution | `tests/unit/interaction.test.ts`; `packages/archive-core/src/interaction.ts` | High | passed |
+| AC-P10-007 | FR-RENDER-003 | Deterministic execution | Repeat seeded delay selection | Same seed/profile/plan yields the same effective delay sequence | `tests/unit/interaction.test.ts` | High | passed |
+| AC-P10-008 | FR-RENDER-003, NFR-REL-001 | Execution budgets | Exceed action, duration, scroll, Tab, Popup, or Dialog limits | The operation stops with structured bounded failure and no unbounded action loop | `tests/unit/interaction.test.ts`; `tests/browser/interaction.test.ts` | Critical | passed |
+| AC-P10-009 | FR-RENDER-003, FR-SCOPE-003 | Cookie Banner profile | Execute one explicit local Cookie rule and one default profile | Only the configured rule acts; default behavior is `no_action`; action targets are unique and scope-safe | `tests/browser/interaction.test.ts`; `tests/unit/interaction.test.ts` | Critical | passed |
+| AC-P10-010 | FR-RENDER-003, NFR-SEC-003 | Dialog policy | Trigger alert/confirm/prompt fixture Dialogs | Dialog action is explicit or safely dismissed, bounded, and never stores prompt content | `tests/browser/interaction.test.ts`; `tests/unit/interaction.test.ts` | Critical | passed |
+| AC-P10-011 | FR-RENDER-003, FR-SCOPE-003 | Popup policy | Trigger an in-scope fixture Popup | Popup metadata is bounded, destination is authorized, cleanup closes the Popup, and raw Page handles stay in Browser Runtime | `tests/browser/interaction.test.ts`; `tests/unit/interaction.test.ts` | Critical | passed |
+| AC-P10-012 | FR-RENDER-003, NFR-PORT-001 | Context consistency | Inspect the effective context during the Job | Locale, timezone, viewport, device scale, language, and fixed User Agent policy remain stable | `tests/browser/interaction.test.ts`; `packages/browser-runtime/src/index.ts` | High | passed |
+| AC-P10-013 | FR-RECOVERY-001, FR-QUEUE-003 | Durable Interaction Trace | Run and reopen an interaction trace | Versioned trace metadata is bounded, redacted, canonical, fenced, and inspectable | `tests/integration/interaction-lifecycle.test.ts`; `tests/unit/interaction-persistence.test.ts` | Critical | passed |
+| AC-P10-014 | NFR-PRIV-001, NFR-SEC-002 | Trace redaction | Submit sensitive-looking text/URLs and inspect trace | Typed text, credentials, cookies, tokens, prompt values, and URL query data do not appear in evidence | `tests/unit/interaction.test.ts`; `tests/unit/interaction-persistence.test.ts`; security gate | Critical | passed |
+| AC-P10-015 | FR-RECOVERY-001, NFR-REL-001 | Recovery integration | Run through the service with Lease and fencing checks | Pause/cancel/failure categories and fenced trace writes preserve ownership; full crash replay evidence remains partial | `tests/integration/interaction-lifecycle.test.ts`; `tests/unit/interaction.test.ts`; `docs/architecture/PHASE_10_SECURITY_REVIEW.md` | Critical | partial |
+| AC-P10-016 | FR-DISCOVERY-001, FR-DISCOVERY-002, FR-QUEUE-002 | Discovery integration | Execute an approved interaction that creates a route/candidate | Resulting URLs must be Scope-evaluated, deduplicated, and enqueued through Phase 9; the required engine/evidence is absent | Phase 9 prerequisite audit; `docs/project/PHASE_10_IMPLEMENTATION_REPORT.md` | Critical | blocked |
+| AC-P10-017 | NFR-SEC-003, NFR-MAINT-001 | No stealth or security bypass | Run architecture/security/source scans | No stealth plugin, fingerprint patch, CAPTCHA/WAF/rate-limit bypass, synthetic interaction, or unsafe browser flag exists | `tools/security/check.mjs`; `npm run test:architecture`; ADR-049 | Critical | passed |

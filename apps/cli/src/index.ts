@@ -72,10 +72,15 @@ Usage:
   offline-archive render status|result <project> <job-id> --run <uuid> [--json]
   offline-archive render events <project> <job-id> --run <uuid> [--limit <n>] [--json]
   offline-archive render cancel <project> <job-id> --run <uuid> [--json]
+  offline-archive interaction profile show|validate <project> [profile.json] [--json]
+  offline-archive interaction plan validate <project> <plan.json> --profile <profile.json> [--json]
+  offline-archive interaction run <project> <job-id> --run <uuid> --owner <name> --plan-id <id> --operation-id <id> --idempotency-key <key> [--lease-duration <ms>] [--json]
+  offline-archive interaction trace list <project> <job-id> --run <uuid> [--limit <n>] [--json]
+  offline-archive interaction trace inspect <project> <job-id> <trace-id> --run <uuid> [--json]
   offline-archive --help
   offline-archive --version
 
-Render starts only from an existing queued Page Job; it never accepts an ad-hoc URL. Lease Tokens are sensitive and never printed. Link Discovery is not implemented in Product Phase 8.
+Render and Interaction runs start only from an existing queued Page Job; they never accept an ad-hoc URL. Lease Tokens and typed text are sensitive and never printed. Link Discovery remains a Phase 9 prerequisite.
 `;
 
 export interface CliIo {
@@ -105,6 +110,7 @@ export type ParsedArguments =
   | { kind: "checkpoint"; operation: "list" | "getLatest"; json: boolean; payload: Record<string, unknown> }
   | { kind: "browser"; operation: "getRuntimeInfo" | "validateInstallation" | "getHealth" | "restart"; json: boolean; payload: Record<string, unknown> }
   | { kind: "render"; operation: "start" | "getStatus" | "getResult" | "getEvents" | "cancel"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "interaction"; operation: "profile.get" | "profile.validate" | "plan.validate" | "run" | "trace.list" | "trace.inspect"; json: boolean; payload: Record<string, unknown>; profilePath?: string; planPath?: string }
   | { kind: "invalid"; message: string };
 
 function invalid(message: string): ParsedArguments {
@@ -132,7 +138,7 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     "--name", "--slug", "--base-url", "--seed", "--base", "--source", "--depth", "--source-depth", "--discovery-type", "--profile-revision", "--count",
     "--run", "--idempotency-key", "--priority", "--max-attempts", "--state", "--after", "--limit", "--claimed-by", "--claim-token", "--completion-key", "--status-code",
     "--failure-key", "--failure-code", "--failure-category", "--message", "--next-eligible-at", "--reason", "--due-at", "--confirm",
-    "--owner", "--generation", "--lease-duration", "--at", "--lease-status", "--operation-id",
+    "--owner", "--generation", "--lease-duration", "--at", "--lease-status", "--operation-id", "--plan-id", "--profile", "--trace-id",
     "--navigation-timeout", "--render-timeout", "--stability-timeout", "--dom-quiet", "--network-quiet", "--completion-selector",
   ];
   const filtered = arguments_.filter((argument, index) => {
@@ -332,6 +338,32 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     if (filtered[1] === "cancel") return { kind: "render", operation: "cancel", json, payload: { projectPath, runId, jobId } };
     return invalid(`Invalid render ${filtered[1]} arguments.`);
   }
+  if (filtered[0] === "interaction" && filtered[1] !== undefined) {
+    const operation = filtered[1];
+    if (operation === "profile" && filtered[2] !== undefined) {
+      if (filtered[2] === "show" && filtered.length === 4) return { kind: "interaction", operation: "profile.get", json, payload: { projectPath: filtered[3]! } };
+      if (filtered[2] === "validate" && (filtered.length === 4 || filtered.length === 5)) return { kind: "interaction", operation: "profile.validate", json, payload: { projectPath: filtered[3]! }, ...(filtered[4] === undefined ? {} : { profilePath: filtered[4] }) };
+    }
+    if (operation === "plan" && filtered[2] === "validate" && filtered.length === 5) {
+      const profilePath = optionValue(arguments_, "--profile");
+      return profilePath === undefined ? invalid("Interaction plan validate requires --profile <profile.json>.") : { kind: "interaction", operation: "plan.validate", json, payload: { projectPath: filtered[3]! }, profilePath, planPath: filtered[4]! };
+    }
+    if (operation === "run" && filtered.length === 4) {
+      const runId = optionValue(arguments_, "--run"); const ownerId = optionValue(arguments_, "--owner"); const planId = optionValue(arguments_, "--plan-id"); const operationId = optionValue(arguments_, "--operation-id"); const idempotencyKey = optionValue(arguments_, "--idempotency-key"); const leaseDurationMs = integerOption(arguments_, "--lease-duration", 60_000);
+      if (runId === undefined || ownerId === undefined || planId === undefined || operationId === undefined || idempotencyKey === undefined || leaseDurationMs === undefined) return invalid("Interaction run requires --run, --owner, --plan-id, --operation-id, --idempotency-key, and a valid Lease duration.");
+      return { kind: "interaction", operation: "run", json, payload: { projectPath: filtered[2]!, runId, jobId: filtered[3]!, ownerId, planId, operationId, idempotencyKey, leaseDurationMs } };
+    }
+    if (operation === "trace" && filtered[2] !== undefined) {
+      const traceOperation = filtered[2]; const projectPath = filtered[3]; const jobId = filtered[4]; const runId = optionValue(arguments_, "--run");
+      if (projectPath === undefined || jobId === undefined || runId === undefined) return invalid(`Interaction trace ${traceOperation} requires a Project, Job, and --run.`);
+      if (traceOperation === "list" && filtered.length === 5) {
+        const limit = integerOption(arguments_, "--limit", 100);
+        return limit === undefined ? invalid("Interaction trace list limit is invalid.") : { kind: "interaction", operation: "trace.list", json, payload: { projectPath, runId, jobId, limit } };
+      }
+      if (traceOperation === "inspect" && filtered.length === 6) return { kind: "interaction", operation: "trace.inspect", json, payload: { projectPath, runId, jobId, traceId: filtered[5]! } };
+    }
+    return invalid(`Invalid interaction ${operation} arguments.`);
+  }
   if (filtered[0] !== "project" || filtered[1] === undefined) return invalid("Unknown command.");
   const operation = filtered[1];
   if (operation === "create" && filtered.length === 3) {
@@ -458,6 +490,11 @@ export function formatHumanDescription(response: SuccessResponseEnvelope): strin
   if (result.resultType === "render.status") return [`Job: ${result.status.jobId}`, `Queue state: ${result.status.jobState}`, `Render stage: ${result.status.stage ?? "not started"}`, `Result: ${result.status.resultStatus ?? "none"}`].join("\n");
   if (result.resultType === "render.result") return [`Render result: ${result.result.renderResultId}`, `Job: ${result.result.jobId}`, `Status: ${result.result.resultStatus}`, `Quality: ${result.result.qualityClassification}`, `Final URL: ${result.result.finalUrlSafe}`, `HTTP status: ${result.result.httpStatus ?? "none"}`, `HTML: ${result.result.htmlArtifact.relativePath}`, `Screenshot: ${result.result.screenshotArtifact?.relativePath ?? "disabled"}`].join("\n");
   if (result.resultType === "render.events") return [`Render events: ${result.events.length}`, ...result.events.map((event) => `${event.renderEventId} ${event.occurredAt} ${event.stage} ${event.eventType}`)].join("\n");
+  if (result.resultType === "interaction.profile") return [`Interaction Profile: ${result.profile.profileId}`, `Revision: ${result.profile.profileRevisionId}`, `Mode: ${result.profile.mode}`, `Enabled: ${result.profile.enabled ? "yes" : "no"}`].join("\n");
+  if (result.resultType === "interaction.validation") return [`Interaction ${result.target} validation: ${result.valid ? "valid" : "invalid"}`, ...result.errors.map((entry) => `ERROR ${entry.code}: ${entry.message}`)].join("\n");
+  if (result.resultType === "interaction.result") return [`Interaction: ${result.trace.status}`, `Trace: ${result.trace.traceId}`, `Completed steps: ${result.completedStepCount}`, `Failure: ${result.failureCode ?? "none"}`, `Context: ${result.contextProfile.digest}`].join("\n");
+  if (result.resultType === "interaction.traces") return [`Interaction traces: ${result.traces.length}`, ...result.traces.map((trace) => `${trace.traceId} ${trace.createdAt} ${trace.status} events=${trace.events.length}`)].join("\n");
+  if (result.resultType === "interaction.trace") return [`Interaction trace: ${result.trace.traceId}`, `Status: ${result.trace.status}`, `Events: ${result.trace.events.length}`, `Truncated: ${result.trace.truncated ? "yes" : "no"}`].join("\n");
   if (result.resultType === "project.info") return [
     `Current Project: ${result.currentProject?.name ?? "none"}`,
     `Compatible: ${result.compatibility === null ? "not inspected" : result.compatibility.compatible ? "yes" : "no"}`,
@@ -497,7 +534,7 @@ function metadata() {
   };
 }
 
-async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" }>, service: ApplicationService): Promise<ResponseEnvelope> {
+async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" | "interaction" }>, service: ApplicationService): Promise<ResponseEnvelope> {
   if (parsed.kind === "describe") {
     return parseResponseEnvelope(await service.execute(createSystemDescribeCommand(metadata()), { transport: "cli", authorized: true }));
   }
@@ -520,6 +557,12 @@ async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe"
     const operationIdRequired = (parsed.kind === "browser" && parsed.operation === "restart") || (parsed.kind === "render" && parsed.operation === "cancel");
     const payload = operationIdRequired ? { ...parsed.payload, operationId: commandMetadata.commandId } : parsed.payload;
     return parseResponseEnvelope(await service.execute(createProjectCommand(`${parsed.kind}.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], payload, commandMetadata), { transport: "cli", authorized: true }));
+  }
+  if (parsed.kind === "interaction") {
+    let payload: Record<string, unknown> = { ...parsed.payload };
+    if (parsed.profilePath !== undefined) payload = { ...payload, profile: JSON.parse(await readFile(parsed.profilePath, "utf8")) as unknown };
+    if (parsed.planPath !== undefined) payload = { ...payload, plan: JSON.parse(await readFile(parsed.planPath, "utf8")) as unknown };
+    return parseResponseEnvelope(await service.execute(createProjectCommand(`interaction.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], payload, metadata()), { transport: "cli", authorized: true }));
   }
   if (parsed.kind === "queue") {
     const commandMetadata = metadata();

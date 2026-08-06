@@ -8,10 +8,24 @@
 | FR-RECOVERY-001, FR-QUEUE-003, NFR-REL-001..002 | AC-P08-012..014 | fenced Render repository, schema 6, stage Checkpoints/Heartbeats/Pause/Resume | render lifecycle/fault plus recovery/concurrency/process-kill suites | R-098..099 | OD-074; ADR-046 | OKF-NODE-P08-FENCED-RESULTS |
 | FR-CLI-001, FR-UX-002, NFR-MAINT-001 | AC-P08-017 | contract 1.5, CLI, isolated Desktop, architecture/docs/OKF | unit/CLI/Electron/architecture/security/docs/OKF gates | R-091, R-101 | ADR-041..048 | OKF-CHG-P08-001 |
 
+## Product Phase 10 interaction foundation trace
+
+| Requirement | Acceptance | Implementation | Direct evidence | Risks | Decisions | OKF |
+|---|---|---|---|---|---|---|
+| FR-RENDER-003, NFR-SEC-003 | AC-P10-001..005, AC-P10-017 | Archive Core interaction policy and Browser Runtime real input adapter | `tests/browser/interaction.test.ts`; architecture/security scans | R-027, R-036, R-102 | ADR-049 | OKF-NODE-P10-INTERACTION |
+| FR-RENDER-003, NFR-PERF-001 | AC-P10-006..008 | Profile bounds, seeded timing, budgets, cancellation-aware timing | `tests/unit/interaction.test.ts`; `packages/archive-core/src/interaction.ts` | R-102, R-103 | ADR-049 | OKF-NODE-P10-POLICY |
+| FR-RENDER-003, FR-SCOPE-003 | AC-P10-009..012 | Cookie Banner, Dialog, Popup, navigation, and fixed Context policy | `tests/browser/interaction.test.ts`; `packages/browser-runtime/src/interaction.ts` | R-104, R-105 | ADR-049 | OKF-NODE-P10-SAFETY |
+| FR-RECOVERY-001, FR-QUEUE-003, NFR-PRIV-001 | AC-P10-013..015 | Schema 7 Interaction repositories, redaction, ownership, and fencing | `tests/unit/interaction-persistence.test.ts`; `tests/integration/interaction-lifecycle.test.ts` | R-106, R-107 | ADR-049 | OKF-NODE-P10-TRACE |
+| FR-DISCOVERY-001..002, FR-QUEUE-002 | AC-P10-016 | Phase 9 Discovery/Scope/Queue integration | Required Phase 9 engine and evidence are absent | R-007, R-028, R-102 | ADR-049 | OKF-NODE-P10-DISCOVERY-GATE |
+
+AC-P10-016 is intentionally `blocked`; the interaction foundation does not
+invent or replace the missing Phase 9 Discovery Engine. The Phase 10 report
+and handoff distinguish direct foundation evidence from prerequisite evidence.
+
 **Document status:** Proposed baseline
 
 **Owner:** QA Lead
-**Last updated:** 2026-07-31
+**Last updated:** 2026-08-06
 
 This document maps each requirement from
 [Project Scope](../product/PROJECT_SCOPE.md) through the

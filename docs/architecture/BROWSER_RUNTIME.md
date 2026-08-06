@@ -1,11 +1,15 @@
 # Browser Runtime
 
-**Status:** Implemented in Product Phase 8  
+**Status:** Browser/Rendering implemented in Product Phase 8; Interaction adapter foundation implemented in Product Phase 10
 **Runtime model:** 1  
 **Playwright:** `1.56.1`  
 **Chromium:** `141.0.7390.37`, revision `1194`
 
 `packages/browser-runtime` is the only production package that imports Playwright. It implements the Archive Core `BrowserRuntimePort`; Desktop, CLI, Rendering, and Application Service never receive raw Playwright objects.
+
+The Phase 10 adapter in `packages/browser-runtime/src/interaction.ts` is the only owner of `Page`, `Locator`, `Keyboard`, `Mouse`, `Dialog`, and Popup operations. Approved Interaction Plans use real `locator.focus/click/hover`, `page.mouse.move/wheel`, `page.keyboard.press/type`, Tab/Shift+Tab, and bounded waits. The adapter permits only validated target descriptors, explicit navigation/read-only classifications, bounded budgets, and read-only DOM snapshots. It does not inject JavaScript events, assign DOM values, expose handles, or enable POST-like side effects.
+
+The fixed Context profile remains resolved once per Page Job: `en-US`, `UTC`, `1280x720`, device scale factor `1`, fixed User Agent policy, and an explicit Accept-Language value. Interaction traces record only the non-sensitive context digest and redacted metadata. Phase 9 discovery references are accepted as a bounded target strategy, but no Phase 9 Discovery Engine is present in this baseline.
 
 The browser resource is repository-owned in development/test at `.runtime/browsers` and is resolved from an approved packaged-resource root after packaging. `browser-manifest.json` records provider, exact Playwright/Chromium versions, revision, relative executable path, SHA-256, source, and installation time. Resolution is root-contained and checksum-verified. Missing, incompatible, or altered resources return structured errors. There is no system-browser fallback and application startup never downloads a browser.
 

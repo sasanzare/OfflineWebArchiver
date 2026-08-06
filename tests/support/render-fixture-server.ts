@@ -25,6 +25,8 @@ const routeFiles: Readonly<Record<string, string>> = Object.freeze({
   "/method": "method.html",
   "/controls": "controls.html",
   "/evidence-cap": "evidence-cap.html",
+  "/interaction": "interaction.html",
+  "/popup": "static.html",
 });
 
 function finish(response: ServerResponse, status: number, body: string, contentType = "text/plain; charset=utf-8"): void {
