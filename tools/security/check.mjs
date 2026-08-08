@@ -83,7 +83,18 @@ for (const token of ["lookup(url.hostname", "classifyHost", "RUNTIME_PRIVATE_OR_
 }
 if (/networkidle/i.test(renderEngine + browserRuntime)) errors.push("Browser/Render production code uses forbidden networkidle readiness");
 if (/--no-sandbox|chromiumSandbox:\s*false|channel:\s*["']chrome/i.test(browserRuntime)) errors.push("Browser Runtime contains an unsafe sandbox or system-browser fallback");
-if (/\b(?:proxy|httpCredentials|storageState)\s*:/.test(browserRuntime)) errors.push("Browser Runtime contains out-of-scope proxy or authentication state");
+if (/\b(?:proxy|httpCredentials)\s*:/.test(browserRuntime)) errors.push("Browser Runtime contains out-of-scope proxy or authentication state");
+const hasControlledAuthenticationStateBoundary = [
+  "PlaywrightAuthenticationSession",
+  "parseStorageState",
+  "openManualLoginSession",
+  "restoreAuthenticationSession",
+  "BROWSER_STORAGE_STATE_INVALID",
+  "chromiumSandbox: true",
+].every((token) => browserRuntime.includes(token));
+if (/\bstorageState\s*:/.test(browserRuntime) && !hasControlledAuthenticationStateBoundary) {
+  errors.push("Browser Runtime contains an uncontrolled authentication Storage State boundary");
+}
 if (/database\.exec\s*\(\s*input|prepare\s*\(\s*input/.test(recoveryPersistence)) errors.push("Recovery persistence accepts caller-provided SQL");
 if (/addDefinitionRow\([^\n]*(?:claimToken|leaseToken)/.test(files.renderer)) errors.push("Desktop renderer displays a Lease Token");
 for (const token of ["URL_CREDENTIALS_FORBIDDEN", "SENSITIVE_QUERY_REMOVED", "PRIVATE_NETWORK_NOT_ALLOWED", "SCOPE_BATCH_LIMIT_EXCEEDED"]) {

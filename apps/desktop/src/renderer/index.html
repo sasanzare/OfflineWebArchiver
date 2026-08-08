@@ -78,6 +78,31 @@
         </div>
       </section>
 
+      <section aria-labelledby="session-heading">
+        <h2 id="session-heading">Manual Login and Secure Sessions</h2>
+        <p>Login happens only in a separate headed Chromium window. This UI never reads credentials, OTP values, or raw Browser Storage State.</p>
+        <div class="fields">
+          <label>Login URL <input id="session-login-url" value="https://example.com/login" maxlength="2048"></label>
+          <label>Validation URL <input id="session-validation-url" value="https://example.com/account" maxlength="2048"></label>
+          <label>Session ID <input id="session-id" placeholder="Filled after opening or listing" maxlength="36"></label>
+        </div>
+        <label>Approved origins (one origin per line)<textarea id="session-allowed-origins" rows="3">https://example.com</textarea></label>
+        <div class="fields">
+          <label>Authenticated marker selector <input id="session-marker-selector" placeholder="#account-home" maxlength="512"></label>
+          <label>Authenticated marker text <input id="session-marker-text" placeholder="Signed in" maxlength="512"></label>
+        </div>
+        <div class="actions">
+          <button data-action="session-open" type="button">Open Login Browser</button>
+          <button data-action="session-reauthenticate" type="button">Re-authenticate</button>
+          <button data-action="session-save" type="button">Save Session</button>
+          <button data-action="session-get" type="button">Get Session</button>
+          <button data-action="session-list" type="button">List Sessions</button>
+          <button data-action="session-validate" type="button">Validate Session</button>
+          <button data-action="session-restore" type="button">Restore and Validate</button>
+          <button data-action="session-delete" type="button">Delete Session</button>
+        </div>
+      </section>
+
       <section aria-labelledby="queue-heading">
         <h2 id="queue-heading">Persistent Page Job queue</h2>
         <p>Queue controls remain explicit. Rendering starts only for the selected queued Page Job and never accepts an ad-hoc URL.</p>

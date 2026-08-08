@@ -566,6 +566,41 @@ CREATE INDEX interaction_traces_fencing
 ON interaction_traces(job_id, fencing_generation, created_at DESC);
 `;
 
+const ADD_BROWSER_SESSIONS_SQL = `
+CREATE TABLE browser_sessions (
+  session_id TEXT PRIMARY KEY NOT NULL CHECK (length(session_id) = 36),
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  profile_id TEXT NOT NULL CHECK (length(profile_id) BETWEEN 1 AND 128),
+  browser_profile_version INTEGER NOT NULL CHECK (browser_profile_version > 0),
+  session_format_version INTEGER NOT NULL CHECK (session_format_version = 1),
+  storage_state_format_version INTEGER NOT NULL CHECK (storage_state_format_version = 1),
+  secret_ref TEXT UNIQUE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  last_validated_at TEXT,
+  validation_result TEXT NOT NULL CHECK (validation_result IN ('not_validated', 'valid', 'expired', 'invalid', 'unavailable', 'configuration_missing', 'corrupt', 'incompatible_profile')),
+  failure_reason TEXT NOT NULL CHECK (failure_reason IN ('none', 'validation_required', 'authentication_expired', 'authentication_rejected', 'network_unavailable', 'validation_configuration_missing', 'storage_state_corrupt', 'secret_missing', 'secret_integrity_failed', 'browser_profile_incompatible', 'browser_crashed', 'manual_login_cancelled')),
+  lifecycle_state TEXT NOT NULL CHECK (lifecycle_state IN ('ready', 'login_browser_open', 'authentication_in_progress', 'authenticated_unpersisted', 'saving', 'valid', 'validation_required', 'invalid', 'expired', 'reauth_required', 'corrupt', 'deleted')),
+  validation_url TEXT NOT NULL CHECK (length(validation_url) BETWEEN 1 AND 2048),
+  expected_origin TEXT NOT NULL CHECK (length(expected_origin) BETWEEN 1 AND 512),
+  expected_path TEXT NOT NULL CHECK (length(expected_path) BETWEEN 1 AND 2048),
+  marker_selector TEXT,
+  marker_text TEXT,
+  affinity_version INTEGER NOT NULL CHECK (affinity_version = 1),
+  proxy_id TEXT,
+  cookies_supported INTEGER NOT NULL CHECK (cookies_supported IN (0, 1)),
+  local_storage_supported INTEGER NOT NULL CHECK (local_storage_supported IN (0, 1)),
+  indexed_db_supported INTEGER NOT NULL CHECK (indexed_db_supported IN (0, 1)),
+  session_storage_supported INTEGER NOT NULL CHECK (session_storage_supported IN (0, 1)),
+  revision INTEGER NOT NULL CHECK (revision > 0)
+) STRICT;
+
+CREATE INDEX browser_sessions_project_state
+ON browser_sessions(project_id, lifecycle_state, updated_at DESC, session_id);
+CREATE INDEX browser_sessions_project_validation
+ON browser_sessions(project_id, validation_result, last_validated_at DESC);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -578,6 +613,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "005_add_checkpoint_lease_recovery", sequence: 5, sql: ADD_CHECKPOINT_LEASE_RECOVERY_SQL, checksum: checksum(ADD_CHECKPOINT_LEASE_RECOVERY_SQL) }),
   Object.freeze({ id: "006_add_browser_rendering_engine", sequence: 6, sql: ADD_BROWSER_RENDERING_ENGINE_SQL, checksum: checksum(ADD_BROWSER_RENDERING_ENGINE_SQL) }),
   Object.freeze({ id: "007_add_browser_interaction", sequence: 7, sql: ADD_BROWSER_INTERACTION_SQL, checksum: checksum(ADD_BROWSER_INTERACTION_SQL) }),
+  Object.freeze({ id: "008_add_browser_sessions", sequence: 8, sql: ADD_BROWSER_SESSIONS_SQL, checksum: checksum(ADD_BROWSER_SESSIONS_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

@@ -11,6 +11,14 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "secret.list",
   "secret.vault.lock",
   "secret.delete",
+  "session.open",
+  "session.reauthenticate",
+  "session.save",
+  "session.get",
+  "session.list",
+  "session.validate",
+  "session.restore",
+  "session.delete",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -72,11 +80,11 @@ export const PLANNED_CORE_CAPABILITIES = [
   "crawl.execution",
   "link.discovery",
   "archive.generation",
-  "authentication",
   "proxy.management",
 ] as const;
 
 export * from "./secrets.js";
+export * from "./sessions.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"
@@ -688,6 +696,11 @@ export type RenderOperationErrorCode =
   | "BROWSER_RESTART_LIMITED"
   | "BROWSER_BUSY"
   | "BROWSER_CONTEXT_FAILED"
+  | "BROWSER_AUTHENTICATION_BUSY"
+  | "BROWSER_AUTHENTICATION_CONTEXT_FAILED"
+  | "BROWSER_AUTHENTICATION_NAVIGATION_BLOCKED"
+  | "BROWSER_STORAGE_STATE_INVALID"
+  | "BROWSER_PROFILE_INCOMPATIBLE"
   | "PAGE_CREATE_FAILED"
   | "PAGE_CRASHED"
   | "NAVIGATION_TIMEOUT"
@@ -824,6 +837,36 @@ export interface BrowserPageSession {
   close(): Promise<void>;
 }
 
+export type BrowserAuthenticationSessionMode = "manual" | "restored";
+export type BrowserAuthenticationValidationStatus = "valid" | "expired" | "invalid" | "unavailable" | "configuration_missing" | "incompatible_profile";
+
+export interface BrowserAuthenticationValidation {
+  readonly status: BrowserAuthenticationValidationStatus;
+  readonly finalUrlSafe: string;
+  readonly statusCode: number | null;
+  readonly markerMatched: boolean;
+  readonly reasonCode: string;
+}
+
+export interface BrowserAuthenticationPolicy {
+  readonly initialUrl: string;
+  readonly allowedOrigins: readonly string[];
+  readonly authorizeUrl: (url: string) => Promise<RuntimeNetworkDecision>;
+  readonly validation: import("./sessions.js").SessionValidationPolicy;
+  readonly navigationTimeoutMs: number;
+  readonly testMode: boolean;
+}
+
+export interface BrowserAuthenticationSession {
+  readonly sessionId: string;
+  readonly mode: BrowserAuthenticationSessionMode;
+  getContextProfile(): import("./interaction.js").BrowserContextProfileDescriptor;
+  getCurrentUrlSafe(): string;
+  captureStorageState(): Promise<Uint8Array>;
+  validate(): Promise<BrowserAuthenticationValidation>;
+  close(): Promise<void>;
+}
+
 export interface BrowserSessionPolicy {
   testMode: boolean;
   allowedFixtureOrigins: readonly string[];
@@ -837,7 +880,10 @@ export interface BrowserRuntimePort {
   getHealth(): Promise<BrowserHealth>;
   start(): Promise<BrowserHealth>;
   restart(): Promise<BrowserHealth>;
+  getContextProfile(): import("./interaction.js").BrowserContextProfileDescriptor;
   createPageSession(jobId: string, policy: BrowserSessionPolicy): Promise<BrowserPageSession>;
+  openManualLoginSession(sessionId: string, policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession>;
+  restoreAuthenticationSession(sessionId: string, storageState: Uint8Array, policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession>;
   close(): Promise<void>;
 }
 

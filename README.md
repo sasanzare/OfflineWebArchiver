@@ -1,8 +1,8 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest fully gated baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations and the Product Phase 11 Secret Store foundation are present, but the Phase 9 Discovery Engine prerequisite is not present in this baseline, so the Phase 10/11 product gates are not claimed fully verified.
+Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest fully gated baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations and the Product Phase 11 Secret Store foundation are present. Product Phase 12 now adds the Manual Login and Secure Session Manager; its real pinned-Chromium fixture gate is pending in environments that cannot provision the repository-owned browser.
 
-Current versions are application/workspaces `0.8.0`, transport contract `1.7.0`, Project format `1.1.0`, SQLite schema `7`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store surface is metadata-only at transport boundaries and uses a privileged Portable Vault/OS adapter. Without Phase 9 it does not discover or enqueue links. The product still does not implement manual login/session capture, OTP workflows, production asset downloading, HTML rewrite, API capture, proxy management, or a full crawl/archive.
+Current versions are application/workspaces `0.8.0`, transport contract `1.8.0`, Project format `1.1.0`, Project schema `8`, SQLite schema `8`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Session metadata/storage-state/affinity `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store and Session surfaces are metadata-only at transport boundaries and use privileged protected storage. Without Phase 9 it does not discover or enqueue links. The product does not implement guided OTP automation, proxy management, production asset downloading, HTML rewrite, API capture, or a full crawl/archive.
 
 ## Safety and authorization
 
@@ -18,9 +18,9 @@ packages/browser-runtime Playwright/Chromium lifecycle and interception adapter
 packages/rendering       browser-independent Render policy and orchestration
 packages/recovery        pure Lease/Checkpoint/Recovery/partial-file policy
 packages/queue           pure Queue state/idempotency policy
-packages/persistence-sqlite  SQLite schema 7 and repositories
+packages/persistence-sqlite  SQLite schema 8 and repositories
 packages/application-service use-case and ownership orchestration
-packages/contracts       runtime-validated contract 1.7.0
+packages/contracts       runtime-validated contract 1.8.0
 packages/secrets         encrypted Secret Store adapters and sensitive-data policy
 ```
 
@@ -71,9 +71,12 @@ npm run project -- render start D:\Archives\example --run <run-uuid> --job <job-
 npm run project -- interaction profile show D:\Archives\example
 npm run project -- interaction plan validate D:\Archives\example plan.json --profile profile.json
 npm run project -- interaction trace list D:\Archives\example --run <run-uuid> --job <job-uuid>
+npm run project -- session open D:\Archives\example --login-url https://example.test/login --validation-url https://example.test/account --origin https://example.test
+npm run project -- session save D:\Archives\example --session <session-uuid> --confirm
+npm run project -- session restore D:\Archives\example --session <session-uuid> --json
 ```
 
-Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run/Lease/Checkpoint/Browser/Render/Interaction commands. `npm run dev:desktop` opens the local UI. The renderer receives only the approved two-method bridge and never receives Playwright or raw Browser, filesystem, SQL, or process access. Browser installation is an explicit provisioning action; normal launch never downloads or falls back to system Chrome. Interaction execution requires a service-supplied approved plan and never accepts raw typed text on the transport boundary.
+Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run/Lease/Checkpoint/Browser/Render/Interaction/Session commands. `npm run dev:desktop` opens the local UI. The renderer receives only the approved two-method bridge and never receives Playwright or raw Browser, filesystem, SQL, or process access. Browser installation is an explicit provisioning action; normal launch never downloads or falls back to system Chrome. Manual Login keeps credentials inside the visible website; Session Save requires explicit validation and stores only protected Storage State through the Phase 11 Secret Store. Interaction execution requires a service-supplied approved plan and never accepts raw typed text on the transport boundary.
 
 ## Documentation
 
@@ -85,6 +88,8 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Human-Paced Interaction architecture](docs/architecture/BROWSER_INTERACTION.md)
 - [Phase 10 implementation report](docs/project/PHASE_10_IMPLEMENTATION_REPORT.md)
 - [Phase 11 implementation report](docs/project/PHASE_11_IMPLEMENTATION_REPORT.md)
+- [Phase 12 implementation report](docs/project/PHASE_12_IMPLEMENTATION_REPORT.md)
+- [Authentication Sessions architecture](docs/architecture/AUTHENTICATION_SESSIONS.md)
 - [Secret Store architecture](docs/architecture/SECRET_STORE.md)
 - [Phase 11 security review](docs/architecture/PHASE_11_SECURITY_REVIEW.md)
 - [Phase 10 security review](docs/architecture/PHASE_10_SECURITY_REVIEW.md)
@@ -119,4 +124,4 @@ for the ownership boundaries, source/provenance workflow, CI behavior, and
 review checklist. Hosted CI execution and branch protection are not claimed as
 verified from the local repository.
 
-The exact next required phase is **Product Phase 9 — Link Discovery and SPA Support**. Product Phase 10 must not be marked complete until that prerequisite and its evidence exist.
+The current unfinished gate is the real pinned-Chromium validation for **Product Phase 12 — Manual Login and Secure Session Lifecycle**. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist.

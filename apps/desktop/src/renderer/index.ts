@@ -22,6 +22,12 @@ const profileCompareFromInput = document.querySelector<HTMLInputElement>("#profi
 const profileCompareToInput = document.querySelector<HTMLInputElement>("#profile-compare-to");
 const profileRevisionSummary = document.querySelector<HTMLElement>("#profile-revision-summary");
 const scopeUrlInput = document.querySelector<HTMLInputElement>("#scope-url");
+const sessionLoginUrl = document.querySelector<HTMLInputElement>("#session-login-url");
+const sessionValidationUrl = document.querySelector<HTMLInputElement>("#session-validation-url");
+const sessionIdInput = document.querySelector<HTMLInputElement>("#session-id");
+const sessionAllowedOrigins = document.querySelector<HTMLTextAreaElement>("#session-allowed-origins");
+const sessionMarkerSelector = document.querySelector<HTMLInputElement>("#session-marker-selector");
+const sessionMarkerText = document.querySelector<HTMLInputElement>("#session-marker-text");
 const queueUrlInput = document.querySelector<HTMLInputElement>("#queue-url");
 const queueStateFilter = document.querySelector<HTMLSelectElement>("#queue-state-filter");
 const queuePageSize = document.querySelector<HTMLInputElement>("#queue-page-size");
@@ -38,7 +44,7 @@ const renderSummary = document.querySelector<HTMLElement>("#render-summary");
 const renderEvents = document.querySelector<HTMLElement>("#render-events");
 const buttons = [...document.querySelectorAll<HTMLButtonElement>("button[data-action]")];
 
-if (status === null || result === null || nameInput === null || slugInput === null || profileNameInput === null || profileSeedInput === null || profileBaseUrlInput === null || profileDomainAllowInput === null || profileDomainDenyInput === null || profilePathAllowInput === null || profilePathDenyInput === null || profileQueryPolicyInput === null || profileFragmentPolicyInput === null || profileCanonicalExternalInput === null || profileRedirectExternalInput === null || profileRedirectDowngradeInput === null || profileMaxDepthInput === null || profileMaxPagesInput === null || profileCompareFromInput === null || profileCompareToInput === null || profileRevisionSummary === null || scopeUrlInput === null || queueUrlInput === null || queueStateFilter === null || queuePageSize === null || queueSummary === null || queueList === null || queueDetail === null || recoveryLimit === null || recoverySummary === null || recoveryReport === null || checkpointHistory === null || renderOwner === null || renderScreenshot === null || renderSummary === null || renderEvents === null) {
+if (status === null || result === null || nameInput === null || slugInput === null || profileNameInput === null || profileSeedInput === null || profileBaseUrlInput === null || profileDomainAllowInput === null || profileDomainDenyInput === null || profilePathAllowInput === null || profilePathDenyInput === null || profileQueryPolicyInput === null || profileFragmentPolicyInput === null || profileCanonicalExternalInput === null || profileRedirectExternalInput === null || profileRedirectDowngradeInput === null || profileMaxDepthInput === null || profileMaxPagesInput === null || profileCompareFromInput === null || profileCompareToInput === null || profileRevisionSummary === null || scopeUrlInput === null || sessionLoginUrl === null || sessionValidationUrl === null || sessionIdInput === null || sessionAllowedOrigins === null || sessionMarkerSelector === null || sessionMarkerText === null || queueUrlInput === null || queueStateFilter === null || queuePageSize === null || queueSummary === null || queueList === null || queueDetail === null || recoveryLimit === null || recoverySummary === null || recoveryReport === null || checkpointHistory === null || renderOwner === null || renderScreenshot === null || renderSummary === null || renderEvents === null) {
   throw new Error("The desktop Project shell is missing required local elements.");
 }
 const statusElement = status;
@@ -63,6 +69,12 @@ const siteProfileCompareFromInput = profileCompareFromInput;
 const siteProfileCompareToInput = profileCompareToInput;
 const siteProfileRevisionSummary = profileRevisionSummary;
 const scopePreviewUrlInput = scopeUrlInput;
+const sessionLoginUrlInput = sessionLoginUrl;
+const sessionValidationUrlInput = sessionValidationUrl;
+const sessionIdField = sessionIdInput;
+const sessionAllowedOriginsInput = sessionAllowedOrigins;
+const sessionMarkerSelectorInput = sessionMarkerSelector;
+const sessionMarkerTextInput = sessionMarkerText;
 const queueTestUrlInput = queueUrlInput;
 const queueStateFilterInput = queueStateFilter;
 const queuePageSizeInput = queuePageSize;
@@ -83,6 +95,7 @@ let selectedRunId: string | null = null;
 let loadedProfile: SiteProfileContract | null = null;
 let selectedQueueJob: PageJobContract | null = null;
 let queueNextCursor: number | null = null;
+let selectedSessionId: string | null = null;
 
 class ProfileEditorError extends Error {}
 
@@ -229,6 +242,38 @@ function renderResponse(response: ResponseEnvelope): void {
     addRow("Compatible", String(value.report.compatibility.compatible));
     addRow("Issues", String(value.report.issues.length));
     value.report.issues.forEach((entry) => addRow(entry.code, entry.message));
+    return;
+  }
+  if (value.resultType === "session.metadata") {
+    selectedSessionId = value.session.sessionId;
+    sessionIdField.value = value.session.sessionId;
+    statusElement.textContent = `Session ${value.session.state}; validation is ${value.session.validationResult}.`;
+    statusElement.dataset["state"] = value.session.requiresReauthentication ? "failed" : value.session.validationResult === "valid" ? "passed" : "";
+    addRow("Session ID", value.session.sessionId);
+    addRow("State", value.session.state);
+    addRow("Validation", value.session.validationResult);
+    addRow("Failure reason", value.session.failureReason);
+    addRow("Browser Profile", `${value.session.profileId} v${value.session.browserProfileVersion}`);
+    addRow("Requires re-authentication", String(value.session.requiresReauthentication));
+    addRow("Browser", value.browser === null ? "Closed" : `${value.browser.mode}, ${value.browser.headless ? "headless" : "headed"}, ${value.browser.currentUrlSafe}`);
+    return;
+  }
+  if (value.resultType === "session.list") {
+    statusElement.textContent = `Loaded ${value.sessions.length} secure Session metadata record(s).`;
+    if (value.sessions[0] !== undefined) {
+      selectedSessionId = value.sessions[0].sessionId;
+      sessionIdField.value = selectedSessionId;
+    }
+    value.sessions.forEach((session) => addRow(session.sessionId, `${session.state}; ${session.validationResult}; re-auth=${session.requiresReauthentication}`));
+    return;
+  }
+  if (value.resultType === "session.delete") {
+    if (selectedSessionId === value.sessionId) {
+      selectedSessionId = null;
+      sessionIdField.value = "";
+    }
+    statusElement.textContent = "Secure Session metadata and its protected storage were deleted.";
+    addRow("Session ID", value.sessionId);
     return;
   }
   if (value.resultType === "project.export") {
@@ -474,6 +519,26 @@ async function perform(action: string): Promise<void> {
       }
     } else if (action === "profile-compare" && selectedProjectPath !== null) {
       response = await execute("profile.compare", { projectPath: selectedProjectPath, fromSequence: Number(siteProfileCompareFromInput.value), toSequence: Number(siteProfileCompareToInput.value) });
+    } else if ((action === "session-open" || action === "session-reauthenticate") && selectedProjectPath !== null) {
+      const allowedOrigins = sessionAllowedOriginsInput.value.split(/\r?\n/).map((value) => value.trim()).filter((value) => value.length > 0);
+      if (allowedOrigins.length === 0) throw new ProfileEditorError("Provide at least one approved Session origin.");
+      const payload = { projectPath: selectedProjectPath, loginUrl: sessionLoginUrlInput.value, validationUrl: sessionValidationUrlInput.value, allowedOrigins, ...(sessionMarkerSelectorInput.value.trim() === "" ? {} : { markerSelector: sessionMarkerSelectorInput.value }), ...(sessionMarkerTextInput.value.trim() === "" ? {} : { markerText: sessionMarkerTextInput.value }) };
+      response = action === "session-open"
+        ? await execute("session.open", payload)
+        : await execute("session.reauthenticate", { ...payload, sessionId: selectedSessionId ?? sessionIdField.value });
+    } else if (action === "session-save" && selectedProjectPath !== null) {
+      const sessionId = selectedSessionId ?? sessionIdField.value;
+      if (sessionId.trim() === "") throw new ProfileEditorError("Open a manual Login Browser before saving a Session.");
+      if (!window.confirm("Save the authenticated Browser Session in the protected Secret Store?")) return;
+      response = await execute("session.save", { projectPath: selectedProjectPath, sessionId, confirmation: "SAVE-SESSION" });
+    } else if (["session-get", "session-validate", "session-restore", "session-delete"].includes(action) && selectedProjectPath !== null) {
+      const sessionId = selectedSessionId ?? sessionIdField.value;
+      if (sessionId.trim() === "") throw new ProfileEditorError("Provide a Session ID first.");
+      const operation = action.replace("session-", "") as "get" | "validate" | "restore" | "delete";
+      if (operation === "delete" && !window.confirm("Delete the protected Session storage and metadata?")) return;
+      response = await execute(`session.${operation}`, { projectPath: selectedProjectPath, sessionId, ...(operation === "delete" ? { confirmation: "DELETE-SESSION" } : {}) });
+    } else if (action === "session-list" && selectedProjectPath !== null) {
+      response = await execute("session.list", { projectPath: selectedProjectPath });
     } else if (action.startsWith("scope-") && selectedProjectPath !== null) {
       const operation = action === "scope-evaluate" ? "scope.evaluate" : action === "scope-explain" ? "scope.explain" : "scope.previewNormalization";
       response = await execute(operation, { projectPath: selectedProjectPath, input: { url: scopePreviewUrlInput.value } });

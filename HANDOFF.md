@@ -1,89 +1,221 @@
-# Handoff
+# Project Handoff
 
-**Document status:** Product Phase 11 Secret Store implementation handoff; Phase 9/10 prerequisite gate remains open
+## Last Updated
 
-**Current branch:** `main`
+2026-08-07
 
-**Product phase:** Product Phase 11 — Secret Store and Sensitive Data Protection (`implementation complete at code level; product gate conditional because Phase 9 is absent and Phase 10 is partial`)
+## Project Summary
 
-**OKF maintenance:** Phase 11 partial OKF extension and maintainer documentation (`validated after the final validation pass`)
+Offline Web Archive Builder is a local, authorized archiving monorepo. The
+repository contains the Phase 3–8 production foundation, a partial Phase 10
+interaction foundation, the Phase 11 Secret Store, and the Phase 12 Manual Login
+and Secure Session Manager implementation. Phase 9 Discovery is still absent;
+this handoff does not claim discovery, OTP automation, proxy management, or a
+full offline archive.
 
-**Next product phase:** Product Phase 12 — Manual Login and Session Lifecycle (`after the existing Phase 9/10 prerequisite gate is closed`)
+## Current Objective
 
-**Last updated:** 2026-08-06
+Finish and validate Product Phase 12: a user-driven headed login Context must
+produce an explicitly validated Session that survives restart through the Phase
+11 Secret Store, restores only into a compatible Context, detects expiry/corrupt
+state, preserves old state during failed reauthentication, and exposes safe
+metadata-only CLI/Desktop surfaces.
 
-## Product Phase 11 Secret Store result
+## Current Phase or Milestone
 
-The repository now contains a project-scoped opaque Credential Reference model, a stable `SecretStorePort`, a Portable Vault, an Electron-main OS-protected adapter, a test-only memory adapter, versioned AES-256-GCM envelopes, scrypt KDF profiles, key/secret rotation, lock/unlock lifecycle, safe ordinary export exclusion, explicit encrypted Secure Export/Import, allowlisted diagnostics, owned temporary cleanup, screenshot sensitivity policy, and recursive redaction. Contract `1.7.0` exposes metadata-only Secret Store status/list/lock/delete operations; raw values, passphrases, Vault keys, and generic secret-read operations are not transport fields.
+Product Phase 12 implementation is source-complete through the domain, runtime,
+service, persistence, contracts, CLI, Desktop, tests, and documentation layers.
+The overall phase is `PARTIAL` because the required real pinned-Chromium fixture
+could not run: repository-owned Chromium is not installed and the official
+Playwright hosts returned DNS `ENOTFOUND` during installation.
 
-Focused Secret Store tests pass 12/12. Unit and integration suites pass 48/48 and 23/23 after the implementation changes; typecheck and the build used by the test runner pass. The final validator snapshot is updated below after the documentation and OKF pass.
+## Repository State
 
-This is a complete implementation of the Phase 11 Secret Store scope, not a claim that the whole product sequence is gated. The local baseline still lacks Product Phase 9 Discovery Engine evidence and records Product Phase 10 as partial. Phase 11 does not implement manual login/session capture, OTP workflows, or proxy management.
+- Repository path: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
+- Current branch: `main`
+- Base or starting commit: `840f348b1dca1d4d981d6f876dbc2eadd3529381`
+- Current HEAD: `840f348b1dca1d4d981d6f876dbc2eadd3529381`
+- Working tree status: uncommitted Phase 12 implementation, tests, and documentation; pre-existing interrupted work was preserved
+- Staged changes: none
+- Unstaged changes: Phase 12 code, schema/migration alignment, tests, README, architecture/product/OKF documentation, and validation registry updates
+- Untracked files: root `AGENTS.md` (present at start), Session domain/integration/unit/browser tests, and new Phase 12 documentation/OKF concepts
 
-## Product Phase 10 foundation result
+## Completed Work
 
-The repository now contains a browser-independent Interaction Profile/Plan/Trace model, deterministic seeded timing, bounded real Playwright input operations, explicit Cookie Banner/Dialog/Popup policies, redacted trace persistence, contract `1.7.0`, SQLite schema `7`, CLI validation/inspection commands, and real Chromium/unit/integration evidence. Popup and Dialog handler work is settled before a Trace snapshot, so asynchronous browser events cannot disappear from evidence. The profile defaults to disabled when absent, and the transport boundary excludes raw typed text and secret values.
+- Added versioned Session domain metadata, lifecycle transitions, validation
+  outcomes, failure reasons, capability flags, Project/Profile ownership, and
+  future proxy affinity.
+- Added Browser Runtime headed manual and fresh headless restored authentication
+  Contexts with approved-origin routing, explicit validation, bounded Storage
+  State parsing, cookies/localStorage/IndexedDB capture, and documented
+  `sessionStorage` non-support.
+- Added Application Service Session commands for open, reauthenticate, save,
+  get, list, validate, restore, and delete. Save requires explicit confirmation
+  and validation; failed reauthentication preserves the old completed state.
+- Added Phase 11 Secret Store purpose-bound `session_storage` integration,
+  zeroization attempts, safe replacement/deletion, and no raw Session result
+  fields.
+- Added SQLite migration 008 and `browser_sessions` safe metadata repository,
+  Project schema/feature alignment, contract 1.8.0, CLI parser/help/flow, and
+  Desktop controls.
+- Added fake-runtime lifecycle evidence and a registered real Chromium auth
+  fixture test.
+- Added Phase 12 architecture/security/ADR/implementation/acceptance records,
+  OKF v0.2 concepts/history/log, and extension evidence/phase/change entries.
 
-This is a reusable Phase 10 foundation, not a complete Phase 10 result. The baseline does not contain the required Phase 9 Discovery Engine, so interaction-generated discovery, Queue deduplication through Phase 9, and the full Phase 9-to-10 integration gate remain unverified. The CLI `interaction run` surface also requires an approved plan provider supplied by the embedding service.
+## Work in Progress
 
-## Product Phase 8 result
+- Real headed Chromium fixture validation is waiting for a pinned repository-owned
+  browser resource. The installation command was attempted with official hosts
+  and failed with DNS `ENOTFOUND`.
+- Broad legacy suites and all quality/security gates still need a final pass in
+  the current worktree; known baseline integration failures are documented below.
 
-Application/workspaces remain `0.8.0`; the current transport contract is `1.7.0`, SQLite schema is `7`, Render Engine is `1`, Browser Context profile is `1`, Interaction Profile is `1`, Interaction Trace is `1`, and Secret Reference/Vault/Envelope versions are `1`. Playwright Core `1.56.1` uses owned Chromium `141.0.7390.37` revision `1194`; its relative manifest and executable SHA-256 are validated with no normal-launch download or system fallback. Forward migration `007_add_browser_interaction` preserves migrations `001`–`006` and adds bounded Interaction Profile and Trace ledgers; no SQLite migration is required for the Phase 11 Secret Store.
+## Remaining Work
 
-Rendering begins only from an approved queued Page Job. Application Service claims it with a Lease, creates one fresh deterministic Context/Page, persists fenced stages and Checkpoints, heartbeats/renews ownership, waits for combined DOM/network stability, extracts the final DOM, optionally captures one bounded PNG, and commits SHA-256-described artifacts and relational state. Every protected write revalidates Project/Run/Job/owner/token/generation/active/non-expired ownership.
+- Provision Chromium revision 1194 under `.runtime/browsers` in a network-enabled
+  environment, run `tests/browser/session.test.ts`, and update AC-P12-001/006/015
+  and OKF evidence status only from its real output.
+- Rerun typecheck, lint, format, architecture, security, full unit/integration,
+  CLI/Desktop, browser, rendering, and all OKF/docs validators.
+- If the real-browser test passes, update this handoff, the Phase 12 report,
+  security review, acceptance matrix, and extension statuses from `PARTIAL` to
+  the exact verified status supported by the transcript. Do not commit or push.
 
-One Application Service owns one reusable Browser Process and one active Job. The Process recycles after 100 pages or 30 minutes and is limited to three restarts per five minutes. Each Job gets a fresh non-persistent Context; popups close, downloads cancel, dialogs dismiss, permissions clear, service workers block, HTTPS verification remains enabled, and Chromium Sandbox is explicit.
+## Exact Next Steps
 
-CDP request interception permits only authorized GET/HEAD dispatch, revalidates redirects, resolves/classifies all DNS answers, blocks private/link-local/reserved targets, and grants loopback only to exact deterministic fixture origins in test mode. Evidence is redacted and bounded. Browser and Page crashes are separately classified, release ownership through a durable retry/failure transition, and are proven by actual Windows process termination.
+1. Ensure the approved Playwright Chromium download/cache is available.
+2. Run `node tools/browser/provision.mjs install` and
+   `node tools/browser/provision.mjs verify`.
+3. Recompile tests with `node node_modules/typescript/bin/tsc -p tsconfig.test.json`.
+4. Run the focused real-browser Session test and then the browser suite.
+5. Run the remaining gates and record pass/fail/environment classifications here.
 
-## Evidence
+## Files Created
 
-Real Chromium tests cover static HTML, JavaScript DOM changes, SPA route state, bounded lazy scroll, continuous mutation, EventSource, blank content, navigation timeout, redirects, non-GET denial, safe console/page/request evidence, optional screenshot, result replay, Browser crash, and Page crash. Artifact fault injection covers file-before-database and database-after-commit boundaries. CLI and real Electron smoke retain the isolated contract boundary.
+- `packages/archive-core/src/sessions.ts`
+- `tests/unit/session.test.ts`
+- `tests/integration/session-lifecycle.test.ts`
+- `tests/browser/session.test.ts`
+- `docs/architecture/AUTHENTICATION_SESSIONS.md`
+- `docs/architecture/PHASE_12_SECURITY_REVIEW.md`
+- `docs/project/PHASE_12_IMPLEMENTATION_REPORT.md`
+- `docs/project/adr/ADR-051-manual-login-and-secure-sessions.md`
+- `okf/architecture/authentication-sessions.md`
+- `okf/security/authentication-sessions.md`
+- `okf/history/phase-12.md`
+- `okf/log.md`
 
-ADRs 041–048 are Accepted and ADR-049 records the partial Phase 10 foundation. AC-P08-001–017 and AC-P10-001–014/017 have direct evidence; AC-P10-015 remains partial and AC-P10-016 is blocked by the missing Phase 9 engine. The Phase 2 spike remains unchanged and isolated. Browser update cadence, cross-platform packaging, DNS rebinding, memory telemetry, screenshot retention, and Phase 9 discovery boundaries remain explicit risks/decisions.
+## Files Modified
 
-The 2026-08-06 local validation snapshot is clean: `npm test` passes 149/149
-tests; focused suites pass unit 48/48, integration 23/23, Secret Store 12/12,
-and OKF 43/43. Build, typecheck, format, lint, contracts, Project format,
-migrations, Scope, Queue, Recovery, Browser, Render, security, documentation,
-and all OKF validation layers pass.
+Phase 12 source changes are in `packages/archive-core`, `packages/browser-runtime`,
+`packages/application-service`, `packages/persistence-sqlite`,
+`packages/contracts`, `packages/project-format`, `apps/cli`, and
+`apps/desktop`. Test/build alignment changed the Session migration/schema
+fixtures, `tests/support/render-fixture-server.ts`, `tests/unit/cli.test.ts`,
+`tests/unit/persistence-sqlite.test.ts`, `tests/integration/project-lifecycle.test.ts`,
+and `tools/migrations/validate.mjs`/`tools/testing/run-tests.mjs`.
 
-## Known limitations
+Documentation and knowledge changes are in `README.md`, `docs/product/ACCEPTANCE_MATRIX.md`,
+`docs/project/PHASE_PLAN.md`, `docs/architecture/README.md`, `okf/` indexes and
+database/security/browser concepts, and `okf-extension/registry/{evidence,phases,changes}.json`.
 
-- Windows x64 Browser/process-kill behavior is verified; Linux/macOS browser provisioning and packaging are deferred.
-- OS process memory and browser startup duration are not persisted; page-count and lifetime recycling are the current resource bounds.
-- The production loopback exception is unavailable; deterministic fixture scrolling is test-only.
-- Screenshot capture is opt-in, but long-term screenshot/evidence retention remains unresolved.
-- No automatic Link/Sitemap/History API/React Router/button/pagination/infinite-scroll/JSON discovery or enqueue exists.
-- No Phase 9 Discovery Engine or Phase 9 evidence exists in this baseline. The Phase 10 interaction foundation is present, but full discovery integration is not verified. Authentication/session, proxy, production Asset Downloader, HTML rewrite, API capture, and a full offline archive remain outside the implemented scope.
+## Important Architecture and Design Decisions
 
-## Exact next product phase
+- Credentials remain in the visible website; the application never captures
+  form values or exposes raw browser handles.
+- Storage State is sensitive and can cross only the Phase 11 Secret Store
+  callback. SQLite stores safe metadata plus an opaque reference, never raw
+  serialized state.
+- Manual login is headed and dedicated; restore is fresh and headless. Normal
+  render Contexts are not reused blindly.
+- Save is explicit and validation-first. Reauthentication retains the old
+  protected state until a new validated save completes.
+- Project/Profile ownership and version/affinity checks fail closed. `proxyId`
+  is nullable future metadata only; no proxy pool/routing exists.
+- `sessionStorage` is not persisted or claimed.
 
-Product Phase 9 — Link Discovery and SPA Support remains the required prerequisite gate. It must extract only from the final rendered DOM and bounded client-side route observations, evaluate every candidate through the Phase 5 Scope Engine, enqueue accepted URLs through the Phase 6 Queue, preserve Phase 7 Lease/Recovery invariants, and then provide the missing prerequisite evidence for the Phase 10 interaction integration gate.
+## Commands Executed
 
-The attached Product Phase 11 implementation is already present and remains usable while that gate is open. After Phase 9 and the remaining Phase 10 acceptance evidence are complete, the next feature phase is **Product Phase 12 — Manual Login and Session Lifecycle**. It must use the Secret Store references and purpose-bound access APIs; it must not add raw secret transport.
+- `git status --short`, `git diff --stat`, and repository source/documentation inspections.
+- `node node_modules/typescript/bin/tsc -b --pretty false` — passed after the
+  service-close scope fix; one later retry was blocked by transient `EAGAIN`.
+- `node node_modules/typescript/bin/tsc -p tsconfig.test.json --pretty false` — passed.
+- Direct compiled unit tests — 50 passed, 0 failed.
+- Direct `tests/integration/session-lifecycle.test.js` — 2 passed, 0 failed.
+- Direct `tests/browser/session.test.js` in sandbox — blocked by fixture `listen EPERM`.
+- Direct real-browser test with escalation — blocked by missing Chromium manifest.
+- `node tools/browser/provision.mjs install` — failed because official Playwright
+  hosts returned `getaddrinfo ENOTFOUND`.
+- `node tools/build/build.mjs` — passed.
+- `node tools/contracts/check.mjs` — passed (contract 1.8.0, 56 commands).
+- `node tools/migrations/validate.mjs` — passed (8 immutable migrations/schema 8).
+- `node tools/project-format/validate.mjs` — passed.
+- `node tools/docs/validate.mjs` — passed (142 required artifacts, 360 links).
+- `node tools/okf/cli.mjs validate` — passed across all OKF layers.
+- `npm run typecheck` — wrapper failed with `spawn sh EAGAIN`; direct TypeScript
+  invocation passed as recorded above.
 
-## OKF migration closure
+## Validation and Test Results
 
-The independent migration audit classified all 76 final artifacts, removed 58 obsolete compatibility Markdown paths, preserved 54 evidence records and 61 typed relationships, and reconciled the current 44 official Concepts. Official Google OKF v0.2 validation, OfflineWebArchiver metadata policy, extension integrity, knowledge quality, formatting, focused validator tests, and repository tests pass locally.
+Passing evidence: source typecheck (direct), production build, compiled unit
+50/50, Session integration 2/2, contracts, migrations, Project format, docs,
+and all OKF validation layers. Real Chromium Session evidence is not available
+in this environment. Full integration/CLI suites have known baseline failures:
+loopback fixture servers can hit sandbox `EPERM`, and two existing export tests
+use dates outside SQLite's 1980–2099 range. These failures are not claimed as
+Phase 12 passes and must be rechecked if the environment changes.
 
-The only accepted exceptions are administrative: no hosted GitHub Actions run or branch-protection configuration was available as local evidence. Require `OKF Validation / OKF validation and quality gates` in branch protection and verify the next hosted run before reporting either control as verified. Use the [active maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md) for routine knowledge work; the completed migration reports remain in the [OKF archive](docs/archive/okf/README.md).
+## Known Issues and Blockers
 
-## References
+- No repository-owned `.runtime/browsers/browser-manifest.json` is available.
+- Official Playwright download DNS is unavailable in the current environment.
+- The `npm` wrapper intermittently hits process-resource `EAGAIN`; direct Node
+  commands are the reliable local validation route.
+- Existing unrelated integration fixture/export failures remain as described
+  above.
 
-- [Phase 8 implementation report](docs/project/PHASE_08_IMPLEMENTATION_REPORT.md)
-- [Phase 10 implementation report](docs/project/PHASE_10_IMPLEMENTATION_REPORT.md)
-- [Phase 11 implementation report](docs/project/PHASE_11_IMPLEMENTATION_REPORT.md)
-- [Human-Paced Interaction architecture](docs/architecture/BROWSER_INTERACTION.md)
-- [Phase 10 security review](docs/architecture/PHASE_10_SECURITY_REVIEW.md)
-- [Phase 10 ADR](docs/project/adr/ADR-049-browser-native-human-paced-interaction.md)
-- [Phase 11 ADR](docs/project/adr/ADR-050-secret-store-and-sensitive-data-protection.md)
-- [Secret Store architecture](docs/architecture/SECRET_STORE.md)
-- [Phase 11 security review](docs/architecture/PHASE_11_SECURITY_REVIEW.md)
-- [Phase 8 canonical record](okf/history/phase-08.md)
-- [Browser Runtime](docs/architecture/BROWSER_RUNTIME.md)
-- [Phase 8 security review](docs/architecture/PHASE_08_SECURITY_REVIEW.md)
-- [Active OKF maintainer guide](docs/okf-conformance/MAINTENANCE_GUIDE.md)
-- [Current OKF structure](docs/okf-conformance/CURRENT_STRUCTURE.md)
-- [Phase 5 cleanup report](docs/okf-conformance/PHASE_05_LEGACY_CLEANUP_AND_DOCUMENTATION.md)
-- [Archived final OKF conformance report](docs/archive/okf/migration/FINAL_OKF_CONFORMANCE_REPORT.md)
+## Database or Migration State
+
+SQLite is at schema 8. Migration 008 creates `browser_sessions` with safe
+metadata, an opaque `secret_ref`, validation/affinity/capability JSON, and
+Project/session ownership indexes. Existing migrations remain immutable and the
+migration validator passes. No raw Storage State is present in the database.
+
+## Configuration and Environment Notes
+
+Node 24.19.0 is available; the repository targets Node 24/npm 11. Browser
+provisioning is explicit and network-dependent. No system-browser fallback,
+credential, Secret Store payload, or project database was added to the worktree.
+
+## Uncommitted or Partially Applied Changes
+
+The worktree is intentionally uncommitted. Phase 12 code and documentation are
+applied coherently, but the real-browser validation gate is partial. Preserve
+all changes; do not reset, clean, stash, or discard them.
+
+## Recovery or Rollback Notes
+
+No destructive operation, migration rollback, branch change, commit, or push was
+performed. To resume, keep the current worktree, provision the pinned browser,
+run the focused Session test, and update statuses only from evidence. If the
+implementation must be reverted later, treat the schema-8 migration and
+contract 1.8 changes as one reviewed Phase 12 change; do not edit applied
+migrations in place.
+
+## Related Documentation
+
+- [Phase 12 implementation report](docs/project/PHASE_12_IMPLEMENTATION_REPORT.md)
+- [Authentication Sessions architecture](docs/architecture/AUTHENTICATION_SESSIONS.md)
+- [Phase 12 security review](docs/architecture/PHASE_12_SECURITY_REVIEW.md)
+- [ADR-051](docs/project/adr/ADR-051-manual-login-and-secure-sessions.md)
+- [Acceptance Matrix](docs/product/ACCEPTANCE_MATRIX.md)
+- [OKF Phase 12 record](okf/history/phase-12.md)
+- [Phase 11 Secret Store](docs/architecture/SECRET_STORE.md)
+
+## Notes for the Next Agent
+
+The current local worktree is the source of truth. The phase is not fully
+verified until the real headed Chromium fixture passes. Do not replace the
+Secret Store with plaintext persistence, do not add credential/OTP fields to
+contracts, and do not mark browser evidence verified from fake-runtime tests.

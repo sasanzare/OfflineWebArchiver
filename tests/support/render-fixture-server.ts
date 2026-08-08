@@ -40,6 +40,7 @@ export async function startRenderFixtureServer(): Promise<RenderFixtureServer> {
   const requestWaiters = new Map<string, Set<() => void>>();
   const server = createServer(async (request, response) => {
     const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+    const cookies = request.headers.cookie ?? "";
     requestCounts.set(pathname, (requestCounts.get(pathname) ?? 0) + 1);
     for (const resolve of requestWaiters.get(pathname) ?? []) resolve();
     requestWaiters.delete(pathname);
@@ -72,6 +73,23 @@ export async function startRenderFixtureServer(): Promise<RenderFixtureServer> {
       response.write("event: ready\ndata: fixture\n\n");
       pending.add(response);
       response.on("close", () => pending.delete(response));
+      return;
+    }
+    if (pathname === "/auth-login") {
+      response.writeHead(200, {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+        "set-cookie": ["owa_auth=fixture-session; Path=/; HttpOnly"],
+      });
+      response.end("<!doctype html><html><body><main id=login>Manual login fixture</main><script>localStorage.setItem('auth-state','signed-in'); const request=indexedDB.open('auth-db',1); request.onupgradeneeded=()=>request.result.createObjectStore('tokens');</script></body></html>");
+      return;
+    }
+    if (pathname === "/auth-account") {
+      if (!cookies.includes("owa_auth=fixture-session")) {
+        finish(response, 401, "unauthorized");
+        return;
+      }
+      finish(response, 200, "<!doctype html><html><body><main id=authenticated>Signed in fixture</main></body></html>", "text/html; charset=utf-8");
       return;
     }
     const file = routeFiles[pathname];

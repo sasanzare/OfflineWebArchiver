@@ -3,7 +3,7 @@ import test from "node:test";
 import { CLI_EXIT_CODES, formatHumanDescription, parseCliArguments } from "../../apps/cli/src/index.js";
 import { CONTRACT_VERSION, parseResponseEnvelope } from "@offline-web-archive/contracts";
 
-test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, and Interaction command surface", () => {
+test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, Interaction, and Session command surface", () => {
   assert.deepEqual(parseCliArguments(["system", "describe", "--json"]), { kind: "describe", json: true });
   const create = parseCliArguments(["project", "create", "C:\\demo", "--name", "Demo", "--slug", "demo"]);
   assert.equal(create.kind, "project");
@@ -28,6 +28,14 @@ test("CLI parser exposes the bounded Project, Queue, Recovery, Browser, Render, 
   const secret = parseCliArguments(["secret", "backend-status", "C:\\demo", "--json"]);
   assert.equal(secret.kind, "secret");
   if (secret.kind === "secret") assert.equal(secret.operation, "backend.status");
+  const session = parseCliArguments(["session", "open", "C:\\demo", "--login-url", "https://example.com/login", "--validation-url", "https://example.com/account", "--origin", "https://example.com", "--origin", "https://login.example.com", "--json"]);
+  assert.equal(session.kind, "session");
+  if (session.kind === "session") {
+    assert.equal(session.operation, "open");
+    assert.deepEqual(session.payload["allowedOrigins"], ["https://example.com", "https://login.example.com"]);
+  }
+  assert.equal(parseCliArguments(["session", "save", "C:\\demo", "00000000-0000-4000-8000-000000000003"]).kind, "invalid");
+  assert.equal(parseCliArguments(["session", "delete", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--confirm", "DELETE-SESSION"]).kind, "session");
   const malformedSecret = parseCliArguments(["secret", "delete", "C:\\demo", "secret://v1/project/not-a-project/not-a-secret"]);
   assert.equal(malformedSecret.kind, "secret");
   const render = parseCliArguments(["render", "start", "C:\\demo", "00000000-0000-4000-8000-000000000003", "--run", "00000000-0000-4000-8000-000000000002", "--owner", "cli-renderer", "--operation-id", "render-op-1", "--idempotency-key", "render-idem-1", "--screenshot"]);

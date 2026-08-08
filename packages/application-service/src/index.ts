@@ -1,4 +1,5 @@
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import {
   BROWSER_CONTEXT_PROFILE_VERSION,
@@ -15,6 +16,19 @@ import {
   RenderOperationError,
   RENDER_ENGINE_VERSION,
   SecretStoreError,
+  SessionOperationError,
+  SESSION_STORAGE_CAPABILITIES,
+  assertSessionMetadata,
+  assertSessionTransition,
+  sessionRequiresReauthentication,
+  type BrowserAuthenticationPolicy,
+  type BrowserAuthenticationSession,
+  type SessionMetadata,
+  type SessionMetadataInput,
+  type SessionRepositoryPort,
+  type SessionValidationResult,
+  type SessionState,
+  type SessionFailureReason,
   parseSecretRef,
   type ArchiveCore,
   type ProjectStoragePort,
@@ -311,6 +325,60 @@ function secretStoreError(error: SecretStoreError): ErrorContract {
   };
 }
 
+function sessionError(error: SessionOperationError): ErrorContract {
+  const securityCodes = new Set<SessionOperationError["code"]>(["SESSION_PROJECT_MISMATCH", "SESSION_SECRET_INCONSISTENT", "SESSION_PROFILE_INCOMPATIBLE"]);
+  const validationCodes = new Set<SessionOperationError["code"]>(["SESSION_METADATA_INVALID", "SESSION_STATE_CONFLICT", "SESSION_STORAGE_STATE_INVALID", "SESSION_VALIDATION_FAILED", "SESSION_VALIDATION_UNAVAILABLE"]);
+  const userMessages: Partial<Record<SessionOperationError["code"], string>> = {
+    SESSION_NOT_FOUND: "The selected authenticated Session was not found.",
+    SESSION_ALREADY_EXISTS: "The selected Session already exists.",
+    SESSION_PROJECT_MISMATCH: "The selected Session belongs to another Project.",
+    SESSION_PROFILE_INCOMPATIBLE: "The authenticated Session is not compatible with the current Browser Profile.",
+    SESSION_STORAGE_STATE_INVALID: "The authenticated Session state is corrupt and must be replaced by manual re-authentication.",
+    SESSION_VALIDATION_UNAVAILABLE: "Authentication validation could not reach the validation page. Retry without treating the Session as expired.",
+    SESSION_SECRET_INCONSISTENT: "The authenticated Session metadata and Secret Store reference are inconsistent.",
+  };
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : "application",
+    message: error.message,
+    userMessage: userMessages[error.code] ?? "The authenticated Session operation could not be completed safely.",
+    retryable: error.retryable,
+  };
+}
+
+function safeSessionMetadata(metadata: SessionMetadata): Record<string, unknown> {
+  return {
+    sessionId: metadata.sessionId,
+    projectId: metadata.projectId,
+    profileId: metadata.profileId,
+    browserProfileVersion: metadata.browserProfileVersion,
+    sessionFormatVersion: metadata.sessionFormatVersion,
+    storageStateFormatVersion: metadata.storageStateFormatVersion,
+    createdAt: metadata.createdAt,
+    updatedAt: metadata.updatedAt,
+    lastValidatedAt: metadata.lastValidatedAt,
+    validationResult: metadata.validationResult,
+    failureReason: metadata.failureReason,
+    state: metadata.state,
+    validationPolicy: metadata.validationPolicy,
+    affinity: metadata.affinity,
+    capabilities: metadata.capabilities,
+    revision: metadata.revision,
+    requiresReauthentication: sessionRequiresReauthentication(metadata),
+  };
+}
+
+function sessionBrowserStatus(session: BrowserAuthenticationSession): Record<string, unknown> {
+  const profile = session.getContextProfile();
+  return {
+    mode: session.mode,
+    headless: profile.headless,
+    profileId: profile.profileId,
+    profileVersion: profile.version,
+    currentUrlSafe: session.getCurrentUrlSafe(),
+  };
+}
+
 function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<string, unknown> {
   if (result.resultType === "profile.value") return { resultType: result.resultType, profileId: result.profile.profileId, profileRevisionId: result.profile.revisionId, engineVersion: result.profile.engineVersion, changedPaths: result.changedPaths ?? [] };
   if (result.resultType === "profile.validation") return { resultType: result.resultType, valid: result.validation.valid, errorCodes: result.validation.errors.map((entry) => entry.code), warningCodes: result.validation.warnings.map((entry) => entry.code) };
@@ -348,6 +416,9 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "secret.list") return { resultType: result.resultType, metadataCount: result.metadata.length, refs: result.metadata.map((metadata) => metadata.ref) };
   if (result.resultType === "secret.vault.lock") return { resultType: result.resultType, backend: result.status.backend, vaultState: result.status.vaultState, locked: result.status.locked };
   if (result.resultType === "secret.delete") return { resultType: result.resultType, ref: result.ref };
+  if (result.resultType === "session.metadata") return { resultType: result.resultType, action: result.action, sessionId: result.session.sessionId, state: result.session.state, validationResult: result.session.validationResult, requiresReauthentication: result.session.requiresReauthentication };
+  if (result.resultType === "session.list") return { resultType: result.resultType, sessionCount: result.sessions.length, sessionIds: result.sessions.map((session) => session.sessionId) };
+  if (result.resultType === "session.delete") return { resultType: result.resultType, sessionId: result.sessionId };
   return { resultType: result.resultType };
 }
 
@@ -371,7 +442,15 @@ interface ActiveInteraction {
   operationId: string;
 }
 
-type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort;
+interface ActiveAuthentication {
+  readonly projectId: string;
+  readonly projectPath: string;
+  readonly sessionId: string;
+  readonly browserSession: BrowserAuthenticationSession;
+  readonly previousMetadata: SessionMetadata | null;
+}
+
+type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort;
 
 type SecretStoreFactory = NonNullable<ApplicationServiceDependencies["secretStoreFactory"]>;
 
@@ -416,6 +495,108 @@ async function authorizeRuntimeUrl(
   const classes = addresses.map(classifyHost);
   const allowed = fixtureAllowed ? classes.every((value) => value === "loopback") : classes.every((value) => value === "public");
   return { allowed, reasonCode: allowed ? (fixtureAllowed ? "RUNTIME_TEST_LOOPBACK_ALLOWED" : "RUNTIME_PUBLIC_ADDRESS_ALLOWED") : "RUNTIME_PRIVATE_OR_MIXED_ADDRESS_BLOCKED", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: addresses };
+}
+
+async function authorizeAuthenticationUrl(
+  rawUrl: string,
+  profile: Awaited<ReturnType<ProfileStoragePort["getProfile"]>>,
+  allowedOrigins: readonly string[],
+  testMode: boolean,
+  fixtureOrigins: readonly string[],
+): Promise<RuntimeNetworkDecision> {
+  let url: URL;
+  try { url = new URL(rawUrl); }
+  catch { return { allowed: false, reasonCode: "AUTH_URL_INVALID", safeUrl: "invalid-url", resolvedAddresses: [] }; }
+  if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username !== "" || url.password !== "") return { allowed: false, reasonCode: "AUTH_URL_CREDENTIALS_BLOCKED", safeUrl: `${url.protocol}//${url.hostname}/`, resolvedAddresses: [] };
+  if (!allowedOrigins.includes(url.origin)) return { allowed: false, reasonCode: "AUTH_ORIGIN_NOT_APPROVED", safeUrl: `${url.origin}${url.pathname}`, resolvedAddresses: [] };
+  const fixtureAllowed = testMode && fixtureOrigins.includes(url.origin);
+  const scope = evaluateScope(profile, { rawUrl, discoveryType: "manual", profileRevision: profile.revisionId, currentEligibleCount: 0 });
+  let addresses: readonly string[];
+  try { addresses = [...new Set((await lookup(url.hostname, { all: true, verbatim: true })).map((entry) => entry.address))]; }
+  catch { return { allowed: false, reasonCode: "AUTH_DNS_FAILED", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: [] }; }
+  if (addresses.length === 0) return { allowed: false, reasonCode: "AUTH_DNS_EMPTY", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: [] };
+  const classes = addresses.map(classifyHost);
+  const allowed = fixtureAllowed ? classes.every((value) => value === "loopback") : classes.every((value) => value === "public");
+  return { allowed, reasonCode: allowed ? (fixtureAllowed ? "AUTH_TEST_LOOPBACK_ALLOWED" : "AUTH_PUBLIC_ORIGIN_ALLOWED") : "AUTH_PRIVATE_OR_MIXED_ADDRESS_BLOCKED", safeUrl: scope.displayUrl ?? `${url.origin}${url.pathname}`, resolvedAddresses: addresses };
+}
+
+function normalizedSessionOrigin(value: string): string {
+  try {
+    const url = new URL(value);
+    if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username !== "" || url.password !== "" || url.pathname !== "/" || url.search !== "" || url.hash !== "") throw new Error("invalid origin");
+    return url.origin;
+  } catch {
+    throw new SessionOperationError("SESSION_METADATA_INVALID", "The Session origin is invalid");
+  }
+}
+
+function sessionValidationPolicy(input: { validationUrl: string; markerSelector?: string | null; markerText?: string | null }): import("@offline-web-archive/archive-core").SessionValidationPolicy {
+  let url: URL;
+  try {
+    url = new URL(input.validationUrl);
+    if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") throw new Error("unsafe validation URL");
+  } catch {
+    throw new SessionOperationError("SESSION_METADATA_INVALID", "The Session validation URL is invalid");
+  }
+  return { validationUrl: input.validationUrl, expectedOrigin: url.origin, expectedPath: url.pathname || "/", markerSelector: input.markerSelector ?? null, markerText: input.markerText ?? null };
+}
+
+function sessionAuthPolicy(
+  input: { loginUrl: string; allowedOrigins: readonly string[]; validationUrl: string; markerSelector?: string | null; markerText?: string | null },
+  profile: Awaited<ReturnType<ProfileStoragePort["getProfile"]>>,
+  testMode: boolean,
+  fixtureOrigins: readonly string[],
+): BrowserAuthenticationPolicy {
+  let loginUrl: URL;
+  try {
+    loginUrl = new URL(input.loginUrl);
+    if ((loginUrl.protocol !== "http:" && loginUrl.protocol !== "https:") || loginUrl.username !== "" || loginUrl.password !== "" || loginUrl.search !== "" || loginUrl.hash !== "") throw new Error("unsafe login URL");
+  } catch {
+    throw new SessionOperationError("SESSION_METADATA_INVALID", "The Session login URL is invalid");
+  }
+  const validation = sessionValidationPolicy(input);
+  const allowedOrigins = [...new Set(input.allowedOrigins.map(normalizedSessionOrigin))];
+  if (!allowedOrigins.includes(loginUrl.origin) || !allowedOrigins.includes(validation.expectedOrigin)) throw new SessionOperationError("SESSION_METADATA_INVALID", "The login and validation origins must be explicitly approved");
+  return { initialUrl: input.loginUrl, allowedOrigins, validation, navigationTimeoutMs: 120_000, testMode, authorizeUrl: (url) => authorizeAuthenticationUrl(url, profile, allowedOrigins, testMode, fixtureOrigins) };
+}
+
+function updateSessionMetadata(
+  current: SessionMetadata,
+  now: () => string,
+  patch: Partial<Pick<SessionMetadata, "secretRef" | "lastValidatedAt" | "validationResult" | "failureReason" | "state" | "validationPolicy" | "affinity" | "capabilities">>,
+): SessionMetadata {
+  const next = { ...current, ...patch, updatedAt: now(), revision: current.revision + 1 };
+  if (next.state !== current.state) assertSessionTransition(current.state, next.state);
+  assertSessionMetadata(next);
+  return next;
+}
+
+function validationOutcome(
+  current: SessionMetadata,
+  now: () => string,
+  status: "valid" | "expired" | "invalid" | "unavailable" | "configuration_missing" | "incompatible_profile" | "corrupt",
+): SessionMetadata {
+  const mapping: Record<typeof status, { state: SessionState; failureReason: SessionFailureReason }> = {
+    valid: { state: "valid", failureReason: "none" },
+    expired: { state: "reauth_required", failureReason: "authentication_expired" },
+    invalid: { state: "reauth_required", failureReason: "authentication_rejected" },
+    unavailable: { state: "validation_required", failureReason: "network_unavailable" },
+    configuration_missing: { state: "validation_required", failureReason: "validation_configuration_missing" },
+    incompatible_profile: { state: "reauth_required", failureReason: "browser_profile_incompatible" },
+    corrupt: { state: "corrupt", failureReason: "storage_state_corrupt" },
+  };
+  const result = mapping[status];
+  return updateSessionMetadata(current, now, { state: result.state, validationResult: status, failureReason: result.failureReason, ...(status === "valid" ? { lastValidatedAt: now() } : {}) });
+}
+
+function validationOutcomeWithReason(
+  current: SessionMetadata,
+  now: () => string,
+  status: "corrupt" | "unavailable",
+  failureReason: SessionFailureReason,
+): SessionMetadata {
+  const state: SessionState = status === "corrupt" ? "corrupt" : "validation_required";
+  return updateSessionMetadata(current, now, { state, validationResult: status, failureReason });
 }
 
 function renderPolicy(commandPolicy: Extract<CommandEnvelope, { commandType: "render.start" }>["payload"]["policy"], testMode: boolean): RenderPolicy {
@@ -642,6 +823,7 @@ async function executeProjectCommand(
   engine: RenderEnginePort,
   activeRenders: Map<string, ActiveRender>,
   activeInteractions: Map<string, ActiveInteraction>,
+  activeAuthentications: Map<string, ActiveAuthentication>,
   interactionPlanProvider: NonNullable<ApplicationServiceDependencies["interactionPlanProvider"]> | undefined,
   renderTestMode: boolean,
   fixtureOrigins: readonly string[],
@@ -665,6 +847,301 @@ async function executeProjectCommand(
         await storage.close();
       }
     }
+  };
+  const withSessionProject = async <T>(projectPath: string, keepOpen: boolean, operation: (project: NonNullable<ReturnType<ApplicationStorage["getCurrent"]>>) => Promise<T>): Promise<T> => {
+    const current = storage.getCurrent();
+    if (current !== null && path.resolve(current.projectPath) !== path.resolve(projectPath)) {
+      throw new SessionOperationError("SESSION_PROJECT_MISMATCH", "Another Project is already open in this application service");
+    }
+    const openedHere = current === null;
+    if (openedHere) await storage.open(projectPath);
+    try {
+      const project = storage.getCurrent();
+      if (project === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "The selected Project is not open");
+      return await operation(project);
+    } catch (error) {
+      if (openedHere && keepOpen) {
+        await lockSecretStore(projectPath).catch(() => undefined);
+        await storage.close().catch(() => undefined);
+      }
+      throw error;
+    } finally {
+      if (openedHere && !keepOpen) {
+        await lockSecretStore(projectPath);
+        await storage.close();
+      }
+    }
+  };
+  const activeAuthenticationFor = (sessionId: string): ActiveAuthentication | undefined => activeAuthentications.get(sessionId);
+  const assertAuthenticationSlot = (sessionId?: string): void => {
+    for (const active of activeAuthentications.values()) {
+      if (active.sessionId !== sessionId) throw new SessionOperationError("SESSION_STATE_CONFLICT", "Another manual Authentication Browser is already open");
+    }
+  };
+  const restorePreviousMetadata = async (active: ActiveAuthentication): Promise<SessionMetadata | null> => {
+    if (active.previousMetadata === null) return null;
+    const current = await storage.getSession({ projectId: active.projectId, sessionId: active.sessionId });
+    const restored: SessionMetadata = {
+      ...active.previousMetadata,
+      updatedAt: now(),
+      revision: current.revision + 1,
+    };
+    assertSessionMetadata(restored);
+    return storage.updateSession({ projectId: active.projectId, sessionId: active.sessionId, expectedRevision: current.revision, metadata: restored });
+  };
+  const closeAuthentication = async (active: ActiveAuthentication, restorePrevious: boolean): Promise<SessionMetadata | null> => {
+    await active.browserSession.close().catch(() => undefined);
+    activeAuthentications.delete(active.sessionId);
+    if (!restorePrevious || storage.getCurrent()?.projectId !== active.projectId) return null;
+    return restorePreviousMetadata(active).catch(() => null);
+  };
+  const persistedValidationOutcome = async (
+    current: SessionMetadata,
+    status: "valid" | "expired" | "invalid" | "unavailable" | "configuration_missing" | "incompatible_profile" | "corrupt",
+    reason?: SessionFailureReason,
+  ): Promise<SessionMetadata> => {
+    const next = reason === undefined
+      ? validationOutcome(current, now, status)
+      : validationOutcomeWithReason(current, now, status === "corrupt" ? "corrupt" : "unavailable", reason);
+    return storage.updateSession({ projectId: current.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: next });
+  };
+  const sessionResult = (action: "open" | "reauthenticate" | "save" | "get" | "validate" | "restore", metadata: SessionMetadata, browser: BrowserAuthenticationSession | null): Record<string, unknown> => ({
+    resultType: "session.metadata",
+    action,
+    session: safeSessionMetadata(metadata),
+    browser: browser === null ? null : sessionBrowserStatus(browser),
+  });
+  const storedSessionValidation = async (
+    project: NonNullable<ReturnType<ApplicationStorage["getCurrent"]>>,
+    current: SessionMetadata,
+    action: "validate" | "restore",
+  ): Promise<Record<string, unknown>> => {
+    const contextProfile = runtime.getContextProfile();
+    if (current.profileId !== contextProfile.profileId || current.browserProfileVersion !== contextProfile.version) {
+      const next = await persistedValidationOutcome(current, "incompatible_profile");
+      return sessionResult(action, next, null);
+    }
+    if (current.secretRef === null) {
+      const next = await persistedValidationOutcome(current, "corrupt", "secret_missing");
+      return sessionResult(action, next, null);
+    }
+    const policy = sessionAuthPolicy({
+      loginUrl: current.validationPolicy.validationUrl,
+      allowedOrigins: [current.validationPolicy.expectedOrigin],
+      validationUrl: current.validationPolicy.validationUrl,
+      markerSelector: current.validationPolicy.markerSelector,
+      markerText: current.validationPolicy.markerText,
+    }, await storage.getProfile(project.projectPath), renderTestMode, fixtureOrigins);
+    const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+    let browser: BrowserAuthenticationSession | null = null;
+    let browserStatus: Record<string, unknown> | null = null;
+    try {
+      const validation = await store.withSecret(
+        { projectId: project.projectId, scopeId: current.sessionId, purpose: "future_session_restore" },
+        current.secretRef,
+        async (secretBytes) => {
+          try {
+            browser = await runtime.restoreAuthenticationSession(current.sessionId, secretBytes, policy);
+            const outcome = await browser.validate();
+            browserStatus = sessionBrowserStatus(browser);
+            return outcome;
+          } finally {
+            secretBytes.fill(0);
+          }
+        },
+      );
+      const next = await persistedValidationOutcome(current, validation.status);
+      return sessionResult(action, next, browserStatus === null ? null : browser);
+    } catch (error) {
+      if (error instanceof SecretStoreError) {
+        if (error.code === "SECRET_NOT_FOUND") {
+          const next = await persistedValidationOutcome(current, "corrupt", "secret_missing");
+          return sessionResult(action, next, null);
+        }
+        if (["SECRET_TAMPER_DETECTED", "SECRET_FORMAT_UNSUPPORTED", "SECRET_ALGORITHM_UNSUPPORTED", "SECRET_KDF_INVALID", "SECRET_VALUE_INVALID"].includes(error.code)) {
+          const next = await persistedValidationOutcome(current, "corrupt", "secret_integrity_failed");
+          return sessionResult(action, next, null);
+        }
+        const next = await persistedValidationOutcome(current, "unavailable", "validation_required");
+        return sessionResult(action, next, null);
+      }
+      if (error instanceof RenderOperationError && ["BROWSER_STORAGE_STATE_INVALID", "BROWSER_AUTHENTICATION_CONTEXT_FAILED"].includes(error.code)) {
+        const next = await persistedValidationOutcome(current, "corrupt");
+        return sessionResult(action, next, null);
+      }
+      throw error;
+    } finally {
+      const browserForCleanup = browser as BrowserAuthenticationSession | null;
+      if (browserForCleanup !== null) await browserForCleanup.close().catch(() => undefined);
+    }
+  };
+  const executeSessionCommand = async (command: Extract<CommandEnvelope, { commandType: "session.open" | "session.reauthenticate" | "session.save" | "session.get" | "session.list" | "session.validate" | "session.restore" | "session.delete" }>): Promise<unknown> => {
+    if (command.commandType === "session.open" || command.commandType === "session.reauthenticate") {
+      const sessionId = command.commandType === "session.open" ? randomUUID() : command.payload.sessionId;
+      assertAuthenticationSlot(sessionId);
+      return withSessionProject(command.payload.projectPath, true, async (project) => {
+        const profile = await storage.getProfile(project.projectPath);
+        const policy = sessionAuthPolicy({
+          loginUrl: command.payload.loginUrl,
+          allowedOrigins: command.payload.allowedOrigins,
+          validationUrl: command.payload.validationUrl,
+          markerSelector: command.payload.markerSelector ?? null,
+          markerText: command.payload.markerText ?? null,
+        }, profile, renderTestMode, fixtureOrigins);
+        const contextProfile = runtime.getContextProfile();
+        let previousMetadata: SessionMetadata | null = null;
+        let metadata: SessionMetadata;
+        if (command.commandType === "session.open") {
+          metadata = await storage.createSession({
+            sessionId,
+            projectId: project.projectId,
+            profileId: contextProfile.profileId,
+            browserProfileVersion: contextProfile.version,
+            sessionFormatVersion: 1,
+            storageStateFormatVersion: 1,
+            secretRef: null,
+            createdAt: now(),
+            updatedAt: now(),
+            lastValidatedAt: null,
+            validationResult: "not_validated",
+            failureReason: "none",
+            state: "ready",
+            validationPolicy: policy.validation,
+            affinity: { version: 1, browserProfileId: contextProfile.profileId, browserProfileVersion: contextProfile.version, proxyId: null },
+            capabilities: SESSION_STORAGE_CAPABILITIES,
+          });
+        } else {
+          previousMetadata = await storage.getSession({ projectId: project.projectId, sessionId });
+          if (previousMetadata.profileId !== contextProfile.profileId || previousMetadata.browserProfileVersion !== contextProfile.version) throw new SessionOperationError("SESSION_PROFILE_INCOMPATIBLE", "The Session was created with another Browser Profile");
+          metadata = updateSessionMetadata(previousMetadata, now, { state: "login_browser_open", validationPolicy: policy.validation });
+          metadata = await storage.updateSession({ projectId: project.projectId, sessionId, expectedRevision: previousMetadata.revision, metadata });
+        }
+        try {
+          if (command.commandType === "session.open") {
+            const opening = updateSessionMetadata(metadata, now, { state: "login_browser_open" });
+            metadata = await storage.updateSession({ projectId: project.projectId, sessionId, expectedRevision: metadata.revision, metadata: opening });
+          }
+          const browserSession = await runtime.openManualLoginSession(sessionId, policy);
+          activeAuthentications.set(sessionId, { projectId: project.projectId, projectPath: project.projectPath, sessionId, browserSession, previousMetadata });
+          return sessionResult(command.commandType === "session.open" ? "open" : "reauthenticate", metadata, browserSession);
+        } catch (error) {
+          if (previousMetadata !== null) {
+            const restored: SessionMetadata = { ...previousMetadata, updatedAt: now(), revision: metadata.revision + 1 };
+            await storage.updateSession({ projectId: project.projectId, sessionId, expectedRevision: metadata.revision, metadata: restored }).catch(() => undefined);
+          } else {
+            await storage.deleteSession({ projectId: project.projectId, sessionId }).catch(() => undefined);
+          }
+          throw error;
+        }
+      });
+    }
+    if (command.commandType === "session.save") {
+      const active = activeAuthenticationFor(command.payload.sessionId);
+      if (active === undefined || active.projectPath !== path.resolve(command.payload.projectPath)) throw new SessionOperationError("SESSION_STATE_CONFLICT", "Open the manual Authentication Browser before saving this Session");
+      return withSessionProject(command.payload.projectPath, true, async (project) => {
+        let current = await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
+        let validation;
+        try {
+          validation = await active.browserSession.validate();
+        } catch (error) {
+          if (error instanceof RenderOperationError) {
+            if (active.previousMetadata !== null) await closeAuthentication(active, true);
+            else {
+              await persistedValidationOutcome(current, "unavailable");
+            }
+          }
+          throw error;
+        }
+        const browser = active.browserSession;
+        if (validation.status !== "valid") {
+          if (active.previousMetadata !== null) {
+            const restored = await closeAuthentication(active, true);
+            if (restored !== null) current = restored;
+          } else {
+            current = await persistedValidationOutcome(current, validation.status);
+            await closeAuthentication(active, false);
+          }
+          return sessionResult("save", current, null);
+        }
+        const saving = updateSessionMetadata(current, now, { state: "saving", validationResult: "valid", failureReason: "none" });
+        current = await storage.updateSession({ projectId: project.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: saving });
+        let createdRef: SecretRef | null = null;
+        let storageState: Uint8Array | null = null;
+        try {
+          storageState = await browser.captureStorageState();
+          const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+          if (current.secretRef === null) {
+            const created = await store.createSecret({
+              projectId: project.projectId,
+              scope: { scopeType: "session", projectId: project.projectId, scopeId: current.sessionId },
+              kind: "session_storage",
+              value: storageState,
+              displayLabel: "browser-session",
+              secureExportPolicy: "forbidden",
+            });
+            createdRef = created.ref;
+            current = { ...current, secretRef: created.ref };
+          } else {
+            const parsed = parseSecretRef(current.secretRef);
+            await store.replaceSecret({ projectId: project.projectId, ref: parsed.serialized, value: storageState, displayLabel: "browser-session" });
+          }
+          const valid = updateSessionMetadata(current, now, { state: "valid", validationResult: "valid", failureReason: "none", lastValidatedAt: now() });
+          const persisted = await storage.updateSession({ projectId: project.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: valid });
+          await closeAuthentication(active, false);
+          return sessionResult("save", persisted, null);
+        } catch (error) {
+          if (createdRef !== null) {
+            const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+            await store.deleteSecret({ projectId: project.projectId, ref: createdRef }).catch(() => undefined);
+          }
+          if (error instanceof RenderOperationError && error.code === "BROWSER_STORAGE_STATE_INVALID") {
+            await persistedValidationOutcome(current, "corrupt").catch(() => current);
+            await closeAuthentication(active, active.previousMetadata !== null);
+            throw new SessionOperationError("SESSION_STORAGE_STATE_INVALID", "The Browser Storage State could not be captured safely");
+          }
+          if (error instanceof SecretStoreError) {
+            const restoredState = active.previousMetadata !== null ? await closeAuthentication(active, true) : null;
+            if (restoredState === null && activeAuthentications.has(active.sessionId)) {
+              const available = updateSessionMetadata({ ...current, secretRef: active.previousMetadata?.secretRef ?? null }, now, { state: "authenticated_unpersisted" });
+              await storage.updateSession({ projectId: project.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: available }).catch(() => undefined);
+            }
+          }
+          throw error;
+        } finally {
+          storageState?.fill(0);
+        }
+      });
+    }
+    if (command.commandType === "session.get") {
+      return withSessionProject(command.payload.projectPath, false, async (project) => sessionResult("get", await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId }), null));
+    }
+    if (command.commandType === "session.list") {
+      return withSessionProject(command.payload.projectPath, false, async (project) => ({ resultType: "session.list", sessions: (await storage.listSessions({ projectId: project.projectId })).map(safeSessionMetadata) }));
+    }
+    if (command.commandType === "session.validate" || command.commandType === "session.restore") {
+      return withSessionProject(command.payload.projectPath, false, async (project) => {
+        const current = await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
+        return storedSessionValidation(project, current, command.commandType === "session.validate" ? "validate" : "restore");
+      });
+    }
+    return withSessionProject(command.payload.projectPath, false, async (project) => {
+      const current = await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId }).catch((error) => {
+        if (error instanceof SessionOperationError && error.code === "SESSION_NOT_FOUND") return null;
+        throw error;
+      });
+      const active = activeAuthenticationFor(command.payload.sessionId);
+      if (active !== undefined) await closeAuthentication(active, false);
+      if (current !== null && current.secretRef !== null) {
+        const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+        try {
+          await store.deleteSecret({ projectId: project.projectId, ref: current.secretRef });
+        } catch (error) {
+          if (!(error instanceof SecretStoreError && error.code === "SECRET_NOT_FOUND")) throw error;
+        }
+      }
+      await storage.deleteSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
+      return { resultType: "session.delete", sessionId: command.payload.sessionId };
+    });
   };
   const prepareEnqueue = async (
     project: NonNullable<ReturnType<typeof storage.getCurrent>>,
@@ -770,6 +1247,9 @@ async function executeProjectCommand(
     case "project.open":
       return { resultType: "project.summary", project: await storage.open(command.payload.projectPath) };
     case "project.close":
+      for (const active of activeAuthentications.values()) {
+        await closeAuthentication(active, active.previousMetadata !== null);
+      }
       await lockAllSecretStores();
       return { resultType: "project.summary", project: await storage.close() };
     case "project.validate":
@@ -813,6 +1293,15 @@ async function executeProjectCommand(
         await store.deleteSecret({ projectId: project.projectId, ref: ref.serialized as SecretRef });
         return { resultType: "secret.delete", ref: ref.serialized };
       });
+    case "session.open":
+    case "session.reauthenticate":
+    case "session.save":
+    case "session.get":
+    case "session.list":
+    case "session.validate":
+    case "session.restore":
+    case "session.delete":
+      return executeSessionCommand(command);
     case "profile.create":
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "profile.value", profile: await storage.createProfile({ projectPath: command.payload.projectPath, draft: createDefaultSiteProfileDraft({ name: command.payload.name, seedUrl: command.payload.seedUrl }) }) }));
     case "profile.get":
@@ -979,6 +1468,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
   })) throw new RenderOperationError("RENDER_INPUT_INVALID", "Fixture origins must be explicit Loopback origins and require Render test mode");
   const activeRenders = new Map<string, ActiveRender>();
   const activeInteractions = new Map<string, ActiveInteraction>();
+  const activeAuthentications = new Map<string, ActiveAuthentication>();
   const interactionPlanProvider = dependencies.interactionPlanProvider;
 
   const response = (raw: unknown, result: unknown, error: ErrorContract | null): ResponseEnvelope => {
@@ -1025,7 +1515,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               runtime: dependencies.runtime,
               platform: dependencies.platform,
             }
-          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, renderEngine, activeRenders, activeInteractions, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
+          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, renderEngine, activeRenders, activeInteractions, activeAuthentications, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
         const completed = response(rawCommand, result, null);
         const completionMetadata = completed.status === "success" ? resultLogMetadata(completed.result) : {};
         logger.log({
@@ -1051,6 +1541,8 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
                 ? recoveryError(error)
               : error instanceof RenderOperationError
                   ? renderError(error)
+              : error instanceof SessionOperationError
+                ? sessionError(error)
               : error instanceof SecretStoreError
                 ? secretStoreError(error)
               : internalError();
@@ -1074,6 +1566,16 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
     async close(): Promise<void> {
       for (const active of activeRenders.values()) active.controller.abort();
       for (const active of activeInteractions.values()) active.controller.abort();
+      for (const active of activeAuthentications.values()) {
+        await active.browserSession.close().catch(() => undefined);
+        if (active.previousMetadata !== null && storage.getCurrent()?.projectId === active.projectId) {
+          await storage.getSession({ projectId: active.projectId, sessionId: active.sessionId }).then(async (current) => {
+            const restored: SessionMetadata = { ...active.previousMetadata!, updatedAt: now(), revision: current.revision + 1 };
+            await storage.updateSession({ projectId: active.projectId, sessionId: active.sessionId, expectedRevision: current.revision, metadata: restored });
+          }).catch(() => undefined);
+        }
+      }
+      activeAuthentications.clear();
       for (const store of secretStores.values()) {
         await store.lock();
         await store.dispose();

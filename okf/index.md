@@ -24,4 +24,5 @@ This directory is the official Google OKF v0.2 bundle. OfflineWebArchiver-specif
 registries, evidence, maps, reports, and validation artifacts live outside this
 bundle under `okf-extension/` and are validated separately.
 
-The official `log.md` is intentionally omitted. Phase Records provide durable historical context, while Git records file evolution.
+Knowledge-maintenance changes are recorded in [log.md](log.md). Phase Records
+provide durable historical context, while Git records file evolution.

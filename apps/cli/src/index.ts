@@ -40,6 +40,12 @@ Usage:
   offline-archive secret list <project> [--json]
   offline-archive secret lock <project> [--json]
   offline-archive secret delete <project> <secret-ref> [--json]
+  offline-archive session open <project> --login-url <url> --validation-url <url> --origin <origin>... [--marker-selector <selector>] [--marker-text <text>] [--json]
+  offline-archive session reauthenticate <project> <session-id> --login-url <url> --validation-url <url> --origin <origin>... [--marker-selector <selector>] [--marker-text <text>] [--json]
+  offline-archive session save <project> <session-id> --confirm SAVE-SESSION [--json]
+  offline-archive session get|validate|restore <project> <session-id> [--json]
+  offline-archive session list <project> [--json]
+  offline-archive session delete <project> <session-id> --confirm DELETE-SESSION [--json]
   offline-archive profile create <project> --name <name> --seed <url> [--json]
   offline-archive profile show <project> [--json]
   offline-archive profile validate <project> [--json]
@@ -90,6 +96,7 @@ Render and Interaction runs start only from an existing queued Page Job; they ne
 export interface CliIo {
   stdout(value: string): void;
   stderr(value: string): void;
+  waitForEnter?(): Promise<void>;
 }
 
 export type ParsedArguments =
@@ -102,6 +109,7 @@ export type ParsedArguments =
   | { kind: "project"; operation: "import"; json: boolean; payload: { archivePath: string; destinationPath: string } }
   | { kind: "project"; operation: "info"; json: boolean; payload: { projectPath?: string } }
   | { kind: "secret"; operation: "backend.status" | "list" | "vault.lock" | "delete"; json: boolean; payload: Record<string, unknown> }
+  | { kind: "session"; operation: "open" | "reauthenticate" | "save" | "get" | "list" | "validate" | "restore" | "delete"; json: boolean; payload: Record<string, unknown> }
   | { kind: "profile"; operation: "create"; json: boolean; payload: { projectPath: string; name: string; seedUrl: string } }
   | { kind: "profile"; operation: "get" | "validate"; json: boolean; payload: { projectPath: string } }
   | { kind: "profile"; operation: "update"; json: boolean; payload: { projectPath: string; configPath: string } }
@@ -129,6 +137,16 @@ function optionValue(arguments_: readonly string[], name: string): string | unde
   return value !== undefined && !value.startsWith("--") ? value : undefined;
 }
 
+function optionValues(arguments_: readonly string[], name: string): string[] {
+  const values: string[] = [];
+  for (let index = 0; index < arguments_.length; index += 1) {
+    if (arguments_[index] !== name) continue;
+    const value = arguments_[index + 1];
+    if (value !== undefined && !value.startsWith("--")) values.push(value);
+  }
+  return values;
+}
+
 function integerOption(arguments_: readonly string[], name: string, fallback?: number): number | undefined {
   const value = optionValue(arguments_, name);
   if (value === undefined) return fallback;
@@ -145,6 +163,7 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     "--failure-key", "--failure-code", "--failure-category", "--message", "--next-eligible-at", "--reason", "--due-at", "--confirm",
     "--owner", "--generation", "--lease-duration", "--at", "--lease-status", "--operation-id", "--plan-id", "--profile", "--trace-id",
     "--navigation-timeout", "--render-timeout", "--stability-timeout", "--dom-quiet", "--network-quiet", "--completion-selector",
+    "--login-url", "--validation-url", "--origin", "--marker-selector", "--marker-text",
   ];
   const filtered = arguments_.filter((argument, index) => {
     if (argument === "--json" || argument === "--retryable" || argument === "--dry-run" || argument === "--screenshot") return false;
@@ -172,6 +191,36 @@ export function parseCliArguments(arguments_: readonly string[]): ParsedArgument
     if (operation === "lock" && filtered.length === 3) return { kind: "secret", operation: "vault.lock", json, payload: { projectPath } };
     if (operation === "delete" && filtered.length === 4) return { kind: "secret", operation: "delete", json, payload: { projectPath, ref: filtered[3]! } };
     return invalid(`Invalid secret ${operation} arguments.`);
+  }
+  if (filtered[0] === "session" && filtered[1] !== undefined) {
+    const operation = filtered[1];
+    const projectPath = filtered[2];
+    if (projectPath === undefined) return invalid(`Session ${operation} requires a Project.`);
+    if (operation === "open" || operation === "reauthenticate") {
+      const sessionId = operation === "reauthenticate" ? filtered[3] : undefined;
+      const expectedLength = operation === "open" ? 3 : 4;
+      const loginUrl = optionValue(arguments_, "--login-url");
+      const validationUrl = optionValue(arguments_, "--validation-url");
+      const allowedOrigins = optionValues(arguments_, "--origin");
+      const markerSelector = optionValue(arguments_, "--marker-selector");
+      const markerText = optionValue(arguments_, "--marker-text");
+      if (filtered.length !== expectedLength || loginUrl === undefined || validationUrl === undefined || allowedOrigins.length === 0 || (operation === "reauthenticate" && sessionId === undefined)) return invalid(`Session ${operation} requires --login-url, --validation-url, and at least one --origin.`);
+      return { kind: "session", operation, json, payload: { projectPath, ...(sessionId === undefined ? {} : { sessionId }), loginUrl, validationUrl, allowedOrigins, ...(markerSelector === undefined ? {} : { markerSelector }), ...(markerText === undefined ? {} : { markerText }) } };
+    }
+    if (operation === "list" && filtered.length === 3) return { kind: "session", operation, json, payload: { projectPath } };
+    if (["get", "save", "validate", "restore", "delete"].includes(operation) && filtered.length === 4) {
+      const sessionId = filtered[3]!;
+      if (operation === "save") {
+        const confirmation = optionValue(arguments_, "--confirm");
+        return confirmation !== "SAVE-SESSION" ? invalid("Session save requires --confirm SAVE-SESSION.") : { kind: "session", operation, json, payload: { projectPath, sessionId, confirmation } };
+      }
+      if (operation === "delete") {
+        const confirmation = optionValue(arguments_, "--confirm");
+        return confirmation !== "DELETE-SESSION" ? invalid("Session delete requires --confirm DELETE-SESSION.") : { kind: "session", operation, json, payload: { projectPath, sessionId, confirmation } };
+      }
+      return { kind: "session", operation: operation as "get" | "save" | "validate" | "restore" | "delete", json, payload: { projectPath, sessionId } };
+    }
+    return invalid(`Invalid session ${operation} arguments.`);
   }
   if (filtered[0] === "scope" && filtered[1] !== undefined) {
     const operation = filtered[1];
@@ -520,6 +569,9 @@ export function formatHumanDescription(response: SuccessResponseEnvelope): strin
   if (result.resultType === "secret.list") return [`Secrets: ${result.metadata.length}`, ...result.metadata.map((metadata) => `${metadata.ref} kind=${metadata.kind} state=${metadata.lifecycleState} scope=${metadata.scope.scopeType}:${metadata.scope.scopeId}`)].join("\n");
   if (result.resultType === "secret.vault.lock") return [`Secret Vault: ${result.status.vaultState}`, `Locked: ${result.status.locked ? "yes" : "no"}`].join("\n");
   if (result.resultType === "secret.delete") return `Deleted Secret Reference: ${result.ref}`;
+  if (result.resultType === "session.metadata") return [`Session: ${result.session.sessionId}`, `State: ${result.session.state}`, `Validation: ${result.session.validationResult}`, `Failure reason: ${result.session.failureReason}`, `Requires re-authentication: ${result.session.requiresReauthentication ? "yes" : "no"}`, `Browser: ${result.browser === null ? "closed" : `${result.browser.mode} (${result.browser.headless ? "headless" : "headed"})`}`].join("\n");
+  if (result.resultType === "session.list") return [`Sessions: ${result.sessions.length}`, ...result.sessions.map((session) => `${session.sessionId} state=${session.state} validation=${session.validationResult} reauth=${session.requiresReauthentication ? "yes" : "no"}`)].join("\n");
+  if (result.resultType === "session.delete") return `Deleted authenticated Session: ${result.sessionId}`;
   return "Command completed.";
 }
 
@@ -553,7 +605,7 @@ function metadata() {
   };
 }
 
-async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" | "interaction" | "secret" }>, service: ApplicationService): Promise<ResponseEnvelope> {
+async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe" | "project" | "profile" | "scope" | "queue" | "recovery" | "run" | "lease" | "checkpoint" | "browser" | "render" | "interaction" | "secret" | "session" }>, service: ApplicationService): Promise<ResponseEnvelope> {
   if (parsed.kind === "describe") {
     return parseResponseEnvelope(await service.execute(createSystemDescribeCommand(metadata()), { transport: "cli", authorized: true }));
   }
@@ -585,6 +637,9 @@ async function executeParsed(parsed: Extract<ParsedArguments, { kind: "describe"
   }
   if (parsed.kind === "secret") {
     return parseResponseEnvelope(await service.execute(createProjectCommand(`secret.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], parsed.payload, metadata()), { transport: "cli", authorized: true }));
+  }
+  if (parsed.kind === "session") {
+    return parseResponseEnvelope(await service.execute(createProjectCommand(`session.${parsed.operation}` as Parameters<typeof createProjectCommand>[0], parsed.payload, metadata()), { transport: "cli", authorized: true }));
   }
   if (parsed.kind === "queue") {
     const commandMetadata = metadata();
@@ -649,7 +704,12 @@ export async function runCli(
   let service: ApplicationService | undefined;
   try {
     service = createService(environment);
-    const response = await executeParsed(parsed, service);
+    let response = await executeParsed(parsed, service);
+    if (parsed.kind === "session" && (parsed.operation === "open" || parsed.operation === "reauthenticate") && response.status === "success" && response.result.resultType === "session.metadata" && io.waitForEnter !== undefined) {
+      io.stderr("Complete the login in the headed Chromium window. Credentials and OTP values stay in that window; press Enter here only after the site shows the authenticated state.\n");
+      await io.waitForEnter();
+      response = parseResponseEnvelope(await service.execute(createProjectCommand("session.save", { projectPath: parsed.payload["projectPath"], sessionId: response.result.session.sessionId, confirmation: "SAVE-SESSION" }, metadata()), { transport: "cli", authorized: true }));
+    }
     if (parsed.json) io.stdout(`${JSON.stringify(redactLeaseTokens(response), null, 2)}\n`);
     else if (response.status === "success") io.stdout(`${formatHumanDescription(response)}\n`);
     else io.stderr(`${response.error.userMessage} (${response.error.code})\n`);
@@ -673,6 +733,14 @@ async function main(): Promise<void> {
   process.exitCode = await runCli(process.argv.slice(2), {
     stdout: (value) => process.stdout.write(value),
     stderr: (value) => process.stderr.write(value),
+    waitForEnter: () => new Promise<void>((resolve) => {
+      process.stdin.setEncoding("utf8");
+      const onData = (): void => {
+        process.stdin.off("data", onData);
+        resolve();
+      };
+      process.stdin.on("data", onData);
+    }),
   });
 }
 

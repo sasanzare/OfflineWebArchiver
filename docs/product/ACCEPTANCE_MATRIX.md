@@ -2,7 +2,7 @@
 
 **Document status:** Proposed baseline  
 **Owner:** QA Lead  
-**Last updated:** 2026-08-04
+**Last updated:** 2026-08-07
 
 This matrix is the authoritative inventory of product acceptance criteria.
 Requirements are defined in [Project Scope](PROJECT_SCOPE.md); phases are defined
@@ -442,3 +442,28 @@ does not mean the Secret Store implementation is absent.
 | AC-P11-012 | NFR-MAINT-001, NFR-TEST-001 | Compatibility and validation | Open pre-Phase-11 Project, run typecheck/build/contracts/architecture/security/docs checks | SQLite schema remains `7`; existing Projects open without implicit Vault creation; boundaries and validators pass | `tests/integration/application-service.test.ts`; migration/architecture/security/docs validators | High | passed |
 | AC-P11-013 | NFR-TEST-001, NFR-KNOW-001 | Product phase gate | Audit the Phase 9/10 prerequisite before release | Phase 11 implementation may be used as a foundation, but the product gate remains conditional until the missing Phase 9 Discovery Engine and remaining Phase 10 evidence exist | `docs/project/PHASE_10_IMPLEMENTATION_REPORT.md`; `docs/project/PHASE_11_IMPLEMENTATION_REPORT.md`; `HANDOFF.md` | Critical | blocked |
 | AC-P11-014 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and OKF evidence | Validate architecture docs, ADR-050, Phase Record, registries, evidence, and relationships | Phase 11 implementation, security review, risks, decisions, tests, and conditional gate are cross-linked without claiming Phase 12/13 behavior | `npm run docs:validate`; `npm run okf:validate`; `docs/project/adr/ADR-050-secret-store-and-sensitive-data-protection.md` | High | passed |
+
+## Product Phase 12 Manual Login and Secure Session Manager criteria
+
+These rows cover the Phase 12 implementation. `partial` is used only where
+the required real pinned-Chromium fixture could not run in the current
+environment; the fake-runtime lifecycle and static boundary evidence remain
+separate and do not claim headed-browser success.
+
+| Acceptance ID | Requirement ID | Capability | Direct scenario | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P12-001 | FR-AUTH-001, NFR-SEC-003 | Headed manual Authentication Context | Open a controlled Session and complete a local login fixture | A dedicated headed Context opens with fixed Browser Profile, sandbox, HTTPS validation, downloads disabled, and no credential instrumentation | `tests/browser/session.test.ts`; Browser Runtime source | Critical | partial |
+| AC-P12-002 | FR-AUTH-001, NFR-SEC-002, NFR-PRIV-001 | User-driven authentication boundary | Inspect login flow, contracts, logs, UI, and errors for credential canaries | Password, OTP, CAPTCHA, and MFA values remain inside the website and never enter application transport or artifacts | `tests/unit/session.test.ts`; contract/CLI/Desktop source review | Critical | passed |
+| AC-P12-003 | FR-AUTH-002 | Explicit Save Session | Request save before/after validation and with missing confirmation | Save requires `SAVE-SESSION`, validates configured URL/path/marker, and does not persist merely because cookies exist | `tests/integration/session-lifecycle.test.ts`; contract tests | Critical | passed |
+| AC-P12-004 | FR-AUTH-002, NFR-SEC-002 | Protected Storage State | Capture cookies, localStorage, and supported IndexedDB state | Raw serialized state crosses only the Phase 11 Secret Store purpose boundary; SQLite receives no payload | `packages/application-service/src/index.ts`; integration test; Phase 11 Secret Store tests | Critical | passed |
+| AC-P12-005 | FR-AUTH-002, NFR-SEC-002 | Durable safe metadata | Inspect SQLite, CLI JSON, Desktop result, logs, export, and diagnostics | Project/session/profile/version/validation/affinity metadata is durable; raw state, token, and secret content are absent | `tests/integration/session-lifecycle.test.ts`; persistence and contract tests | Critical | passed |
+| AC-P12-006 | FR-AUTH-002, NFR-REL-001 | Restart and restore | Close service, reopen Project, restore a valid Session | A fresh compatible restored Context validates successfully and protected state remains reusable | `tests/integration/session-lifecycle.test.ts`; `tests/browser/session.test.ts` | Critical | partial |
+| AC-P12-007 | FR-AUTH-002 | Expiry and invalidation | Validate valid, expired, invalid, unavailable, corrupt, and configuration-missing outcomes | Results are distinguished, persisted safely, and never treated as authenticated success without validation | `packages/archive-core/src/sessions.ts`; Browser Runtime/Application Service source; unit/integration tests | Critical | passed |
+| AC-P12-008 | FR-AUTH-002, FR-RECOVERY-001 | Safe reauthentication | Fail a reauthentication save after an existing valid Session | New Context closes and previous completed metadata/reference remains usable; crawl/checkpoint state is not destroyed | `tests/integration/session-lifecycle.test.ts`; ADR-051 | Critical | passed |
+| AC-P12-009 | FR-AUTH-002 | Atomic Session replacement | Complete a successful reauthentication and save | New protected state and metadata replace the old reference only after validation; failed writes clean up new material | `tests/integration/session-lifecycle.test.ts`; Application Service source | Critical | passed |
+| AC-P12-010 | NFR-SEC-002, NFR-SEC-003 | Project and Profile isolation | Use another Project or incompatible Browser Profile | Cross-Project access and incompatible restore fail closed before protected state is exposed | `packages/archive-core/src/sessions.ts`; persistence repository; service tests | Critical | passed |
+| AC-P12-011 | NFR-SEC-002 | Secure deletion | Delete an active, persisted, and already-deleted Session | Context closes, protected payload and metadata are removed, and repeat deletion is idempotent | `tests/integration/session-lifecycle.test.ts`; Secret Store tests | Critical | passed |
+| AC-P12-012 | FR-CLI-001, FR-UX-002, NFR-SEC-003 | Controlled CLI/Desktop surfaces | Exercise Session help, JSON, UI controls, and confirmations | Surfaces expose safe metadata/actions only; no raw Browser handle, cookies, or Storage State is returned | `tests/unit/cli.test.ts`; `apps/desktop/src/renderer/index.ts`; desktop smoke | High | passed |
+| AC-P12-013 | NFR-SEC-002, NFR-PRIV-001 | Capability disclosure | Inspect persisted capability flags and docs | Cookies/localStorage/IndexedDB are declared supported; sessionStorage is explicitly false and not silently claimed | `packages/archive-core/src/sessions.ts`; `docs/architecture/AUTHENTICATION_SESSIONS.md` | High | passed |
+| AC-P12-014 | NFR-MAINT-001, NFR-REL-002 | Migration and compatibility | Open pre-Phase-12 Project and validate schema/manifest | Forward migration 008 is immutable, existing data remains usable, and no Session payload is created implicitly | `npm run migrations:validate`; Project format and persistence tests | Critical | passed |
+| AC-P12-015 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and security gate | Validate Phase 12 docs, ADR, OKF, acceptance, and handoff | Source/evidence/limitations/deferrals remain synchronized without claiming unavailable Chromium evidence | `docs/project/PHASE_12_IMPLEMENTATION_REPORT.md`; `docs/architecture/PHASE_12_SECURITY_REVIEW.md`; OKF validators | High | partial |

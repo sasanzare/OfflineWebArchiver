@@ -192,6 +192,9 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
   const renderFields = await window.webContents.executeJavaScript(`[
     "render-owner", "render-screenshot", "render-summary", "render-events"
   ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
+  const sessionFields = await window.webContents.executeJavaScript(`[
+    "session-login-url", "session-validation-url", "session-id", "session-allowed-origins", "session-marker-selector", "session-marker-text"
+  ].map((id) => document.getElementById(id) !== null)`, true) as boolean[];
   const invalidVersion = await window.webContents.executeJavaScript(`window.offlineArchive.execute(${JSON.stringify({
     contractVersion: "2.0.0",
     commandId: "smoke-invalid-command",
@@ -263,7 +266,7 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
     .every((response) => response.status === "success") &&
     validated.result?.report?.valid === true && importedValidation.result?.report?.valid === true &&
     imported.result?.import?.project?.projectId === projectId &&
-    profileEditorFields.every(Boolean) && queueFields.every(Boolean) && recoveryFields.every(Boolean) && renderFields.every(Boolean) &&
+    profileEditorFields.every(Boolean) && queueFields.every(Boolean) && recoveryFields.every(Boolean) && renderFields.every(Boolean) && sessionFields.every(Boolean) &&
     queueEnqueue.result?.enqueue?.outcome === "created" && queueDuplicate.result?.enqueue?.outcome === "existing" &&
     queueStatisticsBefore.result?.statistics?.total === 1 && queueListBefore.result?.jobs?.length === 1 &&
     queueGet.result?.job?.jobId === queueJobId && queueComplete.result?.job?.state === "completed" && runResume.status === "success" &&
@@ -277,6 +280,7 @@ async function runArchitectureSmoke(window: BrowserWindow): Promise<void> {
     queueFields,
     recoveryFields,
     renderFields,
+    sessionFields,
     invalidVersion,
     operations: { created, browserInfo, browserHealth, validated, opened, profile, profileUpdate, profileComparison, scope, queueEnqueue, queueDuplicate, queueStatisticsBefore, queueListBefore, queueGet, queueClaim, queueComplete, renderEnqueue, renderStart, renderStatus, renderResult, renderEvents, recoveryInspect, recoveryApply, runPause, runState, runResume, checkpointHistory, queueHistory, queueCompletedFilter, info, exported, closed, imported, importedValidation },
     security: MAIN_WINDOW_SECURITY,

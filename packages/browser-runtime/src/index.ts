@@ -12,6 +12,9 @@ import {
 import {
   RenderOperationError,
   type BrowserContextProfileDescriptor,
+  type BrowserAuthenticationPolicy,
+  type BrowserAuthenticationSession,
+  type BrowserAuthenticationValidation,
   type BrowserEvidenceSnapshot,
   type BrowserHealth,
   type BrowserInstallationInfo,
@@ -395,6 +398,173 @@ class PlaywrightPageSession implements BrowserPageSession {
   }
 }
 
+type StorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
+const MAX_STORAGE_STATE_BYTES = 10 * 1024 * 1024;
+const MAX_STORAGE_STATE_ITEMS = 20_000;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function failStorageState(): never {
+  throw new RenderOperationError("BROWSER_STORAGE_STATE_INVALID", "The persisted Browser Storage State is malformed or unsupported");
+}
+
+function validateStorageTree(value: unknown, depth = 0, counter = { value: 0 }): void {
+  counter.value += 1;
+  if (counter.value > MAX_STORAGE_STATE_ITEMS || depth > 12) failStorageState();
+  if (typeof value === "string") {
+    if (value.length > 262_144) failStorageState();
+    return;
+  }
+  if (value === null || typeof value === "number" || typeof value === "boolean") return;
+  if (Array.isArray(value)) {
+    if (value.length > MAX_STORAGE_STATE_ITEMS) failStorageState();
+    for (const child of value) validateStorageTree(child, depth + 1, counter);
+    return;
+  }
+  if (!isRecord(value) || Object.keys(value).length > 128) failStorageState();
+  for (const child of Object.values(value)) validateStorageTree(child, depth + 1, counter);
+}
+
+function parseStorageState(bytes: Uint8Array): StorageState {
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > MAX_STORAGE_STATE_BYTES) failStorageState();
+  let parsed: unknown;
+  try { parsed = JSON.parse(Buffer.from(bytes).toString("utf8")); }
+  catch { failStorageState(); }
+  if (!isRecord(parsed) || !Array.isArray(parsed["cookies"]) || !Array.isArray(parsed["origins"])) failStorageState();
+  const topLevelKeys = Object.keys(parsed);
+  if (topLevelKeys.some((key) => key !== "cookies" && key !== "origins")) failStorageState();
+  const cookies = parsed["cookies"];
+  const origins = parsed["origins"];
+  if (!Array.isArray(cookies) || !Array.isArray(origins) || cookies.length > MAX_STORAGE_STATE_ITEMS || origins.length > MAX_STORAGE_STATE_ITEMS) failStorageState();
+  for (const cookie of cookies) {
+    if (!isRecord(cookie)) failStorageState();
+    const allowedKeys = new Set(["name", "value", "domain", "path", "expires", "httpOnly", "secure", "sameSite", "partitionKey"]);
+    if (Object.keys(cookie).some((key) => !allowedKeys.has(key))) failStorageState();
+    if (typeof cookie["name"] !== "string" || cookie["name"].length > 4_096 || typeof cookie["value"] !== "string" || cookie["value"].length > 262_144 || typeof cookie["domain"] !== "string" || cookie["domain"].length > 512 || typeof cookie["path"] !== "string" || cookie["path"].length > 2_048 || typeof cookie["expires"] !== "number" || !Number.isFinite(cookie["expires"]) || typeof cookie["httpOnly"] !== "boolean" || typeof cookie["secure"] !== "boolean" || !["Strict", "Lax", "None"].includes(String(cookie["sameSite"]))) failStorageState();
+    if (cookie["partitionKey"] !== undefined && (typeof cookie["partitionKey"] !== "string" || cookie["partitionKey"].length > 512)) failStorageState();
+  }
+  for (const origin of origins) {
+    if (!isRecord(origin) || typeof origin["origin"] !== "string" || !Array.isArray(origin["localStorage"])) failStorageState();
+    try {
+      const url = new URL(origin["origin"]);
+      if ((url.protocol !== "http:" && url.protocol !== "https:") || url.origin !== origin["origin"]) failStorageState();
+    } catch { failStorageState(); }
+    const localStorage = origin["localStorage"];
+    if (!Array.isArray(localStorage) || localStorage.length > MAX_STORAGE_STATE_ITEMS) failStorageState();
+    for (const entry of localStorage) {
+      if (!isRecord(entry) || typeof entry["name"] !== "string" || typeof entry["value"] !== "string" || entry["name"].length > 4_096 || entry["value"].length > 262_144 || Object.keys(entry).some((key) => key !== "name" && key !== "value")) failStorageState();
+    }
+    if (origin["indexedDB"] !== undefined) validateStorageTree(origin["indexedDB"]);
+  }
+  validateStorageTree(parsed);
+  return parsed as StorageState;
+}
+
+function contextProfile(headless: boolean): BrowserContextProfileDescriptor {
+  return {
+    version: CONTEXT_PROFILE.version,
+    profileId: CONTEXT_PROFILE.profileId,
+    locale: CONTEXT_PROFILE.locale,
+    timezoneId: CONTEXT_PROFILE.timezoneId,
+    viewport: { ...CONTEXT_PROFILE.viewport },
+    deviceScaleFactor: CONTEXT_PROFILE.deviceScaleFactor,
+    acceptLanguage: CONTEXT_PROFILE.acceptLanguage,
+    userAgentPolicy: "fixed",
+    headless,
+    digest: CONTEXT_PROFILE.digest,
+  };
+}
+
+class PlaywrightAuthenticationSession implements BrowserAuthenticationSession {
+  private closed = false;
+  private blockedNavigation = false;
+
+  public constructor(
+    public readonly sessionId: string,
+    public readonly mode: "manual" | "restored",
+    private readonly context: BrowserContext,
+    private readonly page: Page,
+    private readonly policy: BrowserAuthenticationPolicy,
+    private readonly headless: boolean,
+    private readonly onClosed: () => void,
+  ) {}
+
+  public markNavigationBlocked(): void {
+    this.blockedNavigation = true;
+  }
+
+  public getContextProfile(): BrowserContextProfileDescriptor {
+    return contextProfile(this.headless);
+  }
+
+  public getCurrentUrlSafe(): string {
+    return safeUrl(this.page.url());
+  }
+
+  public async captureStorageState(): Promise<Uint8Array> {
+    if (this.closed) throw new RenderOperationError("BROWSER_AUTHENTICATION_CONTEXT_FAILED", "The Authentication Browser Context is closed");
+    try {
+      const state = await this.context.storageState({ indexedDB: true });
+      const serialized = Buffer.from(JSON.stringify(state), "utf8");
+      parseStorageState(serialized);
+      return new Uint8Array(serialized);
+    } catch (error) {
+      if (error instanceof RenderOperationError) throw error;
+      throw new RenderOperationError("BROWSER_STORAGE_STATE_INVALID", "The Browser Storage State could not be captured");
+    }
+  }
+
+  public async validate(): Promise<BrowserAuthenticationValidation> {
+    if (this.closed) throw new RenderOperationError("BROWSER_AUTHENTICATION_CONTEXT_FAILED", "The Authentication Browser Context is closed");
+    const validation = this.policy.validation;
+    if (validation.validationUrl.length === 0 || validation.expectedOrigin.length === 0) {
+      return { status: "configuration_missing", finalUrlSafe: this.getCurrentUrlSafe(), statusCode: null, markerMatched: false, reasonCode: "AUTH_VALIDATION_CONFIGURATION_MISSING" };
+    }
+    this.blockedNavigation = false;
+    let response: Awaited<ReturnType<Page["goto"]>>;
+    try {
+      response = await this.page.goto(validation.validationUrl, { waitUntil: "domcontentloaded", timeout: this.policy.navigationTimeoutMs });
+    } catch {
+      return this.blockedNavigation
+        ? { status: "invalid", finalUrlSafe: this.getCurrentUrlSafe(), statusCode: null, markerMatched: false, reasonCode: "AUTH_VALIDATION_NAVIGATION_BLOCKED" }
+        : { status: "unavailable", finalUrlSafe: this.getCurrentUrlSafe(), statusCode: null, markerMatched: false, reasonCode: "AUTH_VALIDATION_NETWORK_UNAVAILABLE" };
+    }
+    const statusCode = response?.status() ?? null;
+    const finalUrlSafe = this.getCurrentUrlSafe();
+    let finalUrl: URL;
+    try { finalUrl = new URL(this.page.url()); }
+    catch { return { status: "invalid", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_FINAL_URL_INVALID" }; }
+    if (statusCode !== null && (statusCode === 401 || statusCode === 403)) return { status: "expired", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_UNAUTHORIZED" };
+    if (statusCode !== null && statusCode >= 500) return { status: "unavailable", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_SERVER_UNAVAILABLE" };
+    if (statusCode !== null && statusCode >= 400) return { status: "invalid", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_HTTP_ERROR" };
+    if (finalUrl.origin !== validation.expectedOrigin || finalUrl.pathname.replace(/\/$/, "") !== validation.expectedPath.replace(/\/$/, "")) {
+      return { status: "expired", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_REDIRECTED_TO_LOGIN" };
+    }
+    if (validation.markerSelector === null) return { status: "valid", finalUrlSafe, statusCode, markerMatched: true, reasonCode: "AUTH_VALIDATION_URL_MATCHED" };
+    let markerMatched = false;
+    try {
+      const marker = this.page.locator(validation.markerSelector);
+      markerMatched = await marker.count() > 0;
+      if (markerMatched && validation.markerText !== null) markerMatched = (await marker.first().textContent())?.includes(validation.markerText) ?? false;
+    } catch {
+      return { status: "configuration_missing", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_SELECTOR_INVALID" };
+    }
+    return markerMatched
+      ? { status: "valid", finalUrlSafe, statusCode, markerMatched: true, reasonCode: "AUTH_VALIDATION_MARKER_MATCHED" }
+      : { status: "invalid", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_MARKER_MISSING" };
+  }
+
+  public async close(): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
+    await this.page.close({ runBeforeUnload: false }).catch(() => undefined);
+    await this.context.close().catch(() => undefined);
+    this.onClosed();
+  }
+}
+
 export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntimeOptions): BrowserRuntimePort {
   const browserRoot = path.resolve(options.browserRoot);
   const manifestPath = path.join(browserRoot, "browser-manifest.json");
@@ -403,6 +573,9 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
   const maximumPages = options.maximumPagesPerProcess ?? 100;
   const maximumLifetimeMs = options.maximumLifetimeMs ?? 30 * 60_000;
   let browser: Browser | null = null;
+  let authenticationBrowser: Browser | null = null;
+  let restoredBrowser: Browser | null = null;
+  let activeAuthenticationSession: PlaywrightAuthenticationSession | null = null;
   let state: BrowserHealth["state"] = "stopped";
   let activeJobId: string | null = null;
   let startedAt: string | null = null;
@@ -435,6 +608,23 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
     }
   };
 
+  const launchOwnedBrowser = async (headless: boolean): Promise<Browser> => {
+    const { executablePath } = await readManifest();
+    try {
+      return await chromium.launch({
+        executablePath,
+        headless,
+        chromiumSandbox: true,
+        args: ["--deny-permission-prompts"],
+        handleSIGHUP: false,
+        handleSIGINT: false,
+        handleSIGTERM: false,
+      });
+    } catch {
+      throw new RenderOperationError("BROWSER_LAUNCH_FAILED", "The approved Playwright Chromium process could not start", true);
+    }
+  };
+
   const health = (): BrowserHealth => ({
     state,
     connected: browser?.isConnected() ?? false,
@@ -456,24 +646,113 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
     pagesRendered = 0;
   };
 
+  const closeAuthenticationBrowser = async (): Promise<void> => {
+    if (activeAuthenticationSession !== null) await activeAuthenticationSession.close();
+    if (authenticationBrowser !== null) await authenticationBrowser.close().catch(() => undefined);
+    if (restoredBrowser !== null) await restoredBrowser.close().catch(() => undefined);
+    activeAuthenticationSession = null;
+    authenticationBrowser = null;
+    restoredBrowser = null;
+  };
+
+  const createAuthenticationContext = async (
+    sessionId: string,
+    policy: BrowserAuthenticationPolicy,
+    mode: "manual" | "restored",
+    storageState: Uint8Array | undefined,
+  ): Promise<PlaywrightAuthenticationSession> => {
+    if (activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_AUTHENTICATION_BUSY", "Another Authentication Browser Context is already open");
+    let origin: string;
+    try { origin = new URL(policy.initialUrl).origin; }
+    catch { throw new RenderOperationError("BROWSER_AUTHENTICATION_NAVIGATION_BLOCKED", "The Authentication Browser URL is invalid"); }
+    if (!policy.allowedOrigins.includes(origin)) throw new RenderOperationError("BROWSER_AUTHENTICATION_NAVIGATION_BLOCKED", "The Authentication Browser URL is not in the approved origin set");
+    const parsedStorageState = storageState === undefined ? undefined : parseStorageState(storageState);
+    const headless = mode === "restored";
+    let owner: Browser;
+    if (mode === "manual") {
+      if (authenticationBrowser?.isConnected() !== true) authenticationBrowser = await launchOwnedBrowser(false);
+      owner = authenticationBrowser;
+    } else {
+      if (restoredBrowser?.isConnected() !== true) restoredBrowser = await launchOwnedBrowser(true);
+      owner = restoredBrowser;
+    }
+    try {
+      const context = await owner.newContext({
+        ...(parsedStorageState === undefined ? {} : { storageState: parsedStorageState }),
+        viewport: CONTEXT_PROFILE.viewport,
+        deviceScaleFactor: CONTEXT_PROFILE.deviceScaleFactor,
+        locale: CONTEXT_PROFILE.locale,
+        timezoneId: CONTEXT_PROFILE.timezoneId,
+        colorScheme: CONTEXT_PROFILE.colorScheme,
+        reducedMotion: CONTEXT_PROFILE.reducedMotion,
+        javaScriptEnabled: CONTEXT_PROFILE.javaScriptEnabled,
+        serviceWorkers: CONTEXT_PROFILE.serviceWorkers,
+        acceptDownloads: CONTEXT_PROFILE.acceptDownloads,
+        extraHTTPHeaders: { "Accept-Language": CONTEXT_PROFILE.acceptLanguage },
+        userAgent: CONTEXT_PROFILE.userAgent,
+        bypassCSP: false,
+        ignoreHTTPSErrors: false,
+      });
+      await context.clearPermissions();
+      const sessionState = { current: null as PlaywrightAuthenticationSession | null };
+      await context.route("**/*", async (route) => {
+        const request = route.request();
+        if (request.resourceType() !== "document") {
+          await route.continue().catch(() => undefined);
+          return;
+        }
+        let requestOrigin: string;
+        try { requestOrigin = new URL(request.url()).origin; }
+        catch {
+          sessionState.current?.markNavigationBlocked();
+          await route.abort("blockedbyclient").catch(() => undefined);
+          return;
+        }
+        const decision = policy.allowedOrigins.includes(requestOrigin)
+          ? await policy.authorizeUrl(request.url()).catch(() => ({ allowed: false } as const))
+          : { allowed: false } as const;
+        if (!decision.allowed) {
+          sessionState.current?.markNavigationBlocked();
+          await route.abort("blockedbyclient").catch(() => undefined);
+          return;
+        }
+        await route.continue().catch(() => undefined);
+      });
+      const page = await context.newPage();
+      const session = new PlaywrightAuthenticationSession(sessionId, mode, context, page, policy, headless, () => {
+        if (activeAuthenticationSession?.sessionId === sessionId) activeAuthenticationSession = null;
+      });
+      sessionState.current = session;
+      const attachPageControls = (candidate: Page): void => {
+        candidate.on("download", (download) => void download.cancel().catch(() => undefined));
+      };
+      attachPageControls(page);
+      context.on("page", (popup) => attachPageControls(popup));
+      if (mode === "manual") {
+        try {
+          await page.goto(policy.initialUrl, { waitUntil: "domcontentloaded", timeout: policy.navigationTimeoutMs });
+        } catch {
+          await session.close();
+          throw new RenderOperationError("BROWSER_AUTHENTICATION_NAVIGATION_BLOCKED", "The Authentication Browser could not open the approved login page", true);
+        }
+      }
+      activeAuthenticationSession = session;
+      return session;
+    } catch (error) {
+      if (error instanceof RenderOperationError) throw error;
+      throw new RenderOperationError("BROWSER_AUTHENTICATION_CONTEXT_FAILED", "The Authentication Browser Context could not be created", true);
+    }
+  };
+
   const api: BrowserRuntimePort = {
     async getRuntimeInfo() { return installation(); },
     async validateInstallation() { return installation(); },
     async getHealth() { return health(); },
     async start() {
       if (browser?.isConnected() === true) return health();
-      const { executablePath } = await readManifest();
       state = "starting";
       try {
-        const launched = await chromium.launch({
-          executablePath,
-          headless: true,
-          chromiumSandbox: true,
-          args: ["--deny-permission-prompts"],
-          handleSIGHUP: false,
-          handleSIGINT: false,
-          handleSIGTERM: false,
-        });
+        const launched = await launchOwnedBrowser(true);
         browser = launched;
         state = "ready";
         startedAt = now();
@@ -491,7 +770,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
       }
     },
     async restart() {
-      if (activeJobId !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime cannot restart while a Page Job is active");
+      if (activeJobId !== null || activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime cannot restart while an active Browser Context is open");
       const recent = restartTimes.filter((value) => Date.now() - value <= RESTART_WINDOW_MS);
       restartTimes.splice(0, restartTimes.length, ...recent);
       if (recent.length >= MAX_RESTARTS_PER_WINDOW) throw new RenderOperationError("BROWSER_RESTART_LIMITED", "The Browser Runtime restart budget is exhausted", true);
@@ -537,7 +816,17 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
         throw new RenderOperationError("BROWSER_CONTEXT_FAILED", "A fresh isolated Browser Context could not be created", true);
       }
     },
-    async close() { await closeBrowser(); },
+    getContextProfile() { return contextProfile(true); },
+    async openManualLoginSession(sessionId, policy) {
+      return createAuthenticationContext(sessionId, policy, "manual", undefined);
+    },
+    async restoreAuthenticationSession(sessionId, storageState, policy) {
+      return createAuthenticationContext(sessionId, policy, "restored", storageState);
+    },
+    async close() {
+      await closeAuthenticationBrowser();
+      await closeBrowser();
+    },
   };
   return Object.freeze(api);
 }

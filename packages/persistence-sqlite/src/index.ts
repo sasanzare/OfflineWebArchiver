@@ -9,6 +9,17 @@ import {
   QueueOperationError,
   RecoveryOperationError,
   RenderOperationError,
+  SessionOperationError,
+  createSessionMetadata,
+  assertSessionMetadata,
+  assertSessionProjectOwnership,
+  type SessionMetadata,
+  type SessionMetadataInput,
+  type SessionRepositoryPort,
+  type SessionState,
+  type SessionValidationResult,
+  type SessionFailureReason,
+  type SecretRef,
   type ProjectCompatibility,
   type ProjectOperationErrorCode,
   type ProjectStoragePort,
@@ -105,7 +116,91 @@ interface CurrentProject {
   sessionId: string;
 }
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort;
+interface BrowserSessionRow {
+  session_id: string;
+  project_id: string;
+  profile_id: string;
+  browser_profile_version: number;
+  session_format_version: number;
+  storage_state_format_version: number;
+  secret_ref: string | null;
+  created_at: string;
+  updated_at: string;
+  last_validated_at: string | null;
+  validation_result: string;
+  failure_reason: string;
+  lifecycle_state: string;
+  validation_url: string;
+  expected_origin: string;
+  expected_path: string;
+  marker_selector: string | null;
+  marker_text: string | null;
+  affinity_version: number;
+  proxy_id: string | null;
+  cookies_supported: number;
+  local_storage_supported: number;
+  indexed_db_supported: number;
+  session_storage_supported: number;
+  revision: number;
+}
+
+function sessionFromRow(row: BrowserSessionRow): SessionMetadata {
+  const metadata = {
+    sessionId: row.session_id,
+    projectId: row.project_id,
+    profileId: row.profile_id,
+    browserProfileVersion: row.browser_profile_version,
+    sessionFormatVersion: row.session_format_version as 1,
+    storageStateFormatVersion: row.storage_state_format_version as 1,
+    secretRef: row.secret_ref as SecretRef | null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lastValidatedAt: row.last_validated_at,
+    validationResult: row.validation_result as SessionValidationResult,
+    failureReason: row.failure_reason as SessionFailureReason,
+    state: row.lifecycle_state as SessionState,
+    validationPolicy: {
+      validationUrl: row.validation_url,
+      expectedOrigin: row.expected_origin,
+      expectedPath: row.expected_path,
+      markerSelector: row.marker_selector,
+      markerText: row.marker_text,
+    },
+    affinity: {
+      version: row.affinity_version as 1,
+      browserProfileId: row.profile_id,
+      browserProfileVersion: row.browser_profile_version,
+      proxyId: row.proxy_id,
+    },
+    capabilities: {
+      cookies: row.cookies_supported === 1,
+      localStorage: row.local_storage_supported === 1,
+      indexedDB: row.indexed_db_supported === 1,
+      sessionStorage: row.session_storage_supported === 1,
+    },
+    revision: row.revision,
+  } satisfies SessionMetadata;
+  try {
+    assertSessionMetadata(metadata);
+  } catch (error) {
+    if (error instanceof SessionOperationError) throw error;
+    throw new SessionOperationError("SESSION_METADATA_INVALID", "The persisted Session metadata is invalid");
+  }
+  return metadata;
+}
+
+const BROWSER_SESSION_SELECT = `
+  SELECT session_id, project_id, profile_id, browser_profile_version,
+         session_format_version, storage_state_format_version, secret_ref,
+         created_at, updated_at, last_validated_at, validation_result,
+         failure_reason, lifecycle_state, validation_url, expected_origin,
+         expected_path, marker_selector, marker_text, affinity_version,
+         proxy_id, cookies_supported, local_storage_supported,
+         indexed_db_supported, session_storage_supported, revision
+  FROM browser_sessions
+`;
+
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -531,6 +626,109 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const interactionForCurrent = (): InteractionProfileRepositoryPort & InteractionTraceRepositoryPort => {
     if (current === null) throw new InteractionOperationError("INTERACTION_PERSISTENCE_FAILED", "Open the selected Project before using Interaction operations");
     return createSqliteInteractionRepository(current.database, { now });
+  };
+
+  const sessionForCurrent = (): SessionRepositoryPort => {
+    if (current === null) throw new SessionOperationError("SESSION_NOT_FOUND", "Open the selected Project before using Sessions");
+    const active = current;
+    const find = (sessionId: string): BrowserSessionRow | null => (
+      active.database.prepare(`${BROWSER_SESSION_SELECT} WHERE session_id = ?`).get(sessionId) as BrowserSessionRow | undefined
+    ) ?? null;
+    const requireOwned = (projectId: string, sessionId: string): BrowserSessionRow => {
+      const row = find(sessionId);
+      if (row === null) throw new SessionOperationError("SESSION_NOT_FOUND", "The selected Session was not found");
+      if (row.project_id !== projectId) throw new SessionOperationError("SESSION_PROJECT_MISMATCH", "The selected Session belongs to another Project");
+      return row;
+    };
+    return {
+      async createSession(input: SessionMetadataInput): Promise<SessionMetadata> {
+        assertSessionProjectOwnership(active.manifest.project.id, input);
+        const metadata = createSessionMetadata(input);
+        try {
+          active.database.exec("BEGIN IMMEDIATE");
+          active.database.prepare(`
+            INSERT INTO browser_sessions
+              (session_id, project_id, profile_id, browser_profile_version,
+               session_format_version, storage_state_format_version, secret_ref,
+               created_at, updated_at, last_validated_at, validation_result,
+               failure_reason, lifecycle_state, validation_url, expected_origin,
+               expected_path, marker_selector, marker_text, affinity_version,
+               proxy_id, cookies_supported, local_storage_supported,
+               indexed_db_supported, session_storage_supported, revision)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            metadata.sessionId, metadata.projectId, metadata.profileId, metadata.browserProfileVersion,
+            metadata.sessionFormatVersion, metadata.storageStateFormatVersion, metadata.secretRef,
+            metadata.createdAt, metadata.updatedAt, metadata.lastValidatedAt, metadata.validationResult,
+            metadata.failureReason, metadata.state, metadata.validationPolicy.validationUrl,
+            metadata.validationPolicy.expectedOrigin, metadata.validationPolicy.expectedPath,
+            metadata.validationPolicy.markerSelector, metadata.validationPolicy.markerText,
+            metadata.affinity.version, metadata.affinity.proxyId,
+            metadata.capabilities.cookies ? 1 : 0, metadata.capabilities.localStorage ? 1 : 0,
+            metadata.capabilities.indexedDB ? 1 : 0, metadata.capabilities.sessionStorage ? 1 : 0,
+            metadata.revision,
+          );
+          active.database.exec("COMMIT");
+        } catch (error) {
+          if (active.database.isTransaction) active.database.exec("ROLLBACK");
+          if (error instanceof Error && /UNIQUE|constraint/i.test(error.message)) throw new SessionOperationError("SESSION_ALREADY_EXISTS", "The Session identifier already exists");
+          throw new SessionOperationError("SESSION_METADATA_INVALID", "The Session metadata could not be persisted");
+        }
+        const row = find(metadata.sessionId);
+        if (row === null) throw new SessionOperationError("SESSION_METADATA_INVALID", "The persisted Session could not be read back");
+        return sessionFromRow(row);
+      },
+      async getSession(input): Promise<SessionMetadata> {
+        const row = requireOwned(input.projectId, input.sessionId);
+        return sessionFromRow(row);
+      },
+      async listSessions(input): Promise<readonly SessionMetadata[]> {
+        assertSessionProjectOwnership(input.projectId, { projectId: active.manifest.project.id });
+        const rows = active.database.prepare(`${BROWSER_SESSION_SELECT} WHERE project_id = ? ORDER BY updated_at DESC, session_id`).all(input.projectId) as unknown as BrowserSessionRow[];
+        return rows.map(sessionFromRow);
+      },
+      async updateSession(input): Promise<SessionMetadata> {
+        const currentRow = requireOwned(input.projectId, input.sessionId);
+        assertSessionProjectOwnership(input.projectId, input.metadata);
+        if (input.metadata.sessionId !== input.sessionId || input.metadata.revision !== input.expectedRevision + 1) throw new SessionOperationError("SESSION_METADATA_INVALID", "The Session revision is invalid");
+        assertSessionMetadata(input.metadata);
+        if (currentRow.revision !== input.expectedRevision) throw new SessionOperationError("SESSION_STATE_CONFLICT", "The Session changed after it was read");
+        const result = active.database.prepare(`
+          UPDATE browser_sessions SET
+            profile_id = ?, browser_profile_version = ?, session_format_version = ?,
+            storage_state_format_version = ?, secret_ref = ?, created_at = ?,
+            updated_at = ?, last_validated_at = ?, validation_result = ?,
+            failure_reason = ?, lifecycle_state = ?, validation_url = ?,
+            expected_origin = ?, expected_path = ?, marker_selector = ?,
+            marker_text = ?, affinity_version = ?, proxy_id = ?,
+            cookies_supported = ?, local_storage_supported = ?,
+            indexed_db_supported = ?, session_storage_supported = ?, revision = ?
+          WHERE session_id = ? AND project_id = ? AND revision = ?
+        `).run(
+          input.metadata.profileId, input.metadata.browserProfileVersion, input.metadata.sessionFormatVersion,
+          input.metadata.storageStateFormatVersion, input.metadata.secretRef, input.metadata.createdAt,
+          input.metadata.updatedAt, input.metadata.lastValidatedAt, input.metadata.validationResult,
+          input.metadata.failureReason, input.metadata.state, input.metadata.validationPolicy.validationUrl,
+          input.metadata.validationPolicy.expectedOrigin, input.metadata.validationPolicy.expectedPath,
+          input.metadata.validationPolicy.markerSelector, input.metadata.validationPolicy.markerText,
+          input.metadata.affinity.version, input.metadata.affinity.proxyId,
+          input.metadata.capabilities.cookies ? 1 : 0, input.metadata.capabilities.localStorage ? 1 : 0,
+          input.metadata.capabilities.indexedDB ? 1 : 0, input.metadata.capabilities.sessionStorage ? 1 : 0,
+          input.metadata.revision, input.sessionId, input.projectId, input.expectedRevision,
+        );
+        if (result.changes !== 1) throw new SessionOperationError("SESSION_STATE_CONFLICT", "The Session changed during the update");
+        const row = find(input.sessionId);
+        if (row === null) throw new SessionOperationError("SESSION_NOT_FOUND", "The selected Session was not found");
+        if (row.revision !== input.metadata.revision) throw new SessionOperationError("SESSION_STATE_CONFLICT", "The Session changed during the update");
+        return sessionFromRow(row);
+      },
+      async deleteSession(input): Promise<void> {
+        const row = find(input.sessionId);
+        if (row === null) return;
+        if (row.project_id !== input.projectId) throw new SessionOperationError("SESSION_PROJECT_MISMATCH", "The selected Session belongs to another Project");
+        active.database.prepare("DELETE FROM browser_sessions WHERE session_id = ? AND project_id = ?").run(input.sessionId, input.projectId);
+      },
+    };
   };
 
   const readCurrentProfile = async (active: CurrentProject): Promise<SiteProfile> => {
@@ -1161,6 +1359,26 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async listInteractionTraces(input) {
       return interactionForCurrent().listInteractionTraces(input);
+    },
+
+    async createSession(input) {
+      return sessionForCurrent().createSession(input);
+    },
+
+    async getSession(input) {
+      return sessionForCurrent().getSession(input);
+    },
+
+    async listSessions(input) {
+      return sessionForCurrent().listSessions(input);
+    },
+
+    async updateSession(input) {
+      return sessionForCurrent().updateSession(input);
+    },
+
+    async deleteSession(input) {
+      return sessionForCurrent().deleteSession(input);
     },
 
     async getCompatibility(projectPath) {

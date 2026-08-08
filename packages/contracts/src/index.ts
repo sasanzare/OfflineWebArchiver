@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.7.0" as const;
+export const CONTRACT_VERSION = "1.8.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -15,6 +15,14 @@ export const COMMAND_TYPES = [
   "secret.list",
   "secret.vault.lock",
   "secret.delete",
+  "session.open",
+  "session.reauthenticate",
+  "session.save",
+  "session.get",
+  "session.list",
+  "session.validate",
+  "session.restore",
+  "session.delete",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -176,6 +184,11 @@ export const ERROR_CODES = [
   "BROWSER_RESTART_LIMITED",
   "BROWSER_BUSY",
   "BROWSER_CONTEXT_FAILED",
+  "BROWSER_AUTHENTICATION_BUSY",
+  "BROWSER_AUTHENTICATION_CONTEXT_FAILED",
+  "BROWSER_AUTHENTICATION_NAVIGATION_BLOCKED",
+  "BROWSER_STORAGE_STATE_INVALID",
+  "BROWSER_PROFILE_INCOMPATIBLE",
   "PAGE_CREATE_FAILED",
   "PAGE_CRASHED",
   "NAVIGATION_TIMEOUT",
@@ -238,6 +251,17 @@ export const ERROR_CODES = [
   "SECRET_PRODUCTION_TEST_BACKEND",
   "SECRET_PROJECT_CONTEXT_REQUIRED",
   "SECRET_OPERATION_FAILED",
+  "SESSION_NOT_FOUND",
+  "SESSION_ALREADY_EXISTS",
+  "SESSION_PROJECT_MISMATCH",
+  "SESSION_METADATA_INVALID",
+  "SESSION_STATE_CONFLICT",
+  "SESSION_PROFILE_INCOMPATIBLE",
+  "SESSION_STORAGE_STATE_INVALID",
+  "SESSION_VALIDATION_FAILED",
+  "SESSION_VALIDATION_UNAVAILABLE",
+  "SESSION_SECRET_INCONSISTENT",
+  "SESSION_DELETION_FAILED",
 ] as const;
 
 const identifierSchema = z
@@ -341,6 +365,58 @@ export const SecretBackendStatusCommandSchema = z.object({ ...commandBase, comma
 export const SecretListCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.list"), payload: secretProjectPayload }).strict();
 export const SecretVaultLockCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.vault.lock"), payload: secretProjectPayload }).strict();
 export const SecretDeleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("secret.delete"), payload: z.object({ projectPath: localPathSchema, ref: secretRefSchema }).strict() }).strict();
+
+const sessionIdSchema = z.string().uuid();
+const sessionProfileIdSchema = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+const sessionNavigationUrlSchema = z.string().min(1).max(2_048).url().refine((value) => {
+  return /^(?:https?):\/\/[^/?#@]+(?:\/[^?#]*)?$/i.test(value);
+}, "Session URLs must be HTTPS/HTTP URLs without credentials, query values, or fragments");
+const sessionOriginSchema = sessionNavigationUrlSchema.refine((value) => {
+  return /^(?:https?):\/\/[^/?#@]+\/?$/i.test(value);
+}, "Session origins must contain only an origin");
+const sessionSelectorSchema = z.string().min(1).max(512).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Session selectors may not contain control characters");
+const sessionValidationInputSchema = z.object({
+  validationUrl: sessionNavigationUrlSchema,
+  markerSelector: sessionSelectorSchema.nullable().optional(),
+  markerText: z.string().min(1).max(512).nullable().optional(),
+}).strict();
+const sessionOpenPayload = {
+  projectPath: localPathSchema,
+  loginUrl: sessionNavigationUrlSchema,
+  allowedOrigins: z.array(sessionOriginSchema).min(1).max(20),
+  ...sessionValidationInputSchema.shape,
+};
+const sessionStateSchema = z.enum(["ready", "login_browser_open", "authentication_in_progress", "authenticated_unpersisted", "saving", "valid", "validation_required", "invalid", "expired", "reauth_required", "corrupt", "deleted"]);
+const sessionValidationResultSchema = z.enum(["not_validated", "valid", "expired", "invalid", "unavailable", "configuration_missing", "corrupt", "incompatible_profile"]);
+const sessionFailureReasonSchema = z.enum(["none", "validation_required", "authentication_expired", "authentication_rejected", "network_unavailable", "validation_configuration_missing", "storage_state_corrupt", "secret_missing", "secret_integrity_failed", "browser_profile_incompatible", "browser_crashed", "manual_login_cancelled"]);
+const sessionMetadataContractSchema = z.object({
+  sessionId: sessionIdSchema,
+  projectId: z.string().uuid(),
+  profileId: sessionProfileIdSchema,
+  browserProfileVersion: z.number().int().positive(),
+  sessionFormatVersion: z.literal(1),
+  storageStateFormatVersion: z.literal(1),
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
+  lastValidatedAt: timestampSchema.nullable(),
+  validationResult: sessionValidationResultSchema,
+  failureReason: sessionFailureReasonSchema,
+  state: sessionStateSchema,
+  validationPolicy: z.object({ validationUrl: sessionNavigationUrlSchema, expectedOrigin: sessionOriginSchema, expectedPath: z.string().min(1).max(2_048), markerSelector: sessionSelectorSchema.nullable(), markerText: z.string().max(512).nullable() }).strict(),
+  affinity: z.object({ version: z.literal(1), browserProfileId: sessionProfileIdSchema, browserProfileVersion: z.number().int().positive(), proxyId: sessionProfileIdSchema.nullable() }).strict(),
+  capabilities: z.object({ cookies: z.boolean(), localStorage: z.boolean(), indexedDB: z.boolean(), sessionStorage: z.boolean() }).strict(),
+  revision: z.number().int().positive(),
+  requiresReauthentication: z.boolean(),
+}).strict();
+const sessionBrowserStatusSchema = z.object({ mode: z.enum(["manual", "restored"]), headless: z.boolean(), profileId: sessionProfileIdSchema, profileVersion: z.number().int().positive(), currentUrlSafe: z.string().max(2_048) }).strict();
+export const SessionOpenCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.open"), payload: z.object(sessionOpenPayload).strict() }).strict();
+export const SessionReauthenticateCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.reauthenticate"), payload: z.object({ ...sessionOpenPayload, sessionId: sessionIdSchema }).strict() }).strict();
+export const SessionSaveCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.save"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, confirmation: z.literal("SAVE-SESSION") }).strict() }).strict();
+export const SessionGetCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.get"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
+export const SessionListCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.list"), payload: z.object({ projectPath: localPathSchema }).strict() }).strict();
+export const SessionValidateCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.validate"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
+export const SessionRestoreCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.restore"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
+export const SessionDeleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.delete"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, confirmation: z.literal("DELETE-SESSION") }).strict() }).strict();
 
 const profileDraftFields = {
   name: z.string().trim().min(1).max(120),
@@ -571,6 +647,14 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   SecretListCommandSchema,
   SecretVaultLockCommandSchema,
   SecretDeleteCommandSchema,
+  SessionOpenCommandSchema,
+  SessionReauthenticateCommandSchema,
+  SessionSaveCommandSchema,
+  SessionGetCommandSchema,
+  SessionListCommandSchema,
+  SessionValidateCommandSchema,
+  SessionRestoreCommandSchema,
+  SessionDeleteCommandSchema,
   ProfileCreateCommandSchema,
   ProfileGetCommandSchema,
   ProfileUpdateCommandSchema,
@@ -773,6 +857,9 @@ export const SecretBackendStatusResultSchema = z.object({ resultType: z.literal(
 export const SecretListResultSchema = z.object({ resultType: z.literal("secret.list"), metadata: z.array(SecretMetadataContractSchema).max(1_000) }).strict();
 export const SecretVaultLockResultSchema = z.object({ resultType: z.literal("secret.vault.lock"), status: SecretBackendStatusContractSchema }).strict();
 export const SecretDeleteResultSchema = z.object({ resultType: z.literal("secret.delete"), ref: secretRefSchema }).strict();
+export const SessionMetadataResultSchema = z.object({ resultType: z.literal("session.metadata"), action: z.enum(["open", "reauthenticate", "save", "get", "validate", "restore"]), session: sessionMetadataContractSchema, browser: sessionBrowserStatusSchema.nullable() }).strict();
+export const SessionListResultSchema = z.object({ resultType: z.literal("session.list"), sessions: z.array(sessionMetadataContractSchema).max(200) }).strict();
+export const SessionDeleteResultSchema = z.object({ resultType: z.literal("session.delete"), sessionId: sessionIdSchema }).strict();
 
 export const ProfileResultSchema = z.object({ resultType: z.literal("profile.value"), profile: SiteProfileContractSchema, changedPaths: z.array(z.string()).optional() }).strict();
 export const ProfileValidationResultSchema = z.object({
@@ -950,6 +1037,9 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   SecretListResultSchema,
   SecretVaultLockResultSchema,
   SecretDeleteResultSchema,
+  SessionMetadataResultSchema,
+  SessionListResultSchema,
+  SessionDeleteResultSchema,
   ProfileResultSchema,
   ProfileValidationResultSchema,
   ProfileComparisonResultSchema,
@@ -1070,6 +1160,8 @@ export type ProjectSummaryContract = z.infer<typeof ProjectSummarySchema>;
 export type SecretMetadataContract = z.infer<typeof SecretMetadataContractSchema>;
 export type SecretBackendStatusContract = z.infer<typeof SecretBackendStatusContractSchema>;
 export type SecretStoreCapabilityContract = z.infer<typeof SecretStoreCapabilityContractSchema>;
+export type SessionMetadataContract = z.infer<typeof sessionMetadataContractSchema>;
+export type SessionBrowserStatusContract = z.infer<typeof sessionBrowserStatusSchema>;
 export type SiteProfileContract = z.infer<typeof SiteProfileContractSchema>;
 export type PageJobContract = z.infer<typeof PageJobContractSchema>;
 export type JobLeaseContract = z.infer<typeof JobLeaseContractSchema>;

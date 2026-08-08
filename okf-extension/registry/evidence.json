@@ -70,6 +70,13 @@
     { "id": "OKF-EV-P11-DECISION", "name": "Phase 11 security and architecture decision", "status": "PARTIAL", "path": "docs/project/adr/ADR-050-secret-store-and-sensitive-data-protection.md", "method": "ADR review" },
     { "id": "OKF-EV-P11-TESTS", "name": "Phase 11 focused Secret Store test suite", "status": "PARTIAL", "path": "tests/secrets/secret-store.test.ts", "method": "npm run test:secrets" },
     { "id": "OKF-EV-P11-DOCS", "name": "Phase 11 architecture, acceptance, and implementation documentation", "status": "PARTIAL", "path": "docs/project/PHASE_11_IMPLEMENTATION_REPORT.md", "method": "npm run docs:validate" },
-    { "id": "OKF-EV-P11-GATE", "name": "Phase 11 conditional Phase 9/10 gate audit", "status": "BLOCKED", "path": "docs/project/PHASE_11_IMPLEMENTATION_REPORT.md", "method": "prerequisite gate audit" }
+    { "id": "OKF-EV-P11-GATE", "name": "Phase 11 conditional Phase 9/10 gate audit", "status": "BLOCKED", "path": "docs/project/PHASE_11_IMPLEMENTATION_REPORT.md", "method": "prerequisite gate audit" },
+    { "id": "OKF-EV-P12-DOMAIN", "name": "Phase 12 Session domain and lifecycle source", "status": "VERIFIED", "path": "packages/archive-core/src/sessions.ts", "method": "source and typecheck review" },
+    { "id": "OKF-EV-P12-PERSISTENCE", "name": "Phase 12 Session metadata migration and repository", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/migrations.ts", "method": "migration validation and persistence tests" },
+    { "id": "OKF-EV-P12-BOUNDARY", "name": "Phase 12 Secret Store and safe transport boundary", "status": "VERIFIED", "path": "packages/application-service/src/index.ts", "method": "contract, integration, CLI, and Desktop boundary review" },
+    { "id": "OKF-EV-P12-TESTS", "name": "Phase 12 unit and fake-runtime lifecycle evidence", "status": "VERIFIED", "path": "tests/integration/session-lifecycle.test.ts", "method": "unit and integration test execution" },
+    { "id": "OKF-EV-P12-BROWSER", "name": "Phase 12 real headed Chromium fixture", "status": "PARTIAL", "path": "tests/browser/session.test.ts", "method": "real Chromium test pending pinned browser provisioning" },
+    { "id": "OKF-EV-P12-SECURITY", "name": "Phase 12 authentication Session security review", "status": "PARTIAL", "path": "docs/architecture/PHASE_12_SECURITY_REVIEW.md", "method": "security and limitation review" },
+    { "id": "OKF-EV-P12-DOCS", "name": "Phase 12 implementation, ADR, acceptance, and OKF records", "status": "PARTIAL", "path": "docs/project/PHASE_12_IMPLEMENTATION_REPORT.md", "method": "documentation and OKF validation" }
   ]
 }
