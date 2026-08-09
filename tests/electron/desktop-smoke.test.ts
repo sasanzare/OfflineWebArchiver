@@ -19,11 +19,20 @@ function runElectron(executable: string, arguments_: readonly string[], timeoutM
   });
 }
 
+function electronExecutablePath(): string {
+  const executable = process.platform === "win32"
+    ? "electron.exe"
+    : process.platform === "darwin"
+      ? path.join("Electron.app", "Contents", "MacOS", "Electron")
+      : "electron";
+  return path.resolve("node_modules", "electron", "dist", executable);
+}
+
 test("Electron renderer executes Project, Profile, Scope, Queue, Recovery, Browser, and Render flows through the secure bridge", { timeout: 60_000 }, async () => {
   const root = mkdtempSync(path.join(tmpdir(), "owa-electron-"));
   const fixture = await startRenderFixtureServer();
   try {
-    const electron = path.resolve("node_modules/electron/dist/electron.exe");
+    const electron = electronExecutablePath();
     const result = await runElectron(electron, ["apps/desktop", "--architecture-smoke", `--project-smoke-root=${root}`, `--render-smoke-origin=${fixture.origin}`], 55_000);
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     const line = result.stdout.split(/\r?\n/).find((value) => value.startsWith("ARCHITECTURE_SMOKE="));

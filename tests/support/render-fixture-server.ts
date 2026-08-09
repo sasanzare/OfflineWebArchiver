@@ -96,7 +96,17 @@ self.addEventListener("fetch", (event) => {
         "cache-control": "no-store",
         "set-cookie": ["owa_auth=fixture-session; Path=/; HttpOnly"],
       });
-      response.end("<!doctype html><html><body><main id=login>Manual login fixture</main><script>localStorage.setItem('auth-state','signed-in'); const request=indexedDB.open('auth-db',1); request.onupgradeneeded=()=>request.result.createObjectStore('tokens');</script></body></html>");
+      response.end(`<!doctype html><html><body><main id=login>Manual login fixture</main><script>
+localStorage.setItem("auth-state", "signed-in");
+sessionStorage.setItem("session-only", "fixture-ephemeral");
+const request = indexedDB.open("auth-db", 1);
+request.onupgradeneeded = () => request.result.createObjectStore("tokens");
+request.onsuccess = () => {
+  const database = request.result;
+  const transaction = database.transaction("tokens", "readwrite");
+  transaction.objectStore("tokens").put("signed-in", "session");
+};
+</script></body></html>`);
       return;
     }
     if (pathname === "/auth-account") {
@@ -104,7 +114,24 @@ self.addEventListener("fetch", (event) => {
         finish(response, 401, "unauthorized");
         return;
       }
-      finish(response, 200, "<!doctype html><html><body><main id=authenticated>Signed in fixture</main></body></html>", "text/html; charset=utf-8");
+      finish(response, 200, `<!doctype html><html><body><main id="authenticated">Checking session</main><script>
+const marker = document.querySelector("#authenticated");
+const request = indexedDB.open("auth-db");
+request.onsuccess = () => {
+  const database = request.result;
+  if (!database.objectStoreNames.contains("tokens")) {
+    marker.textContent = "Session state invalid";
+    return;
+  }
+  const read = database.transaction("tokens", "readonly").objectStore("tokens").get("session");
+  read.onsuccess = () => {
+    const authenticated = localStorage.getItem("auth-state") === "signed-in" && read.result === "signed-in";
+    marker.textContent = authenticated ? "Signed in fixture" : "Session state invalid";
+  };
+  read.onerror = () => { marker.textContent = "Session state invalid"; };
+};
+request.onerror = () => { marker.textContent = "Session state invalid"; };
+</script></body></html>`, "text/html; charset=utf-8");
       return;
     }
     const file = routeFiles[pathname];

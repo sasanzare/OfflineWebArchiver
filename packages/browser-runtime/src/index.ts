@@ -549,8 +549,13 @@ class PlaywrightAuthenticationSession implements BrowserAuthenticationSession {
     let markerMatched = false;
     try {
       const marker = this.page.locator(validation.markerSelector);
-      markerMatched = await marker.count() > 0;
-      if (markerMatched && validation.markerText !== null) markerMatched = (await marker.first().textContent())?.includes(validation.markerText) ?? false;
+      const deadline = Date.now() + Math.min(this.policy.navigationTimeoutMs, 5_000);
+      do {
+        markerMatched = await marker.count() > 0;
+        if (markerMatched && validation.markerText !== null) markerMatched = (await marker.first().textContent())?.includes(validation.markerText) ?? false;
+        if (markerMatched || Date.now() >= deadline) break;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      } while (!markerMatched);
     } catch {
       return { status: "configuration_missing", finalUrlSafe, statusCode, markerMatched: false, reasonCode: "AUTH_VALIDATION_SELECTOR_INVALID" };
     }

@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-08-08
+2026-08-09
 
 ## Project Summary
 
@@ -16,33 +16,34 @@ capture, or production packaging.
 
 ## Current Objective
 
-Complete Phase 13 post-Phase-12 architecture and security hardening without
-starting Phase 14 functionality. The objective is to close the Phase 12
-Authentication Context allowlist debt, freeze trust, state, replay, Service
-Worker, path-safety, concurrency, platform, and acceptance contracts, and
-leave truthful evidence for the remaining runtime-dependent gates.
+Complete the Phase 13 closure/remediation gate without starting Phase 14.
+Re-evaluate the real Chromium, IndexedDB/session restore, Service Worker, and
+native-platform evidence gates, preserve truthful blockers, and leave a
+traceable remediation report and handoff.
 
 ## Current Phase or Milestone
 
-Phase 13 implementation and the final documentation/validation pass are
-complete. The Phase 12 allowlist remediation, core contracts, migration 009,
-security review, architecture records, acceptance reconciliation, OKF updates,
-authentication method metadata hardening, locale-independent replay sorting,
-and the registered Service Worker block/allow fixture have been performed.
-Phase 13 remains `PARTIAL` only because approved Chromium and native-platform
-evidence are unavailable.
+Phase 13 implementation is present and the closure gate is in progress.
+The previous Phase 13 hardening commit is `df2920071d53803963b6d64c5a7689f6677a1d41`.
+The current remediation strengthens the registered session fixture so that
+authentication validation depends on cookie, localStorage, and IndexedDB
+state, and allows asynchronous validation markers. Phase 13 remains `PARTIAL`
+until the approved Chromium and required native-platform evidence exist.
 
 ## Repository State
 
 - Repository path: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `d59390f7a060321fe37ece716ec74d06b5071ba3`
-- Current HEAD: `d59390f7a060321fe37ece716ec74d06b5071ba3`
-- Working tree status: Phase 13 changes are present and uncommitted; the tree
-  was clean at the start of Phase 13.
+- Base or starting commit: `df2920071d53803963b6d64c5a7689f6677a1d41`
+- Current HEAD: `df2920071d53803963b6d64c5a7689f6677a1d41`
+- Working tree status: Fourteen tracked remediation/documentation files are
+  modified and the closure report is untracked; the previous Phase 13
+  implementation is committed at HEAD.
 - Staged changes: none.
-- Unstaged changes: 61 tracked paths are modified.
-- Untracked files: the Phase 13 files listed under Files Created.
+- Unstaged changes: the fourteen tracked files shown by `git status --short`,
+  including the Browser Runtime/session fixture remediation and acceptance,
+  security, OKF, and handoff records.
+- Untracked files: `docs/project/PHASE_13_CLOSURE_REPORT.md`.
 - Branch, commit history, and working tree were not changed destructively; no
   commit, push, branch change, reset, clean, restore, or stash was performed.
 
@@ -73,34 +74,41 @@ evidence are unavailable.
   request metadata, and made replay-header ordering locale-independent.
 - Reconciled AC-P13-008 as `BLOCKED` because real IndexedDB/session restore
   evidence is unavailable; fake-runtime coverage is not promoted.
-- Reviewed `/Users/sasan/Mistakes/mistakes.md` and appended only two reusable
-  lessons discovered during this task: deterministic ZIP timestamps and
-  canonicalizing macOS temporary roots before symlink checks.
+- Reviewed `/Users/sasan/Mistakes/mistakes.md` and appended two reusable
+  lessons for this task: proving every persisted browser storage type and
+  resolving platform-native runtime paths before classifying provisioning
+  failures.
 
 ## Work in Progress
 
-No implementation work remains in the current environment. The only remaining
-work is external runtime evidence: provision approved repository-owned
-Chromium, execute the browser/session/IndexedDB/Service Worker fixtures, and
-execute the native platform matrix.
+The session fixture now writes a synthetic IndexedDB record and requires it,
+alongside the cookie and localStorage marker, during protected-page
+validation. The fixture also asserts that unsupported sessionStorage is not
+serialized. Typecheck, build, lint, format, and the 53-test unit suite pass.
+Real Chromium execution remains unavailable because official Playwright hosts
+are not resolvable, and the native matrix cannot be produced from this macOS
+host.
 
 ## Remaining Work
 
-1. Provision or authorize the approved repository-owned Chromium resource.
-2. Rerun the registered Browser Runtime, Session, IndexedDB restore, Service
-   Worker, and full suites; inspect all results without promoting fake tests.
-3. Execute the documented native platform matrix if platform claims are
-   required.
-4. Reconcile AC-P13-002, AC-P13-008, AC-P13-012, and AC-P13-016. Do not begin
-   Phase 14 while any remains blocked.
+1. Provision the approved repository-owned Chromium when official Playwright
+   DNS/download access is available.
+2. Rerun `node tools/testing/run-tests.mjs package:browser-runtime` and
+   `npm test` with the fixture server available; inspect real Session,
+   IndexedDB, Service Worker, render, interaction, CLI, and Electron results.
+3. Execute the documented native platform matrix on each claimed platform.
+4. Reconcile AC-P13-002, AC-P13-008, AC-P13-012, AC-P13-016 and the Phase 12
+   carry-over rows without promoting fake evidence. Do not begin Phase 14
+   while any mandatory Phase 13 row remains blocked.
 
 ## Exact Next Steps
 
-1. Provide `.runtime/browsers/browser-manifest.json` and its approved
-   checksum-verified executable, or record the external provisioning result.
+1. On a host with official Playwright DNS/download access, provision and
+   verify the pinned Chromium under `.runtime/browsers`.
 2. Run `node tools/testing/run-tests.mjs package:browser-runtime` and then
    `npm test` with the fixture server available.
-3. Update acceptance evidence only from inspected real-runtime results.
+3. Execute the native platform matrix and update acceptance evidence only from
+   inspected real-runtime results. Keep Phase 14 blocked until then.
 
 ## Files Created
 
@@ -115,6 +123,7 @@ execute the native platform matrix.
 - `docs/architecture/TRUST_ZONES_AND_IPC.md`
 - `docs/architecture/WORKER_NETWORK_CONCURRENCY_CONTRACT.md`
 - `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`
+- `docs/project/PHASE_13_CLOSURE_REPORT.md`
 - `docs/project/POST_PHASE_12_BASELINE_AUDIT.md`
 - `docs/project/adr/ADR-052-trust-zones-and-privilege-boundaries.md`
 - `docs/project/adr/ADR-053-separated-crawl-run-state.md`
@@ -166,6 +175,11 @@ execute the native platform matrix.
 - `tools/architecture/validate.mjs`, `tools/docs/validate.mjs`,
   `tools/migrations/validate.mjs`, `tools/okf/{discovery,references}.mjs`, and
   `tools/testing/run-tests.mjs`
+- Closure remediation additionally modifies the Phase 13 acceptance/security
+  records, Phase 13 OKF history/validation and extension registries,
+  `packages/browser-runtime/src/index.ts`,
+  `tests/browser/session.test.ts`, `tests/electron/desktop-smoke.test.ts`, and
+  `tests/support/render-fixture-server.ts`.
 
 ## Important Architecture and Design Decisions
 
@@ -203,7 +217,7 @@ execute the native platform matrix.
 - `npm run migrations:validate` — PASS (9 immutable migrations, schema 9).
 - `npm run security:check` — PASS.
 - `npm run docs:validate` — PASS after the final documentation edits (158
-  required artifacts, 390 active relative links, 98 archived Markdown files).
+  required artifacts, 393 active relative links, 98 archived Markdown files).
 - `npm run test:architecture` — PASS (95 production TypeScript files).
 - `npm run okf:validate` — PASS across all layers with zero errors/warnings.
 - `npm run test:okf` — PASS (43/43).
@@ -240,16 +254,35 @@ execute the native platform matrix.
   `.runtime/browsers/browser-manifest.json` is absent.
 - Escalated `npm run browser:install` — failed with DNS
   `getaddrinfo ENOTFOUND` for the official Playwright download hosts.
+- `node tools/testing/run-tests.mjs package:browser-runtime` after the
+  remediation — normal sandbox: 2 passed, 6 loopback `EPERM` failures, 2
+  skipped; loopback escalation: 2 passed, 6 failures due to missing manifest
+  or `BROWSER_LAUNCH_FAILED`, 2 skipped.
+- `npm run typecheck`, `npm run build`, `npm run lint`, `npm run format:check`,
+  and `node tools/testing/run-tests.mjs unit` after the fixture remediation —
+  PASS; the unit suite is 53/53.
+- `npm run okf:validate` and `npm run docs:validate` after the closure records
+  — PASS; OKF has 0 errors/0 warnings and docs report 393 active links.
+- Final `node tools/testing/run-tests.mjs package:desktop` — 1 pass, 1
+  environment-blocked failure at the platform-correct macOS Electron path
+  (`.../Electron.app/Contents/MacOS/Electron` ENOENT).
+- `node --version` — v24.19.0; `npm --version` — 12.0.2; host — Darwin
+  23.2.0 arm64. The repository requires npm 11, so this version discrepancy
+  remains an environment note, not a changed project requirement.
 - `/Users/sasan/Mistakes/mistakes.md` — reviewed and updated with two concise
-  reusable lessons; no secrets were added.
+  browser/native provisioning lessons; no secrets were added.
 
 ## Validation and Test Results
 
 Deterministic contracts, SQLite, Project Format, scope, recovery, queue,
 Secret Store, unit, architecture, security, documentation, and OKF checks
-passed as listed above. Real pinned-Chromium Session, IndexedDB restore, and
-Service Worker evidence is not available. The full suite was attempted and
-its 143/13/2 escalated result is recorded without masking environment failures.
+passed as listed above. The remediation now makes the browser fixture's
+protected marker depend on cookie, localStorage, and an IndexedDB record, and
+asserts that sessionStorage is not serialized; this change is typechecked and
+unit-tested but has not been promoted to runtime evidence. Real pinned-Chromium
+Session, IndexedDB restore, and Service Worker evidence is unavailable. The
+final escalated full suite was run after the remediation and recorded 143
+passed, 13 environment-blocked failures, and 2 skipped tests.
 
 ## Known Issues and Blockers
 
@@ -258,9 +291,12 @@ its 143/13/2 escalated result is recorded without masking environment failures.
 - In the normal sandbox, loopback fixture-server binding can fail with
   `listen EPERM`; with escalation, binding succeeded but the browser artifact
   and launch remained unavailable.
-- The Electron smoke test cannot find the current platform Electron binary.
-- Native Windows 11, Windows 10, Linux, macOS, and architecture evidence is
-  not available in this macOS environment.
+- The Electron smoke test cannot find the current platform Electron binary;
+  `node_modules/electron` contains package files but no `dist/Electron`.
+- The current host is macOS 14-era Darwin 23.2.0 on arm64. Native Windows 11,
+  Windows 10, Linux, and complete cross-platform evidence are not available;
+  the presence of system Chrome/Edge is not an approved substitute for the
+  repository-owned Playwright runtime.
 - The explicit Service Worker browser fixture is registered, but its real
   browser execution and AC-P13-012 remain `BLOCKED`.
 - AC-P13-008 remains `BLOCKED` because the real IndexedDB/session restore test
@@ -284,11 +320,13 @@ machine secrets were added to the worktree.
 
 ## Uncommitted or Partially Applied Changes
 
-All Phase 13 edits are uncommitted and unstaged. The earlier combined patch
-failed atomically; its two intended hardening edits were subsequently applied
-separately and validated. Do not discard, reset, restore, stash, clean, commit,
-push, or switch branches when resuming. Treat the current worktree and this
-handoff as the source of truth.
+The closure remediation and evidence updates are uncommitted and unstaged. The
+earlier Phase 13 implementation is already committed at HEAD. Current changes
+include the Closure Report, acceptance/security/OKF updates, the Browser
+Runtime/session fixture remediation, the platform-aware Electron smoke path,
+and this handoff. Do not discard, reset, restore, stash, clean, commit, push,
+or switch branches when resuming. Treat the current worktree and this handoff
+as the source of truth.
 
 ## Recovery or Rollback Notes
 
@@ -302,6 +340,7 @@ set.
 ## Related Documentation
 
 - [Phase 13 implementation report](docs/project/PHASE_13_IMPLEMENTATION_REPORT.md)
+- [Phase 13 closure/remediation report](docs/project/PHASE_13_CLOSURE_REPORT.md)
 - [Post-Phase-12 baseline audit](docs/project/POST_PHASE_12_BASELINE_AUDIT.md)
 - [Phase 13 security review](docs/architecture/PHASE_13_SECURITY_REVIEW.md)
 - [Trust zones and IPC](docs/architecture/TRUST_ZONES_AND_IPC.md)

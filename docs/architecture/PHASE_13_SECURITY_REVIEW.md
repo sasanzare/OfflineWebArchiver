@@ -9,6 +9,19 @@ and native-platform evidence remains blocked.
 does not approve Phase 14 authentication/OTP, proxy, downloader, replay-engine,
 archive-runtime, or Worker Pool functionality.
 
+## Closure remediation checkpoint — 2026-08-09
+
+The registered Session fixture was strengthened so its protected marker depends
+on cookie, localStorage, and an IndexedDB record; it also asserts that the
+documented unsupported sessionStorage value is not serialized. Authentication
+marker validation now waits within a bounded five-second window for
+asynchronous page state. The Electron smoke fixture now resolves the native
+executable path by host platform. These changes are typechecked and covered by
+deterministic tests, but no real-browser or native-platform acceptance result
+is promoted: official Chromium provisioning still fails DNS resolution and
+the Electron package has no downloaded macOS binary. Detailed commands and
+totals are in [the Phase 13 Closure Report](../project/PHASE_13_CLOSURE_REPORT.md).
+
 ## Findings
 
 | Finding | Severity | Owner | Target | Evidence / disposition | Acceptance |

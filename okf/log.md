@@ -13,3 +13,9 @@ bundle. It is not a copy of Git history or a task diary.
   replay/offline policy, Service Workers, canonical paths, platform support, and
   validation evidence; recorded migration 009 and the blocked browser/platform
   closure conditions.
+
+## 2026-08-09
+
+- Recorded the Phase 13 closure/remediation gate with the actual Chromium and
+  Electron provisioning failures, 158-test regression totals, unchanged
+  blocked acceptance rows, and the strengthened IndexedDB/session fixture.

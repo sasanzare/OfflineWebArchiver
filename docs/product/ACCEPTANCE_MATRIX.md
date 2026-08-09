@@ -519,3 +519,7 @@ Phase 13 closure.
 | AC-P12-013 | PASS | Capability disclosure still marks sessionStorage unsupported. |
 | AC-P12-014 | PASS | Migration 008 remains immutable and compatible before migration 009. |
 | AC-P12-015 | BLOCKED | Documentation is synchronized, but closure evidence still depends on the blocked real-browser gate. |
+
+The 2026-08-09 closure/remediation execution, including exact provisioning
+errors, full-suite totals, fixture remediation, and the unchanged blocked
+statuses, is recorded in [the Phase 13 Closure Report](../project/PHASE_13_CLOSURE_REPORT.md).

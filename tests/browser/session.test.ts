@@ -43,11 +43,17 @@ test("real Chromium saves and restores an isolated manual Authentication Session
     savedState = await manual.captureStorageState();
     const parsed = JSON.parse(Buffer.from(savedState).toString("utf8")) as {
       cookies: Array<{ name: string }>;
-      origins: Array<{ localStorage: Array<{ name: string }>; indexedDB?: unknown }>;
+      origins: Array<{
+        localStorage: Array<{ name: string }>;
+        indexedDB?: Array<{ name: string; stores?: Array<{ name: string; records?: unknown[] }> }>;
+      }>;
     };
     assert.ok(parsed.cookies.some((cookie) => cookie.name === "owa_auth"));
     assert.ok(parsed.origins.some((origin) => origin.localStorage.some((entry) => entry.name === "auth-state")));
-    assert.ok(parsed.origins.some((origin) => Array.isArray(origin.indexedDB)));
+    assert.equal(JSON.stringify(parsed).includes("session-only"), false);
+    const database = parsed.origins.flatMap((origin) => origin.indexedDB ?? []).find((entry) => entry.name === "auth-db");
+    assert.ok(database);
+    assert.ok(database.stores?.some((store) => store.name === "tokens" && (store.records?.length ?? 0) > 0));
     await manual.close();
 
     const restored = await runtime.restoreAuthenticationSession("browser-session-fixture", savedState, policy);
