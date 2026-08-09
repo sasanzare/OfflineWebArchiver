@@ -14,13 +14,17 @@ Phase 14 remains prohibited.
 
 - Repository: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
 - Branch: `main` (unchanged)
-- HEAD at the start and end of remediation:
-  `df2920071d53803963b6d64c5a7689f6677a1d41`
+- HEAD at the start and end of the final evidence gate:
+  `edea9585aeaee56620d22cc6c091c61fa65edbb6`
+- The prior Phase 13 hardening commit was
+  `df2920071d53803963b6d64c5a7689f6677a1d41`; the remediation is included in
+  the current HEAD.
 - The request's expected `d59390f7a060321fe37ece716ec74d06b5071ba3` was not
   the current HEAD; repository state was preserved.
-- Working tree was clean at the start. Remediation changes are unstaged and
-  uncommitted; no commit, push, branch change, reset, restore, stash, clean, or
-  rebase was performed.
+- Working tree was clean at the start of the final evidence gate. Only this
+  report, `HANDOFF.md`, and the OKF maintenance log are updated by the gate;
+  no commit, push, branch change, reset, restore, stash, clean, or rebase was
+  performed.
 - Host: Darwin 23.2.0, arm64. Node `v24.19.0`; npm `12.0.2`. The project
   declares Node 24 and npm 11, so the npm version difference is an environment
   limitation recorded here and was not changed.
@@ -88,6 +92,25 @@ Results:
 The `.runtime/browsers` directory contains no manifest or executable. The
 system-installed Chrome and Edge binaries were not substituted.
 
+## Final evidence closure gate execution — 2026-08-09
+
+The current HEAD was rechecked after the prior remediation. The host is macOS
+14.2.1 on Darwin 23.2.0 arm64, with Node `v24.19.0`, npm `12.0.2`,
+Playwright `1.56.1`, and Electron `43.2.0`. The project still declares npm 11;
+that version difference was not changed.
+
+- `npm run browser:info` and `npm run browser:verify` both exited 1 because
+  `.runtime/browsers/browser-manifest.json` is absent.
+- Normal and escalated `npm run browser:install` both exited 1. The official
+  Playwright hosts returned `getaddrinfo ENOTFOUND`.
+- Normal and escalated `node node_modules/electron/install.js` both failed with
+  `TypeError: fetch failed`; no official Electron binary was installed.
+- No compatible pre-provisioned Chromium, verified browser cache restoration
+  path, native-platform CI matrix, or trusted offline artifact was available.
+
+These results do not create a browser manifest, substitute a system browser,
+or promote any browser/native acceptance result.
+
 ## Real Chromium and Service Worker evidence
 
 The required command was executed after remediation:
@@ -127,6 +150,15 @@ the correct macOS executable target and still fails with `ENOENT`.
 
 System Chrome/Edge cannot provide Electron-native or repository-owned
 Chromium evidence. AC-P13-016 remains `BLOCKED`.
+
+The current platform evidence row is:
+
+| Platform | Environment | Chromium | Electron | Required fixtures | Result |
+|---|---|---|---|---|---|
+| macOS | macOS 14.2.1, Darwin 23.2.0, arm64 | Not available; manifest absent | `package:desktop`: 1 pass, smoke `ENOENT` | Browser fixtures blocked; Electron smoke not launched | `ENVIRONMENT_BLOCKED` |
+| Windows 11 x64 | Not available | Not run | Not run | Not run | `ENVIRONMENT_BLOCKED` |
+| Windows 10 | Not available | Not run | Not run | Not run | `ENVIRONMENT_BLOCKED` |
+| Linux | Not available | Not run | Not run | Not run | `ENVIRONMENT_BLOCKED` |
 
 ## Security and regression verification
 
@@ -174,6 +206,14 @@ The canonical full suite was run in both environments:
 - `npm run okf:validate`: PASS with 0 errors and 0 warnings across all layers.
 - `npm run docs:validate`: PASS for 158 required artifacts, 393 active
   relative links, and 98 readable archived Markdown files.
+
+The final gate reran the independent repository validators after focused and
+full regression. Typecheck, build, lint, format, architecture, contracts,
+migrations, Project Format, Scope, Queue, Recovery, Checkpoint, Render, Secret
+Store, diagnostics, security, documentation, and OKF validation all passed;
+the unit suite was 53/53 and the OKF suite was 43/43. A generated-artifact
+scan found no logs, reports, screenshots, traces, diagnostics, test-result
+directories, or unauthorized synthetic secret/OTP occurrences.
 
 The negative validator messages shown inside the OKF suite are intentional
 fixture assertions; the suite itself passed 43/43.

@@ -23,27 +23,25 @@ traceable remediation report and handoff.
 
 ## Current Phase or Milestone
 
-Phase 13 implementation is present and the closure gate is in progress.
-The previous Phase 13 hardening commit is `df2920071d53803963b6d64c5a7689f6677a1d41`.
-The current remediation strengthens the registered session fixture so that
-authentication validation depends on cookie, localStorage, and IndexedDB
-state, and allows asynchronous validation markers. Phase 13 remains `PARTIAL`
-until the approved Chromium and required native-platform evidence exist.
+Phase 13 implementation and remediation are committed at
+`edea9585aeaee56620d22cc6c091c61fa65edbb6`. The final evidence closure gate
+was re-executed on 2026-08-09. The registered session fixture requires cookie,
+localStorage, and IndexedDB state and preserves the explicitly unsupported
+sessionStorage contract. Phase 13 remains `PARTIAL` until approved Chromium
+and required native-platform evidence exist.
 
 ## Repository State
 
 - Repository path: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `df2920071d53803963b6d64c5a7689f6677a1d41`
-- Current HEAD: `df2920071d53803963b6d64c5a7689f6677a1d41`
-- Working tree status: Fourteen tracked remediation/documentation files are
-  modified and the closure report is untracked; the previous Phase 13
-  implementation is committed at HEAD.
+- Base or starting commit: `edea9585aeaee56620d22cc6c091c61fa65edbb6`
+- Current HEAD: `edea9585aeaee56620d22cc6c091c61fa65edbb6`
+- Working tree status: Three tracked documentation files are modified by this
+  final evidence gate; no product source or generated evidence is included.
 - Staged changes: none.
-- Unstaged changes: the fourteen tracked files shown by `git status --short`,
-  including the Browser Runtime/session fixture remediation and acceptance,
-  security, OKF, and handoff records.
-- Untracked files: `docs/project/PHASE_13_CLOSURE_REPORT.md`.
+- Unstaged changes: `HANDOFF.md`, `docs/project/PHASE_13_CLOSURE_REPORT.md`,
+  and `okf/log.md`.
+- Untracked files: none.
 - Branch, commit history, and working tree were not changed destructively; no
   commit, push, branch change, reset, clean, restore, or stash was performed.
 
@@ -78,35 +76,39 @@ until the approved Chromium and required native-platform evidence exist.
   lessons for this task: proving every persisted browser storage type and
   resolving platform-native runtime paths before classifying provisioning
   failures.
+- Re-executed the final evidence closure gate at the current HEAD. Official
+  Playwright Chromium and Electron provisioning still failed because the
+  required external hosts/resources were unavailable; no blocked acceptance
+  row was promoted.
 
 ## Work in Progress
 
-The session fixture now writes a synthetic IndexedDB record and requires it,
-alongside the cookie and localStorage marker, during protected-page
-validation. The fixture also asserts that unsupported sessionStorage is not
-serialized. Typecheck, build, lint, format, and the 53-test unit suite pass.
-Real Chromium execution remains unavailable because official Playwright hosts
-are not resolvable, and the native matrix cannot be produced from this macOS
-host.
+No product implementation is in progress. The session fixture writes a
+synthetic IndexedDB record and requires it alongside cookie and localStorage
+state; it also asserts that unsupported sessionStorage is not serialized.
+Typecheck, build, lint, format, and the 53-test unit suite pass. Real
+Chromium execution remains unavailable because official Playwright hosts are
+not resolvable, and the native matrix cannot be produced from this macOS host.
 
 ## Remaining Work
 
 1. Provision the approved repository-owned Chromium when official Playwright
-   DNS/download access is available.
-2. Rerun `node tools/testing/run-tests.mjs package:browser-runtime` and
-   `npm test` with the fixture server available; inspect real Session,
-   IndexedDB, Service Worker, render, interaction, CLI, and Electron results.
+   DNS/download access or a verified offline artifact is available.
+2. Rerun `npm run browser:verify`,
+   `node tools/testing/run-tests.mjs package:browser-runtime`, and `npm test`
+   with the fixture server available; inspect real Session, IndexedDB,
+   Service Worker, render, interaction, CLI, and Electron results.
 3. Execute the documented native platform matrix on each claimed platform.
 4. Reconcile AC-P13-002, AC-P13-008, AC-P13-012, AC-P13-016 and the Phase 12
-   carry-over rows without promoting fake evidence. Do not begin Phase 14
-   while any mandatory Phase 13 row remains blocked.
+   carry-over rows only from inspected evidence. Do not begin Phase 14 while
+   any mandatory Phase 13 row remains blocked.
 
 ## Exact Next Steps
 
-1. On a host with official Playwright DNS/download access, provision and
-   verify the pinned Chromium under `.runtime/browsers`.
-2. Run `node tools/testing/run-tests.mjs package:browser-runtime` and then
-   `npm test` with the fixture server available.
+1. On a host with official Playwright DNS/download access or a verified exact
+   revision artifact, provision and verify Chromium under `.runtime/browsers`.
+2. Run `npm run browser:verify`,
+   `node tools/testing/run-tests.mjs package:browser-runtime`, and `npm test`.
 3. Execute the native platform matrix and update acceptance evidence only from
    inspected real-runtime results. Keep Phase 14 blocked until then.
 
@@ -180,6 +182,8 @@ host.
   `packages/browser-runtime/src/index.ts`,
   `tests/browser/session.test.ts`, `tests/electron/desktop-smoke.test.ts`, and
   `tests/support/render-fixture-server.ts`.
+- The final evidence gate additionally updates `HANDOFF.md`,
+  `docs/project/PHASE_13_CLOSURE_REPORT.md`, and `okf/log.md` only.
 
 ## Important Architecture and Design Decisions
 
@@ -237,8 +241,8 @@ host.
 - `node tools/testing/run-tests.mjs package:cli` — 2 passed and 2
   environment/product-fixture-dependent failures: render bind `EPERM` and
   missing browser manifest in the project smoke path.
-- `node tools/testing/run-tests.mjs package:desktop` — 1 passed and 1 failed
-  because the Electron platform binary was unavailable (`electron.exe` ENOENT).
+- `node tools/testing/run-tests.mjs package:desktop` — 1 passed and 1 failed;
+  the platform-correct macOS Electron path failed with `ENOENT`.
 - Normal `node tools/testing/run-tests.mjs package:browser-runtime` — 2
   passed, 6 failed at loopback `listen EPERM`, 2 skipped.
 - Escalated `node tools/testing/run-tests.mjs package:browser-runtime` —
@@ -252,8 +256,10 @@ host.
   coverage passed.
 - `npm run browser:verify` — failed because
   `.runtime/browsers/browser-manifest.json` is absent.
-- Escalated `npm run browser:install` — failed with DNS
+- Normal and escalated `npm run browser:install` — failed with DNS
   `getaddrinfo ENOTFOUND` for the official Playwright download hosts.
+- Normal and escalated `node node_modules/electron/install.js` — failed with
+  `TypeError: fetch failed`; no Electron binary was installed.
 - `node tools/testing/run-tests.mjs package:browser-runtime` after the
   remediation — normal sandbox: 2 passed, 6 loopback `EPERM` failures, 2
   skipped; loopback escalation: 2 passed, 6 failures due to missing manifest
@@ -266,6 +272,17 @@ host.
 - Final `node tools/testing/run-tests.mjs package:desktop` — 1 pass, 1
   environment-blocked failure at the platform-correct macOS Electron path
   (`.../Electron.app/Contents/MacOS/Electron` ENOENT).
+- Final `npm run typecheck`, `npm run build`, `npm run lint`,
+  `npm run format:check`, `npm run test:architecture`,
+  `npm run contracts:check`, `npm run migrations:validate`,
+  `npm run project-format:validate`, scope/queue/recovery/checkpoint/render/
+  Secret Store/diagnostics validators, `npm run security:check`,
+  `npm run docs:validate`, `npm run okf:validate`, `npm run test:unit`, and
+  `npm run test:okf` — PASS; unit 53/53 and OKF 43/43.
+- Final generated-artifact scan — no logs, reports, screenshots, traces,
+  diagnostics, test-result directories, or unauthorized synthetic secret/OTP
+  occurrences were present; `.runtime` contains no browser executable or
+  manifest.
 - `node --version` — v24.19.0; `npm --version` — 12.0.2; host — Darwin
   23.2.0 arm64. The repository requires npm 11, so this version discrepancy
   remains an environment note, not a changed project requirement.
@@ -282,7 +299,8 @@ asserts that sessionStorage is not serialized; this change is typechecked and
 unit-tested but has not been promoted to runtime evidence. Real pinned-Chromium
 Session, IndexedDB restore, and Service Worker evidence is unavailable. The
 final escalated full suite was run after the remediation and recorded 143
-passed, 13 environment-blocked failures, and 2 skipped tests.
+passed, 13 environment-blocked failures, and 2 skipped tests. The final
+evidence gate reproduced those totals and found no new product failure.
 
 ## Known Issues and Blockers
 
@@ -320,13 +338,12 @@ machine secrets were added to the worktree.
 
 ## Uncommitted or Partially Applied Changes
 
-The closure remediation and evidence updates are uncommitted and unstaged. The
-earlier Phase 13 implementation is already committed at HEAD. Current changes
-include the Closure Report, acceptance/security/OKF updates, the Browser
-Runtime/session fixture remediation, the platform-aware Electron smoke path,
-and this handoff. Do not discard, reset, restore, stash, clean, commit, push,
-or switch branches when resuming. Treat the current worktree and this handoff
-as the source of truth.
+The final evidence gate updates to `HANDOFF.md`,
+`docs/project/PHASE_13_CLOSURE_REPORT.md`, and `okf/log.md` are unstaged and
+uncommitted. No source, migration, contract, branch, or generated browser
+artifact was changed. Do not discard, reset, restore, stash, clean, commit,
+push, or switch branches when resuming. Treat the current worktree and this
+handoff as the source of truth.
 
 ## Recovery or Rollback Notes
 
