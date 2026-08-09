@@ -84,7 +84,7 @@ test("opening schema version 1 creates a verified backup and migrates forward", 
     assert.equal(before.compatibility.requiresMigration, true);
     const opened = await storage.open(projectPath);
     assert.equal(opened.migrationStatus, "migrated");
-    assert.equal(opened.schemaVersion, 8);
+    assert.equal(opened.schemaVersion, 9);
     await storage.close();
     const backups = await readdir(path.join(projectPath, "database", "backups"));
     assert.equal(backups.some((name) => name.endsWith(".db")), true);

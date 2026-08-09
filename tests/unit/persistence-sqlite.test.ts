@@ -49,7 +49,7 @@ test("a failed migration transaction rolls back its schema changes", () => {
   database.close();
 });
 
-test("schema 8 installs Lease, Checkpoint, Recovery, Render, Interaction, and Session ledgers", () => {
+test("schema 9 installs Lease, Checkpoint, Recovery, Render, Interaction, Session, and Run State ledgers", () => {
   const database = new DatabaseSync(":memory:", { allowExtension: false, defensive: true });
   configureDatabase(database);
   applyPendingMigrations(database, "0.8.0", () => "2026-08-01T12:00:00.000Z");
@@ -62,7 +62,11 @@ test("schema 8 installs Lease, Checkpoint, Recovery, Render, Interaction, and Se
   for (const required of ["fencing_generation", "recovery_state"]) assert.equal(jobColumns.includes(required), true, required);
   assert.equal(database.prepare("PRAGMA foreign_keys").get()!["foreign_keys"], 1);
   assert.equal(database.prepare("PRAGMA integrity_check").get()!["integrity_check"], "ok");
-  assert.equal(database.prepare("PRAGMA user_version").get()!["user_version"], 8);
+  const runControlColumns = (database.prepare("PRAGMA table_info(run_control)").all() as { name: string }[]).map((row) => row.name);
+  const runCheckpointColumns = (database.prepare("PRAGMA table_info(run_checkpoints)").all() as { name: string }[]).map((row) => row.name);
+  assert.equal(runControlColumns.includes("run_state"), true);
+  assert.equal(runCheckpointColumns.includes("run_state"), true);
+  assert.equal(database.prepare("PRAGMA user_version").get()!["user_version"], 9);
   database.close();
 });
 

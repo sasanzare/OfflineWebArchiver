@@ -9,3 +9,7 @@ bundle. It is not a copy of Git history or a task diary.
   controls, database schema-8 knowledge, phase history, and extension evidence
   links. Recorded the real pinned-Chromium validation as environment-blocked;
   no unsupported browser evidence was promoted.
+- Added Product Phase 13 hardening concepts for trust zones, Crawl Run state,
+  replay/offline policy, Service Workers, canonical paths, platform support, and
+  validation evidence; recorded migration 009 and the blocked browser/platform
+  closure conditions.

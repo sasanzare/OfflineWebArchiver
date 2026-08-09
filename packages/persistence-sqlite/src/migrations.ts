@@ -601,6 +601,11 @@ CREATE INDEX browser_sessions_project_validation
 ON browser_sessions(project_id, validation_result, last_validated_at DESC);
 `;
 
+const ADD_CRAWL_RUN_STATE_SQL = `
+ALTER TABLE run_control ADD COLUMN run_state TEXT NOT NULL DEFAULT 'running' CHECK (run_state IN ('running', 'pausing', 'paused', 'waiting_for_network', 'waiting_for_auth', 'waiting_for_rate_limit', 'cancelling', 'cancelled', 'completed', 'failed'));
+ALTER TABLE run_checkpoints ADD COLUMN run_state TEXT NOT NULL DEFAULT 'running' CHECK (run_state IN ('running', 'pausing', 'paused', 'waiting_for_network', 'waiting_for_auth', 'waiting_for_rate_limit', 'cancelling', 'cancelled', 'completed', 'failed'));
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -614,6 +619,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "006_add_browser_rendering_engine", sequence: 6, sql: ADD_BROWSER_RENDERING_ENGINE_SQL, checksum: checksum(ADD_BROWSER_RENDERING_ENGINE_SQL) }),
   Object.freeze({ id: "007_add_browser_interaction", sequence: 7, sql: ADD_BROWSER_INTERACTION_SQL, checksum: checksum(ADD_BROWSER_INTERACTION_SQL) }),
   Object.freeze({ id: "008_add_browser_sessions", sequence: 8, sql: ADD_BROWSER_SESSIONS_SQL, checksum: checksum(ADD_BROWSER_SESSIONS_SQL) }),
+  Object.freeze({ id: "009_add_crawl_run_state", sequence: 9, sql: ADD_CRAWL_RUN_STATE_SQL, checksum: checksum(ADD_CRAWL_RUN_STATE_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

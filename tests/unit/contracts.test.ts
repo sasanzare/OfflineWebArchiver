@@ -177,7 +177,7 @@ test("Recovery, Lease, Checkpoint, and Run-control responses validate without Le
   assert.equal("leaseToken" in lease, false);
   const reportResponse = parseResponseEnvelope({ ...base, result: { resultType: "recovery.report", report: { recoveryOperationId: "00000000-0000-4000-8000-000000000611", projectId: pageJob().projectId, runId: queueOwner.runId, status: "inspected", dryRun: true, evaluationTime: metadata.timestamp, scanned: 1, interrupted: 1, requeued: 0, paused: 0, outputIssues: 0, cursor: 1, hasMore: false, items: [{ jobId: pageJob().jobId, queueSequence: 1, currentState: "processing", reasonCode: "LEASE_EXPIRED", action: "requeue", leaseId: lease.leaseId, fencingGeneration: 1 }], startedAt: metadata.timestamp, completedAt: metadata.timestamp } } });
   assert.equal(reportResponse.status, "success");
-  const runResponse = parseResponseEnvelope({ ...base, result: { resultType: "run.control", run: { projectId: pageJob().projectId, runId: queueOwner.runId, controlState: "paused", requestedAt: metadata.timestamp, pausedAt: metadata.timestamp, activeLeaseCount: 0 } } });
+  const runResponse = parseResponseEnvelope({ ...base, result: { resultType: "run.control", run: { projectId: pageJob().projectId, runId: queueOwner.runId, controlState: "paused", runState: "paused", requestedAt: metadata.timestamp, pausedAt: metadata.timestamp, activeLeaseCount: 0 } } });
   assert.equal(runResponse.status, "success");
 });
 

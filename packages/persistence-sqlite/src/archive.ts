@@ -238,7 +238,8 @@ export async function createProjectArchive(input: {
       throw new ProjectOperationError("PROJECT_EXPORT_FAILED", `Export entry ${name} exceeds the per-file limit`);
     }
   }
-  const data = zipSync(archiveEntries, { level: 6, mtime: new Date("1980-01-01T00:00:00.000Z") });
+  // Use midday UTC so the DOS date remains 1980 on west-of-UTC hosts.
+  const data = zipSync(archiveEntries, { level: 6, mtime: new Date("1980-01-01T12:00:00.000Z") });
   if (data.byteLength > limits.maximumArchiveBytes) {
     throw new ProjectOperationError("PROJECT_EXPORT_FAILED", "The compressed Project exceeds the Phase 4 ZIP limit");
   }

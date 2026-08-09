@@ -48,7 +48,7 @@ test("format compatibility policy accepts the supported 1.0 and 1.1 lines", () =
 });
 
 test("portable path corpus rejects traversal, host paths, aliases, and collisions", () => {
-  for (const value of ["../x", "a/../b", "/root", "C:/drive", "\\\\server\\share", "a\\b", "a//b", "CON", "aux.txt", "tail.", "tail ", "a:b", "e\u0301.txt"]) {
+  for (const value of ["../x", "a/../b", "%2e%2e/escape", "%252e%252e/escape", "/root", "C:/drive", "\\\\server\\share", "a\\b", "a//b", "CON", "aux.txt", "tail.", "tail ", "a:b", "e\u0301.txt"]) {
     assert.equal(validatePortableRelativePath(value).valid, false, value);
   }
   for (const value of ["project.json", "database/crawl.db", "assets/images/photo.webp", "é.txt"]) {

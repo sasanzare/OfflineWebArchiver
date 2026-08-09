@@ -14,6 +14,7 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b", "test": "node ../../tools/testing/run-tests.mjs package:scope-engine" },
   "dependencies": {
+    "@offline-web-archive/archive-core": "0.8.0",
     "tldts": "7.4.9",
     "zod": "4.4.3"
   }

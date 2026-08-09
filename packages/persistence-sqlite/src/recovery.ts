@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
-import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import {
   QueueOperationError,
@@ -17,7 +16,9 @@ import {
   type RecoveryInspectionItem,
   type RecoveryReport,
   type RecoveryRepositoryPort,
+  type CrawlRunState,
   type RunControlState,
+  assertCrawlRunTransition,
 } from "@offline-web-archive/archive-core";
 import {
   CHECKPOINT_MODEL_VERSION,
@@ -34,6 +35,7 @@ import {
   validatePortableRelativePath,
   validateRecoveryLimit,
 } from "@offline-web-archive/recovery";
+import { resolveProjectRelativePath } from "./atomic.js";
 
 type Row = Record<string, string | number | null>;
 
@@ -208,7 +210,7 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
   const pauseStatus = (projectId: string, runId: string): PauseStatus => {
     const row = runState(projectId, runId);
     const activeLeaseCount = Number((database.prepare("SELECT COUNT(*) AS count FROM job_leases WHERE project_id = ? AND run_id = ? AND status = 'active'").get(projectId, runId) as { count: number }).count);
-    return { projectId, runId, controlState: String(row["control_state"]) as RunControlState, requestedAt: row["requested_at"] === null ? null : String(row["requested_at"]), pausedAt: row["paused_at"] === null ? null : String(row["paused_at"]), activeLeaseCount };
+    return { projectId, runId, controlState: String(row["control_state"]) as RunControlState, runState: String(row["run_state"] ?? "running") as CrawlRunState, requestedAt: row["requested_at"] === null ? null : String(row["requested_at"]), pausedAt: row["paused_at"] === null ? null : String(row["paused_at"]), activeLeaseCount };
   };
 
   const saveRunCheckpoint = (projectId: string, runId: string, operationId: string, timestamp: string): void => {
@@ -219,9 +221,9 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
       FROM page_jobs WHERE project_id = ? AND run_id = ?
     `).get(projectId, runId) as Row;
     database.prepare(`
-      INSERT INTO run_checkpoints (checkpoint_id, project_id, run_id, checkpoint_version, control_state, pending_jobs, processing_jobs, completed_jobs, operation_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id(), projectId, runId, CHECKPOINT_MODEL_VERSION, String(runState(projectId, runId)["control_state"]), Number(counts["pending"] ?? 0), Number(counts["processing"] ?? 0), Number(counts["completed"] ?? 0), operationId, timestamp);
+      INSERT INTO run_checkpoints (checkpoint_id, project_id, run_id, checkpoint_version, control_state, run_state, pending_jobs, processing_jobs, completed_jobs, operation_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id(), projectId, runId, CHECKPOINT_MODEL_VERSION, String(runState(projectId, runId)["control_state"]), String(runState(projectId, runId)["run_state"] ?? "running"), Number(counts["pending"] ?? 0), Number(counts["processing"] ?? 0), Number(counts["completed"] ?? 0), operationId, timestamp);
   };
 
   const candidateRows = (projectId: string, runId: string, evaluationTime: string, afterSequence: number, limit: number): Row[] => database.prepare(`
@@ -648,8 +650,11 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
         const timestamp = now();
         const active = Number((database.prepare("SELECT COUNT(*) AS count FROM job_leases WHERE project_id = ? AND run_id = ? AND status = 'active'").get(input.projectId, input.runId) as { count: number }).count);
         const target: RunControlState = active === 0 ? "paused" : "pause_requested";
+        const targetRunState: CrawlRunState = active === 0 ? "paused" : "pausing";
+        assertCrawlRunTransition(String(runState(input.projectId, input.runId)["run_state"] ?? "running") as CrawlRunState, targetRunState);
         database.prepare("UPDATE run_control SET control_state = ?, requested_at = ?, paused_at = ?, updated_at = ?, operation_id = ? WHERE project_id = ? AND run_id = ?")
           .run(target, timestamp, target === "paused" ? timestamp : null, timestamp, input.operationId, input.projectId, input.runId);
+        database.prepare("UPDATE run_control SET run_state = ? WHERE project_id = ? AND run_id = ?").run(targetRunState, input.projectId, input.runId);
         saveRunCheckpoint(input.projectId, input.runId, input.operationId, timestamp);
         emit("run.pause-requested", { projectId: input.projectId, runId: input.runId, controlState: target, activeLeaseCount: active });
         return pauseStatus(input.projectId, input.runId);
@@ -678,7 +683,11 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
         database.prepare("UPDATE page_jobs SET recovery_state = 'paused', updated_at = ? WHERE job_id = ? AND state = 'processing'").run(timestamp, job.jobId);
         transition({ projectId: input.projectId, runId: input.runId, jobId: job.jobId, from: "processing", to: "paused", reasonCode: "PAUSE_ACKNOWLEDGED", operationId: input.operationId, correlationId: input.correlationId, occurredAt: timestamp, fencingGeneration: input.fencingGeneration });
         const active = Number((database.prepare("SELECT COUNT(*) AS count FROM job_leases WHERE project_id = ? AND run_id = ? AND status = 'active'").get(input.projectId, input.runId) as { count: number }).count);
-        if (active === 0) database.prepare("UPDATE run_control SET control_state = 'paused', paused_at = ?, updated_at = ?, operation_id = ? WHERE project_id = ? AND run_id = ?").run(timestamp, timestamp, input.operationId, input.projectId, input.runId);
+        if (active === 0) {
+          const currentRunState = String(runState(input.projectId, input.runId)["run_state"] ?? "running") as CrawlRunState;
+          assertCrawlRunTransition(currentRunState, "paused");
+          database.prepare("UPDATE run_control SET control_state = 'paused', run_state = 'paused', paused_at = ?, updated_at = ?, operation_id = ? WHERE project_id = ? AND run_id = ?").run(timestamp, timestamp, input.operationId, input.projectId, input.runId);
+        }
         saveRunCheckpoint(input.projectId, input.runId, input.operationId, timestamp);
         emit("run.pause-acknowledged", { projectId: input.projectId, runId: input.runId, jobId: input.jobId, checkpointId, fencingGeneration: input.fencingGeneration, activeLeaseCount: active });
         return rowToJob(getJobRow(input.projectId, input.runId, input.jobId));
@@ -699,7 +708,9 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
           database.prepare("UPDATE page_jobs SET state = 'pending', recovery_state = NULL, claim_token = NULL, claimed_by = NULL, claimed_at = NULL, updated_at = ? WHERE job_id = ?").run(timestamp, job.jobId);
           transition({ projectId: input.projectId, runId: input.runId, jobId: job.jobId, from: job.state, to: "pending", reasonCode: "RUN_RESUMED", operationId: input.operationId, correlationId: input.correlationId, occurredAt: timestamp, fencingGeneration: job.fencingGeneration });
         }
-        database.prepare("UPDATE run_control SET control_state = 'active', requested_at = NULL, paused_at = NULL, updated_at = ?, operation_id = ? WHERE project_id = ? AND run_id = ?")
+        const currentRunState = String(runState(input.projectId, input.runId)["run_state"] ?? "running") as CrawlRunState;
+        assertCrawlRunTransition(currentRunState, "running");
+        database.prepare("UPDATE run_control SET control_state = 'active', run_state = 'running', requested_at = NULL, paused_at = NULL, updated_at = ?, operation_id = ? WHERE project_id = ? AND run_id = ?")
           .run(timestamp, input.operationId, input.projectId, input.runId);
         saveRunCheckpoint(input.projectId, input.runId, input.operationId, timestamp);
         emit("run.resumed", { projectId: input.projectId, runId: input.runId, requeued: rows.length });
@@ -712,18 +723,38 @@ export function createSqliteRecoveryRepository(database: DatabaseSync, options: 
       return pauseStatus(input.projectId, input.runId);
     },
 
+    async getRunState(input) {
+      validateOwnership(input.projectId, input.runId);
+      return pauseStatus(input.projectId, input.runId);
+    },
+
+    async setRunState(input) {
+      return transaction(() => {
+        validateOwnership(input.projectId, input.runId);
+        const current = String(runState(input.projectId, input.runId)["run_state"] ?? "running") as CrawlRunState;
+        assertCrawlRunTransition(current, input.state);
+        const timestamp = now();
+        const controlState = input.state === "pausing" ? "pause_requested" : input.state === "paused" ? "paused" : input.state === "cancelling" || input.state === "cancelled" ? "stopped" : input.state === "completed" ? "completed" : input.state === "failed" ? "failed" : "active";
+        database.prepare("UPDATE run_control SET run_state = ?, control_state = ?, requested_at = CASE WHEN ? = 'pausing' THEN COALESCE(requested_at, ?) ELSE requested_at END, paused_at = CASE WHEN ? = 'paused' THEN ? ELSE paused_at END, updated_at = ?, operation_id = ? WHERE project_id = ? AND run_id = ?")
+          .run(input.state, controlState, input.state, timestamp, input.state, timestamp, timestamp, input.operationId, input.projectId, input.runId);
+        saveRunCheckpoint(input.projectId, input.runId, input.operationId, timestamp);
+        emit("run.state-changed", { projectId: input.projectId, runId: input.runId, state: input.state });
+        return pauseStatus(input.projectId, input.runId);
+      });
+    },
+
     async verifyCompletedOutput(input) {
       validateOwnership(input.projectId, input.runId);
       const job = rowToJob(getJobRow(input.projectId, input.runId, input.jobId));
       if (job.state !== "completed") throw new RecoveryOperationError("OUTPUT_VERIFICATION_FAILED", "Only completed Jobs have terminal output descriptors");
       const rows = database.prepare("SELECT * FROM completed_outputs WHERE job_id = ? ORDER BY relative_path").all(input.jobId) as unknown as Row[];
-      const root = path.resolve(input.projectRoot);
       const results: CompletedOutputDescriptor[] = [];
       for (const row of rows) {
         const descriptor = rowToOutput(row);
         validateCompletedOutputDescriptor(descriptor);
-        const target = path.resolve(root, ...descriptor.relativePath.split("/"));
-        if (target !== root && !target.startsWith(`${root}${path.sep}`)) throw new RecoveryOperationError("OUTPUT_DESCRIPTOR_INVALID", "Completed output escapes the Project root");
+        let target: string;
+        try { target = await resolveProjectRelativePath(input.projectRoot, descriptor.relativePath); }
+        catch { throw new RecoveryOperationError("OUTPUT_DESCRIPTOR_INVALID", "Completed output is outside the Project root or crosses a symbolic link"); }
         let status: CompletedOutputDescriptor["verificationStatus"] = "valid";
         try {
           const stat = await lstat(target);

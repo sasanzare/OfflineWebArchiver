@@ -27,6 +27,7 @@ const routeFiles: Readonly<Record<string, string>> = Object.freeze({
   "/evidence-cap": "evidence-cap.html",
   "/interaction": "interaction.html",
   "/popup": "static.html",
+  "/service-worker": "service-worker.html",
 });
 
 function finish(response: ServerResponse, status: number, body: string, contentType = "text/plain; charset=utf-8"): void {
@@ -73,6 +74,20 @@ export async function startRenderFixtureServer(): Promise<RenderFixtureServer> {
       response.write("event: ready\ndata: fixture\n\n");
       pending.add(response);
       response.on("close", () => pending.delete(response));
+      return;
+    }
+    if (pathname === "/service-worker.js") {
+      finish(response, 200, `self.addEventListener("install", (event) => event.waitUntil(self.skipWaiting()));
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener("fetch", (event) => {
+  if (new URL(event.request.url).pathname === "/sw-probe") {
+    event.respondWith(new Response("service-worker-response", { status: 200, headers: { "content-type": "text/plain", "x-owab-sw": "intercepted" } }));
+  }
+});`, "application/javascript; charset=utf-8");
+      return;
+    }
+    if (pathname === "/sw-probe") {
+      finish(response, 200, "network-response");
       return;
     }
     if (pathname === "/auth-login") {

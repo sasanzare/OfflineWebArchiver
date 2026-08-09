@@ -57,7 +57,7 @@ import {
   serializeProjectManifest,
   type ProjectManifest,
 } from "@offline-web-archive/project-format";
-import { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists } from "./atomic.js";
+import { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists, resolveProjectRelativePath } from "./atomic.js";
 import {
   createProjectArchive,
   DEFAULT_ARCHIVE_LIMITS,
@@ -79,7 +79,7 @@ import {
   validateMigrationDefinitions,
 } from "./migrations.js";
 
-export { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists } from "./atomic.js";
+export { atomicPromoteDirectory, atomicWriteFile, assertNoSymlinkInPath, assertNotSymlink, pathExists, resolveProjectRelativePath } from "./atomic.js";
 export { createProjectArchive, DEFAULT_ARCHIVE_LIMITS, exportPathIsAllowed, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
 export { acquireProjectLock } from "./locking.js";
 export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
@@ -1065,7 +1065,7 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
         const extracted = extractAndVerifyProjectArchive(archiveData, archiveLimits);
         await mkdir(staging, { recursive: false });
         for (const [relative, data] of extracted.files) {
-          await atomicWriteFile(path.join(staging, ...relative.split("/")), data);
+          await atomicWriteFile(await resolveProjectRelativePath(staging, relative), data);
         }
         await Promise.all(REQUIRED_PROJECT_DIRECTORIES.map((relative) => mkdir(path.join(staging, ...relative.split("/")), { recursive: true })));
         const report = await validateProjectAt(staging, now);
@@ -1303,6 +1303,14 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async getRunControlState(input) {
       return recoveryForCurrent().getRunControlState(input);
+    },
+
+    async getRunState(input) {
+      return recoveryForCurrent().getRunState(input);
+    },
+
+    async setRunState(input) {
+      return recoveryForCurrent().setRunState(input);
     },
 
     async verifyCompletedOutput(input) {

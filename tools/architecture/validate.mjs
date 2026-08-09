@@ -21,8 +21,8 @@ const packageRules = new Map([
   ["packages/rendering/", new Set(["@offline-web-archive/archive-core"])],
   ["packages/queue/", new Set(["@offline-web-archive/archive-core"])],
   ["packages/recovery/", new Set(["@offline-web-archive/archive-core"])],
-  ["packages/scope-engine/", new Set(["node:crypto", "node:url", "tldts", "zod"])],
-  ["packages/project-format/", new Set(["zod"])],
+  ["packages/scope-engine/", new Set(["node:crypto", "node:url", "tldts", "zod", "@offline-web-archive/archive-core"])],
+  ["packages/project-format/", new Set(["zod", "@offline-web-archive/archive-core"])],
   ["packages/persistence-sqlite/", new Set([
     "node:crypto",
     "node:fs",
@@ -50,6 +50,7 @@ const packageRules = new Map([
   ])],
   ["packages/platform/", new Set(["@offline-web-archive/contracts"])],
   ["packages/application-service/", new Set([
+    "node:crypto",
     "node:dns/promises",
     "node:path",
     "@offline-web-archive/archive-core",

@@ -20,6 +20,10 @@ for (const required of ["schema_migrations", "project_metadata", "project_revisi
 for (const forbidden of ["workers", "proxy_credentials", "authentication_secrets"]) {
   if (tables.includes(forbidden)) throw new Error(`Out-of-scope future table ${forbidden} must not exist`);
 }
+for (const table of ["run_control", "run_checkpoints"]) {
+  const columns = database.prepare(`PRAGMA table_info(${table})`).all().map((row) => row.name);
+  if (!columns.includes("run_state")) throw new Error(`Missing run_state column on ${table}`);
+}
 if (state.applied !== CURRENT_SCHEMA_VERSION || state.pending.length !== 0 || MIGRATIONS.length !== CURRENT_SCHEMA_VERSION) {
   throw new Error("Migration version constants are inconsistent");
 }

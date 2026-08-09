@@ -26,7 +26,13 @@ async function readMarkdown(target) {
 }
 
 export async function discoverOkf(root) {
-  const repositoryRoot = path.resolve(root);
+  let repositoryRoot = path.resolve(root);
+  try {
+    repositoryRoot = await realpath(repositoryRoot);
+  } catch {
+    // Preserve the resolved input when the caller is intentionally probing a
+    // missing repository root; discovery will report the missing bundle below.
+  }
   const okfRoot = path.join(repositoryRoot, "okf");
   const artifacts = [];
   let rootStat;

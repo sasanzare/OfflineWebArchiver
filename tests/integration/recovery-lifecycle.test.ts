@@ -68,12 +68,17 @@ test("Pause is cooperative and persistent; Resume requeues paused work idempoten
     assert.ok(claim);
     const requested = await fixture.storage.requestPause({ projectId: fixture.projectId, runId: fixture.runId, operationId: "pause-request" });
     assert.equal(requested.controlState, "pause_requested");
+    assert.equal(requested.runState, "pausing");
     await assert.rejects(() => fixture.storage.claimNextWithLease({ projectId: fixture.projectId, runId: fixture.runId, ownerId: "blocked-owner", leaseDurationMs: 60_000, ...mutation("blocked-claim") }), (error) => error instanceof RecoveryOperationError && error.code === "RUN_NOT_ACTIVE");
     const paused = await fixture.storage.acknowledgePause({ projectId: fixture.projectId, runId: fixture.runId, jobId: claim.job.jobId, leaseToken: claim.leaseToken, fencingGeneration: claim.lease.fencingGeneration, ownerId: "pause-owner", operationId: "pause-ack", correlationId: "pause-correlation" });
     assert.equal(paused.state, "paused");
-    assert.equal((await fixture.storage.getPauseStatus({ projectId: fixture.projectId, runId: fixture.runId })).controlState, "paused");
+    assert.equal((await fixture.storage.getPauseStatus({ projectId: fixture.projectId, runId: fixture.runId })).runState, "paused");
+    await fixture.storage.close();
+    await fixture.storage.open(fixture.projectPath);
+    assert.equal((await fixture.storage.getRunState({ projectId: fixture.projectId, runId: fixture.runId })).runState, "paused");
     const resumed = await fixture.storage.resumeRun({ projectId: fixture.projectId, runId: fixture.runId, operationId: "resume-one", correlationId: "resume-correlation" });
     assert.equal(resumed.controlState, "active");
+    assert.equal(resumed.runState, "running");
     assert.equal((await fixture.storage.get({ projectId: fixture.projectId, runId: fixture.runId, jobId: claim.job.jobId })).state, "pending");
     assert.equal((await fixture.storage.resumeRun({ projectId: fixture.projectId, runId: fixture.runId, operationId: "resume-two", correlationId: "resume-correlation-two" })).controlState, "active");
   } finally {

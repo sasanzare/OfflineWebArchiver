@@ -12,5 +12,9 @@ This directory contains the architecture components and cross-layer contract bou
 - [Command-Line Interface](cli.md) - Bounded command interface to the Application Service.
 - [Desktop Interface](desktop-interface.md) - Sandboxed Electron interface and constrained bridge.
 - [Platform Adapter](platform.md) - Normalized runtime facts and allowlisted configuration.
+- [Trust Zones and IPC](trust-zones-and-ipc.md) - Privilege zones, renderer/archive boundaries, and command authorization.
+- [Network Replay](network-replay.md) - Versioned replay key and request-decision contract.
+- [Service Worker Policy](service-worker-policy.md) - Safe-default Service Worker behavior.
+- [Canonical Path Safety](../data/canonical-path-safety.md) - Shared portable path and collision rules.
 
 Indexes disclose direct children only.

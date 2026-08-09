@@ -467,3 +467,55 @@ separate and do not claim headed-browser success.
 | AC-P12-013 | NFR-SEC-002, NFR-PRIV-001 | Capability disclosure | Inspect persisted capability flags and docs | Cookies/localStorage/IndexedDB are declared supported; sessionStorage is explicitly false and not silently claimed | `packages/archive-core/src/sessions.ts`; `docs/architecture/AUTHENTICATION_SESSIONS.md` | High | passed |
 | AC-P12-014 | NFR-MAINT-001, NFR-REL-002 | Migration and compatibility | Open pre-Phase-12 Project and validate schema/manifest | Forward migration 008 is immutable, existing data remains usable, and no Session payload is created implicitly | `npm run migrations:validate`; Project format and persistence tests | Critical | passed |
 | AC-P12-015 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and security gate | Validate Phase 12 docs, ADR, OKF, acceptance, and handoff | Source/evidence/limitations/deferrals remain synchronized without claiming unavailable Chromium evidence | `docs/project/PHASE_12_IMPLEMENTATION_REPORT.md`; `docs/architecture/PHASE_12_SECURITY_REVIEW.md`; OKF validators | High | partial |
+
+## Product Phase 13 post-Phase-12 architecture and security hardening criteria
+
+Phase 13 uses strict status values: `PASS`, `FAIL`, `BLOCKED`, and
+`NOT_APPLICABLE`. The historical Phase 12 rows above retain their original
+lowercase status vocabulary; the reconciliation below is authoritative for
+Phase 13 closure.
+
+| Acceptance ID | Requirement ID | Capability | Direct scenario | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P13-001 | FR-AUTH-001, NFR-SEC-003 | Authentication request allowlist | Evaluate document, subresource, redirect, and provider requests | Every request is origin- and policy-authorized; out-of-policy requests abort | `tests/unit/authentication-route.test.ts`; `packages/browser-runtime/src/index.ts` | Critical | PASS |
+| AC-P13-002 | NFR-TEST-001 | Real Chromium authentication attempt | Run the registered headed Session fixture | The pinned Chromium fixture executes with no substituted runtime | `tests/browser/session.test.ts` | Critical | BLOCKED |
+| AC-P13-003 | NFR-MAINT-001, NFR-SEC-003 | Post-Phase-12 baseline audit | Compare actual code with the Phase 12 report and architecture | Verified, remediated, deferred, blocked, and open-risk categories are explicit | `docs/project/POST_PHASE_12_BASELINE_AUDIT.md` | Critical | PASS |
+| AC-P13-004 | NFR-SEC-003 | Trust zones and IPC boundary | Inspect Electron preferences, navigation, preload, sender/origin, schema, and command allowlist | Trusted UI and privileged service remain separated; archive content has no privileged path | `ADR-052`; desktop smoke/transport tests | Critical | PASS |
+| AC-P13-005 | NFR-SEC-003 | Untrusted archive runtime isolation | Attempt to load archived HTML/JS in the product | No archive runtime is present; its required isolated baseline is documented and no trusted window loads archives | `docs/architecture/TRUST_ZONES_AND_IPC.md` | Critical | NOT_APPLICABLE |
+| AC-P13-006 | FR-RECOVERY-001, NFR-REL-002 | Separate Crawl Run state | Transition, checkpoint, close, reopen, and inspect Run states | Required versioned states persist independently from legacy pause control | `packages/archive-core/src/run-state.ts`; recovery lifecycle tests | Critical | PASS |
+| AC-P13-007 | FR-PROJECT-003, FR-AUTH-002 | Migration and Session compatibility | Open a schema-8 Project and restore existing Session metadata | Migration 009 preserves Queue/Checkpoint/Session data and defaults state safely | migration and Project lifecycle tests | Critical | PASS |
+| AC-P13-008 | FR-AUTH-002, NFR-SEC-002, NFR-TEST-001 | IndexedDB compatibility | Capture/restore cookie, localStorage, IndexedDB fixture state and reject invalid state | Supported stores are deterministic and isolated; invalid state fails closed | Session unit/integration tests; `tests/browser/session.test.ts` | Critical | BLOCKED |
+| AC-P13-009 | NFR-SEC-003, NFR-TEST-001 | Network Replay architecture | Review Context interception, key, lookup, fulfillment, abort, and sensitive-header contract | Stable versioned interface exists without claiming a full engine | `ADR-054`; `packages/archive-core/src/network.ts` | High | PASS |
+| AC-P13-010 | NFR-SEC-003 | Strict Offline Mode | Evaluate replay hit, local runtime, and unknown external dependency | Matches fulfill, approved local origins are observable, unknown external requests abort | pure contract tests | Critical | PASS |
+| AC-P13-011 | NFR-SEC-003, NFR-TEST-001 | Service Worker policy | Parse old/new Site Profiles and create block/allow Context policy | Policy is versioned and safe-default blocked | scope/contract tests; ADR-055 | High | PASS |
+| AC-P13-012 | NFR-SEC-003, NFR-TEST-001 | Service Worker browser fixture | Execute registration/fetch behavior under block and allow modes | Real pinned Chromium evidence verifies routing and replay interaction | browser fixture suite | High | BLOCKED |
+| AC-P13-013 | NFR-SEC-003, NFR-PORT-002 | Canonical path contract | Test traversal, URL/double encoding, absolute/UNC/drive, reserved names, Unicode, and length | One helper rejects unsafe paths and creates deterministic normalized/collision keys | path corpus tests; ADR-056 | Critical | PASS |
+| AC-P13-014 | NFR-SEC-003, FR-PROJECT-004 | Path consumer and symlink safety | Import and verify outputs through root/symlink boundaries | Project-relative writes and output verification cannot escape the root | Persistence path tests and source review | Critical | PASS |
+| AC-P13-015 | NFR-PORT-001 | Platform policy | Review primary/legacy/compatibility target rules and decision inputs | Windows 11 is primary; Windows 10 and non-Windows claims require explicit evidence | `docs/architecture/PLATFORM_SUPPORT_POLICY.md` | High | PASS |
+| AC-P13-016 | NFR-PORT-001, NFR-TEST-001 | Cross-platform validation | Run native Windows 11, Windows 10, Linux, macOS, and architecture matrix | Support claims are backed by install, Browser, Secret Store, filesystem, SQLite, and Electron evidence | platform evidence matrix | High | BLOCKED |
+| AC-P13-017 | NFR-TEST-001 | Acceptance metrics | Review metric formulas and outcome classifications | Six versioned metrics distinguish archived/skipped/blocked/unreproducible/limitation/failure outcomes | `docs/architecture/ACCEPTANCE_METRICS.md` | High | PASS |
+| AC-P13-018 | NFR-REL-001, NFR-SEC-003 | Worker/network concurrency contract | Review global, Proxy, origin, request, rate, Retry-After, and cooldown dimensions | Contract prevents Proxy multiplication of origin budgets and bounds waits | core contract tests; concurrency architecture doc | High | PASS |
+| AC-P13-019 | NFR-REL-001, NFR-REL-002 | SQLite concurrency stress plan | Run current SQLite races and review crash/commit/fencing matrix | Current ledgers remain consistent; full Worker Pool stress is deferred until a scheduler exists | persistence/concurrency suite; stress plan | Critical | PASS |
+| AC-P13-020 | NFR-SEC-002, NFR-SEC-003 | Security regression matrix | Run auth, path, redaction, IPC, Secret Store, and stale-owner checks | No raw credentials/tokens/headers/handles appear; security controls fail closed | focused suites and `security:check` | Critical | PASS |
+| AC-P13-021 | NFR-SEC-003, NFR-MAINT-001 | Phase 13 security review | Review all Critical/High findings with owner, target, and acceptance | No Critical finding is open; blocked High evidence is explicit and not silently accepted | `docs/architecture/PHASE_13_SECURITY_REVIEW.md` | Critical | PASS |
+| AC-P13-022 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and OKF synchronization | Validate ADRs, baseline, report, OKF v0.2, extension registries, and traceability | Actual implementation, evidence, limitations, and deferrals agree | docs/OKF validators; Phase 13 report | Critical | PASS |
+
+### Phase 12 reconciliation for Phase 13 closure
+
+| Acceptance ID | Reconciled status | Phase 13 basis |
+|---|---|---|
+| AC-P12-001 | BLOCKED | The auth route allowlist is remediated, but the required real headed Chromium fixture remains environment-blocked. |
+| AC-P12-002 | PASS | Static and transport boundary evidence remains valid; no credential instrumentation was added. |
+| AC-P12-003 | PASS | Save confirmation and validation behavior remains covered by integration tests. |
+| AC-P12-004 | PASS | Supported cookie/localStorage/IndexedDB capture remains bounded and Secret Store-only. |
+| AC-P12-005 | PASS | Durable metadata-only persistence remains covered. |
+| AC-P12-006 | BLOCKED | Fresh real-browser restore evidence remains blocked by the same environment limitation. |
+| AC-P12-007 | PASS | Lifecycle result classification remains covered by source and integration tests. |
+| AC-P12-008 | PASS | Failed reauthentication preserves the prior valid Session. |
+| AC-P12-009 | PASS | Atomic replacement ordering remains covered. |
+| AC-P12-010 | PASS | Project/Profile isolation remains enforced. |
+| AC-P12-011 | PASS | Deletion remains idempotent and protected. |
+| AC-P12-012 | PASS | CLI/Desktop surfaces remain metadata-only. |
+| AC-P12-013 | PASS | Capability disclosure still marks sessionStorage unsupported. |
+| AC-P12-014 | PASS | Migration 008 remains immutable and compatible before migration 009. |
+| AC-P12-015 | BLOCKED | Documentation is synchronized, but closure evidence still depends on the blocked real-browser gate. |

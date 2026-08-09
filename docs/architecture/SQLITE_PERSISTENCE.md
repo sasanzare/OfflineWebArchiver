@@ -6,13 +6,22 @@ Schema 6 adds immutable Render Result/Event/Failure ledgers linked to existing J
 
 Schema 7 adds `interaction_profiles` and `interaction_traces`. Profiles store a validated canonical JSON representation with a hash and revision identity; absence is treated as a disabled profile so older Projects preserve behavior. Traces are bounded, recursively redacted, schema-versioned, and linked to Project/Run/Job/profile/fencing identities. Trace writes use the same active Lease, token hash, expiry, and Fencing Generation checks as protected recovery/render writes, inside a short `BEGIN IMMEDIATE` transaction. Reusing an existing trace ID is idempotent only when the canonical content matches.
 
+Schema 8 adds the Project-owned `browser_sessions` metadata ledger. Schema 9
+adds the constrained `run_state` column to `run_control` and
+`run_checkpoints`; Crawl Run lifecycle is therefore durable and independent of
+legacy pause-control reasons. Migration `009_add_crawl_run_state` is additive,
+forward-only, and defaults upgraded rows to `running`.
+
 ## Schema 5 recovery ledger
 
 Migration 005 adds Run control, Job Leases, Job/Run/Artifact Checkpoints, completed outputs, recovery operations/events, execution sessions, and additive recovery/fencing fields. Immediate transactions, foreign keys, unique active ownership, idempotency hashes, indexes, WAL/full-sync, integrity checks, and backup-before-migration remain authoritative.
 
-SQLite schema 7 extends the schema 6 Project/Profile/Queue/Recovery/Render foundation with Interaction Profile and Trace ledgers. Migration `007_add_browser_interaction` is forward-only and leaves migrations 001–006 unchanged.
+SQLite schema 9 extends the Project/Profile/Queue/Recovery/Render foundation
+with Interaction, Session, and Crawl Run metadata ledgers. Migrations
+`007_add_browser_interaction`, `008_add_browser_sessions`, and
+`009_add_crawl_run_state` are forward-only and leave prior migrations unchanged.
 
-`@offline-web-archive/persistence-sqlite` implements Project, Profile, Queue, Recovery, Render, and Interaction repositories. Application Service orchestrates it; Desktop and CLI use only contract 1.7.0. Secret payloads remain outside SQLite in the dedicated Secret Store; only safe metadata/status crosses the service boundary. Archive Core, Recovery/Queue/Rendering/Interaction/Secret pure policy, Scope Engine, and Project Format remain free of SQLite/Electron imports.
+`@offline-web-archive/persistence-sqlite` implements Project, Profile, Queue, Recovery, Render, Interaction, Session, and Crawl Run metadata repositories. Application Service orchestrates it; Desktop and CLI use only contract 1.9.0. Secret payloads remain outside SQLite in the dedicated Secret Store; only safe metadata/status crosses the service boundary. Archive Core, Recovery/Queue/Rendering/Interaction/Secret pure policy, Scope Engine, and Project Format remain free of SQLite/Electron imports.
 
 The adapter uses Node 24 `node:sqlite`, extensions disabled, defensive mode, `foreign_keys=ON`, `journal_mode=WAL`, `synchronous=FULL`, `busy_timeout=5000`, and `trusted_schema=OFF`. Validation connections add `query_only=ON`; close checkpoints WAL; backup/export use the SQLite backup API.
 

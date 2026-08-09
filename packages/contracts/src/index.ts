@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.8.0" as const;
+export const CONTRACT_VERSION = "1.9.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -436,6 +436,7 @@ const profileDraftFields = {
   redirectPolicy: z.object({ allowApprovedExternal: z.boolean(), allowHttpsDowngrade: z.boolean() }).strict(),
   canonicalPolicy: z.object({ external: z.enum(["ignore", "reject"]) }).strict(),
   networkPolicy: z.object({ allowedIpClasses: z.array(z.enum(["public", "loopback", "private", "link-local", "multicast", "reserved", "unspecified"])).max(7) }).strict(),
+  serviceWorkerPolicy: z.object({ version: z.literal(1), mode: z.enum(["block", "allow"]) }).strict().default({ version: 1, mode: "block" }),
   limits: z.object({ maxDepth: z.number().int().nonnegative().max(1_000).nullable(), maxPages: z.number().int().nonnegative().max(10_000_000).nullable(), maxRedirects: z.number().int().nonnegative().max(20), maxBatchSize: z.number().int().positive().max(500) }).strict(),
 };
 
@@ -974,7 +975,7 @@ export const RecoveryReportContractSchema = z.object({
   dryRun: z.boolean(), evaluationTime: timestampSchema, scanned: z.number().int().nonnegative(), interrupted: z.number().int().nonnegative(), requeued: z.number().int().nonnegative(), paused: z.number().int().nonnegative(),
   outputIssues: z.number().int().nonnegative(), cursor: z.number().int().nonnegative(), hasMore: z.boolean(), items: z.array(RecoveryInspectionItemContractSchema).max(500), startedAt: timestampSchema, completedAt: timestampSchema.nullable(),
 }).strict();
-const PauseStatusContractSchema = z.object({ projectId: z.string().uuid(), runId: z.string().uuid(), controlState: z.enum(["active", "pause_requested", "paused", "resuming", "recovering", "stopped", "completed", "failed"]), requestedAt: timestampSchema.nullable(), pausedAt: timestampSchema.nullable(), activeLeaseCount: z.number().int().nonnegative() }).strict();
+const PauseStatusContractSchema = z.object({ projectId: z.string().uuid(), runId: z.string().uuid(), controlState: z.enum(["active", "pause_requested", "paused", "resuming", "recovering", "stopped", "completed", "failed"]), runState: z.enum(["running", "pausing", "paused", "waiting_for_network", "waiting_for_auth", "waiting_for_rate_limit", "cancelling", "cancelled", "completed", "failed"]), requestedAt: timestampSchema.nullable(), pausedAt: timestampSchema.nullable(), activeLeaseCount: z.number().int().nonnegative() }).strict();
 export const RecoveryReportResultSchema = z.object({ resultType: z.literal("recovery.report"), report: RecoveryReportContractSchema }).strict();
 export const LeaseValueResultSchema = z.object({ resultType: z.literal("lease.value"), lease: JobLeaseContractSchema }).strict();
 export const LeaseListResultSchema = z.object({ resultType: z.literal("lease.list"), leases: z.array(JobLeaseContractSchema).max(200) }).strict();

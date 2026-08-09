@@ -1,8 +1,14 @@
 import { z } from "zod";
+import {
+  canonicalPathCollisionKey,
+  canonicalRelativePath,
+  validateCanonicalRelativePath,
+  type CanonicalPathValidation,
+} from "@offline-web-archive/archive-core";
 
 export const PROJECT_FORMAT_NAME = "offline-web-archive-project" as const;
 export const PROJECT_FORMAT_VERSION = "1.1.0" as const;
-export const PROJECT_SCHEMA_VERSION = 8 as const;
+export const PROJECT_SCHEMA_VERSION = 9 as const;
 export const MINIMUM_APPLICATION_VERSION = "0.8.0" as const;
 export const PROJECT_MANIFEST_FILE = "project.json" as const;
 export const PROJECT_DATABASE_PATH = "database/crawl.db" as const;
@@ -139,50 +145,19 @@ export interface PortablePathValidation {
   reason: string;
 }
 
-const WINDOWS_DEVICE_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
-const INVALID_PORTABLE_CHARACTER = /[<>:"|?*\u0000-\u001f]/;
-
 export function validatePortableRelativePath(value: string): PortablePathValidation {
-  if (value.length === 0) return { valid: false, reason: "Path is empty" };
-  if (value.length > 240) return { valid: false, reason: "Path exceeds 240 characters" };
-  if (value !== value.normalize("NFC")) {
-    return { valid: false, reason: "Path is not Unicode NFC normalized" };
-  }
-  if (value.startsWith("/") || value.startsWith("\\") || /^[A-Za-z]:/.test(value)) {
-    return { valid: false, reason: "Absolute, drive-qualified, and UNC paths are forbidden" };
-  }
-  if (value.includes("\\")) {
-    return { valid: false, reason: "Portable paths must use forward slashes" };
-  }
-  const segments = value.split("/");
-  for (const segment of segments) {
-    if (segment.length === 0 || segment === "." || segment === "..") {
-      return { valid: false, reason: "Empty and dot path segments are forbidden" };
-    }
-    if (segment.length > 120) {
-      return { valid: false, reason: "A path segment exceeds 120 characters" };
-    }
-    if (INVALID_PORTABLE_CHARACTER.test(segment)) {
-      return { valid: false, reason: "Path contains a non-portable character" };
-    }
-    if (/[. ]$/.test(segment)) {
-      return { valid: false, reason: "Path segments cannot end with a dot or space" };
-    }
-    if (WINDOWS_DEVICE_NAME.test(segment)) {
-      return { valid: false, reason: "Path contains a reserved Windows device name" };
-    }
-  }
-  return { valid: true, reason: "" };
+  const result: CanonicalPathValidation = validateCanonicalRelativePath(value);
+  return { valid: result.valid, reason: result.message };
 }
 
 export function normalizeArchiveEntry(value: string): string {
   const validation = validatePortableRelativePath(value);
   if (!validation.valid) throw new ProjectFormatError("PROJECT_IMPORT_UNSAFE_ARCHIVE", validation.reason);
-  return value.normalize("NFC");
+  return canonicalRelativePath(value);
 }
 
 export function portablePathCollisionKey(value: string): string {
-  return normalizeArchiveEntry(value).toLocaleLowerCase("en-US");
+  return canonicalPathCollisionKey(value);
 }
 
 export function isSupportedProjectFormatVersion(version: string): boolean {

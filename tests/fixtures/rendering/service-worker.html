@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><title>Service Worker policy fixture</title></head>
+  <body>
+    <main id="service-worker-state" data-state="pending">pending</main>
+    <script>
+      (() => {
+        const state = document.getElementById("service-worker-state");
+        const mark = (value) => {
+          state.dataset.state = value;
+          state.textContent = value;
+        };
+        if (!("serviceWorker" in navigator)) {
+          mark("unsupported");
+          return;
+        }
+        navigator.serviceWorker.register("/service-worker.js", { scope: "/" })
+          .then(async () => {
+            await navigator.serviceWorker.ready;
+            if (!navigator.serviceWorker.controller) {
+              await new Promise((resolve) => {
+                const timeout = setTimeout(resolve, 2_000);
+                navigator.serviceWorker.addEventListener("controllerchange", () => {
+                  clearTimeout(timeout);
+                  resolve();
+                }, { once: true });
+              });
+            }
+            if (!navigator.serviceWorker.controller) {
+              mark("registered-not-controlling");
+              return;
+            }
+            const response = await fetch("/sw-probe", { cache: "no-store" });
+            const body = await response.text();
+            mark(response.headers.get("x-owab-sw") === "intercepted" && body === "service-worker-response" ? "allowed" : "registered");
+          })
+          .catch(() => mark("blocked"));
+      })();
+    </script>
+  </body>
+</html>

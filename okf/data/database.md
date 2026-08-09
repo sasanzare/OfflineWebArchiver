@@ -27,11 +27,12 @@ owa:
 
 # Database
 
-SQLite schema 8 adds the Project-owned `browser_sessions` metadata ledger and
-indexes alongside the schema 7 Interaction Profile and Trace ledgers. Earlier
-schema history remains preserved: schema 6 covers Render Result, Event, and
-Failure; schema 5 covers Lease, Checkpoint, and Recovery; schema 4 covers Queue;
-schema 3 covers Profile; and schemas 1 and 2 cover Project history.
+SQLite schema 9 adds the Project-owned `run_state` columns to `run_control` and
+`run_checkpoints` alongside the schema 8 `browser_sessions` metadata ledger and
+the schema 7 Interaction Profile and Trace ledgers. Earlier schema history
+remains preserved: schema 6 covers Render Result, Event, and Failure; schema 5
+covers Lease, Checkpoint, and Recovery; schema 4 covers Queue; schema 3 covers
+Profile; and schemas 1 and 2 cover Project history.
 
 Constraints and repositories enforce Project, Run, Job, attempt, Lease identity,
 current fencing, bounded values and JSON, result/trace uniqueness, redacted
@@ -39,6 +40,9 @@ interaction data, portable artifact descriptors, Session Project ownership,
 revision checks, Profile/format compatibility, and safe validation metadata. The
 `browser_sessions` table stores no cookies, localStorage, IndexedDB, passwords,
 tokens, or serialized Storage State; its `secret_ref` is an opaque Phase 11
-reference. The [Project Format](project-format.md) and [Persistence](persistence.md)
-Concepts describe the data boundary. Discovery, Asset, API, Proxy, and worker
-tables remain outside this schema.
+reference. `run_state` is constrained to the versioned Crawl Run state
+vocabulary and is separate from legacy pause-control fields. Migration
+`009_add_crawl_run_state` is forward-only and defaults upgraded rows to
+`running`. The [Project Format](project-format.md) and
+[Persistence](persistence.md) Concepts describe the data boundary. Discovery,
+Asset, API, Proxy, and worker tables remain outside this schema.

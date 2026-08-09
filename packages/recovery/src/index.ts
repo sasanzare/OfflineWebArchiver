@@ -1,5 +1,6 @@
 import {
   RecoveryOperationError,
+  validateCanonicalRelativePath,
   type ArtifactCheckpoint,
   type Clock,
   type CompletedOutputDescriptor,
@@ -46,7 +47,6 @@ export const DEFAULT_LEASE_CONFIGURATION: LeaseConfiguration = Object.freeze({
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const HASH_PATTERN = /^[a-f0-9]{64}$/;
 const SECRET_KEY_PATTERN = /(?:token|secret|password|cookie|authorization|credential|api[-_]?key)/i;
-const WINDOWS_ABSOLUTE_PATTERN = /^[A-Za-z]:[\\/]/;
 
 export function createSystemClock(): Clock {
   return Object.freeze({ now: () => new Date().toISOString() });
@@ -112,14 +112,11 @@ export function nextLeaseExpiry(lease: Pick<JobLease, "status" | "expiresAt">, r
 }
 
 export function validatePortableRelativePath(value: string): string {
-  if (value.length < 1 || value.length > RECOVERY_LIMITS.artifactPathLength || value.includes("\0") || value.includes("\\") || value.startsWith("/") || WINDOWS_ABSOLUTE_PATTERN.test(value)) {
-    throw new RecoveryOperationError("ARTIFACT_CHECKPOINT_INVALID", "Artifact paths must be bounded portable relative paths");
+  const result = validateCanonicalRelativePath(value);
+  if (!result.valid || result.normalized === null || value.length > RECOVERY_LIMITS.artifactPathLength) {
+    throw new RecoveryOperationError("ARTIFACT_CHECKPOINT_INVALID", result.message || "Artifact paths must be bounded portable relative paths");
   }
-  const segments = value.split("/");
-  if (segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
-    throw new RecoveryOperationError("ARTIFACT_CHECKPOINT_INVALID", "Artifact paths cannot contain empty, current, or parent segments");
-  }
-  return value;
+  return result.normalized;
 }
 
 function ordered(value: unknown): unknown {

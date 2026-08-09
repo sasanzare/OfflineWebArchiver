@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import { domainToASCII } from "node:url";
 import { getDomain } from "tldts";
 import { z } from "zod";
+import {
+  SERVICE_WORKER_POLICY_MODES,
+  SERVICE_WORKER_POLICY_VERSION,
+  normalizeServiceWorkerPolicy,
+} from "@offline-web-archive/archive-core";
 
 export const SCOPE_ENGINE_VERSION = 1 as const;
 export const SITE_PROFILE_SCHEMA_VERSION = 1 as const;
@@ -65,6 +70,10 @@ const policyFields = {
   networkPolicy: z.object({
     allowedIpClasses: z.array(z.enum(["public", "loopback", "private", "link-local", "multicast", "reserved", "unspecified"])).max(7),
   }).strict(),
+  serviceWorkerPolicy: z.object({
+    version: z.literal(SERVICE_WORKER_POLICY_VERSION),
+    mode: z.enum(SERVICE_WORKER_POLICY_MODES),
+  }).strict().default({ version: SERVICE_WORKER_POLICY_VERSION, mode: "block" }),
   limits: z.object({
     maxDepth: z.number().int().nonnegative().max(1_000).nullable(),
     maxPages: z.number().int().nonnegative().max(10_000_000).nullable(),
@@ -244,6 +253,7 @@ export function normalizeSiteProfileDraft(value: unknown): SiteProfileDraft {
       rules: initial.data.queryPolicy.rules.map((item) => ({ ...item, key: item.key.toLowerCase() })).sort((a, b) => ordinalCompare(a.key, b.key)),
     },
     networkPolicy: { allowedIpClasses: [...new Set(initial.data.networkPolicy.allowedIpClasses)].sort() },
+    serviceWorkerPolicy: normalizeServiceWorkerPolicy(initial.data["serviceWorkerPolicy"]),
   } satisfies SiteProfileDraft;
   uniqueIds(normalized.domainRules, "domain");
   uniqueIds(normalized.pathRules, "path");

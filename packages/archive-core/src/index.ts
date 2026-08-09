@@ -1,3 +1,6 @@
+import type { CrawlRunState } from "./run-state.js";
+import type { ServiceWorkerPolicy } from "./service-worker.js";
+
 export const IMPLEMENTED_CORE_CAPABILITIES = [
   "system.describe",
   "project.create",
@@ -85,6 +88,11 @@ export const PLANNED_CORE_CAPABILITIES = [
 
 export * from "./secrets.js";
 export * from "./sessions.js";
+export * from "./concurrency.js";
+export * from "./network.js";
+export * from "./path-safety.js";
+export * from "./run-state.js";
+export * from "./service-worker.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"
@@ -566,6 +574,7 @@ export interface RunCheckpoint {
   sequence: number;
   checkpointVersion: number;
   controlState: RunControlState;
+  runState: CrawlRunState;
   pendingJobs: number;
   processingJobs: number;
   completedJobs: number;
@@ -632,6 +641,7 @@ export interface PauseStatus {
   projectId: string;
   runId: string;
   controlState: RunControlState;
+  runState: CrawlRunState;
   requestedAt: string | null;
   pausedAt: string | null;
   activeLeaseCount: number;
@@ -659,6 +669,8 @@ export interface RecoveryRepositoryPort {
   acknowledgePause(input: { projectId: string; runId: string; jobId: string; leaseToken: string; fencingGeneration: number; ownerId: string; operationId: string; correlationId: string }): Promise<PageJob>;
   resumeRun(input: { projectId: string; runId: string; operationId: string; correlationId: string }): Promise<PauseStatus>;
   getRunControlState(input: { projectId: string; runId: string }): Promise<PauseStatus>;
+  getRunState(input: { projectId: string; runId: string }): Promise<PauseStatus>;
+  setRunState(input: { projectId: string; runId: string; state: CrawlRunState; operationId: string; correlationId: string }): Promise<PauseStatus>;
   verifyCompletedOutput(input: { projectId: string; runId: string; jobId: string; projectRoot: string }): Promise<readonly CompletedOutputDescriptor[]>;
   beginExecutionSession(input: { projectId: string; runId: string; processId: number; hostId: string }): Promise<string>;
   endExecutionSession(input: { projectId: string; runId: string; sessionId: string }): Promise<void>;
@@ -872,6 +884,7 @@ export interface BrowserSessionPolicy {
   allowedFixtureOrigins: readonly string[];
   maxEvidenceEntries: number;
   authorizeUrl(url: string): Promise<RuntimeNetworkDecision>;
+  serviceWorkerPolicy?: ServiceWorkerPolicy;
 }
 
 export interface BrowserRuntimePort {

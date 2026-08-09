@@ -401,7 +401,7 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "checkpoint.list") return { resultType: result.resultType, checkpointCount: result.checkpoints.length };
   if (result.resultType === "artifactCheckpoint.value") return { resultType: result.resultType, artifactCheckpointId: result.checkpoint.artifactCheckpointId, jobId: result.checkpoint.jobId, artifactKind: result.checkpoint.artifactKind, bytesWritten: result.checkpoint.bytesWritten, committed: result.checkpoint.committed };
   if (result.resultType === "artifactCheckpoint.validation") return { resultType: result.resultType, valid: result.valid, reasonCode: result.reasonCode };
-  if (result.resultType === "run.control") return { resultType: result.resultType, runId: result.run.runId, controlState: result.run.controlState, activeLeaseCount: result.run.activeLeaseCount };
+  if (result.resultType === "run.control") return { resultType: result.resultType, runId: result.run.runId, controlState: result.run.controlState, runState: result.run.runState, activeLeaseCount: result.run.activeLeaseCount };
   if (result.resultType === "browser.runtimeInfo") return { resultType: result.resultType, action: result.action, valid: result.info.valid, playwrightVersion: result.info.playwrightVersion, chromiumVersion: result.info.chromiumVersion, sandboxEnabled: result.info.sandboxEnabled };
   if (result.resultType === "browser.health") return { resultType: result.resultType, action: result.action, state: result.health.state, connected: result.health.connected, activeJobId: result.health.activeJobId };
   if (result.resultType === "render.result") return { resultType: result.resultType, action: result.action, renderResultId: result.result.renderResultId, jobId: result.result.jobId, status: result.result.resultStatus, quality: result.result.qualityClassification, totalDurationMs: result.result.totalDurationMs, htmlSha256: result.result.htmlArtifact.sha256 };
@@ -679,6 +679,7 @@ async function executeRenderStart(
       testMode,
       allowedFixtureOrigins: fixtureOrigins,
       maxEvidenceEntries: policy.maxEvidenceEntries,
+      serviceWorkerPolicy: profile.serviceWorkerPolicy,
       authorizeUrl: (url) => authorizeRuntimeUrl(url, profile, testMode, fixtureOrigins),
     });
     await persistStage("page-created", 0.15);
@@ -780,7 +781,7 @@ async function executeInteractionRun(
     const installation = await runtime.validateInstallation();
     if (!installation.valid) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The approved Chromium runtime did not pass validation", true);
     await runtime.start();
-    page = await runtime.createPageSession(claim.job.jobId, { testMode, allowedFixtureOrigins: fixtureOrigins, maxEvidenceEntries: 100, authorizeUrl: (url) => authorizeRuntimeUrl(url, siteProfile, testMode, fixtureOrigins) });
+    page = await runtime.createPageSession(claim.job.jobId, { testMode, allowedFixtureOrigins: fixtureOrigins, maxEvidenceEntries: 100, serviceWorkerPolicy: siteProfile.serviceWorkerPolicy, authorizeUrl: (url) => authorizeRuntimeUrl(url, siteProfile, testMode, fixtureOrigins) });
     const executeInteractionPlan = page.executeInteractionPlan;
     const getContextProfile = page.getContextProfile;
     if (executeInteractionPlan === undefined || getContextProfile === undefined) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The selected Browser Runtime does not expose the Phase 10 Interaction adapter");

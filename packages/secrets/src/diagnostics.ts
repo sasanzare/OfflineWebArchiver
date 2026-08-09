@@ -115,7 +115,8 @@ export async function createSanitizedDiagnosticBundle(input: DiagnosticBundleInp
   };
   const archiveEntries: Record<string, Uint8Array> = { [DIAGNOSTIC_MANIFEST]: strToU8(`${JSON.stringify(manifest)}\n`) };
   for (const [filePath, value] of ordered) archiveEntries[`diagnostic/${filePath}`] = value;
-  const archive = zipSync(archiveEntries, { level: 6, mtime: new Date("1980-01-01T00:00:00.000Z") });
+  // Use midday UTC so the DOS date remains 1980 on west-of-UTC hosts.
+  const archive = zipSync(archiveEntries, { level: 6, mtime: new Date("1980-01-01T12:00:00.000Z") });
   if (archive.byteLength > MAX_DIAGNOSTIC_BYTES) throw new SecretStoreError("SECRET_VALUE_TOO_LARGE", "The Diagnostic Bundle exceeds the compressed-size limit");
   const archivePath = path.resolve(input.destinationPath);
   await atomicWrite(archivePath, archive);

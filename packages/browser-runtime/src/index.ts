@@ -25,6 +25,9 @@ import {
   type PageStabilitySnapshot,
 } from "@offline-web-archive/archive-core";
 import { executePlaywrightInteractionPlan, type PlaywrightInteractionHandlers } from "./interaction.js";
+import { decideAuthenticationRequest } from "./authentication-policy.js";
+
+export { authenticationRequestMetadata, decideAuthenticationRequest } from "./authentication-policy.js";
 
 export const PLAYWRIGHT_VERSION = "1.56.1" as const;
 export const BROWSER_MANIFEST_VERSION = 1 as const;
@@ -697,20 +700,13 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
       const sessionState = { current: null as PlaywrightAuthenticationSession | null };
       await context.route("**/*", async (route) => {
         const request = route.request();
-        if (request.resourceType() !== "document") {
-          await route.continue().catch(() => undefined);
-          return;
-        }
-        let requestOrigin: string;
-        try { requestOrigin = new URL(request.url()).origin; }
-        catch {
-          sessionState.current?.markNavigationBlocked();
-          await route.abort("blockedbyclient").catch(() => undefined);
-          return;
-        }
-        const decision = policy.allowedOrigins.includes(requestOrigin)
-          ? await policy.authorizeUrl(request.url()).catch(() => ({ allowed: false } as const))
-          : { allowed: false } as const;
+        const decision = await decideAuthenticationRequest({
+          url: request.url(),
+          method: request.method(),
+          resourceType: request.resourceType(),
+          allowedOrigins: policy.allowedOrigins,
+          authorizeUrl: policy.authorizeUrl,
+        });
         if (!decision.allowed) {
           sessionState.current?.markNavigationBlocked();
           await route.abort("blockedbyclient").catch(() => undefined);
@@ -795,7 +791,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
           colorScheme: CONTEXT_PROFILE.colorScheme,
           reducedMotion: CONTEXT_PROFILE.reducedMotion,
           javaScriptEnabled: CONTEXT_PROFILE.javaScriptEnabled,
-          serviceWorkers: CONTEXT_PROFILE.serviceWorkers,
+          serviceWorkers: policy.serviceWorkerPolicy?.mode ?? CONTEXT_PROFILE.serviceWorkers,
           acceptDownloads: CONTEXT_PROFILE.acceptDownloads,
           extraHTTPHeaders: { "Accept-Language": CONTEXT_PROFILE.acceptLanguage },
           userAgent: CONTEXT_PROFILE.userAgent,

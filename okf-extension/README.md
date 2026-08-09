@@ -8,11 +8,12 @@ Everything under `okf-extension/` is outside the official OKF bundle. These
 extension files are not official OKF Concepts, and no file under this directory
 should be counted when determining official OKF conformance.
 
-The extension currently indexes Product Phase 10 as `PARTIAL` and Product Phase
-11 as `PARTIAL`: the bounded interaction and Secret Store foundations are
-present, while the Phase 9 Discovery/Scope/Queue gate remains explicitly
-`BLOCKED`. The manifest remains activated at Phase 8; later phases are recorded
-for traceability without advancing the activated release.
+The extension currently indexes Product Phase 10 as `PARTIAL`, Product Phase 11
+as `PARTIAL`, Product Phase 12 as `PARTIAL`, and Product Phase 13 as `PARTIAL`:
+the hardening contracts are present, while real pinned-Chromium and native
+platform evidence remain explicitly blocked. The manifest remains activated at
+Phase 8; later phases are recorded for traceability without advancing the
+activated release.
 
 Official validation and extension validation are logically separate. Official
 validation scans only `okf/`; extension validation may consume both the official
@@ -48,3 +49,5 @@ validation and reporting may consume both layers.
 - [Phase 10 partial evidence report](reports/evidence.md)
 - Phase 11 implementation report: `docs/project/PHASE_11_IMPLEMENTATION_REPORT.md`
 - Phase 11 security review: `docs/architecture/PHASE_11_SECURITY_REVIEW.md`
+- Phase 13 implementation report: `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`
+- Phase 13 security review: `docs/architecture/PHASE_13_SECURITY_REVIEW.md`

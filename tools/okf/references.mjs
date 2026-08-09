@@ -1,4 +1,4 @@
-import { lstat, stat } from "node:fs/promises";
+import { lstat, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { execFile as execFileCallback } from "node:child_process";
@@ -191,6 +191,12 @@ function validateLinks(artifacts) {
 export async function validateReferences(artifacts, root, options = {}) {
   const diagnostics = [];
   const checks = [];
+  let repositoryRoot = path.resolve(root);
+  try {
+    repositoryRoot = await realpath(repositoryRoot);
+  } catch {
+    // Preserve the resolved input for intentionally missing-root probes.
+  }
   for (const artifact of artifacts.filter((item) => item.kind === "concept" && item.text !== undefined)) {
     const parsed = artifact.parsed ?? parseFrontmatter(artifact.text);
     artifact.parsed = parsed;
@@ -204,7 +210,7 @@ export async function validateReferences(artifacts, root, options = {}) {
             diagnostics.push(refDiagnostic("OWA-REF-SOURCE-RESOURCE-MISSING", "Each sources entry must contain a non-empty resource string.", artifact.path));
             continue;
           }
-          const result = await validateResource(source.resource, artifact, root, options);
+          const result = await validateResource(source.resource, artifact, repositoryRoot, options);
           diagnostics.push(...result.diagnostics);
           checks.push({ ...result.check, sourceId: typeof source.id === "string" ? source.id : undefined });
         }
@@ -212,13 +218,13 @@ export async function validateReferences(artifacts, root, options = {}) {
     }
     for (const field of ["resource", "computation"]) {
       if (typeof metadata[field] !== "string") continue;
-      const result = await validateResource(metadata[field], artifact, root, options);
+      const result = await validateResource(metadata[field], artifact, repositoryRoot, options);
       diagnostics.push(...result.diagnostics);
       checks.push({ ...result.check, field });
     }
     for (const owner of ["executor", "attester"]) {
       if (!metadata[owner] || typeof metadata[owner] !== "object" || typeof metadata[owner].resource !== "string") continue;
-      const result = await validateResource(metadata[owner].resource, artifact, root, options);
+      const result = await validateResource(metadata[owner].resource, artifact, repositoryRoot, options);
       diagnostics.push(...result.diagnostics);
       checks.push({ ...result.check, field: owner + ".resource" });
     }

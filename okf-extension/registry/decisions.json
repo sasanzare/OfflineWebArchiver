@@ -101,6 +101,11 @@
     { "id": "OD-073", "name": "CDP runtime network authorization", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-045-cdp-runtime-network-authorization.md" },
     { "id": "OD-074", "name": "Fenced artifact first Render commit", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-046-fenced-artifact-first-render-commit.md" },
     { "id": "OD-075", "name": "Opt-in bounded Render screenshot", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-047-opt-in-bounded-render-screenshot.md" },
-    { "id": "OD-076", "name": "Separate Browser and Page crash classification", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-048-browser-and-page-crash-recovery.md" }
+    { "id": "OD-076", "name": "Separate Browser and Page crash classification", "status": "PARTIAL", "recordPath": "docs/project/adr/ADR-048-browser-and-page-crash-recovery.md" },
+    { "id": "OD-077", "name": "Trust zones and isolated future archive runtime", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-052-trust-zones-and-privilege-boundaries.md" },
+    { "id": "OD-078", "name": "Separate versioned Crawl Run state", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-053-separated-crawl-run-state.md" },
+    { "id": "OD-079", "name": "Versioned replay and strict offline contract", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-054-network-replay-and-strict-offline-contract.md" },
+    { "id": "OD-080", "name": "Safe-default Service Worker policy", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-055-versioned-service-worker-policy.md" },
+    { "id": "OD-081", "name": "Central canonical path and symlink safety", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-056-canonical-path-safety.md" }
   ]
 }

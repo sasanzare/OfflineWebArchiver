@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, type IpcMainInvokeEvent } from "electron";
 import { createApplicationService } from "@offline-web-archive/application-service";
-import { CONTRACT_VERSION, type SiteProfileContract } from "@offline-web-archive/contracts";
+import { COMMAND_TYPES, CONTRACT_VERSION, type SiteProfileContract } from "@offline-web-archive/contracts";
 import { createDevelopmentLogger } from "@offline-web-archive/observability";
 import { readEnvironmentConfiguration, readRuntimePlatformInfo } from "@offline-web-archive/platform";
 import { createOsProtectedSecretStore } from "@offline-web-archive/secrets";
@@ -17,6 +17,18 @@ export const MAIN_WINDOW_SECURITY = Object.freeze({
   nodeIntegration: false,
   sandbox: true,
   webSecurity: true,
+});
+
+// This is the contract for a future untrusted archive-rendering surface. The current
+// desktop window never loads archived HTML; it is a trusted renderer-only surface.
+export const UNTRUSTED_ARCHIVE_RUNTIME_SECURITY_BASELINE = Object.freeze({
+  contextIsolation: true,
+  nodeIntegration: false,
+  sandbox: true,
+  preload: false,
+  ipcBridge: false,
+  webview: false,
+  externalNavigation: false,
 });
 
 const architectureSmoke = process.argv.includes("--architecture-smoke");
@@ -92,6 +104,7 @@ function createMainWindow(): BrowserWindow {
 function commandUsesOnlyApprovedPaths(rawCommand: unknown): boolean {
   if (typeof rawCommand !== "object" || rawCommand === null) return false;
   const record = rawCommand as Record<string, unknown>;
+  if (typeof record["commandType"] !== "string" || !(COMMAND_TYPES as readonly string[]).includes(record["commandType"])) return false;
   if (record["commandType"] === "system.describe" || record["commandType"] === "project.close") return true;
   const payload = record["payload"];
   if (typeof payload !== "object" || payload === null) return false;

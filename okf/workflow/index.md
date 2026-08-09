@@ -11,5 +11,6 @@ This directory contains the selected queue, job-state, and rendering workflow Co
 - [Job Attempts](job-attempts.md) - Attempt advancement and retained interruption history.
 - [Scope Engine](scope-engine.md) - URL normalization, classification, and limits.
 - [Site Profile](site-profile.md) - Portable scope-policy authority and revisions.
+- [Crawl Run State](crawl-run-state.md) - Versioned durable Run lifecycle separate from pause control.
 
 Phase 9 discovery and downloader workflows remain planned capabilities rather than implemented workflow surfaces. The Interaction workflow is a partial approved-plan foundation and does not replace discovery.

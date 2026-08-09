@@ -2,11 +2,11 @@
 
 ## Current phase position — 2026-08-07
 
-Product Phase 8 — Browser Lifecycle and Rendering Engine remains the latest fully gated product phase. The repository also contains a partial Product Phase 10 interaction foundation, the Product Phase 11 Secret Store foundation, and the Product Phase 12 Manual Login and Secure Session Manager implementation: contract `1.8.0`, SQLite schema `8`, Project schema `8`, Interaction Profile/Trace schema `1`, Secret Reference/Vault/Envelope schema `1`, Session metadata/storage-state/affinity schema `1`, approved-plan validation, user-driven headed authentication, protected session persistence, fresh restore validation, redacted traces, project-scoped encrypted storage, metadata-only transport, and safe export/diagnostic boundaries. The Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 remain conditional; Phase 12's real pinned-Chromium fixture is currently environment-blocked.
+Product Phase 8 — Browser Lifecycle and Rendering Engine remains the latest fully gated product phase. The repository also contains a partial Product Phase 10 interaction foundation, the Product Phase 11 Secret Store foundation, the Product Phase 12 Manual Login and Secure Session Manager implementation, and a partial Product Phase 13 hardening pass: contract `1.9.0`, SQLite schema `9`, Project schema `9`, Interaction Profile/Trace schema `1`, Secret Reference/Vault/Envelope schema `1`, Session metadata/storage-state/affinity schema `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, approved-plan validation, user-driven headed authentication, protected session persistence, fresh restore validation, redacted traces, project-scoped encrypted storage, metadata-only transport, and safe export/diagnostic boundaries. The Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 remain conditional; Phase 12 real browser evidence and Phase 13 browser/platform evidence are currently blocked.
 
 **Document status:** Proposed baseline  
 **Owner:** Product Owner  
-**Current product status:** **Phase 8 complete; Phase 9 is the open prerequisite for discovery; Phase 10 partial; Phase 11 conditional; Phase 12 implementation present with a real-browser validation gate**
+**Current product status:** **Phase 8 complete; Phase 9 is the open prerequisite for discovery; Phase 10 partial; Phase 11 conditional; Phase 12 implementation present with a real-browser validation gate; Phase 13 implementation present with browser/platform validation gates**
 **Last updated:** 2026-08-07
 
 This is the authoritative concise delivery sequence. The attached Product Phase 11
@@ -21,6 +21,16 @@ proposal exists in the Phase 1 repository. Every gate also requires the
 [Project-Wide Definition of Done](DEFINITION_OF_DONE.md), applicable entries in
 the [Acceptance Matrix](../product/ACCEPTANCE_MATRIX.md), traceability updates,
 and a current handoff.
+
+### Revised Phase 13 numbering note
+
+The attached post-Phase-12 proposal defines the current Phase 13 as
+architecture and security hardening. The numbered table below is the legacy
+25-phase sequence and still contains the older Guided OTP label in its row 13;
+that legacy row is not authorization to implement OTP in this task. Guided OTP,
+the later proxy/worker/replay/runtime/download/rewrite work, and the final
+phase-number reconciliation remain deferred until the revised proposal is
+available as an authoritative repository document.
 
 > **OKF maintenance is a continuous Definition of Done requirement, not a
 > separate product feature phase.**

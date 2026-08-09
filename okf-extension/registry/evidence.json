@@ -77,6 +77,14 @@
     { "id": "OKF-EV-P12-TESTS", "name": "Phase 12 unit and fake-runtime lifecycle evidence", "status": "VERIFIED", "path": "tests/integration/session-lifecycle.test.ts", "method": "unit and integration test execution" },
     { "id": "OKF-EV-P12-BROWSER", "name": "Phase 12 real headed Chromium fixture", "status": "PARTIAL", "path": "tests/browser/session.test.ts", "method": "real Chromium test pending pinned browser provisioning" },
     { "id": "OKF-EV-P12-SECURITY", "name": "Phase 12 authentication Session security review", "status": "PARTIAL", "path": "docs/architecture/PHASE_12_SECURITY_REVIEW.md", "method": "security and limitation review" },
-    { "id": "OKF-EV-P12-DOCS", "name": "Phase 12 implementation, ADR, acceptance, and OKF records", "status": "PARTIAL", "path": "docs/project/PHASE_12_IMPLEMENTATION_REPORT.md", "method": "documentation and OKF validation" }
+    { "id": "OKF-EV-P12-DOCS", "name": "Phase 12 implementation, ADR, acceptance, and OKF records", "status": "PARTIAL", "path": "docs/project/PHASE_12_IMPLEMENTATION_REPORT.md", "method": "documentation and OKF validation" },
+    { "id": "OKF-EV-P13-DOMAIN", "name": "Phase 13 Archive Core hardening contracts", "status": "VERIFIED", "path": "packages/archive-core/src/index.ts", "method": "typecheck and focused pure contract tests" },
+    { "id": "OKF-EV-P13-PERSISTENCE", "name": "Phase 13 schema 9 and canonical persistence boundaries", "status": "VERIFIED", "path": "packages/persistence-sqlite/src/migrations.ts", "method": "migration, lifecycle, and persistence tests" },
+    { "id": "OKF-EV-P13-BOUNDARY", "name": "Phase 13 authentication and Desktop trust boundaries", "status": "VERIFIED", "path": "packages/browser-runtime/src/authentication-policy.ts", "method": "focused route-policy tests and source review" },
+    { "id": "OKF-EV-P13-POLICY", "name": "Phase 13 profile Service Worker policy", "status": "VERIFIED", "path": "packages/scope-engine/src/index.ts", "method": "scope/profile contract tests" },
+    { "id": "OKF-EV-P13-TESTS", "name": "Phase 13 focused hardening test suites", "status": "VERIFIED", "path": "tests/unit/authentication-route.test.ts", "method": "package test runner execution" },
+    { "id": "OKF-EV-P13-BROWSER", "name": "Phase 13 registered real Chromium Session, IndexedDB, and Service Worker fixtures", "status": "BLOCKED", "path": "tests/browser/session.test.ts", "method": "normal execution returns listen EPERM; escalated execution reaches BROWSER_INSTALLATION_MISSING or BROWSER_LAUNCH_FAILED; Service Worker fixture is registered at tests/browser/service-worker-policy.test.ts" },
+    { "id": "OKF-EV-P13-SECURITY", "name": "Phase 13 security review and closure findings", "status": "PARTIAL", "path": "docs/architecture/PHASE_13_SECURITY_REVIEW.md", "method": "security review with explicit owners and blockers" },
+    { "id": "OKF-EV-P13-DOCS", "name": "Phase 13 report, audit, ADR, acceptance, and OKF records", "status": "PARTIAL", "path": "docs/project/PHASE_13_IMPLEMENTATION_REPORT.md", "method": "documentation and validator execution" }
   ]
 }
