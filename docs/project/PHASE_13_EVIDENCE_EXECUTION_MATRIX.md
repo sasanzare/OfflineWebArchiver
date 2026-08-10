@@ -15,10 +15,8 @@ exposed as:
 npm run test:phase13:evidence
 ```
 
-It verifies the locked runtime, runs the existing focused test commands, writes
-a secret-scanned evidence bundle, and returns non-zero when a mandatory
-focused execution is blocked or fails. It never installs a system browser,
-stores raw Storage State, or edits the Acceptance Matrix.
+It verifies the locked runtime and the repository-owned source baseline declared
+by [`tools/testing/phase13-evidence-baseline.json`](../../tools/testing/phase13-evidence-baseline.json), runs the existing focused test commands, writes a secret-scanned evidence bundle, and returns non-zero when a mandatory focused execution is blocked or fails. A final acceptance bundle requires a clean committed tree and a matching source fingerprint; dirty diagnostic bundles remain non-promotable. It never installs a system browser, stores raw Storage State, or edits the Acceptance Matrix.
 
 ## Locked runtime contract
 
@@ -31,6 +29,13 @@ stores raw Storage State, or edits the Acceptance Matrix.
 | Chromium build | `141.0.7390.37` | manifest and executable verification |
 | Chromium source | `official-playwright` | manifest and runner validation |
 | Electron | `43.2.0` | lockfile, package metadata, platform binary, and `--version` |
+
+The source baseline manifest records the pre-commit preparation state, the
+canonical SHA-256 fingerprint, the package-lock, runner, and acceptance
+definition hashes, and the explicit immutable input file list. Its manifest
+file is intentionally excluded from its own fingerprint to avoid a circular
+hash. The final native run must use the commit created after this preparation;
+the manifest does not claim a commit that has not yet been created.
 
 Chromium must be under `.runtime/browsers`, have a manifest and SHA-256
 matching the executable, remain inside the repository-owned resource root, and
@@ -144,6 +149,10 @@ secret-scan.json
 status, host metadata, Git HEAD, runtime versions, exact command, exit code,
 test totals, evidence files, timestamp, and reason. `PASS` is valid only when
 an executed command has exit code zero and a captured test result.
+Every bundle also carries the source fingerprint and the acceptance-definition
+hash. Bundle validation accepts a structurally valid blocked diagnostic, while
+reconciliation rejects dirty trees, source mismatches, differing fingerprints,
+and differing acceptance-definition hashes.
 
 Generated command output is not stored raw. Failure diagnostics are bounded
 and redacted. `secret-scan.json` must report `PASS` with zero unauthorized
@@ -163,8 +172,9 @@ node tools/testing/run-phase13-evidence.mjs reconcile \
   --output .artifacts/phase13-evidence/reconciliation.json
 ```
 
-Reconciliation rejects invalid bundles, duplicate target rows, and different
-Git HEADs. It requires a passing `windows-11-x64` row and at least one passing
+Reconciliation rejects invalid bundles, duplicate target rows, different Git
+HEADs, differing source fingerprints, dirty/source-mismatched execution, and
+different acceptance-definition hashes. It requires a passing `windows-11-x64` row and at least one passing
 `linux-<architecture>` and `macos-<architecture>` row. Windows 10 is retained
 as `windows-10-x64` legacy/optional evidence under the current platform policy;
 it is not allowed to masquerade as Windows 11 or to block the primary Windows
@@ -205,14 +215,16 @@ Electron acceptance until the repository-owned runtimes launch successfully.
 ## Current host result
 
 On 2026-08-10 at Git HEAD
-`660f55b71e3a6ae6ef23a9a42552d4562ad70e83`, the runner classified the host as
+`5881707927131085032707a9e69b27ccb73bd750`, the runner classified the host as
 `ENVIRONMENT_BLOCKED`: macOS 14.2.1 / Darwin 23.2.0 / arm64 was native, but
 the Chromium manifest and executable were absent, Electron 43.2.0 had no
 downloaded macOS binary, and npm was `12.0.2` outside the declared npm 11
-range. The latest bundle is
-`.artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a`.
-It was written and validated, the artifact secret scan found zero unauthorized
-occurrences, and no acceptance row was promoted to `PASS`.
+range. A pre-commit diagnostic bundle was recorded at
+`.artifacts/phase13-evidence/2026-08-10T19-15-35-661Z-588170792713`.
+It was written and validated; its source fingerprint matched the manifest, but
+the pre-commit tree was dirty, so the bundle remained non-promotable. The
+artifact secret scan found zero unauthorized occurrences, and no acceptance
+row was promoted to `PASS`.
 
 The canonical next action is to run the same command on an approved host after
 provisioning the exact locked runtimes, preserve the bundle directory, then

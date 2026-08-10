@@ -1,0 +1,357 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "phase13-evidence-source-baseline",
+  "lifecycle": "PRE_COMMIT_PREPARATION",
+  "createdAt": "2026-08-10T18:36:20.464Z",
+  "createdFromDirtyTree": true,
+  "preCommit": {
+    "gitHead": "5881707927131085032707a9e69b27ccb73bd750",
+    "branch": "main",
+    "workingTreeStatus": [
+      "M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
+      " M okf-extension/registry/evidence.json",
+      " M okf/log.md",
+      " M okf/operations/platform-support.md",
+      " M okf/testing/phase-13-validation.md",
+      " M tools/testing/run-phase13-evidence.mjs"
+    ]
+  },
+  "finalCommittedBaseline": null,
+  "sourceFingerprintAlgorithm": "sha256-canonical-path-role-hash-list-v1",
+  "sourceFingerprint": "5f72396f0ae6f227f50ec06b566c12842cb46193a7b045dcf4b85674b3bc41fb",
+  "packageLockHash": "7c6da7d506d2fabfff740824ac6de3dac35d6cada66e421a31e462d7118001e4",
+  "evidenceRunnerHash": "3a088af2fcab2dc86297b589a8b8ed093e141a67fe9706b2a67d16c200403149",
+  "acceptanceDefinitionHash": "8d83372556de3b2f0dfbfef17472a38e2f49eb1a82e3ca6b8495447282097fdc",
+  "expectedNodeVersion": ">=24.0.0 <25",
+  "expectedNpmMajor": 11,
+  "playwrightVersion": "1.56.1",
+  "chromiumRevision": "1194",
+  "chromiumBuild": "141.0.7390.37",
+  "chromiumSource": "official-playwright",
+  "browserRoot": ".runtime/browsers",
+  "electronVersion": "43.2.0",
+  "requiredPlatforms": [
+    {
+      "targetId": "windows-11-x64",
+      "required": true
+    },
+    {
+      "targetId": "linux-<architecture>",
+      "required": true
+    },
+    {
+      "targetId": "macos-<architecture>",
+      "required": true
+    },
+    {
+      "targetId": "windows-10-x64",
+      "required": false,
+      "note": "legacy/optional"
+    }
+  ],
+  "includedFiles": [
+    {
+      "path": "apps/desktop/package.json",
+      "role": "toolchain-contract",
+      "sha256": "90eaa8381e895546077b9b54a064362d8ee6bfad06bf39994616ac56c6a6eeca"
+    },
+    {
+      "path": "apps/desktop/tsconfig.electron.json",
+      "role": "toolchain-contract",
+      "sha256": "bd2c8c66c1443082c19f90e558581c41833f22846bc3a08059e5170a3adef466"
+    },
+    {
+      "path": "apps/desktop/tsconfig.renderer.json",
+      "role": "toolchain-contract",
+      "sha256": "e701abecd7b5e2ceba89bd0a38448ed9c81516e3dddddc53593c13b5848334c5"
+    },
+    {
+      "path": "docs/architecture/PHASE_13_SECURITY_REVIEW.md",
+      "role": "evidence-policy",
+      "sha256": "574600cb1c9c88e249c90af7b21b016d96a6831d4e026c1335f47b9cfff03acd"
+    },
+    {
+      "path": "docs/architecture/PLATFORM_SUPPORT_POLICY.md",
+      "role": "evidence-policy",
+      "sha256": "ec4b09f9aa23e99ea784b4bf65991d83e2aa7d15d84662a5e24cc32114c8f1fc"
+    },
+    {
+      "path": "docs/product/ACCEPTANCE_MATRIX.md",
+      "role": "acceptance-definition",
+      "sha256": "19c372fd32d45ad0477eb017eb194990f85bb9b193d4c092a9dbe8f015cafe48"
+    },
+    {
+      "path": "docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
+      "role": "evidence-policy",
+      "sha256": "ad73d7afecc2d71b167c5ba70cf87a27cc78f140091dc4b8c0202f1d82d2f4ed"
+    },
+    {
+      "path": "docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
+      "role": "evidence-policy",
+      "sha256": "8b2dff9404b49abc8ba328de9273d18422f654bc136bbd78e820b537fa273237"
+    },
+    {
+      "path": "okf-extension/registry/evidence.json",
+      "role": "evidence-policy",
+      "sha256": "8795cd4844b1104cb0a0eb909e5cf56f446b6e123847e1cf0f5fd3d4b82547a2"
+    },
+    {
+      "path": "okf/log.md",
+      "role": "evidence-policy",
+      "sha256": "ed4886f2cef83c959c9fad958c05be7803d3c0b2a6f63890f58e1752cec9c788"
+    },
+    {
+      "path": "okf/operations/platform-support.md",
+      "role": "evidence-policy",
+      "sha256": "133beab462483490d25804eb65b2870318330906be23c50dcd58a9c29d57c06f"
+    },
+    {
+      "path": "okf/testing/phase-13-validation.md",
+      "role": "evidence-policy",
+      "sha256": "03920b3ffb4eb54f02870f03da93ddb8bee373a04c9d14dd294f386ec4b6c543"
+    },
+    {
+      "path": "package-lock.json",
+      "role": "toolchain-contract",
+      "sha256": "7c6da7d506d2fabfff740824ac6de3dac35d6cada66e421a31e462d7118001e4"
+    },
+    {
+      "path": "package.json",
+      "role": "toolchain-contract",
+      "sha256": "41c559b6e8b6f787b4329212cd2c57c53abb8777ea06ae8df346bff911f40d2e"
+    },
+    {
+      "path": "packages/archive-core/package.json",
+      "role": "toolchain-contract",
+      "sha256": "e314b46c7ef8fac16a557b4c4835bc4743af2ded0afa18b79c5db3b7163f44d5"
+    },
+    {
+      "path": "packages/archive-core/src/index.ts",
+      "role": "browser-policy-source",
+      "sha256": "7a6bc5549d0f22ebc6764dbaf3b030bcc40dc1c9ef6bee0841a4e9d7b25ecdb7"
+    },
+    {
+      "path": "packages/archive-core/src/interaction.ts",
+      "role": "browser-policy-source",
+      "sha256": "3641afae8742efb01853c5ac9d6ef59dfac392417bff2fe89a35b38382a84a27"
+    },
+    {
+      "path": "packages/archive-core/src/network.ts",
+      "role": "browser-policy-source",
+      "sha256": "e6dee379b6d3af7559dfdb9a93cdeb8a0230096e76bed6cccc15a3a1a1df64fb"
+    },
+    {
+      "path": "packages/archive-core/src/path-safety.ts",
+      "role": "browser-policy-source",
+      "sha256": "7e44eed590c98ed5bf92939794eaa379a0f00400564fa3dceb2f7edcb96042fe"
+    },
+    {
+      "path": "packages/archive-core/src/run-state.ts",
+      "role": "browser-policy-source",
+      "sha256": "3e912342e3d09f982dac8d73c7a3bcfa5a73cb439ebaee40c0c433c85b2ca23a"
+    },
+    {
+      "path": "packages/archive-core/src/secrets.ts",
+      "role": "browser-policy-source",
+      "sha256": "c43b22ccd6d3a7ca4aa5c62c2160e7e74389be6cb9e0e5a13c54ccd5a6698c0c"
+    },
+    {
+      "path": "packages/archive-core/src/service-worker.ts",
+      "role": "browser-policy-source",
+      "sha256": "6ee0871f385c29d3ec503b52450e1b7a231289c4cb6c517fa4f5afce9c287800"
+    },
+    {
+      "path": "packages/archive-core/src/sessions.ts",
+      "role": "browser-policy-source",
+      "sha256": "a56bbd010970748e487baacbf2f11f1c83f71043e77af05c8933686c2b700e82"
+    },
+    {
+      "path": "packages/browser-runtime/package.json",
+      "role": "toolchain-contract",
+      "sha256": "b3a8e4c1b36cd78338b1128777d23ed0f987d1ec1946cef2130242e87699e74a"
+    },
+    {
+      "path": "packages/browser-runtime/src/authentication-policy.ts",
+      "role": "browser-runtime-source",
+      "sha256": "6dcff8e7a2e2e1d5ece143a3f76b892e08c4b86ab1249a2380db599d7d578b7d"
+    },
+    {
+      "path": "packages/browser-runtime/src/index.ts",
+      "role": "browser-runtime-source",
+      "sha256": "9e82a70f541bdb773dbfc9d0160b6db8fbd03f0fd84af2d59fbcb1ca46c258b7"
+    },
+    {
+      "path": "packages/browser-runtime/src/interaction.ts",
+      "role": "browser-runtime-source",
+      "sha256": "de88986ab8e9e50551ca5e05e4570c2f5130fe81d39b43e07c0c8973f1aa35d6"
+    },
+    {
+      "path": "tests/browser/browser-runtime.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "a642666a7c3e5df25306c429328ee8a5f245b373de0eb15d62970970de8605e1"
+    },
+    {
+      "path": "tests/browser/interaction.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "a46b9c30c2269c1e05b1ebce08a264f393d98642b3de9e0e0487ff94223a6783"
+    },
+    {
+      "path": "tests/browser/service-worker-policy.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "380f1972b768e4283aa1f0353ea0149a66ffb5b8cdc35135b27a8a4bcb4ba831"
+    },
+    {
+      "path": "tests/browser/session.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "0f9ec56c53e81803725a301f56ab96894c14824989152dfdaa0b11690f8214bf"
+    },
+    {
+      "path": "tests/electron/desktop-smoke.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "0047eb5e285078a04824635c06b4cfbfecef9ca720c610d7244ee0655e81a77d"
+    },
+    {
+      "path": "tests/fixtures/rendering/service-worker.html",
+      "role": "browser-and-native-tests",
+      "sha256": "6d26024f45ec3b97ddcd64ec70728166d58c573886f3078cd9adef2ad2a55e4b"
+    },
+    {
+      "path": "tests/integration/desktop-transport.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "a368e6a4384a1298baf166727ba324f5a0121fcca6f30348ac15a93bbd3ad48c"
+    },
+    {
+      "path": "tests/okf/layered-validator.test.ts",
+      "role": "quality-gate",
+      "sha256": "5b846e294377a29c0e9a0314b23fe961d5a12c75bc1755a1f3caf23f3b47bbaf"
+    },
+    {
+      "path": "tests/okf/strict-validator.test.ts",
+      "role": "quality-gate",
+      "sha256": "fdc581bb8cf820dccb5bcbc07efc763e3f1812a22a47070dd36533210797f9b7"
+    },
+    {
+      "path": "tests/okf/validator.test.ts",
+      "role": "quality-gate",
+      "sha256": "72a20e90462b07c304f74e580a52a2931b458fdb6c6be28ccdafb9e598d923ed"
+    },
+    {
+      "path": "tests/process-kill/browser-process-kill.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "fe16c15ced75ed0dea2157584f523c29f9ea96ff188229fcada041c3221cd234"
+    },
+    {
+      "path": "tests/support/render-fixture-server.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "b2ec32774d84c72e010cb5eecf765cfc7febcc82079f9adaea6c5db044c98b53"
+    },
+    {
+      "path": "tests/unit/authentication-route.test.ts",
+      "role": "browser-and-native-tests",
+      "sha256": "19a998e60edd7a4230b85b7c30e35bd64e84830f72a10334f3ee4f6e6d17f5b0"
+    },
+    {
+      "path": "tools/architecture/validate.mjs",
+      "role": "quality-gate",
+      "sha256": "562bc15086b92b9c7b98a2969c22fbd957ffeb866387b2ffb435d91e409e6084"
+    },
+    {
+      "path": "tools/browser/provision.mjs",
+      "role": "evidence-orchestration",
+      "sha256": "110b143b1c13d012985c3486c00242b2cc27646865fcb49ae7795df98dcb1479"
+    },
+    {
+      "path": "tools/build/build-desktop.mjs",
+      "role": "evidence-orchestration",
+      "sha256": "7ea361161529fbfb4f7b2ea76a9b9b37b306ded9e595ce44271ebb3ba0bf69f7"
+    },
+    {
+      "path": "tools/build/build.mjs",
+      "role": "evidence-orchestration",
+      "sha256": "b019ff9e10d1575cca982c698cc8b26b989bd2482f3d720ba5cd693290f854d2"
+    },
+    {
+      "path": "tools/build/typescript.mjs",
+      "role": "evidence-orchestration",
+      "sha256": "5dfcda02529746443094d56f360706ab1a4ca192ff03fa6acac8fdafe0ecb57e"
+    },
+    {
+      "path": "tools/contracts/check.mjs",
+      "role": "quality-gate",
+      "sha256": "4a4a4acb774891711569503331de89b613772bff284687c707e75102b6e1c988"
+    },
+    {
+      "path": "tools/docs/validate.mjs",
+      "role": "quality-gate",
+      "sha256": "343626405f56471bc7d2a0320ef922f36d3e62be49b010091071a4afa69f45eb"
+    },
+    {
+      "path": "tools/migrations/validate.mjs",
+      "role": "quality-gate",
+      "sha256": "1dce33c9721df1c72c1c26453d04c7b8cacdfceff71bdf5e6a1b41f1594e5838"
+    },
+    {
+      "path": "tools/okf/cli.mjs",
+      "role": "quality-gate",
+      "sha256": "f01437b583e2a897053f5e70ec1008d60ca9e691ba14de7358928b75bc55af4d"
+    },
+    {
+      "path": "tools/quality/format-check.mjs",
+      "role": "quality-gate",
+      "sha256": "018d00b66f4ec6fc38901db274ed4f56b183ab2a0f2c109e8400599a1f409311"
+    },
+    {
+      "path": "tools/quality/lint.mjs",
+      "role": "quality-gate",
+      "sha256": "da3bbe54cef8db27f475fd6f8867cd34c5a6beaf9ce16eced1fe01f4556f6ce5"
+    },
+    {
+      "path": "tools/security/check.mjs",
+      "role": "quality-gate",
+      "sha256": "a63f39ba14845027a1b59f059b7bbf71be032dff7151dd41b919f0501cdd3cbe"
+    },
+    {
+      "path": "tools/testing/run-phase13-evidence.mjs",
+      "role": "evidence-runner",
+      "sha256": "3a088af2fcab2dc86297b589a8b8ed093e141a67fe9706b2a67d16c200403149"
+    },
+    {
+      "path": "tools/testing/run-tests.mjs",
+      "role": "evidence-orchestration",
+      "sha256": "cdc55e16fccfff9396885594f5976a0a274355bb9c767c3f6e655d15d3d121f6"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "role": "toolchain-contract",
+      "sha256": "d4620e31d9c86425e7ac1603bad6156f0808e3ff64ad78112337f37387c954ed"
+    },
+    {
+      "path": "tsconfig.electron.json",
+      "role": "toolchain-contract",
+      "sha256": "49db7fb1603248e4cf093a9a6c89b2de1300b400242dcc6a8441e62ef6b4920e"
+    },
+    {
+      "path": "tsconfig.json",
+      "role": "toolchain-contract",
+      "sha256": "249a7a8161a8430a18d92729627cab97328c437f92fdd028331cbb3b4b772ade"
+    },
+    {
+      "path": "tsconfig.renderer.json",
+      "role": "toolchain-contract",
+      "sha256": "9c5f5f758c9f163a4bcb5d92a6864f7c13dd0f504cd36f66385ea6416558b467"
+    },
+    {
+      "path": "tsconfig.test.json",
+      "role": "toolchain-contract",
+      "sha256": "3a32526bc6ff1a71bd9aa595a3dad893eeae53bd2535b2acd0122e55a90c3b26"
+    }
+  ],
+  "excludedInputs": [
+    "tools/testing/phase13-evidence-baseline.json",
+    ".artifacts/phase13-evidence/",
+    ".runtime/browsers/",
+    "node_modules/",
+    ".build-tests/",
+    "*.tsbuildinfo"
+  ]
+}

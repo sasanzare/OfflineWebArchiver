@@ -11,7 +11,7 @@ plus the native platform matrix, are blocked or unavailable in this
 environment.
 
 The follow-up native-evidence work at Git HEAD
-`660f55b71e3a6ae6ef23a9a42552d4562ad70e83` adds the canonical
+`5881707927131085032707a9e69b27ccb73bd750` adds the canonical
 [Phase 13 Native Evidence Execution Matrix](PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 and its runner at `tools/testing/run-phase13-evidence.mjs`. This infrastructure
 is validated, but it does not change the blocked runtime acceptance rows or

@@ -35,3 +35,8 @@ platform targets, and reconciliation commands are recorded in
 `tools/testing/run-phase13-evidence.mjs`. The exact execution and acceptance
 reconciliation are also recorded in `docs/project/PHASE_13_CLOSURE_REPORT.md`.
 Fake-runtime evidence must remain labeled separately.
+
+Final native acceptance must use the clean committed source baseline declared
+by `tools/testing/phase13-evidence-baseline.json`. Each bundle records the
+deterministic source fingerprint and acceptance-definition hash; reconciliation
+rejects dirty or source-mismatched bundles even when their test commands pass.

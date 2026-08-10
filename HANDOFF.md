@@ -16,39 +16,37 @@ capture, or production packaging.
 
 ## Current Objective
 
-Complete the Phase 13 native-evidence enablement and execution-matrix work
-without starting Phase 14. The runner, bundle schema, redaction scan, and
-same-HEAD reconciliation are implemented and validated; real Chromium,
-Electron, and cross-platform evidence remain external prerequisites.
+Freeze the Phase 13 native-evidence source baseline without starting Phase 14.
+The runner now records a deterministic source fingerprint and acceptance-
+definition hash, and final reconciliation requires a clean committed source
+tree. Real Chromium, Electron, and cross-platform evidence remain external
+prerequisites.
 
 ## Current Phase or Milestone
 
-Phase 13 evidence infrastructure is being developed at HEAD
-`660f55b71e3a6ae6ef23a9a42552d4562ad70e83` on 2026-08-10. The registered
-session fixture requires cookie, localStorage, and IndexedDB state and
-preserves the explicitly unsupported sessionStorage contract. Phase 13
-remains `PARTIAL` and Phase 14 remains blocked until approved Chromium,
-Electron, and required native-platform evidence exist.
+Phase 13 evidence infrastructure is present at HEAD
+`5881707927131085032707a9e69b27ccb73bd750` on 2026-08-10. The current freeze
+changes are pre-commit preparation changes. The registered session fixture
+requires cookie, localStorage, and IndexedDB state and preserves the explicitly
+unsupported sessionStorage contract. Phase 13 remains `PARTIAL` and Phase 14
+remains blocked until approved Chromium, Electron, and required native-platform
+evidence exist.
 
 ## Repository State
 
 - Repository path: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `660f55b71e3a6ae6ef23a9a42552d4562ad70e83`
-- Current HEAD: `660f55b71e3a6ae6ef23a9a42552d4562ad70e83`
-- Working tree status: Phase 13 runner, execution-matrix documentation,
-  package scripts, `.gitignore`, and related OKF/report documentation are
-  modified or untracked; generated `.artifacts/` output is ignored.
+- Base or starting commit: `5881707927131085032707a9e69b27ccb73bd750`
+- Current HEAD: `5881707927131085032707a9e69b27ccb73bd750`
+- Working tree status: nine intended freeze files are modified or untracked;
+  generated `.artifacts/` output is ignored.
 - Staged changes: none.
-- Unstaged changes: `.gitignore`, `HANDOFF.md`, `README.md`,
-  `docs/product/ACCEPTANCE_MATRIX.md`, `docs/project/PHASE_13_CLOSURE_REPORT.md`,
-  `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`, `okf-extension/README.md`,
-  `okf-extension/registry/evidence.json`, `okf-extension/registry/nodes.json`,
-  `okf-extension/registry/relationships.json`, `okf/history/phase-13.md`,
-  `okf/log.md`, `okf/operations/platform-support.md`,
-  `okf/testing/phase-13-validation.md`, and `package.json`.
-- Untracked files: `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md` and
-  `tools/testing/run-phase13-evidence.mjs`.
+- Unstaged changes: `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`,
+  `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`,
+  `okf-extension/registry/evidence.json`, `okf/log.md`,
+  `okf/operations/platform-support.md`, `okf/testing/phase-13-validation.md`,
+  `tools/testing/run-phase13-evidence.mjs`, and `HANDOFF.md`.
+- Untracked files: `tools/testing/phase13-evidence-baseline.json`.
 - Branch, commit history, and working tree were not changed destructively; no
   commit, push, branch change, reset, clean, restore, or stash was performed.
 
@@ -92,37 +90,56 @@ Electron, and required native-platform evidence exist.
 - Added the Phase 13 Native Evidence Execution Matrix and synchronized README,
   acceptance, closure, implementation, OKF, and extension-registry references
   without promoting any blocked acceptance result.
+- Added `tools/testing/phase13-evidence-baseline.json` as a pre-commit
+  preparation manifest. It records the exact input file hashes, toolchain and
+  browser/Electron contracts, required platforms, parent HEAD, and a null
+  final-commit field.
+- Strengthened the runner to record source fingerprints and acceptance-
+  definition hashes in every evidence file, reject source/contract drift,
+  verify the Electron `--version` output, and prevent dirty or source-mismatched
+  bundles from final reconciliation. Sorting is locale-independent.
+- Reviewed the current Git delta: the starting tree at `5881707` was clean;
+  the current nine-file delta is the intended freeze change set only. No
+  product behavior, Phase 14 feature, branch, or migration was changed.
 
 ## Work in Progress
 
-No product implementation is in progress. The new runner has been exercised
-on the current macOS host with `--skip-full`; its bundle validates and its
-secret scan reports zero unauthorized occurrences. Real Chromium execution
-remains unavailable because the approved manifest/executable is absent, the
-Electron binary is absent, npm 12 is outside the declared npm 11 range, and
-the native matrix cannot be produced from this host.
+No product implementation is in progress. The final pre-commit diagnostic
+bundle
+`.artifacts/phase13-evidence/2026-08-10T19-44-04-251Z-588170792713` validates,
+matches source fingerprint
+`5f72396f0ae6f227f50ec06b566c12842cb46193a7b045dcf4b85674b3bc41fb`, records
+acceptance-definition hash
+`8d83372556de3b2f0dfbfef17472a38e2f49eb1a82e3ca6b8495447282097fdc`, and its
+secret scan reports zero unauthorized occurrences. It remains non-promotable
+because the working tree is dirty, npm is `12.0.2`, approved Chromium is
+missing, Electron is missing, and the native matrix is unavailable.
 
 ## Remaining Work
 
-1. On approved hosts using Node 24/npm 11, provision the exact repository-owned
-   Chromium and locked Electron binary.
-2. Run `npm run test:phase13:evidence`, validate each bundle, and inspect the
+1. Review the exact freeze file list and create the single baseline commit;
+   the current manifest is explicitly `PRE_COMMIT_PREPARATION` and does not
+   claim the resulting commit hash.
+2. On that same resulting commit, use Node 24/npm 11 and provision the exact
+   repository-owned Chromium and locked Electron binary on approved hosts.
+3. Run `npm run test:phase13:evidence`, validate each bundle, and inspect the
    real Session, IndexedDB, Service Worker, and Desktop results.
-3. Execute the documented native platform matrix on Windows 11 x64, Linux,
-   and macOS; retain Windows 10 only as optional legacy evidence.
-4. Reconcile validated bundles from one common Git HEAD, then update the
-   acceptance matrix manually from inspected evidence. Do not begin Phase 14
-   while any mandatory Phase 13 row remains blocked.
+4. Execute the documented native matrix on Windows 11 x64, Linux, and macOS;
+   retain Windows 10 only as optional legacy evidence. Reconcile only clean
+   bundles with the same Git HEAD, source fingerprint, and acceptance hash.
+   Do not begin Phase 14 while any mandatory Phase 13 row remains blocked.
 
 ## Exact Next Steps
 
-1. On each approved host, run `npm ci`, `npm run browser:install`,
+1. After the baseline commit, on each approved host run `npm ci`,
+   `npm run browser:install`,
    `npm run browser:verify`, and `node node_modules/electron/install.js` only
    when the locked Electron binary is absent.
 2. Run `npm run test:phase13:evidence` and then
    `node tools/testing/run-phase13-evidence.mjs validate <bundle>`.
 3. After all required rows pass, run the documented reconcile command and
-   inspect it before changing any acceptance status.
+   inspect it before changing any acceptance status. Do not edit acceptance
+   rows from a blocked or dirty diagnostic bundle.
 
 ## Files Created
 
@@ -163,6 +180,7 @@ the native matrix cannot be produced from this host.
 - `tests/unit/authentication-route.test.ts`
 - `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`
 - `tools/testing/run-phase13-evidence.mjs`
+- `tools/testing/phase13-evidence-baseline.json`
 
 ## Files Modified
 
@@ -203,6 +221,13 @@ the native matrix cannot be produced from this host.
   `okf-extension/README.md`, the three OKF extension registries,
   `okf/operations/platform-support.md`, `okf/testing/phase-13-validation.md`,
   `okf/history/phase-13.md`, and `okf/log.md`.
+- The current baseline-freeze preparation additionally modifies
+  `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`,
+  `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`,
+  `okf-extension/registry/evidence.json`, `okf/log.md`,
+  `okf/operations/platform-support.md`, `okf/testing/phase-13-validation.md`,
+  `tools/testing/run-phase13-evidence.mjs`, and `HANDOFF.md`, and adds
+  `tools/testing/phase13-evidence-baseline.json`.
 
 ## Important Architecture and Design Decisions
 
@@ -320,6 +345,52 @@ the native matrix cannot be produced from this host.
   `.artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a`.
 - `node tools/testing/run-phase13-evidence.mjs validate .artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a` — PASS.
 - `node tools/testing/run-phase13-evidence.mjs reconcile .artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a --output .artifacts/phase13-evidence/reconciliation-2026-08-10.json` — exit 1 as expected; required native rows are missing.
+- Current Git audit: branch `main`, HEAD
+  `5881707927131085032707a9e69b27ccb73bd750`, clean at task start, no staged
+  files, and no diff-check errors. The current delta is the nine-file freeze
+  preparation set.
+- An explicit-path `git add --dry-run` was not able to create the Git index
+  lock in the managed read-only Git metadata environment; no staging occurred
+  and no `.git/index.lock` remains. The proposed command is supplied for the
+  user to run in the normal writable repository environment.
+- `node --check tools/testing/run-phase13-evidence.mjs` — PASS.
+- `node tools/testing/run-phase13-evidence.mjs --help` — PASS.
+- `npm run typecheck` and `npm run build` — PASS.
+- `npm run lint`, `npm run format:check`, `npm run test:architecture`,
+  `npm run contracts:check`, `npm run migrations:validate`,
+  `npm run project-format:validate`, `npm run scope:validate`,
+  `npm run queue:validate`, `npm run recovery:validate`,
+  `npm run checkpoint:validate`, `npm run render:validate`,
+  `npm run secret-store:validate`, `npm run vault:validate`,
+  `npm run diagnostics:validate`, `npm run security:check`,
+  `npm run docs:validate`, `npm run okf:validate`, and
+  `npm run okf:validate:conformance` — PASS. Docs reported 158 required
+  artifacts and 400 active relative links; OKF reported zero errors/warnings.
+- `npm run test:unit` — PASS (53/53).
+- `npm run test:okf` — PASS (43/43).
+- Normal `npm test` — 142 passed, 14 failed, 2 skipped; loopback `EPERM`,
+  missing Chromium, missing Electron, and browser-dependent CLI/render flows.
+- Escalated `npm test` — 143 passed, 13 failed, 2 skipped; remaining failures
+  were `BROWSER_INSTALLATION_MISSING`, `BROWSER_LAUNCH_FAILED`, Electron
+  `ENOENT`, and dependent browser-backed flows. No new pure/product failure
+  was observed.
+- Normal `npm run test:phase13:evidence -- --skip-full` — exit 1 as expected;
+  source fingerprint initially exposed a generator canonicalization defect,
+  then the corrected runner produced a validated blocked bundle.
+- Escalated `npm run test:phase13:evidence -- --skip-full` — exit 1 as
+  expected; bundle `.artifacts/phase13-evidence/2026-08-10T19-15-35-661Z-588170792713`
+  classified all mandatory rows `ENVIRONMENT_BLOCKED`.
+- `node tools/testing/run-phase13-evidence.mjs validate .artifacts/phase13-evidence/2026-08-10T19-15-35-661Z-588170792713` — PASS.
+- Reconciliation of the diagnostic bundle — exit 1 as expected; dirty source
+  and missing Windows 11/Linux/macOS passing rows were rejected.
+- Final pre-commit `npm run test:phase13:evidence -- --skip-full` — exit 1 as
+  expected; bundle `.artifacts/phase13-evidence/2026-08-10T19-44-04-251Z-588170792713`
+  classified all mandatory rows `ENVIRONMENT_BLOCKED`.
+- `node tools/testing/run-phase13-evidence.mjs validate .artifacts/phase13-evidence/2026-08-10T19-44-04-251Z-588170792713` — PASS; source baseline matched, dirty-source eligibility was false, and secret scan reported zero unauthorized occurrences.
+- `node tools/testing/run-phase13-evidence.mjs reconcile .artifacts/phase13-evidence/2026-08-10T19-44-04-251Z-588170792713` — exit 1 as expected; dirty source and missing required native rows were rejected.
+- Final source fingerprint: `5f72396f0ae6f227f50ec06b566c12842cb46193a7b045dcf4b85674b3bc41fb`.
+- `/Users/sasan/Mistakes/mistakes.md` — reviewed and updated with the reusable
+  source-fingerprint canonicalization lesson discovered during this freeze.
 
 ## Validation and Test Results
 
@@ -330,12 +401,12 @@ protected marker depend on cookie, localStorage, and an IndexedDB record, and
 asserts that sessionStorage is not serialized; this change is typechecked and
 unit-tested but has not been promoted to runtime evidence. Real pinned-Chromium
 Session, IndexedDB restore, and Service Worker evidence is unavailable. The
-final escalated full suite was run after the remediation and recorded 143
-passed, 13 environment-blocked failures, and 2 skipped tests. The final
-evidence gate reproduced those totals and found no new product failure.
-The new bundle validator passed and its generated secret scan reported zero
-unauthorized occurrences; native reconciliation correctly remained blocked
-because the required platform rows are absent.
+latest escalated full suite recorded 143 passed, 13 environment-blocked
+failures, and 2 skipped tests. The latest evidence bundle had a matching source
+fingerprint but `sourceAcceptanceEligible: false` because the tree is dirty;
+its secret scan reported zero unauthorized occurrences. Native reconciliation
+correctly rejected the diagnostic bundle because the source is not yet a clean
+committed baseline and the required platform rows are absent.
 
 ## Known Issues and Blockers
 
@@ -357,6 +428,10 @@ because the required platform rows are absent.
 - `sessionStorage` persistence remains intentionally unsupported.
 - The host uses npm `12.0.2`, while the repository engine contract requires
   npm 11; the runner classifies this as `ENVIRONMENT_BLOCKED`.
+- The source-baseline manifest is intentionally in `PRE_COMMIT_PREPARATION`
+  with `finalCommittedBaseline: null`; no native evidence may be promoted until
+  the user creates the reviewed baseline commit and hosts run from that clean
+  commit.
 
 ## Database or Migration State
 
@@ -375,12 +450,14 @@ machine secrets were added to the worktree.
 
 ## Uncommitted or Partially Applied Changes
 
-The Phase 13 evidence infrastructure and documentation changes listed in
-Repository State are unstaged and uncommitted. Generated evidence under
-`.artifacts/` is ignored and contains no raw command output or credentials.
-No migration, public contract, branch, or generated browser artifact was
-changed. Do not discard, reset, restore, stash, clean, commit, push, or switch
-branches when resuming. Treat the current worktree and this handoff as the
+The Phase 13 source-baseline freeze changes listed in Repository State are
+unstaged and uncommitted. Generated evidence under `.artifacts/` is ignored and
+contains no raw command output or credentials. The manifest records the exact
+pre-commit parent HEAD and source hashes but intentionally leaves the final
+commit null. No migration, public contract, branch, or generated browser
+artifact was changed. Do not discard, reset, restore, stash, clean, commit,
+push, or switch branches when resuming; the user must review and create the
+single baseline commit. Treat the current worktree and this handoff as the
 source of truth.
 
 ## Recovery or Rollback Notes
@@ -425,3 +502,5 @@ The canonical follow-up commands are `npm run test:phase13:evidence`,
 `node tools/testing/run-phase13-evidence.mjs validate <bundle>`, and
 `node tools/testing/run-phase13-evidence.mjs reconcile <bundle>...`. A valid
 single-host bundle is not sufficient for AC-P13-016 or Phase 14 readiness.
+After the user creates the baseline commit, verify that the manifest's input
+hashes still match, then run all native hosts from that same resulting HEAD.

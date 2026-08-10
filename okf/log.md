@@ -36,3 +36,6 @@ bundle. It is not a copy of Git history or a task diary.
   bundle and bundle validator passed their structural and secret-scan checks;
   native reconciliation remains `ENVIRONMENT_BLOCKED` because Windows 11,
   Linux, and macOS passing rows are unavailable.
+- Added the Phase 13 source-baseline freeze invariant: native bundles record a
+  deterministic source fingerprint and acceptance-definition hash, and final
+  reconciliation requires a clean committed tree with matching source inputs.

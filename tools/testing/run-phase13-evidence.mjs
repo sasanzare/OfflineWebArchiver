@@ -10,6 +10,8 @@ const execFile = promisify(execFileCallback);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const evidenceRoot = path.join(repositoryRoot, ".artifacts", "phase13-evidence");
 const evidenceSchemaVersion = "1.0.0";
+const sourceBaselineRelativePath = "tools/testing/phase13-evidence-baseline.json";
+const sourceFingerprintAlgorithm = "sha256-canonical-path-role-hash-list-v1";
 const allowedAcceptanceStatuses = new Set(["PASS", "PRODUCT_FAIL", "TEST_INFRA_FAILURE", "ENVIRONMENT_BLOCKED", "NOT_APPLICABLE"]);
 const browserAcceptanceIds = ["AC-P13-002", "AC-P13-008", "AC-P13-012"];
 const carryOverAcceptanceIds = ["AC-P12-001", "AC-P12-006", "AC-P12-015"];
@@ -104,7 +106,8 @@ async function runCommand(executable, args, options = {}) {
       resolve({ code, signal: exitSignal });
     });
   });
-  const safeError = redactText(`${stderr}\n${stdout}`);
+  const safeStdout = redactText(stdout);
+  const safeStderr = redactText(stderr);
   return {
     command: options.displayCommand ?? commandLabel(executable, args),
     args,
@@ -115,8 +118,9 @@ async function runCommand(executable, args, options = {}) {
     signal,
     timedOut,
     spawnErrorSafe: spawnError === null ? null : redactText(spawnError.message, 1_000).text,
-    stderrSafe: safeError.text,
-    redactionsApplied: safeError.redactions,
+    stdoutSafe: safeStdout.text,
+    stderrSafe: safeStderr.text,
+    redactionsApplied: safeStdout.redactions + safeStderr.redactions,
     output: `${stdout}\n${stderr}`,
   };
 }
@@ -175,6 +179,107 @@ async function sha256(target) {
   return createHash("sha256").update(await readFile(target)).digest("hex");
 }
 
+function sha256Text(value) {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function sourceEntryText(entries) {
+  return entries
+    .slice()
+    .sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0)
+    .map((entry) => `${entry.path}\u0000${entry.role}\u0000${entry.sha256}\n`)
+    .join("");
+}
+
+function validRepositoryRelativePath(value) {
+  if (typeof value !== "string" || value.length === 0 || value.includes("\u0000")) return false;
+  if (path.isAbsolute(value) || path.win32.isAbsolute(value)) return false;
+  const normalized = value.replaceAll("\\", "/");
+  return !normalized.split("/").some((part) => part === ".." || part === "");
+}
+
+async function inspectSourceBaseline(expected = null) {
+  const target = path.join(repositoryRoot, sourceBaselineRelativePath);
+  let manifest;
+  try {
+    manifest = await readJsonFile(target);
+  } catch {
+    return {
+      manifest: null,
+      manifestPath: sourceBaselineRelativePath,
+      expectedSourceFingerprint: null,
+      sourceFingerprint: null,
+      packageLockHash: null,
+      evidenceRunnerHash: null,
+      acceptanceDefinitionHash: null,
+      includedFiles: [],
+      match: false,
+      errors: ["SOURCE_BASELINE_MANIFEST_MISSING"],
+    };
+  }
+  const errors = [];
+  const includedFiles = Array.isArray(manifest?.includedFiles) ? manifest.includedFiles : [];
+  if (manifest?.schemaVersion !== "1.0.0" || manifest?.kind !== "phase13-evidence-source-baseline") errors.push("SOURCE_BASELINE_MANIFEST_INVALID");
+  if (manifest?.sourceFingerprintAlgorithm !== sourceFingerprintAlgorithm) errors.push("SOURCE_BASELINE_ALGORITHM_UNSUPPORTED");
+  if (!/^[a-f0-9]{64}$/i.test(manifest?.sourceFingerprint ?? "")) errors.push("SOURCE_BASELINE_FINGERPRINT_INVALID");
+  if (expected !== null) {
+    if (manifest?.expectedNodeVersion !== expected.node || manifest?.expectedNpmMajor !== 11 || manifest?.playwrightVersion !== expected.playwrightVersion || manifest?.chromiumRevision !== expected.chromium.revision || manifest?.chromiumBuild !== expected.chromium.version || manifest?.electronVersion !== expected.electronVersion) errors.push("SOURCE_BASELINE_RUNTIME_CONTRACT_MISMATCH");
+  }
+  const seen = new Set();
+  const expectedEntries = [];
+  for (const item of includedFiles) {
+    if (!isRecord(item) || !validRepositoryRelativePath(item.path) || typeof item.role !== "string" || !/^[a-f0-9]{64}$/i.test(item.sha256 ?? "")) {
+      errors.push("SOURCE_BASELINE_FILE_ENTRY_INVALID");
+      continue;
+    }
+    const normalized = item.path.replaceAll("\\", "/");
+    if (seen.has(normalized)) {
+      errors.push(`SOURCE_BASELINE_DUPLICATE_FILE:${normalized}`);
+      continue;
+    }
+    seen.add(normalized);
+    expectedEntries.push({ path: normalized, role: item.role, sha256: item.sha256 });
+  }
+  const actualEntries = [];
+  for (const expectedEntry of expectedEntries) {
+    try {
+      actualEntries.push({ path: expectedEntry.path, role: expectedEntry.role, sha256: await sha256(path.join(repositoryRoot, expectedEntry.path)) });
+    } catch {
+      errors.push(`SOURCE_BASELINE_FILE_MISSING:${expectedEntry.path}`);
+    }
+  }
+  for (const actual of actualEntries) {
+    const expected = expectedEntries.find((item) => item.path === actual.path);
+    if (expected?.sha256 !== actual.sha256) errors.push(`SOURCE_BASELINE_FILE_HASH_MISMATCH:${actual.path}`);
+  }
+  const sourceFingerprint = actualEntries.length === expectedEntries.length ? sha256Text(sourceEntryText(actualEntries)) : null;
+  if (sourceFingerprint !== null && sourceFingerprint !== manifest.sourceFingerprint) errors.push("SOURCE_BASELINE_FINGERPRINT_MISMATCH");
+  const categoryHash = (role) => {
+    const entries = actualEntries.filter((item) => item.role === role);
+    return entries.length === 0 ? null : sha256Text(sourceEntryText(entries));
+  };
+  const packageLock = actualEntries.find((item) => item.path === "package-lock.json");
+  const runner = actualEntries.find((item) => item.path === "tools/testing/run-phase13-evidence.mjs");
+  const acceptance = actualEntries.filter((item) => item.role === "acceptance-definition");
+  const acceptanceDefinitionHash = acceptance.length === 0 ? null : sha256Text(sourceEntryText(acceptance));
+  if (manifest.packageLockHash !== packageLock?.sha256) errors.push("SOURCE_BASELINE_PACKAGE_LOCK_HASH_MISMATCH");
+  if (manifest.evidenceRunnerHash !== runner?.sha256) errors.push("SOURCE_BASELINE_RUNNER_HASH_MISMATCH");
+  if (manifest.acceptanceDefinitionHash !== acceptanceDefinitionHash) errors.push("SOURCE_BASELINE_ACCEPTANCE_HASH_MISMATCH");
+  return {
+    manifest,
+    manifestPath: sourceBaselineRelativePath,
+    expectedSourceFingerprint: typeof manifest.sourceFingerprint === "string" ? manifest.sourceFingerprint : null,
+    sourceFingerprint,
+    packageLockHash: packageLock?.sha256 ?? null,
+    evidenceRunnerHash: runner?.sha256 ?? null,
+    acceptanceDefinitionHash,
+    includedFiles: actualEntries,
+    match: errors.length === 0 && sourceFingerprint === manifest.sourceFingerprint,
+    errors,
+    toolchainCategoryHash: categoryHash("toolchain-contract"),
+  };
+}
+
 function expectedElectronExecutable() {
   if (process.platform === "win32") return path.join("node_modules", "electron", "dist", "electron.exe");
   if (process.platform === "darwin") return path.join("node_modules", "electron", "dist", "Electron.app", "Contents", "MacOS", "Electron");
@@ -197,6 +302,7 @@ async function readExpectedRuntime() {
     npm: rootPackage.engines?.npm ?? null,
     playwrightVersion: rootPackage.dependencies?.["playwright-core"] ?? playwrightPackage.version,
     installedPlaywrightVersion: playwrightPackage.version,
+    playwrightVersionMatches: playwrightPackage.version === (rootPackage.dependencies?.["playwright-core"] ?? playwrightPackage.version),
     chromium: { revision: String(chromium.revision), version: chromium.browserVersion },
     electronVersion: rootPackage.devDependencies?.electron ?? electronPackage.version,
     installedElectronVersion: electronPackage.version,
@@ -285,6 +391,7 @@ async function inspectElectron(expected) {
     executableSha256: null,
     launchable: false,
     versionOutput: null,
+    versionMatches: false,
     reason: null,
   };
   try {
@@ -382,6 +489,8 @@ function runtimeVersions(expected, npmVersion, browser, electron) {
     electron: {
       version: electron.packageVersion,
       executable: electron.executablePath,
+      versionOutput: electron.versionOutput,
+      versionMatches: electron.versionMatches,
     },
   };
 }
@@ -390,8 +499,9 @@ function commandFailureText(command) {
   return `${command?.stderrSafe ?? ""} ${command?.spawnErrorSafe ?? ""}`.toLowerCase();
 }
 
-function environmentFailure(command, runtime) {
-  if (runtime.browser.valid === false || runtime.electron.executablePresent === false) return true;
+function environmentFailure(command, runtime, concerns = {}) {
+  if (concerns.browser === true && runtime.browser.valid === false) return true;
+  if (concerns.electron === true && runtime.electron.executablePresent === false) return true;
   const text = commandFailureText(command);
   return /browser_installation|browser_launch|listen eperm|enoent|dns|enotfound|fetch failed|network|sandbox/.test(text);
 }
@@ -400,16 +510,22 @@ function subtestStatus(command, predicate) {
   return command?.testResult?.subtests?.find((item) => predicate(item.name))?.status ?? null;
 }
 
-function browserAcceptanceStatus(id, commands, runtime) {
+function browserAcceptanceStatus(id, commands, runtime, sourceAcceptanceEligible) {
   const verification = commands.find((item) => item.id === "browser-verify");
   const focused = commands.find((item) => item.id === "browser-runtime-focused");
   const relevant = id === "AC-P13-012"
     ? (name) => /service worker policy/i.test(name)
     : (name) => /real chromium saves and restores/i.test(name);
   const testStatus = subtestStatus(focused, relevant);
-  if (testStatus === "passed" && verification?.exitCode === 0) return { status: "PASS", reason: "The registered real-browser test passed after approved runtime verification.", command: focused };
-  if (testStatus === "failed" && !environmentFailure(focused, runtime) && verification?.exitCode === 0) return { status: "PRODUCT_FAIL", reason: "The registered browser test executed and failed an application assertion.", command: focused };
-  if (runtime.browser.valid === false || verification?.exitCode !== 0 && environmentFailure(verification, runtime) || focused?.exitCode !== 0 && environmentFailure(focused, runtime)) {
+  if (testStatus === "passed" && verification?.exitCode === 0) {
+    if (!sourceAcceptanceEligible) return { status: "ENVIRONMENT_BLOCKED", reason: "The source baseline is not a clean committed acceptance baseline.", command: focused };
+    return { status: "PASS", reason: "The registered real-browser test passed after approved runtime verification.", command: focused };
+  }
+  if (!sourceAcceptanceEligible && (testStatus !== null || verification?.exitCode !== undefined || focused?.exitCode !== undefined)) {
+    return { status: "ENVIRONMENT_BLOCKED", reason: "The source baseline is not a clean committed acceptance baseline.", command: focused ?? verification };
+  }
+  if (testStatus === "failed" && !environmentFailure(focused, runtime, { browser: true }) && verification?.exitCode === 0) return { status: "PRODUCT_FAIL", reason: "The registered browser test executed and failed an application assertion.", command: focused };
+  if (runtime.browser.valid === false || verification?.exitCode !== 0 && environmentFailure(verification, runtime, { browser: true }) || focused?.exitCode !== 0 && environmentFailure(focused, runtime, { browser: true })) {
     return { status: "ENVIRONMENT_BLOCKED", reason: runtime.browser.reason ?? verification?.stderrSafe ?? focused?.stderrSafe ?? "Approved Chromium could not execute the registered browser fixture.", command: focused ?? verification };
   }
   if (testStatus === "failed") return { status: "TEST_INFRA_FAILURE", reason: "The browser test failed without a recognized environment-blocker signature.", command: focused };
@@ -424,6 +540,9 @@ function acceptanceResult(id, status, reason, command, host, versions, evidenceF
     hostVersion: host.version,
     architecture: host.architecture,
     gitHead: host.gitHead,
+    sourceFingerprint: host.sourceFingerprint,
+    acceptanceDefinitionHash: host.sourceBaseline.acceptanceDefinitionHash,
+    sourceBaselineMatch: host.sourceBaseline.match,
     runtimeVersions: versions,
     command: command?.command ?? "npm run test:phase13:evidence",
     exitCode: command?.exitCode ?? null,
@@ -468,7 +587,7 @@ async function npmVersion() {
   }
 }
 
-async function createHostMetadata(expected, browser, electron) {
+async function createHostMetadata(expected, browser, electron, sourceBaseline) {
   const git = await gitMetadata();
   const npm = await npmVersion();
   const version = await hostVersion();
@@ -499,6 +618,18 @@ async function createHostMetadata(expected, browser, electron) {
     npmRequirement: expected.npm,
     nodeVersionSupported: supportedMajor(process.version, expected.node),
     npmVersionSupported: supportedMajor(npm, expected.npm),
+    sourceFingerprint: sourceBaseline.sourceFingerprint,
+    sourceBaseline: {
+      manifestPath: sourceBaseline.manifestPath,
+      lifecycle: sourceBaseline.manifest?.lifecycle ?? null,
+      expectedSourceFingerprint: sourceBaseline.expectedSourceFingerprint,
+      match: sourceBaseline.match,
+      packageLockHash: sourceBaseline.packageLockHash,
+      evidenceRunnerHash: sourceBaseline.evidenceRunnerHash,
+      acceptanceDefinitionHash: sourceBaseline.acceptanceDefinitionHash,
+      validationErrors: sourceBaseline.errors,
+      includedFiles: sourceBaseline.includedFiles,
+    },
     browserEnvironment: browser.valid ? "VALID_BROWSER_ENVIRONMENT" : "ENVIRONMENT_BLOCKED",
     electronEnvironment: electron.launchable ? "VALID_NATIVE_ENVIRONMENT" : "ENVIRONMENT_BLOCKED",
   };
@@ -577,6 +708,10 @@ async function finalizeBundle(outputDir, payload) {
     environmentClassification: payload.environmentClassification,
     phaseStatus: payload.phaseStatus,
     phase14Readiness: payload.phase14Readiness,
+    sourceFingerprint: payload.host.sourceFingerprint,
+    acceptanceDefinitionHash: payload.host.sourceBaseline.acceptanceDefinitionHash,
+    sourceBaselineMatch: payload.host.sourceBaseline.match,
+    cleanCommittedSource: payload.host.sourceAcceptanceEligible,
     acceptanceIds: allTrackedAcceptanceIds,
     matrixTargetId: payload.matrix.targetId,
     files: entries,
@@ -602,9 +737,11 @@ function allCommandsPassed(commands, ids) {
 async function runEvidence(options) {
   const outputDir = await createOutputDirectory(options.outputDir);
   const expected = await readExpectedRuntime();
+  const sourceBaseline = await inspectSourceBaseline(expected);
   const browser = await inspectBrowser(expected);
   const electron = await inspectElectron(expected);
-  const host = await createHostMetadata(expected, browser, electron);
+  const host = await createHostMetadata(expected, browser, electron, sourceBaseline);
+  host.sourceAcceptanceEligible = host.native && !host.dirtyState.dirty && host.sourceBaseline.match && expected.playwrightVersionMatches;
   const commands = [];
   const runRecorded = async (id, executable, args, displayCommand, timeoutMs) => {
     const result = compactCommand(await runCommand(executable, args, { displayCommand, timeoutMs }));
@@ -621,15 +758,18 @@ async function runEvidence(options) {
   const desktopFocused = await runRecorded("desktop-focused", process.execPath, ["tools/testing/run-tests.mjs", "package:desktop"], "node tools/testing/run-tests.mjs package:desktop", 5 * 60_000);
 
   if (electron.executablePresent) {
-    const versionText = electronVersion.command === undefined ? "" : `${electronVersion.stderrSafe ?? ""}`;
-    electron.launchable = electronVersion.exitCode === 0;
+    const versionText = `${electronVersion.stdoutSafe ?? ""}`.trim();
+    const expectedVersionOutput = `v${expected.electronVersion}`;
     electron.versionOutput = electronVersion.exitCode === 0 ? redactText(versionText, 200).text : null;
-    if (!electron.launchable && electron.reason === null) electron.reason = "ELECTRON_LAUNCH_FAILED";
+    const versionTokens = versionText.split(/\s+/);
+    electron.versionMatches = electronVersion.exitCode === 0 && (versionTokens.includes(expectedVersionOutput) || versionTokens.includes(expected.electronVersion));
+    electron.launchable = electron.versionMatches;
+    if (!electron.launchable && electron.reason === null) electron.reason = electronVersion.exitCode === 0 ? "ELECTRON_VERSION_MISMATCH" : "ELECTRON_LAUNCH_FAILED";
   }
-  const browserStatuses = Object.fromEntries(browserAcceptanceIds.map((id) => [id, browserAcceptanceStatus(id, commands, { browser, electron })]));
+  const browserStatuses = Object.fromEntries(browserAcceptanceIds.map((id) => [id, browserAcceptanceStatus(id, commands, { browser, electron }, host.sourceAcceptanceEligible)]));
   const focusedBrowserPass = browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS");
   const focusedDesktopPass = desktopFocused.exitCode === 0 && desktopFocused.testResult?.failed === 0;
-  const toolchainPass = host.nodeVersionSupported && host.npmVersionSupported && host.native;
+  const toolchainPass = host.nodeVersionSupported && host.npmVersionSupported && host.native && expected.playwrightVersionMatches && host.sourceAcceptanceEligible;
   const shouldRunFull = !options.skipFull && options.forceFull || !options.skipFull && focusedBrowserPass && focusedDesktopPass && toolchainPass;
   const fullCommandIds = [];
   if (shouldRunFull) {
@@ -681,7 +821,7 @@ async function runEvidence(options) {
     const sourceResult = browserStatuses["AC-P13-002"];
     acceptanceResults.push(acceptanceResult(id, sourceResult.status, `This carry-over row reuses the same real headed/fresh-context Session evidence: ${sourceResult.reason}`, sourceResult.command, host, versions, evidenceFiles(source)));
   }
-  const desktopEnvironmentBlocked = !electron.executablePresent || environmentFailure(desktopFocused, runtimeFromInspection(browser, electron));
+  const desktopEnvironmentBlocked = !electron.executablePresent || !electron.versionMatches || environmentFailure(desktopFocused, runtimeFromInspection(browser, electron), { electron: true });
   const desktopStatus = desktopFocused.exitCode === 0 && desktopFocused.testResult?.failed === 0
     ? "PASS"
     : desktopEnvironmentBlocked
@@ -690,7 +830,7 @@ async function runEvidence(options) {
         ? "TEST_INFRA_FAILURE"
         : "PRODUCT_FAIL";
   const fullGatePass = shouldRunFull && allCommandsPassed(commands, fullCommandIds);
-  const matrixStatus = browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS") && desktopStatus === "PASS" && fullGatePass
+  const matrixStatus = host.sourceAcceptanceEligible && browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS") && desktopStatus === "PASS" && fullGatePass
     ? "PASS"
     : desktopStatus === "PRODUCT_FAIL" || browserAcceptanceIds.some((id) => browserStatuses[id].status === "PRODUCT_FAIL") || commands.some((item) => fullCommandIds.includes(item.id) && item.exitCode !== 0 && !environmentFailure(item, { browser, electron }))
       ? "PRODUCT_FAIL"
@@ -710,13 +850,21 @@ async function runEvidence(options) {
     environmentClassification,
     status: matrixStatus,
     gitHead: host.gitHead,
+    sourceFingerprint: host.sourceFingerprint,
+    acceptanceDefinitionHash: host.sourceBaseline.acceptanceDefinitionHash,
+    sourceBaselineMatch: host.sourceBaseline.match,
+    sourceAcceptanceEligible: host.sourceAcceptanceEligible,
     runtimeVersions: versions,
     acceptanceIds: browserAcceptanceIds,
     commandIds: ["browser-verify", "browser-runtime-focused", "electron-version", "desktop-focused", ...fullCommandIds],
     blockers: matrixStatus === "PASS" ? [] : [
       ...(browser.valid ? [] : [browser.reason]),
       ...(electron.executablePresent ? [] : [electron.reason]),
+      ...(electron.versionMatches === false ? [electron.reason] : []),
       ...(host.npmVersionSupported ? [] : ["The repository requires npm 11; this host does not satisfy the declared engine range."]),
+      ...(expected.playwrightVersionMatches ? [] : ["The installed Playwright version does not match the package contract."]),
+      ...(host.dirtyState.dirty ? ["DIRTY_SOURCE_TREE"] : []),
+      ...(host.sourceBaseline.match ? [] : ["SOURCE_BASELINE_MISMATCH"]),
       ...(matrixStatus === "ENVIRONMENT_BLOCKED" ? ["AC-P13-016 is aggregate-only and requires validated bundles from the required native matrix."] : []),
     ].filter(Boolean),
     timestamp: host.timestamp,
@@ -737,6 +885,8 @@ async function runEvidence(options) {
     schemaVersion: evidenceSchemaVersion,
     timestamp: host.timestamp,
     gitHead: host.gitHead,
+    sourceFingerprint: host.sourceFingerprint,
+    acceptanceDefinitionHash: host.sourceBaseline.acceptanceDefinitionHash,
     commands,
     focusedCommandIds: ["browser-verify", "browser-runtime-focused", "electron-version", "desktop-focused"],
     fullRegression,
@@ -760,6 +910,7 @@ async function runEvidence(options) {
       browser,
       electron,
     },
+    sourceBaseline: host.sourceBaseline,
     provisioning: {
       chromiumCommand: "npm run browser:install",
       chromiumVerificationCommand: "npm run browser:verify",
@@ -778,7 +929,14 @@ async function runEvidence(options) {
       "environment.json": host,
       "runtime.json": runtime,
       "test-results.json": testResults,
-      "acceptance-results.json": { schemaVersion: evidenceSchemaVersion, timestamp: host.timestamp, gitHead: host.gitHead, results: acceptanceResults },
+      "acceptance-results.json": {
+        schemaVersion: evidenceSchemaVersion,
+        timestamp: host.timestamp,
+        gitHead: host.gitHead,
+        sourceFingerprint: host.sourceFingerprint,
+        acceptanceDefinitionHash: host.sourceBaseline.acceptanceDefinitionHash,
+        results: acceptanceResults,
+      },
       "matrix-entry.json": matrix,
     },
   });
@@ -812,11 +970,17 @@ async function loadBundle(bundlePath) {
   const gitHead = bundle?.gitHead;
   if (typeof gitHead !== "string" || !/^[0-9a-f]{40}$/i.test(gitHead)) errors.push("bundle.json: gitHead must be a full commit hash");
   if (!isIsoTimestamp(bundle?.timestamp)) errors.push("bundle.json: timestamp is missing or invalid");
+  const sourceFingerprint = bundle?.sourceFingerprint;
+  const acceptanceDefinitionHash = bundle?.acceptanceDefinitionHash;
+  if (!/^[0-9a-f]{64}$/i.test(sourceFingerprint ?? "")) errors.push("bundle.json: sourceFingerprint must be a SHA-256 value");
+  if (!/^[0-9a-f]{64}$/i.test(acceptanceDefinitionHash ?? "")) errors.push("bundle.json: acceptanceDefinitionHash must be a SHA-256 value");
+  if (typeof bundle?.sourceBaselineMatch !== "boolean" || typeof bundle?.cleanCommittedSource !== "boolean") errors.push("bundle.json: source-baseline eligibility metadata is missing");
   if (!isRecord(environment) || environment.gitHead !== gitHead || !isIsoTimestamp(environment?.timestamp)) errors.push("environment.json: git/timestamp metadata is inconsistent");
-  if (!isRecord(runtime) || runtime.gitHead !== gitHead) errors.push("runtime.json: git metadata is inconsistent");
-  if (!isRecord(testResults) || testResults.gitHead !== gitHead || !Array.isArray(testResults.commands)) errors.push("test-results.json: command ledger is missing or inconsistent");
-  if (!isRecord(acceptance) || acceptance.gitHead !== gitHead || !Array.isArray(acceptance.results)) errors.push("acceptance-results.json: results are missing or inconsistent");
-  if (!isRecord(matrix) || matrix.gitHead !== gitHead || typeof matrix.targetId !== "string") errors.push("matrix-entry.json: target metadata is missing or inconsistent");
+  if (environment?.sourceFingerprint !== sourceFingerprint || environment?.sourceBaseline?.acceptanceDefinitionHash !== acceptanceDefinitionHash) errors.push("environment.json: source fingerprint metadata is inconsistent");
+  if (!isRecord(runtime) || runtime.gitHead !== gitHead || runtime.sourceBaseline?.acceptanceDefinitionHash !== acceptanceDefinitionHash) errors.push("runtime.json: git/source metadata is inconsistent");
+  if (!isRecord(testResults) || testResults.gitHead !== gitHead || testResults.sourceFingerprint !== sourceFingerprint || testResults.acceptanceDefinitionHash !== acceptanceDefinitionHash || !Array.isArray(testResults.commands)) errors.push("test-results.json: command/source ledger is missing or inconsistent");
+  if (!isRecord(acceptance) || acceptance.gitHead !== gitHead || acceptance.sourceFingerprint !== sourceFingerprint || acceptance.acceptanceDefinitionHash !== acceptanceDefinitionHash || !Array.isArray(acceptance.results)) errors.push("acceptance-results.json: results/source metadata are missing or inconsistent");
+  if (!isRecord(matrix) || matrix.gitHead !== gitHead || matrix.sourceFingerprint !== sourceFingerprint || matrix.acceptanceDefinitionHash !== acceptanceDefinitionHash || typeof matrix.sourceAcceptanceEligible !== "boolean" || typeof matrix.targetId !== "string") errors.push("matrix-entry.json: target/source metadata is missing or inconsistent");
   if (!isRecord(secretScan) || secretScan.status !== "PASS" || secretScan.unauthorizedOccurrences !== 0) errors.push("secret-scan.json: the artifact scan did not pass with zero unauthorized occurrences");
   const results = Array.isArray(acceptance?.results) ? acceptance.results : [];
   const ids = new Set(results.map((item) => item?.acceptanceId));
@@ -825,7 +989,7 @@ async function loadBundle(bundlePath) {
   for (const item of results) {
     if (!isRecord(item) || !allTrackedAcceptanceIds.includes(item.acceptanceId)) { errors.push("acceptance-results.json: unknown or malformed acceptance result"); continue; }
     if (!allowedAcceptanceStatuses.has(item.status)) errors.push(`${item.acceptanceId}: unsupported status '${item.status}'`);
-    if (item.gitHead !== gitHead || !isIsoTimestamp(item.timestamp) || typeof item.command !== "string" || item.command.length === 0) errors.push(`${item.acceptanceId}: execution metadata is incomplete`);
+    if (item.gitHead !== gitHead || item.sourceFingerprint !== sourceFingerprint || item.acceptanceDefinitionHash !== acceptanceDefinitionHash || typeof item.sourceBaselineMatch !== "boolean" || !isIsoTimestamp(item.timestamp) || typeof item.command !== "string" || item.command.length === 0) errors.push(`${item.acceptanceId}: execution/source metadata is incomplete`);
     if (item.status === "PASS" && (item.exitCode !== 0 || item.testResult === null || item.testResult === undefined)) errors.push(`${item.acceptanceId}: PASS requires an executed zero-exit command and test result`);
     if (!Array.isArray(item.evidenceFiles) || !item.evidenceFiles.includes("test-results.json")) errors.push(`${item.acceptanceId}: evidenceFiles must include test-results.json`);
   }
@@ -855,6 +1019,11 @@ async function reconcileBundles(bundlePaths, outputPath) {
   const errors = loaded.flatMap((item, index) => item.errors.map((error) => `bundle[${index}]: ${error}`));
   const heads = new Set(loaded.map((item) => item.bundle?.gitHead).filter(Boolean));
   if (heads.size !== 1) errors.push("All native evidence bundles must use the same Git HEAD.");
+  const sourceFingerprints = new Set(loaded.map((item) => item.bundle?.sourceFingerprint).filter(Boolean));
+  if (sourceFingerprints.size !== 1) errors.push("All native evidence bundles must use the same source fingerprint.");
+  const acceptanceDefinitionHashes = new Set(loaded.map((item) => item.bundle?.acceptanceDefinitionHash).filter(Boolean));
+  if (acceptanceDefinitionHashes.size !== 1) errors.push("All native evidence bundles must use the same acceptance-definition hash.");
+  if (loaded.some((item) => item.bundle?.sourceBaselineMatch !== true || item.bundle?.cleanCommittedSource !== true || item.matrix?.sourceAcceptanceEligible !== true)) errors.push("Dirty or source-mismatched evidence cannot satisfy final Phase 13 reconciliation.");
   const targetIds = loaded.map((item) => item.matrix?.targetId).filter((item) => typeof item === "string");
   if (new Set(targetIds).size !== targetIds.length) errors.push("Duplicate native matrix target IDs are not accepted.");
   const windows = aggregateTarget(loaded, "windows-11-x64");
@@ -871,6 +1040,8 @@ async function reconcileBundles(bundlePaths, outputPath) {
     kind: "phase13-evidence-reconciliation",
     timestamp,
     gitHead,
+    sourceFingerprint: sourceFingerprints.size === 1 ? [...sourceFingerprints][0] : null,
+    acceptanceDefinitionHash: acceptanceDefinitionHashes.size === 1 ? [...acceptanceDefinitionHashes][0] : null,
     status,
     phaseStatus: status === "PASS" ? "COMPLETE" : "PARTIAL",
     phase14Readiness: status === "PASS" ? "PHASE_14_READY" : "PHASE_14_BLOCKED",

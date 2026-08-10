@@ -30,3 +30,6 @@ architecture rather than receiving an invented support promise. Bundles from
 different Git HEADs or duplicate target rows are rejected by reconciliation.
 The execution and transfer procedure is maintained in
 `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`.
+The final matrix also requires one clean committed source baseline, the
+matching source fingerprint, and the matching acceptance-definition hash from
+`tools/testing/phase13-evidence-baseline.json`.
