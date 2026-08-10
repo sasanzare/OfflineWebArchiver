@@ -10,7 +10,7 @@ owa:
   requirement_ids: [NFR-TEST-001, NFR-SEC-003, NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004]
   acceptance_ids: [AC-P13-002, AC-P13-012, AC-P13-016, AC-P13-020, AC-P13-022]
   risk_ids: [R-090, R-101, RISK-KNOW-001]
-  evidence_ids: [OKF-EV-P13-TESTS, OKF-EV-P13-BROWSER, OKF-EV-P13-SECURITY, OKF-EV-P13-DOCS, OKF-EV-P13-CLOSURE]
+  evidence_ids: [OKF-EV-P13-TESTS, OKF-EV-P13-BROWSER, OKF-EV-P13-RUNNER, OKF-EV-P13-SECURITY, OKF-EV-P13-DOCS, OKF-EV-P13-CLOSURE]
 ---
 
 # Phase 13 Validation
@@ -29,6 +29,9 @@ browser evidence because the approved Chromium installation is still absent.
 
 Phase 13 closure requires rerunning those registered browser fixtures with the
 pinned runtime, executing the claimed platform matrix, and then rerunning the
-full repository gates. The exact execution and acceptance reconciliation are
-recorded in `docs/project/PHASE_13_CLOSURE_REPORT.md`.
+full repository gates. The canonical runner, bundle schema, status model,
+platform targets, and reconciliation commands are recorded in
+`docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md` and implemented by
+`tools/testing/run-phase13-evidence.mjs`. The exact execution and acceptance
+reconciliation are also recorded in `docs/project/PHASE_13_CLOSURE_REPORT.md`.
 Fake-runtime evidence must remain labeled separately.

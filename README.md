@@ -90,6 +90,7 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Phase 11 implementation report](docs/project/PHASE_11_IMPLEMENTATION_REPORT.md)
 - [Phase 12 implementation report](docs/project/PHASE_12_IMPLEMENTATION_REPORT.md)
 - [Phase 13 implementation report](docs/project/PHASE_13_IMPLEMENTATION_REPORT.md)
+- [Phase 13 native evidence execution matrix](docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 - [Post-Phase-12 baseline audit](docs/project/POST_PHASE_12_BASELINE_AUDIT.md)
 - [Phase 13 security review](docs/architecture/PHASE_13_SECURITY_REVIEW.md)
 - [Authentication Sessions architecture](docs/architecture/AUTHENTICATION_SESSIONS.md)

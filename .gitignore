@@ -2,6 +2,7 @@ node_modules/
 .build-tests/
 coverage/
 .runtime/
+.artifacts/
 .npm-cache/
 apps/*/dist/
 packages/*/dist/

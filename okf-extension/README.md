@@ -51,4 +51,5 @@ validation and reporting may consume both layers.
 - Phase 11 security review: `docs/architecture/PHASE_11_SECURITY_REVIEW.md`
 - Phase 13 implementation report: `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`
 - Phase 13 closure/remediation report: `docs/project/PHASE_13_CLOSURE_REPORT.md`
+- Phase 13 native evidence execution matrix: `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`
 - Phase 13 security review: `docs/architecture/PHASE_13_SECURITY_REVIEW.md`

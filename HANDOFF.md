@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-08-09
+2026-08-10
 
 ## Project Summary
 
@@ -16,32 +16,39 @@ capture, or production packaging.
 
 ## Current Objective
 
-Complete the Phase 13 closure/remediation gate without starting Phase 14.
-Re-evaluate the real Chromium, IndexedDB/session restore, Service Worker, and
-native-platform evidence gates, preserve truthful blockers, and leave a
-traceable remediation report and handoff.
+Complete the Phase 13 native-evidence enablement and execution-matrix work
+without starting Phase 14. The runner, bundle schema, redaction scan, and
+same-HEAD reconciliation are implemented and validated; real Chromium,
+Electron, and cross-platform evidence remain external prerequisites.
 
 ## Current Phase or Milestone
 
-Phase 13 implementation and remediation are committed at
-`edea9585aeaee56620d22cc6c091c61fa65edbb6`. The final evidence closure gate
-was re-executed on 2026-08-09. The registered session fixture requires cookie,
-localStorage, and IndexedDB state and preserves the explicitly unsupported
-sessionStorage contract. Phase 13 remains `PARTIAL` until approved Chromium
-and required native-platform evidence exist.
+Phase 13 evidence infrastructure is being developed at HEAD
+`660f55b71e3a6ae6ef23a9a42552d4562ad70e83` on 2026-08-10. The registered
+session fixture requires cookie, localStorage, and IndexedDB state and
+preserves the explicitly unsupported sessionStorage contract. Phase 13
+remains `PARTIAL` and Phase 14 remains blocked until approved Chromium,
+Electron, and required native-platform evidence exist.
 
 ## Repository State
 
 - Repository path: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `edea9585aeaee56620d22cc6c091c61fa65edbb6`
-- Current HEAD: `edea9585aeaee56620d22cc6c091c61fa65edbb6`
-- Working tree status: Three tracked documentation files are modified by this
-  final evidence gate; no product source or generated evidence is included.
+- Base or starting commit: `660f55b71e3a6ae6ef23a9a42552d4562ad70e83`
+- Current HEAD: `660f55b71e3a6ae6ef23a9a42552d4562ad70e83`
+- Working tree status: Phase 13 runner, execution-matrix documentation,
+  package scripts, `.gitignore`, and related OKF/report documentation are
+  modified or untracked; generated `.artifacts/` output is ignored.
 - Staged changes: none.
-- Unstaged changes: `HANDOFF.md`, `docs/project/PHASE_13_CLOSURE_REPORT.md`,
-  and `okf/log.md`.
-- Untracked files: none.
+- Unstaged changes: `.gitignore`, `HANDOFF.md`, `README.md`,
+  `docs/product/ACCEPTANCE_MATRIX.md`, `docs/project/PHASE_13_CLOSURE_REPORT.md`,
+  `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`, `okf-extension/README.md`,
+  `okf-extension/registry/evidence.json`, `okf-extension/registry/nodes.json`,
+  `okf-extension/registry/relationships.json`, `okf/history/phase-13.md`,
+  `okf/log.md`, `okf/operations/platform-support.md`,
+  `okf/testing/phase-13-validation.md`, and `package.json`.
+- Untracked files: `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md` and
+  `tools/testing/run-phase13-evidence.mjs`.
 - Branch, commit history, and working tree were not changed destructively; no
   commit, push, branch change, reset, clean, restore, or stash was performed.
 
@@ -72,45 +79,50 @@ and required native-platform evidence exist.
   request metadata, and made replay-header ordering locale-independent.
 - Reconciled AC-P13-008 as `BLOCKED` because real IndexedDB/session restore
   evidence is unavailable; fake-runtime coverage is not promoted.
-- Reviewed `/Users/sasan/Mistakes/mistakes.md` and appended two reusable
-  lessons for this task: proving every persisted browser storage type and
-  resolving platform-native runtime paths before classifying provisioning
-  failures.
+- Reviewed `/Users/sasan/Mistakes/mistakes.md`; the existing reusable lessons
+  cover proving every persisted browser storage type and resolving
+  platform-native runtime paths before classifying provisioning failures.
 - Re-executed the final evidence closure gate at the current HEAD. Official
   Playwright Chromium and Electron provisioning still failed because the
   required external hosts/resources were unavailable; no blocked acceptance
   row was promoted.
+- Added the canonical Phase 13 evidence runner with locked runtime checks,
+  bounded/redacted diagnostics, bundle integrity and secret scanning, and
+  same-HEAD native matrix reconciliation.
+- Added the Phase 13 Native Evidence Execution Matrix and synchronized README,
+  acceptance, closure, implementation, OKF, and extension-registry references
+  without promoting any blocked acceptance result.
 
 ## Work in Progress
 
-No product implementation is in progress. The session fixture writes a
-synthetic IndexedDB record and requires it alongside cookie and localStorage
-state; it also asserts that unsupported sessionStorage is not serialized.
-Typecheck, build, lint, format, and the 53-test unit suite pass. Real
-Chromium execution remains unavailable because official Playwright hosts are
-not resolvable, and the native matrix cannot be produced from this macOS host.
+No product implementation is in progress. The new runner has been exercised
+on the current macOS host with `--skip-full`; its bundle validates and its
+secret scan reports zero unauthorized occurrences. Real Chromium execution
+remains unavailable because the approved manifest/executable is absent, the
+Electron binary is absent, npm 12 is outside the declared npm 11 range, and
+the native matrix cannot be produced from this host.
 
 ## Remaining Work
 
-1. Provision the approved repository-owned Chromium when official Playwright
-   DNS/download access or a verified offline artifact is available.
-2. Rerun `npm run browser:verify`,
-   `node tools/testing/run-tests.mjs package:browser-runtime`, and `npm test`
-   with the fixture server available; inspect real Session, IndexedDB,
-   Service Worker, render, interaction, CLI, and Electron results.
-3. Execute the documented native platform matrix on each claimed platform.
-4. Reconcile AC-P13-002, AC-P13-008, AC-P13-012, AC-P13-016 and the Phase 12
-   carry-over rows only from inspected evidence. Do not begin Phase 14 while
-   any mandatory Phase 13 row remains blocked.
+1. On approved hosts using Node 24/npm 11, provision the exact repository-owned
+   Chromium and locked Electron binary.
+2. Run `npm run test:phase13:evidence`, validate each bundle, and inspect the
+   real Session, IndexedDB, Service Worker, and Desktop results.
+3. Execute the documented native platform matrix on Windows 11 x64, Linux,
+   and macOS; retain Windows 10 only as optional legacy evidence.
+4. Reconcile validated bundles from one common Git HEAD, then update the
+   acceptance matrix manually from inspected evidence. Do not begin Phase 14
+   while any mandatory Phase 13 row remains blocked.
 
 ## Exact Next Steps
 
-1. On a host with official Playwright DNS/download access or a verified exact
-   revision artifact, provision and verify Chromium under `.runtime/browsers`.
-2. Run `npm run browser:verify`,
-   `node tools/testing/run-tests.mjs package:browser-runtime`, and `npm test`.
-3. Execute the native platform matrix and update acceptance evidence only from
-   inspected real-runtime results. Keep Phase 14 blocked until then.
+1. On each approved host, run `npm ci`, `npm run browser:install`,
+   `npm run browser:verify`, and `node node_modules/electron/install.js` only
+   when the locked Electron binary is absent.
+2. Run `npm run test:phase13:evidence` and then
+   `node tools/testing/run-phase13-evidence.mjs validate <bundle>`.
+3. After all required rows pass, run the documented reconcile command and
+   inspect it before changing any acceptance status.
 
 ## Files Created
 
@@ -149,6 +161,8 @@ not resolvable, and the native matrix cannot be produced from this macOS host.
 - `tests/browser/service-worker-policy.test.ts`
 - `tests/fixtures/rendering/service-worker.html`
 - `tests/unit/authentication-route.test.ts`
+- `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`
+- `tools/testing/run-phase13-evidence.mjs`
 
 ## Files Modified
 
@@ -184,6 +198,11 @@ not resolvable, and the native matrix cannot be produced from this macOS host.
   `tests/support/render-fixture-server.ts`.
 - The final evidence gate additionally updates `HANDOFF.md`,
   `docs/project/PHASE_13_CLOSURE_REPORT.md`, and `okf/log.md` only.
+- The native-evidence follow-up additionally modifies `.gitignore`, `README.md`,
+  `package.json`, `docs/product/ACCEPTANCE_MATRIX.md`, the Phase 13 reports,
+  `okf-extension/README.md`, the three OKF extension registries,
+  `okf/operations/platform-support.md`, `okf/testing/phase-13-validation.md`,
+  `okf/history/phase-13.md`, and `okf/log.md`.
 
 ## Important Architecture and Design Decisions
 
@@ -221,7 +240,7 @@ not resolvable, and the native matrix cannot be produced from this macOS host.
 - `npm run migrations:validate` — PASS (9 immutable migrations, schema 9).
 - `npm run security:check` — PASS.
 - `npm run docs:validate` — PASS after the final documentation edits (158
-  required artifacts, 393 active relative links, 98 archived Markdown files).
+  required artifacts, 399 active relative links, 98 archived Markdown files).
 - `npm run test:architecture` — PASS (95 production TypeScript files).
 - `npm run okf:validate` — PASS across all layers with zero errors/warnings.
 - `npm run test:okf` — PASS (43/43).
@@ -268,7 +287,7 @@ not resolvable, and the native matrix cannot be produced from this macOS host.
   and `node tools/testing/run-tests.mjs unit` after the fixture remediation —
   PASS; the unit suite is 53/53.
 - `npm run okf:validate` and `npm run docs:validate` after the closure records
-  — PASS; OKF has 0 errors/0 warnings and docs report 393 active links.
+  — PASS; OKF has 0 errors/0 warnings and docs report 399 active links.
 - Final `node tools/testing/run-tests.mjs package:desktop` — 1 pass, 1
   environment-blocked failure at the platform-correct macOS Electron path
   (`.../Electron.app/Contents/MacOS/Electron` ENOENT).
@@ -287,7 +306,20 @@ not resolvable, and the native matrix cannot be produced from this macOS host.
   23.2.0 arm64. The repository requires npm 11, so this version discrepancy
   remains an environment note, not a changed project requirement.
 - `/Users/sasan/Mistakes/mistakes.md` — reviewed and updated with two concise
-  browser/native provisioning lessons; no secrets were added.
+  browser/native provisioning lessons in the earlier remediation; it was
+  reviewed again for this follow-up and no new reusable lesson was added.
+- `node --check tools/testing/run-phase13-evidence.mjs` — PASS.
+- `node tools/testing/run-phase13-evidence.mjs --help` — PASS.
+- `npm run test:phase13:evidence -- --skip-full` — exit 1 as expected for the
+  blocked current host; a bundle was written with AC-P13-002, AC-P13-008,
+  AC-P13-012, and AC-P13-016 blocked.
+- `node tools/testing/run-phase13-evidence.mjs validate .artifacts/phase13-evidence/2026-08-09T21-21-39-551Z-660f55b71e3a` — PASS.
+- `node tools/testing/run-phase13-evidence.mjs reconcile .artifacts/phase13-evidence/2026-08-09T21-21-39-551Z-660f55b71e3a --output .artifacts/phase13-evidence/reconciliation-current.json` — exit 1 as expected; required Windows 11, Linux, and macOS passing rows are missing.
+- `npm run test:phase13:evidence -- --skip-full` — exit 1 as expected for
+  the current blocked host; fresh bundle:
+  `.artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a`.
+- `node tools/testing/run-phase13-evidence.mjs validate .artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a` — PASS.
+- `node tools/testing/run-phase13-evidence.mjs reconcile .artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a --output .artifacts/phase13-evidence/reconciliation-2026-08-10.json` — exit 1 as expected; required native rows are missing.
 
 ## Validation and Test Results
 
@@ -301,6 +333,9 @@ Session, IndexedDB restore, and Service Worker evidence is unavailable. The
 final escalated full suite was run after the remediation and recorded 143
 passed, 13 environment-blocked failures, and 2 skipped tests. The final
 evidence gate reproduced those totals and found no new product failure.
+The new bundle validator passed and its generated secret scan reported zero
+unauthorized occurrences; native reconciliation correctly remained blocked
+because the required platform rows are absent.
 
 ## Known Issues and Blockers
 
@@ -320,6 +355,8 @@ evidence gate reproduced those totals and found no new product failure.
 - AC-P13-008 remains `BLOCKED` because the real IndexedDB/session restore test
   cannot run; deterministic parser and fake-runtime integration coverage pass.
 - `sessionStorage` persistence remains intentionally unsupported.
+- The host uses npm `12.0.2`, while the repository engine contract requires
+  npm 11; the runner classifies this as `ENVIRONMENT_BLOCKED`.
 
 ## Database or Migration State
 
@@ -338,12 +375,13 @@ machine secrets were added to the worktree.
 
 ## Uncommitted or Partially Applied Changes
 
-The final evidence gate updates to `HANDOFF.md`,
-`docs/project/PHASE_13_CLOSURE_REPORT.md`, and `okf/log.md` are unstaged and
-uncommitted. No source, migration, contract, branch, or generated browser
-artifact was changed. Do not discard, reset, restore, stash, clean, commit,
-push, or switch branches when resuming. Treat the current worktree and this
-handoff as the source of truth.
+The Phase 13 evidence infrastructure and documentation changes listed in
+Repository State are unstaged and uncommitted. Generated evidence under
+`.artifacts/` is ignored and contains no raw command output or credentials.
+No migration, public contract, branch, or generated browser artifact was
+changed. Do not discard, reset, restore, stash, clean, commit, push, or switch
+branches when resuming. Treat the current worktree and this handoff as the
+source of truth.
 
 ## Recovery or Rollback Notes
 
@@ -358,6 +396,7 @@ set.
 
 - [Phase 13 implementation report](docs/project/PHASE_13_IMPLEMENTATION_REPORT.md)
 - [Phase 13 closure/remediation report](docs/project/PHASE_13_CLOSURE_REPORT.md)
+- [Phase 13 native evidence execution matrix](docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 - [Post-Phase-12 baseline audit](docs/project/POST_PHASE_12_BASELINE_AUDIT.md)
 - [Phase 13 security review](docs/architecture/PHASE_13_SECURITY_REVIEW.md)
 - [Trust zones and IPC](docs/architecture/TRUST_ZONES_AND_IPC.md)
@@ -381,3 +420,8 @@ Electron sandboxing, IPC checks, path confinement, or browser provisioning to
 make tests pass. Do not add Guided OTP, Proxy Pool, Asset Downloader, HTML
 Rewriter, full Replay, archive runtime, Worker Pool, or packaging in this
 phase.
+
+The canonical follow-up commands are `npm run test:phase13:evidence`,
+`node tools/testing/run-phase13-evidence.mjs validate <bundle>`, and
+`node tools/testing/run-phase13-evidence.mjs reconcile <bundle>...`. A valid
+single-host bundle is not sufficient for AC-P13-016 or Phase 14 readiness.

@@ -10,7 +10,7 @@ owa:
   requirement_ids: [NFR-PORT-001, NFR-TEST-001]
   acceptance_ids: [AC-P13-015, AC-P13-016]
   risk_ids: [R-002, R-090, R-101]
-  evidence_ids: [OKF-EV-P13-BROWSER, OKF-EV-P13-DOCS]
+  evidence_ids: [OKF-EV-P13-BROWSER, OKF-EV-P13-RUNNER, OKF-EV-P13-DOCS]
 ---
 
 # Platform Support
@@ -22,4 +22,11 @@ SQLite evidence is available. No platform claim is promoted from source review
 or a non-native run.
 
 The Phase 13 matrix is documented, but native evidence is not available in the
-current environment.
+current environment. The native evidence runner records the actual OS version,
+architecture, locked Node/npm/Playwright/Chromium/Electron values, and native
+test results in a validated bundle. Windows 11 x64 is the primary matrix row;
+Windows 10 is legacy/optional, and Linux/macOS rows retain their observed
+architecture rather than receiving an invented support promise. Bundles from
+different Git HEADs or duplicate target rows are rejected by reconciliation.
+The execution and transfer procedure is maintained in
+`docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`.

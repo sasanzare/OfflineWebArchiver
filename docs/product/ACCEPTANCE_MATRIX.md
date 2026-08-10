@@ -523,3 +523,9 @@ Phase 13 closure.
 The 2026-08-09 closure/remediation execution, including exact provisioning
 errors, full-suite totals, fixture remediation, and the unchanged blocked
 statuses, is recorded in [the Phase 13 Closure Report](../project/PHASE_13_CLOSURE_REPORT.md).
+
+The canonical native evidence runner, bundle schema, redaction scan, and
+same-HEAD matrix reconciliation procedure are documented in the [Phase 13
+Native Evidence Execution Matrix](../project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md).
+The runner does not promote acceptance rows or mutate this matrix; rows remain
+`BLOCKED` until inspected native evidence is reconciled.

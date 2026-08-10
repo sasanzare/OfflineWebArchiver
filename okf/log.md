@@ -24,3 +24,15 @@ bundle. It is not a copy of Git history or a task diary.
   resources were unavailable; browser and native acceptance rows remain
   blocked, while deterministic, security, documentation, and OKF validators
   passed. The exact evidence and next action remain in the closure report.
+- Added the repository-owned Phase 13 evidence runner, bundle schema,
+  redaction/secret-scan rule, and same-HEAD native reconciliation path. The
+  current macOS arm64 run produced a validated `ENVIRONMENT_BLOCKED` bundle;
+  no browser or native acceptance row was promoted.
+
+## 2026-08-10
+
+- Revalidated the Phase 13 runner after synchronizing the execution matrix,
+  acceptance/report links, and OKF extension registries. The fresh macOS arm64
+  bundle and bundle validator passed their structural and secret-scan checks;
+  native reconciliation remains `ENVIRONMENT_BLOCKED` because Windows 11,
+  Linux, and macOS passing rows are unavailable.

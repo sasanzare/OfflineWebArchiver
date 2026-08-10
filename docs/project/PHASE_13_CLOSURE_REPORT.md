@@ -218,6 +218,34 @@ directories, or unauthorized synthetic secret/OTP occurrences.
 The negative validator messages shown inside the OKF suite are intentional
 fixture assertions; the suite itself passed 43/43.
 
+## Native evidence runner execution — 2026-08-10 follow-up
+
+The follow-up at Git HEAD
+`660f55b71e3a6ae6ef23a9a42552d4562ad70e83` added and exercised the canonical
+[Phase 13 Native Evidence Execution Matrix](PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
+and `tools/testing/run-phase13-evidence.mjs` with `--skip-full`.
+
+The latest bundle is under
+`.artifacts/phase13-evidence/2026-08-10T18-04-53-247Z-660f55b71e3a` and records:
+
+- macOS 14.2.1 / Darwin 23.2.0 / arm64, Node `v24.19.0`, and npm `12.0.2`
+  (the repository requires npm 11).
+- Missing `.runtime/browsers/browser-manifest.json` and the approved Chromium
+  executable; the Electron 43.2.0 package metadata is present but its macOS
+  binary is absent.
+- Browser-focused results of 10 total, 2 passed, 6 failed, and 2 skipped;
+  the browser-backed failures are environment/loopback blocked and do not
+  prove a product failure. Desktop-focused results are 2 total, 1 passed, and
+  1 failed, with the missing Electron binary and loopback restriction recorded.
+- Bundle validation passed and the generated artifact secret scan reported zero
+  unauthorized occurrences.
+
+The reconciliation command was also executed against this bundle. It returned
+`ENVIRONMENT_BLOCKED` because passing `windows-11-x64`, Linux, and macOS native
+rows are still missing. No acceptance row was promoted and the authoritative
+matrix remains unchanged. The exact transfer, validation, and reconciliation
+commands are maintained in the execution matrix.
+
 ## Acceptance reconciliation
 
 The authoritative Phase 13 matrix remains unchanged for the mandatory
