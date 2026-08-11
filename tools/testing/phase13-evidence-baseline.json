@@ -2,32 +2,35 @@
   "schemaVersion": "1.0.0",
   "kind": "phase13-evidence-source-baseline",
   "lifecycle": "PRE_COMMIT_PREPARATION",
-  "createdAt": "2026-08-11T05:56:36.211Z",
+  "createdAt": "2026-08-11T07:50:12.6237779Z",
   "createdFromDirtyTree": true,
   "preCommit": {
-    "gitHead": "759e4c4e1ad21618abdd593008ee0b638b101885",
+    "gitHead": "bdaac54b3c26cbd6e3dc038dae44bfbc1437446e",
     "branch": "main",
     "workingTreeStatus": [
       " M HANDOFF.md",
+      " M docs/architecture/PHASE_13_SECURITY_REVIEW.md",
       " M docs/project/PHASE_13_CLOSURE_REPORT.md",
       " M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
       " M docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
       " M okf-extension/registry/evidence.json",
       " M okf-extension/registry/relationships.json",
+      " M okf/architecture/service-worker-policy.md",
       " M okf/history/phase-13.md",
       " M okf/log.md",
       " M okf/operations/platform-support.md",
       " M okf/testing/phase-13-validation.md",
-      " M tools/testing/phase13-evidence-baseline.json",
-      " M tools/testing/run-phase13-evidence.mjs",
-      "?? tests/unit/phase13-evidence-command-planning.test.ts"
+      " M tests/browser/service-worker-policy.test.ts",
+      " M tests/support/render-fixture-server.ts",
+      " M tests/unit/phase13-evidence-classification.test.ts",
+      " M tools/testing/run-phase13-evidence.mjs"
     ]
   },
   "finalCommittedBaseline": null,
   "sourceFingerprintAlgorithm": "sha256-canonical-path-role-hash-list-v1",
-  "sourceFingerprint": "1bc25491f1bbf72add9fd166511a659fd9e0142466fd0c9de8613ae160424198",
+  "sourceFingerprint": "9484b630e0cd3d6fc031753db654da20ff0414a9d3fd32b2ac911bfd56fb8fac",
   "packageLockHash": "7be6a3fe3cf46b291d15a10c8a79613976f8385d97dc6d5ed1f244e051c449ad",
-  "evidenceRunnerHash": "bb1b25e449eb16069cf4577b174e030347c3e2c213c86db51a11cf11f34f0e52",
+  "evidenceRunnerHash": "f298ef9dc8a4b78604f917371ab6b7f23e4a46ee5bf0f57205eb1481afae7d34",
   "acceptanceDefinitionHash": "b2882276d4e4680ed7499cac9678ee54126ff704e495680d96dc427a6eabfcba",
   "expectedNodeVersion": ">=24.0.0 <25",
   "expectedNpmMajor": 11,
@@ -75,7 +78,7 @@
     {
       "path": "docs/architecture/PHASE_13_SECURITY_REVIEW.md",
       "role": "evidence-policy",
-      "sha256": "48c39cd67dc312146031105a3602dd30ab456ba303e795ccfa92c1d79393a65d"
+      "sha256": "6f94271258b14192724bbec5aead9602c0ff6cb692e9db8704bbb745a9895e43"
     },
     {
       "path": "docs/architecture/PLATFORM_SUPPORT_POLICY.md",
@@ -90,32 +93,32 @@
     {
       "path": "docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
       "role": "evidence-policy",
-      "sha256": "f5eb93372ae7e3ab0bf975cc10befc990a1d836fdc0677534b059c9ededef0f4"
+      "sha256": "fb492ada4c5ff583aac0b810261f696607cfded45b39ef1d593745d001b7c807"
     },
     {
       "path": "docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
       "role": "evidence-policy",
-      "sha256": "4933bdf2d7296c4d1369dbf8431423b1d08b30a42b0167bb0f2b35b2a040f45c"
+      "sha256": "3b8c92ac7cec14c01ce5739c40999dbf22ebd17b7470c3d809f1ce1c9c866331"
     },
     {
       "path": "okf-extension/registry/evidence.json",
       "role": "evidence-policy",
-      "sha256": "e3e0ab3ca9b0a02912342caa9d84048bb12edf984d33eff3410b1e8fc99ca235"
+      "sha256": "e2c0bebfc592d8cfcc67b2ad96827c2068f89143496d1edf88f519555c0f91f6"
     },
     {
       "path": "okf/log.md",
       "role": "evidence-policy",
-      "sha256": "d760a8dd79ff41a3793acc6af1f024a31914f238681974a69edbdbc93f6bc151"
+      "sha256": "9ad634adbd5c85879f4bedfa65b254ed594b2bb52d5046b065a9e0d8e284dd5e"
     },
     {
       "path": "okf/operations/platform-support.md",
       "role": "evidence-policy",
-      "sha256": "35c9aec466b32f8735807d042c258fbad0d93d4a3c0ac1e2fba04f1e7ed1d280"
+      "sha256": "ce13aa4ae2e50837987ef00b94c96ad0f23fb824eaf14fc40a407ae742ec0e53"
     },
     {
       "path": "okf/testing/phase-13-validation.md",
       "role": "evidence-policy",
-      "sha256": "9723b358326cf23b590b6867c7b17f025ff11d43638dbc46fd7fd877e2e50e0f"
+      "sha256": "ecbed989e16125ae824dde77a5a53e70318d099b4647ec5d63d3730eff62a4e5"
     },
     {
       "path": "package-lock.json",
@@ -205,7 +208,7 @@
     {
       "path": "tests/browser/service-worker-policy.test.ts",
       "role": "browser-and-native-tests",
-      "sha256": "0e1ac17a644325fc9becca35b355f15ca210695f3688ca5ff74cc7277fa1bf44"
+      "sha256": "c7f76e96fb4280b89b7dfaec50640d709cb363fc16aa13f17bcc9cc9365ecb98"
     },
     {
       "path": "tests/browser/session.test.ts",
@@ -250,7 +253,7 @@
     {
       "path": "tests/support/render-fixture-server.ts",
       "role": "browser-and-native-tests",
-      "sha256": "8de207958f814a65de97cb65757fa16eba68774a480f20a51bcd7383d4b6b0cb"
+      "sha256": "58858cf719e1a9da20f47d417cfaa89897b5d3ee2eb0e98d4e230bc431a1a8e8"
     },
     {
       "path": "tests/unit/authentication-route.test.ts",
@@ -260,7 +263,7 @@
     {
       "path": "tests/unit/phase13-evidence-classification.test.ts",
       "role": "quality-gate",
-      "sha256": "87868c51fcf97ade404fcc6b11c313c3bb57643656ea858030d14200ba64d733"
+      "sha256": "c1a5fdd33fd4e51c04d164a61f4a0fd61a4f2f4c3204ac29193afee295c97544"
     },
     {
       "path": "tests/unit/phase13-evidence-command-planning.test.ts",
@@ -330,7 +333,7 @@
     {
       "path": "tools/testing/run-phase13-evidence.mjs",
       "role": "evidence-runner",
-      "sha256": "bb1b25e449eb16069cf4577b174e030347c3e2c213c86db51a11cf11f34f0e52"
+      "sha256": "f298ef9dc8a4b78604f917371ab6b7f23e4a46ee5bf0f57205eb1481afae7d34"
     },
     {
       "path": "tools/testing/run-tests.mjs",

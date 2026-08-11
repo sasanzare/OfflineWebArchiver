@@ -5,6 +5,7 @@ import path from "node:path";
 export interface RenderFixtureServer {
   origin: string;
   url(name: string): string;
+  requestCount(pathname: string): number;
   waitForRequest(pathname: string, timeoutMs?: number): Promise<void>;
   close(): Promise<void>;
 }
@@ -157,6 +158,7 @@ request.onerror = () => { marker.textContent = "Session state invalid"; };
   return {
     origin,
     url(name) { return `${origin}/${name.replace(/^\/+/, "")}`; },
+    requestCount(pathname) { return requestCounts.get(pathname) ?? 0; },
     async waitForRequest(pathname, timeoutMs = 15_000) {
       if ((requestCounts.get(pathname) ?? 0) > 0) return;
       await new Promise<void>((resolve, reject) => {

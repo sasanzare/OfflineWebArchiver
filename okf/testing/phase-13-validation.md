@@ -16,16 +16,12 @@ owa:
 # Phase 13 Validation
 
 Focused pure, contract, scope, persistence, and authentication-policy suites
-provide local evidence for the hardening changes. The registered real
-Chromium Session fixture (`tests/browser/session.test.ts`) and Service Worker
-fixture (`tests/browser/service-worker-policy.test.ts`) remain `BLOCKED`:
-normal execution cannot bind the loopback fixture server (`listen EPERM`),
-while escalated execution binds but the repository-owned browser is missing or
-cannot launch (`BROWSER_INSTALLATION_MISSING` / `BROWSER_LAUNCH_FAILED`).
-Native platform validation is also blocked. The closure remediation strengthens
-the local fixture to require cookie, localStorage, and IndexedDB state while
-asserting that sessionStorage is not serialized; this is not promoted to real
-browser evidence because the approved Chromium installation is still absent.
+provide local evidence for the hardening changes. On the verified Windows host,
+the registered real Chromium Session and IndexedDB fixtures pass, and the
+Service Worker fixture now passes explicit `block` and `allow` registration and
+fetch-routing checks. Native platform validation remains blocked. The current
+working-tree evidence is diagnostic until the remediation is committed and the
+required native matrix is reconciled.
 
 Phase 13 closure requires rerunning those registered browser fixtures with the
 pinned runtime, executing the claimed platform matrix, and then rerunning the
@@ -71,8 +67,22 @@ official Playwright Chromium and Electron. It remains non-promotable because
 the remediation source is uncommitted, the Service Worker focused test had one
 assertion failure, and the required native matrix is incomplete.
 
-The same Windows diagnostic environment ran the full repository suite with
-168 tests: 166 passed, 2 failed, and 0 skipped. The failures were the browser
-Interaction popup trace assertion and the Service Worker policy assertion;
-they remain separate clean-HEAD follow-up diagnostics and are not promoted by
-the dirty evidence bundle.
+The same Windows diagnostic environment ran the pre-remediation full repository
+suite with 168 tests: 166 passed, 2 failed, and 0 skipped. The failures were
+the browser Interaction popup trace assertion and the Service Worker policy
+assertion. After the Service Worker fixture remediation, the full repository
+suite passed 169/169 with 0 skipped; the dirty evidence bundle remains
+non-promotable until a clean commit and the native matrix are available.
+
+## AC-P13-012 Service Worker remediation
+
+The pre-remediation failure was a fixture-harness assumption, classified as
+`TEST_INFRA_FAILURE`: pinned Playwright `serviceWorkers: "block"` emits
+`Service Worker registration blocked by Playwright`, leaves the page's
+registration promise pending, and creates no registration/controller. The
+fixture had expected rejection and remained `pending`. The corrected fixture
+observes the browser warning, verifies that no worker-controlled probe reaches
+the fixture server, and verifies explicit allow registration, activation,
+control, and interception. The runner's generic `network` stdout false
+positive is also covered by a classification regression. The focused browser
+suite passed 10/10 and the unit suite passed 64/64 after the remediation.

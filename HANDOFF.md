@@ -14,28 +14,28 @@ outside the current scope.
 
 ## Current Objective
 
-Remediate the Phase 13 Windows evidence-runner spawn EINVAL failure, preserve
-all acceptance and security requirements, and prepare a new immutable source
-baseline for native evidence. Do not start Phase 14.
+Complete the Phase 13 AC-P13-012 Service Worker root-cause remediation while
+preserving the fail-closed policy, correct evidence classification, and native
+matrix gates. Do not start Phase 14.
 
 ## Current Phase or Milestone
 
 Phase 13 remains PARTIAL; Phase 14 remains PHASE_14_BLOCKED. The Windows
-runner portability defect is corrected and the actual Windows host can execute
-the runner, but the remediation is uncommitted and the required
-Windows/Linux/macOS clean common-HEAD matrix is not complete.
+runner portability defect is corrected, the Service Worker browser fixture
+now passes on the approved Chromium, and the required Windows/Linux/macOS
+clean common-HEAD matrix is not complete.
 
 ## Repository State
 
 - Repository path: D:\All projects\OfflineWebArchiver
 - Current branch: main
-- Base or starting commit for this task: 759e4c4e1ad21618abdd593008ee0b638b101885
-- Previous requested evidence baseline: deb26e7e0ca65cde1c60f75b72bda8b385fdaa66
-- Current HEAD: 759e4c4e1ad21618abdd593008ee0b638b101885
-- Working tree status: unstaged remediation and documentation changes; no unrelated changes observed
+- Base or starting commit for this task: bdaac54b3c26cbd6e3dc038dae44bfbc1437446e
+- Previous evidence bundle: .artifacts/phase13-evidence/2026-08-11T06-45-39-987Z-bdaac54b3c26
+- Current HEAD: bdaac54b3c26cbd6e3dc038dae44bfbc1437446e
+- Working tree status: unstaged Service Worker fixture, fixture-server, runner-classification, test, documentation, and baseline changes; no unrelated changes observed
 - Staged changes: none
-- Unstaged changes: runner, baseline manifest, Phase 13 reports, OKF records/registries, and HANDOFF
-- Untracked files: tests/unit/phase13-evidence-command-planning.test.ts
+- Unstaged changes: Service Worker browser test and fixture support, evidence runner/classification regression, Phase 13 reports, OKF records, baseline manifest, and HANDOFF
+- Untracked files: none
 
 ## Completed Work
 
@@ -74,37 +74,59 @@ Windows/Linux/macOS clean common-HEAD matrix is not complete.
   .artifacts/phase13-evidence/2026-08-11T05-56-50-247Z-759e4c4e1ad2.
   Its artifact secret scan passed with zero unauthorized occurrences.
 - Regenerated the source-baseline manifest with the canonical algorithm. The
-  current diagnostic fingerprint is
-  1bc25491f1bbf72add9fd166511a659fd9e0142466fd0c9de8613ae160424198;
-  finalCommittedBaseline remains null.
+  earlier checkpoint fingerprint `1bc25491f1bbf72add9fd166511a659fd9e0142466fd0c9de8613ae160424198`
+  is superseded; the current diagnostic fingerprint is recorded below and
+  `finalCommittedBaseline` remains null.
 - Updated the Phase 13 execution matrix, implementation/closure reports,
   Google OKF validation/platform/history/log records, and evidence/relationship
   registries. No acceptance definition or security invariant was weakened.
 - Reviewed the cross-project mistakes log and recorded the reusable Windows
   npm.cmd spawn EINVAL lesson at D:\All projects\Mistakes\mistakes.md.
+- Inspected the latest clean Windows bundle on `bdaac54`: approved Playwright
+  Chromium 1.56.1 / revision 1194 / build 141.0.7390.37 and Electron 43.2.0
+  were valid; the browser suite was 9/10 because the Service Worker test
+  remained at `data-state="pending"`.
+- Reproduced the Service Worker failure with the real production Browser
+  Runtime. In `block` mode Playwright emitted `Service Worker registration
+  blocked by Playwright`, returned no registrations/controller, and issued no
+  worker-controlled fetch; in `allow` mode registration activated, controlled
+  the page, and intercepted `/sw-probe`.
+- Classified the Service Worker failure as `TEST_INFRA_FAILURE`: the fixture
+  assumed blocked registration rejects, but pinned Playwright leaves that
+  promise pending while exposing a browser warning. Also corrected the
+  runner's separate generic-`network` stdout classification false positive.
+- Updated the fixture assertions and fixture-server request counters, added
+  browser classification regression coverage, and verified the focused
+  browser suite at 10/10 and the unit suite at 64/64.
 
 ## Work in Progress
 
-The remediation tree is intentionally unstaged and uncommitted. The source
-baseline manifest has been regenerated from the final current source set using
-the existing sha256-canonical-path-role-hash-list-v1 algorithm. Its
-finalCommittedBaseline remains null until the user creates the new commit.
+The current remediation tree is intentionally unstaged and uncommitted. The
+source-baseline manifest has been regenerated after the final report and OKF
+changes using the existing `sha256-canonical-path-role-hash-list-v1` algorithm;
+the current diagnostic source fingerprint is
+`9484b630e0cd3d6fc031753db654da20ff0414a9d3fd32b2ac911bfd56fb8fac`. Its
+`finalCommittedBaseline` remains null until the user creates the new clean
+common commit.
 
 ## Remaining Work
 
-1. Review the focused Windows Service Worker failure separately; it is not
-   evidence that the original spawn EINVAL incident was a product failure.
-2. User reviews, commits, and pushes the remediation set.
+1. Review the validated diagnostic bundle
+   `.artifacts/phase13-evidence/2026-08-11T07-50-37-760Z-bdaac54b3c26`:
+   sourceBaselineMatch is true, Browser Runtime is 10/10, Desktop is 2/2,
+   and cleanCommittedSource is false.
+2. User reviews and commits the exact unstaged remediation set.
 3. Run the full native evidence matrix from that new clean common HEAD on
    Windows 11, Linux, and macOS; validate each bundle and reconcile only
    same-HEAD, clean-source bundles.
-4. Keep AC-P13-002, AC-P13-008, AC-P13-012, and AC-P13-016 blocked until their
-   required real evidence passes.
+4. Keep AC-P13-016 aggregate-blocked until the required native matrix is
+   validated and reconciled; do not promote Phase 13 or authorize Phase 14.
 
 ## Exact Next Steps
 
 After review, the user should commit the exact remediation file set listed
-below, then record the new commit hash and run on each required host:
+below, record the new commit hash, regenerate the committed baseline metadata,
+and run on each required host:
 
     node --version
     npm --version
@@ -127,14 +149,19 @@ fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
 - docs/project/PHASE_13_CLOSURE_REPORT.md
 - docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md
 - docs/project/PHASE_13_IMPLEMENTATION_REPORT.md
+- docs/architecture/PHASE_13_SECURITY_REVIEW.md
 - okf-extension/registry/evidence.json
 - okf-extension/registry/relationships.json
+- okf/architecture/service-worker-policy.md
 - okf/history/phase-13.md
 - okf/log.md
 - okf/operations/platform-support.md
 - okf/testing/phase-13-validation.md
 - tools/testing/phase13-evidence-baseline.json
 - tools/testing/run-phase13-evidence.mjs
+- tests/browser/service-worker-policy.test.ts
+- tests/support/render-fixture-server.ts
+- tests/unit/phase13-evidence-classification.test.ts
 
 ## Important Architecture and Design Decisions
 
@@ -150,6 +177,12 @@ fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
   separate. spawn EINVAL is TEST_INFRA_FAILURE; missing runtime or dirty source
   is ENVIRONMENT_BLOCKED; a valid runtime assertion failure is the only path to
   PRODUCT_FAIL.
+- Playwright `serviceWorkers: "block"` is the production fail-closed control.
+  The browser fixture observes its pinned-runtime warning and verifies that no
+  worker-controlled probe reaches the fixture server; it must not require the
+  blocked registration promise to reject.
+- Environment classification scans specific runtime/launch signatures, not
+  generic words such as `network` from otherwise valid test output.
 - Chromium manifest verification, revision/source checks, sandbox policy,
   system-browser prohibition, evidence redaction, same-HEAD reconciliation,
   clean-source requirements, IPC security, Secret Store isolation, and path
@@ -165,7 +198,8 @@ fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
 - Direct subprocess probes: npm.cmd returned EINVAL; direct Node spawning was
   separately blocked by the normal sandbox with EPERM.
 - node --check tools/testing/run-phase13-evidence.mjs.
-- npm run test:unit with escalated subprocess permissions: PASS, 63/63.
+- Initial `npm run test:unit` with escalated subprocess permissions: PASS,
+  63/63.
 - Normal-sandbox diagnostic runs of the direct and npm-wrapper runner: no
   spawn EINVAL; child execution was recorded as sandbox EPERM.
 - Escalated actual Windows runs of the direct and npm-wrapper runner: no
@@ -176,6 +210,24 @@ fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
   .artifacts/phase13-evidence/2026-08-11T05-56-50-247Z-759e4c4e1ad2: PASS.
 - npm run test:phase13:evidence:validate --
   .artifacts/phase13-evidence/2026-08-11T05-56-50-247Z-759e4c4e1ad2: PASS.
+- Focused reproduction on the approved Windows Chromium: 9/10 before the
+  fix, with exact pending DOM assertion and diagnostic console/registration/
+  network state captured.
+- Production Browser Runtime diagnostic for block/allow registration and
+  controller state: block had warning/no registration/no controller/no
+  worker-controlled fetch; allow activated and intercepted the probe.
+- `node tools/testing/run-tests.mjs package:browser-runtime` after the fix:
+  PASS, 10/10.
+- `node tools/testing/run-tests.mjs unit` after the fix: PASS, 64/64.
+- Final escalated `npm test`: PASS, 169/169, 0 failed, 0 skipped.
+- Final canonical gates: `npm run typecheck`, `build`, `lint`, `format:check`,
+  `test:architecture`, `contracts:check`, `migrations:validate`,
+  `project-format:validate`, `security:check`, `docs:validate`,
+  `okf:validate`, and `test:okf`: all passed; OKF tests were 43/43.
+- Final `npm run test:phase13:evidence` generated the post-remediation
+  Windows diagnostic bundle recorded below; its process exit was 1 only
+  because the runner correctly blocks dirty-source acceptance promotion.
+- Final `npm run test:phase13:evidence:validate` for that bundle: PASS.
 
 ## Validation and Test Results
 
@@ -183,19 +235,20 @@ fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
 - Windows Browser verification: PASS for official Playwright Chromium 1.56.1,
   revision 1194, build 141.0.7390.37, sandbox enabled, no system fallback.
 - Windows Electron --version: PASS for v43.2.0.
-- Windows focused browser suite: 10 total, 9 passed, 1 failed. The one failure
-  was the Service Worker policy assertion; it requires separate clean-HEAD
-  investigation and is not attributed to the spawn incident.
+- Windows focused browser suite before the fix: 10 total, 9 passed, 1 failed.
+  After the fixture/classification remediation: 10 total, 10 passed, 0 failed,
+  0 skipped.
 - Windows focused Desktop suite: 2 total, 2 passed.
-- Full escalated npm test: 168 total, 166 passed, 2 failed, 0 skipped. The
-  failures were the browser-native Interaction popup trace assertion and the
-  Service Worker policy assertion; they are separate diagnostic findings and
-  were not promoted to product or acceptance failures from the dirty tree.
-- Windows diagnostic bundle validation: PASS; sourceBaselineMatch: true;
-  secret scan: PASS with 0
-  unauthorized occurrences.
-- Full regression, all quality gates, and cross-platform reconciliation were
-  not run to completion in this remediation checkpoint.
+- Full escalated npm test after the remediation: 169 total, 169 passed, 0
+  failed, 0 skipped. The earlier 168-test result was a pre-remediation
+  checkpoint and is retained only in the historical project reports.
+- Windows diagnostic bundle validation: PASS for
+  `.artifacts/phase13-evidence/2026-08-11T07-50-37-760Z-bdaac54b3c26`;
+  sourceBaselineMatch: true, cleanCommittedSource: false, Browser Runtime
+  10/10, Desktop 2/2, and secret scan PASS with 0 unauthorized occurrences.
+- Final canonical gates: typecheck, build, lint, format, architecture,
+  contracts, migrations, Project Format, security, docs, and OKF validation
+  all passed; `npm run test:okf` passed 43/43.
 
 ## Known Issues and Blockers
 
@@ -203,9 +256,9 @@ fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
   cannot satisfy final native acceptance.
 - The required Linux and macOS passing rows are not present at the new common
   source revision.
-- The Windows Service Worker focused test failed once with the approved
-  Chromium runtime; do not promote AC-P13-012 or call the runner incident a
-  product failure until a clean committed rerun classifies the failure.
+- The latest Windows bundle is post-remediation and passes the focused Browser
+  Runtime/Desktop commands, but because this tree is dirty it cannot satisfy
+  final native acceptance.
 - The normal sandbox blocks child-process creation with EPERM; escalated
   Windows execution was used for the actual runner and runtime checks.
 - Phase 14 is blocked and must not be started.
@@ -227,8 +280,7 @@ Secret Store payloads, or machine secrets were added.
 
 The files listed under Files Modified are unstaged and uncommitted. Generated
 .artifacts/, .build-tests/, and runtime browser files are ignored and are
-diagnostic only. The new command-planning test is untracked until the user
-reviews the complete remediation set.
+diagnostic only. No staged or untracked changes remain.
 
 ## Recovery or Rollback Notes
 
@@ -250,8 +302,9 @@ user authorization; do not discard the user's working tree.
 
 ## Notes for the Next Agent
 
-Treat the original Windows spawn EINVAL as TEST_INFRA_FAILURE, not
-PRODUCT_FAIL. Do not use the old deb26e7 evidence baseline after the runner or
+Treat the original Windows spawn EINVAL as TEST_INFRA_FAILURE, not PRODUCT_FAIL,
+and the pre-remediation Service Worker fixture failure as TEST_INFRA_FAILURE,
+not an environment or product result. Do not use an old evidence baseline after
 fingerprinted inputs change. The user must create the new clean common commit,
 then rerun official Chromium/Electron evidence on Windows 11, Linux, and macOS
 and reconcile bundles from that exact HEAD. Do not begin Guided OTP, Element

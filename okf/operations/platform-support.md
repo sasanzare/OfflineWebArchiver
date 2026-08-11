@@ -46,7 +46,9 @@ A new clean committed baseline is required before native matrix execution.
 The 2026-08-11 Windows diagnostic confirmed that the runner itself can reach
 the native gates after its subprocess correction. The host reported Windows
 11 x64, Node 24, npm 11, official Playwright Chromium revision 1194/build
-141.0.7390.37, and Electron 43.2.0; browser verification and Desktop smoke
-executed, but the dirty remediation tree and incomplete matrix prevent any
-support or acceptance promotion. The original direct `npm.cmd` spawn failure
-is recorded as `TEST_INFRA_FAILURE` and does not change platform requirements.
+141.0.7390.37, and Electron 43.2.0; browser verification, the remediated
+10/10 Browser Runtime suite, and Desktop smoke executed. The dirty remediation
+tree and incomplete matrix prevent any support or acceptance promotion. The
+original direct `npm.cmd` spawn failure is recorded as `TEST_INFRA_FAILURE`,
+and the Service Worker fixture assumption is recorded as a separate
+`TEST_INFRA_FAILURE`; neither changes platform requirements.

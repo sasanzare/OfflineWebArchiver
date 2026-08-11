@@ -21,6 +21,7 @@ default for old and new Site Profiles is `block`; allowing registration is a
 reviewable profile choice. The policy is passed into Browser Runtime Context
 creation and is not inferred from a target page.
 
-Pure contract and profile compatibility evidence exists. Real registration and
-fetch routing evidence remains blocked with the current pinned-Chromium
-fixture environment.
+Pure contract and profile compatibility evidence exists. The approved Windows
+Chromium fixture now verifies real block/allow registration behavior, activation,
+controller acquisition, and fetch routing. Cross-platform matrix evidence and
+clean-committed-source promotion remain pending.

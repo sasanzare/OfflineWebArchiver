@@ -16,12 +16,22 @@ interface RuntimeInspection {
   electron: { executablePresent: boolean; versionMatches: boolean };
 }
 
+interface BrowserCommand {
+  id: string;
+  exitCode: number | null;
+  stdoutSafe?: string;
+  stderrSafe?: string;
+  spawnErrorSafe?: string | null;
+  testResult?: { subtests?: Array<{ name: string; status: string }> } | null;
+}
+
 async function load<T>(relativePath: string): Promise<T> {
   return await import(pathToFileURL(path.resolve(relativePath)).href) as T;
 }
 
-const { classifyDesktopStatus } = await load<{
+const { classifyDesktopStatus, classifyBrowserAcceptanceStatus } = await load<{
   classifyDesktopStatus(command: EvidenceCommand, runtime: RuntimeInspection): string;
+  classifyBrowserAcceptanceStatus(id: string, commands: BrowserCommand[], runtime: RuntimeInspection, sourceAcceptanceEligible: boolean): { status: string; reason: string };
 }>("tools/testing/run-phase13-evidence.mjs");
 
 test("missing required native runtime is classified as environment blocked", () => {
@@ -55,4 +65,22 @@ test("an unassessable Desktop command is test-infrastructure failure", () => {
     { exitCode: null, testResult: null, spawnErrorSafe: "test harness unavailable" },
     { browser: { valid: true }, electron: { executablePresent: true, versionMatches: true } },
   ), "TEST_INFRA_FAILURE");
+});
+
+test("browser assertion output mentioning network is not an environment blocker", () => {
+  const result = classifyBrowserAcceptanceStatus(
+    "AC-P13-012",
+    [
+      { id: "browser-verify", exitCode: 0 },
+      {
+        id: "browser-runtime-focused",
+        exitCode: 1,
+        stdoutSafe: "✔ Browser Runtime blocks non-GET requests before network dispatch\nAssertionError: fixture assertion failed",
+        testResult: { subtests: [{ name: "Service Worker policy blocks by default and allows only explicit registration", status: "failed" }] },
+      },
+    ],
+    { browser: { valid: true }, electron: { executablePresent: true, versionMatches: true } },
+    true,
+  );
+  assert.equal(result.status, "PRODUCT_FAIL");
 });

@@ -5,10 +5,10 @@
 PARTIAL
 
 The requested architecture and security hardening is implemented and
-deterministic validation passes. Phase 13 remains open because the registered
-real pinned-Chromium Session, IndexedDB restore, and Service Worker evidence,
-plus the native platform matrix, are blocked or unavailable in this
-environment.
+deterministic validation passes. The approved Windows host now provides real
+pinned-Chromium Session, IndexedDB restore, and Service Worker focused evidence;
+Phase 13 remains open because the remediation tree is not yet the clean common
+commit and the required native platform matrix is incomplete.
 
 The follow-up native-evidence work introduced at Git HEAD
 `5881707927131085032707a9e69b27ccb73bd750` and committed into the current
@@ -113,11 +113,39 @@ focused result. Because this source changed after `deb26e7e0ca65cde1c60f75b72bda
 the old evidence baseline is superseded and the diagnostic bundle is not
 eligible for final native acceptance.
 
-The full escalated `npm test` run on the same Windows host reported 168 tests:
-166 passed, 2 failed, and 0 skipped. The failures were the browser-native
-Interaction popup trace assertion and the Service Worker policy assertion.
-They remain separate follow-up diagnostics; the dirty remediation bundle does
-not promote either failure to a Phase 13 product or acceptance result.
+The pre-remediation full escalated `npm test` run on the same Windows host
+reported 168 tests: 166 passed, 2 failed, and 0 skipped. The failures were the
+browser-native Interaction popup trace assertion and the Service Worker policy
+assertion. After the Service Worker fixture remediation, the full escalated
+`npm test` run reported 169 tests: 169 passed, 0 failed, and 0 skipped. The
+earlier failures remain historical diagnostics; the dirty remediation bundle
+still does not promote acceptance rows until a clean commit and the required
+native matrix are available.
+
+## AC-P13-012 Service Worker final remediation — 2026-08-11
+
+The clean `bdaac54` Windows bundle reproduced one browser failure while using
+valid repository-owned Chromium: the block-mode fixture expected
+`navigator.serviceWorker.register()` to reject, but Playwright 1.56.1's
+`serviceWorkers: "block"` context policy emits the observable warning
+`Service Worker registration blocked by Playwright`, leaves the registration
+promise pending, creates no registration/controller, and prevents the worker
+probe from reaching the fixture server. Explicit `allow` registration activated
+the worker, acquired control, and returned the worker response for `/sw-probe`.
+
+This is classified as `TEST_INFRA_FAILURE` in the pre-remediation test harness,
+not a product policy failure. The fixture now observes the pinned-runtime block
+signal and verifies that the blocked policy cannot control a fetch; the allow
+path also verifies worker script loading and interception. The evidence runner
+no longer treats the generic word `network` in valid test stdout as an
+environment blocker, and a regression test covers that classification boundary.
+
+After remediation, the approved Windows focused Browser Runtime suite passed
+10/10 with 0 failures and the unit suite passed 64/64. The latest Windows
+diagnostic bundle recorded in `HANDOFF.md` validated with sourceBaselineMatch
+true, real Browser Runtime 10/10, Desktop 2/2, and a zero-occurrence secret
+scan. It remains non-promotable because the source is unstaged; it must be
+rerun after a new clean common commit before native acceptance promotion.
 
 ## Baseline Audit
 
@@ -320,8 +348,8 @@ trusted window.
 
 | Finding | Severity | Status | Owner / target |
 |---|---|---|---|
-| S13-001: Real Chromium Session fixture unavailable | High | BLOCKED | Browser Runtime/QA before Phase 13 closure; normal run reports `listen EPERM`, escalated run reports `BROWSER_INSTALLATION_MISSING` / `BROWSER_LAUNCH_FAILED`, and provisioning reports DNS `ENOTFOUND`. |
-| S13-002: Real Service Worker block/allow evidence unavailable | High | BLOCKED | Browser Runtime/QA must execute `tests/browser/service-worker-policy.test.ts` with approved Chromium. |
+| S13-001: Real Chromium Session fixture unavailable | High | PARTIAL | Approved Windows Chromium now passes the registered Session fixture; Linux/macOS matrix evidence and clean committed-source promotion remain outstanding. |
+| S13-002: Real Service Worker block/allow evidence unavailable | High | PARTIAL | The approved Windows Chromium fixture now passes block/allow registration and fetch-routing checks; Linux/macOS matrix evidence and clean committed-source promotion remain outstanding. |
 | S13-003: Native platform matrix unexecuted | High | BLOCKED | Platform/QA must execute the documented Windows 11 primary, Windows 10 legacy/optional, Linux, macOS, and architecture matrix. |
 | S13-004: Full Worker Pool concurrency stress unavailable | Medium | NOT_APPLICABLE | No Worker Pool exists in the current scope; the contract and SQLite stress plan are ready for the later scheduler phase. |
 | S13-005: Archive runtime isolation is future work | Medium | NOT_APPLICABLE | The current product does not load archive HTML/JS; the isolated runtime baseline is documented before that feature exists. |
@@ -341,15 +369,14 @@ Repository-native validation and focused suites:
 | Contracts / migrations / Project Format | PASS | Contract 1.9.0, 9 immutable migrations/schema 9, and Project Format 1.1.0 validators. |
 | Architecture / security / docs | PASS | `test:architecture`, `security:check`, and `docs:validate`; docs reported 158 required artifacts, 387 active relative links, and 98 readable archived Markdown files. |
 | Scope / queue / recovery / checkpoint / render / Secret Store validators | PASS | All 9 applicable validators passed. |
-| Unit tests | PASS | `node tools/testing/run-tests.mjs unit`: 57/57, including the Phase 13 evidence-classification regression tests. |
+| Unit tests | PASS | `node tools/testing/run-tests.mjs unit`: 64/64, including the Service Worker and Phase 13 evidence-classification regression tests. |
 | Focused pure package suites | PASS | Archive Core 2/2, Project Format 3/3, SQLite 22/22, Scope Engine 10/10, Contracts 7/7, Recovery 10/10, Queue 13/13, Secret Store 12/12. |
 | OKF | PASS | `npm run okf:validate`: all layers 0 errors/0 warnings; `npm run test:okf`: 43/43. |
-| Browser package, normal sandbox | BLOCKED | 2 pass, 6 fail at loopback `listen EPERM`, 2 skipped; the registered Service Worker fixture is included. |
-| Browser package, loopback escalation | BLOCKED | 2 pass, 6 fail, 2 skipped; real cases report `BROWSER_INSTALLATION_MISSING` or `BROWSER_LAUNCH_FAILED`, with one installation assertion false. |
-| Full suite, normal sandbox | BLOCKED | 162 tests: 146 pass, 14 fail, 2 skipped. Failures are loopback `listen EPERM` and browser-dependent paths. |
-| Full suite, loopback escalation | BLOCKED | 162 tests: 147 pass, 13 fail, 2 skipped. Failures are approved Chromium launch/manifest and dependent browser-backed CLI/Application Service, interaction, render, and Electron paths. |
-| Browser provisioning | BLOCKED | `npm run browser:verify` reports missing `.runtime/browsers/browser-manifest.json`; the official provisioning attempt failed with DNS `getaddrinfo ENOTFOUND`. |
-| Native platform matrix | BLOCKED | Not executable from this macOS environment. |
+| Browser Runtime focused, approved Windows | PASS | Real pinned Chromium: 10/10 after the Service Worker fixture remediation. |
+| Desktop focused, approved Windows | PASS | Real Electron 43.2.0: 2/2. |
+| Full suite, escalated Windows | PASS | `npm test`: 169/169, 0 failed, 0 skipped. |
+| Phase 13 evidence bundle | PARTIAL | Latest validated diagnostic bundle is recorded in `HANDOFF.md`; sourceBaselineMatch is true, but cleanCommittedSource is false. |
+| Native platform matrix | BLOCKED | Linux and macOS passing rows are not present at the new common source revision; final reconciliation remains required. |
 
 The failed/blocked commands were inspected and are not treated as passes. Pure
 policy, SQLite, Secret Store, contract, OKF, and deterministic integration
@@ -363,9 +390,12 @@ The [acceptance matrix](../product/ACCEPTANCE_MATRIX.md) uses only `PASS`,
 - `PASS`: AC-P13-001, AC-P13-003, AC-P13-004, AC-P13-006, AC-P13-007,
   AC-P13-009, AC-P13-010, AC-P13-011, AC-P13-013, AC-P13-014, AC-P13-015,
   AC-P13-017, AC-P13-018, AC-P13-019, AC-P13-020, AC-P13-021, and AC-P13-022.
-- `BLOCKED`: AC-P13-002 real Chromium authentication, AC-P13-008 real
-  IndexedDB/session restore, AC-P13-012 real Service Worker fixture, and
-  AC-P13-016 native platform validation.
+- `BLOCKED`: AC-P13-016 native platform validation; the current Windows
+  diagnostic also remains non-promotable until the changed source is committed
+  and the required matrix is reconciled.
+- The current Windows focused execution reports `PASS` for AC-P13-002,
+  AC-P13-008, and AC-P13-012; the authoritative acceptance table is not
+  promoted by a dirty-tree diagnostic bundle.
 - `NOT_APPLICABLE`: AC-P13-005 because the current product has no archive
   runtime; the required isolated baseline is documented.
 - `FAIL`: none identified. Environment failures remain blocked rather than
@@ -386,10 +416,11 @@ the Phase 13 validation and platform-support concepts.
 
 ## Known Limitations
 
-- The real pinned-Chromium fixture cannot currently run in this environment.
-- The repository-owned browser manifest/executable is absent; the official
-  Playwright hosts also failed DNS resolution during provisioning.
-- Native platform support evidence has not been executed.
+- The approved pinned-Chromium fixture runs on the verified Windows host; the
+  post-remediation working-tree bundle is diagnostic until a clean commit is
+  available.
+- Linux and macOS native platform support evidence has not been executed, and
+  no cross-platform support claim is promoted.
 - No full replay engine, archive runtime, downloader, proxy routing, Worker Pool,
   HTML rewrite, or API capture is included.
 - `sessionStorage` persistence remains unsupported.
@@ -420,14 +451,17 @@ reusable lessons discovered during this task were retained.
 
 ## Exact Next Step
 
-Provision or authorize the pinned repository-owned Chromium and rerun:
+Review and commit the unstaged remediation, regenerate the committed baseline,
+then rerun on the clean common HEAD:
 
 ```text
 node tools/testing/run-tests.mjs package:browser-runtime
+npm run test:phase13:evidence
+npm run test:phase13:evidence:validate -- <bundle>
 npm test
 ```
 
 Inspect the real Session, IndexedDB restore, Service Worker, render,
-interaction, CLI, and Electron evidence, then update the acceptance statuses.
-Do not begin Phase 14 while AC-P13-002, AC-P13-008, AC-P13-012, or AC-P13-016
-remain blocked.
+interaction, CLI, and Electron evidence, then run the required Linux/macOS
+rows and reconcile only same-HEAD bundles. Do not begin Phase 14 while
+AC-P13-016 remains aggregate-blocked.

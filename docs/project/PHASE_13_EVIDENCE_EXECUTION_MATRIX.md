@@ -204,13 +204,37 @@ Run the same command without platform-specific test logic on:
 
 | Target | Required host | Current result |
 |---|---|---|
-| `windows-11-x64` | Approved Windows 11 x64 physical host, VM, or self-hosted runner | 2026-08-11 diagnostic run reached Chromium/Electron; not promotable because the remediation tree is not the committed baseline |
+| `windows-11-x64` | Approved Windows 11 x64 physical host, VM, or self-hosted runner | 2026-08-11 diagnostic run reached Chromium/Electron and the remediated Browser Runtime passed 10/10; not promotable because the remediation tree is not the committed baseline |
 | `windows-10-x64` | Approved Windows 10 x64 host, legacy/optional | Pending external execution |
 | `linux-<architecture>` | Approved Linux host; distribution is recorded and not invented by the runner | Pending external execution |
 | `macos-<architecture>` | Approved macOS host; architecture is recorded from the host | Current macOS arm64 row is blocked by missing Chromium/Electron |
 
 The presence of the current macOS host proves neither its Browser nor its
 Electron acceptance until the repository-owned runtimes launch successfully.
+
+## AC-P13-012 Service Worker final remediation — 2026-08-11
+
+The approved Windows Chromium reproduction showed that `serviceWorkers:
+"block"` prevents registration by emitting Playwright's browser warning,
+leaving the page registration promise pending, and creating no registration,
+controller, or worker-controlled fixture fetch. The explicit `allow` context
+registered and activated the fixture worker, acquired control, and intercepted
+`/sw-probe` without a network request reaching the fixture server.
+
+The pre-remediation failure was therefore `TEST_INFRA_FAILURE` in the fixture
+harness, not `ENVIRONMENT_BLOCKED` and not a Service Worker product-policy
+failure. The runner also had a separate classification false positive because
+it treated the generic word `network` in a passing test name on stdout as an
+environment signature. The signature is now specific and has a regression
+test. The browser fixture observes the real block signal and verifies both
+blocked and explicit-allow routing without OS-specific timing.
+
+Focused verification after the remediation passed 10/10 browser tests and the
+unit suite passed 64/64. The refreshed Windows diagnostic bundle recorded in
+`HANDOFF.md` validated with sourceBaselineMatch true, Browser Runtime 10/10,
+Desktop 2/2, and zero unauthorized secret-scan occurrences. Because the
+current tree is unstaged, the bundle is diagnostic and cannot be reconciled as
+final native acceptance.
 
 ## Windows subprocess compatibility remediation — 2026-08-11
 
@@ -250,11 +274,12 @@ This diagnostic result does not satisfy AC-P13-016 and does not promote any
 platform claim. A new clean committed baseline is required before final native
 matrix execution.
 
-The same escalated Windows environment ran the full repository suite with 168
-tests: 166 passed, 2 failed, and 0 skipped. The failures were the browser
-Interaction popup trace assertion and the Service Worker policy assertion.
-They are retained as separate diagnostic results and are not attributed to the
-subprocess portability incident or promoted from the dirty source tree.
+The same escalated Windows environment ran the pre-remediation full repository
+suite with 168 tests: 166 passed, 2 failed, and 0 skipped. The failures were
+the browser Interaction popup trace assertion and the Service Worker policy
+assertion. After the Service Worker fixture remediation, the full repository
+suite passed 169/169 with 0 skipped. Neither the historical failures nor the
+dirty-tree diagnostic result is promoted from this unstaged source tree.
 
 The runner's failure classification is intentionally separate from the
 environment label. A required runtime that is missing or cannot launch is

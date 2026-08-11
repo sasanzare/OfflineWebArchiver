@@ -5,8 +5,10 @@
 `PARTIAL`
 
 The Phase 13 implementation contracts and deterministic regressions remain
-validated. Closure is not authorized because the required repository-owned
-Chromium evidence and the native platform matrix remain unavailable.
+validated. Approved Windows Chromium evidence is now available for the Session,
+IndexedDB restore, and remediated Service Worker fixtures, but closure is not
+authorized because the remediation must be committed and the native platform
+matrix remains incomplete.
 
 Phase 14 remains prohibited.
 
@@ -299,11 +301,36 @@ its Desktop-focused result was 2/2. Because the remediation source is not yet
 committed and the cross-platform matrix is incomplete, this bundle is not
 final acceptance evidence.
 
-The subsequent full Windows regression run reported 168 tests: 166 passed, 2
-failed, and 0 skipped. The failing cases were the browser Interaction popup
-trace assertion and the Service Worker policy assertion. They require a clean
-committed rerun and separate triage; this runner remediation does not classify
-them as product failures.
+The subsequent pre-remediation full Windows regression run reported 168 tests:
+166 passed, 2 failed, and 0 skipped. The failing cases were the browser
+Interaction popup trace assertion and the Service Worker policy assertion.
+After the Service Worker fixture remediation, the full Windows regression run
+reported 169 tests: 169 passed, 0 failed, and 0 skipped. The remediation tree
+still requires a clean committed rerun for final acceptance promotion.
+
+## AC-P13-012 final remediation — 2026-08-11
+
+The clean Windows `bdaac54` bundle used the repository-owned Playwright
+Chromium 1.56.1 / revision 1194 / build 141.0.7390.37 and reproduced the
+Service Worker assertion failure with a valid browser. The `block` Context
+emitted `Service Worker registration blocked by Playwright`; it had no
+registration or controller and no worker-controlled probe reached the fixture
+server. The `allow` Context registered and activated the fixture worker and
+returned its intercepted probe response.
+
+The failure was `TEST_INFRA_FAILURE` in the fixture harness: it incorrectly
+assumed that Playwright's blocked `register()` promise rejects, although the
+pinned runtime leaves it pending while exposing the browser warning. The
+fixture now observes that real browser signal and asserts the network effect.
+The evidence runner's unrelated generic-`network` classification false
+positive was removed and covered by a regression test.
+
+The post-remediation focused Browser Runtime suite passed 10/10 and the unit
+suite passed 64/64. The refreshed Windows diagnostic bundle recorded in
+`HANDOFF.md` validated with sourceBaselineMatch true, Browser Runtime 10/10,
+Desktop 2/2, and zero unauthorized secret-scan occurrences. The source tree is
+intentionally unstaged, so the bundle must be rerun after the user creates the
+new clean common baseline.
 
 ## Acceptance reconciliation
 
@@ -316,8 +343,11 @@ blockers:
   AC-P13-022.
 - `NOT_APPLICABLE`: AC-P13-005; the current product has no archive runtime
   and no trusted renderer loads archive HTML/JavaScript.
-- `BLOCKED`: AC-P13-002, AC-P13-008, AC-P13-012, and AC-P13-016 for the
-  environment evidence reasons above.
+- The current Windows focused execution reports `PASS` for AC-P13-002,
+  AC-P13-008, and AC-P13-012. Those results are not promoted into final
+  acceptance from an unstaged source tree.
+- `BLOCKED`: AC-P13-016 because it is aggregate-only and requires the
+  validated Windows 11, Linux, and macOS matrix.
 - `FAIL`: none identified. The earlier diagnostic matrix inconsistency was
   corrected in the runner; the authoritative acceptance matrix remains
   `BLOCKED` for the environment/native-evidence reasons above.
@@ -336,8 +366,8 @@ rewrite the historical Phase 12 implementation report.
 
 `PHASE_14_BLOCKED`
 
-Phase 14 is not authorized. The four mandatory Phase 13 blockers remain open,
-and no OTP or Element Picker production work was added.
+Phase 14 is not authorized. The aggregate native matrix gate remains open, and
+no OTP or Element Picker production work was added.
 
 ## Exact next action
 

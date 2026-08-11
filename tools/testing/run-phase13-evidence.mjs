@@ -553,7 +553,7 @@ function environmentFailure(command, runtime, concerns = {}) {
   if (concerns.browser === true && runtime.browser.valid === false) return true;
   if (concerns.electron === true && runtime.electron.executablePresent === false) return true;
   const text = commandFailureText(command);
-  return /browser_installation|browser_launch|listen eperm|enoent|dns|enotfound|fetch failed|network|sandbox/.test(text);
+  return /browser[_ ]installation|browser[_ ]launch|listen eperm|enoent|dns|enotfound|eai_again|econnrefused|fetch failed|sandbox/.test(text);
 }
 
 export function classifyDesktopStatus(command, runtime) {
@@ -573,7 +573,7 @@ function subtestStatus(command, predicate) {
   return command?.testResult?.subtests?.find((item) => predicate(item.name))?.status ?? null;
 }
 
-function browserAcceptanceStatus(id, commands, runtime, sourceAcceptanceEligible) {
+export function classifyBrowserAcceptanceStatus(id, commands, runtime, sourceAcceptanceEligible) {
   const verification = commands.find((item) => item.id === "browser-verify");
   const focused = commands.find((item) => item.id === "browser-runtime-focused");
   const relevant = id === "AC-P13-012"
@@ -830,7 +830,7 @@ async function runEvidence(options) {
     electron.launchable = electron.versionMatches;
     if (!electron.launchable && electron.reason === null) electron.reason = electronVersion.exitCode === 0 ? "ELECTRON_VERSION_MISMATCH" : "ELECTRON_LAUNCH_FAILED";
   }
-  const browserStatuses = Object.fromEntries(browserAcceptanceIds.map((id) => [id, browserAcceptanceStatus(id, commands, { browser, electron }, host.sourceAcceptanceEligible)]));
+  const browserStatuses = Object.fromEntries(browserAcceptanceIds.map((id) => [id, classifyBrowserAcceptanceStatus(id, commands, { browser, electron }, host.sourceAcceptanceEligible)]));
   const focusedBrowserPass = browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS");
   const focusedDesktopPass = desktopFocused.exitCode === 0 && desktopFocused.testResult?.failed === 0;
   const toolchainPass = host.nodeVersionSupported && host.npmVersionSupported && host.native && expected.playwrightVersionMatches && host.sourceAcceptanceEligible;

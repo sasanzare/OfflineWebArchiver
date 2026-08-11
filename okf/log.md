@@ -62,3 +62,11 @@ bundle. It is not a copy of Git history or a task diary.
   tests, 166 passed, 2 failed, and 0 skipped. The two browser assertion
   failures remain separate clean-HEAD triage items and do not change the
   runner incident classification.
+- Investigated and remediated AC-P13-012 on the verified Windows Chromium:
+  Playwright block mode produced no registration/controller and no
+  worker-controlled fetch while the fixture incorrectly waited for rejected
+  registration. The fixture now verifies the real warning/block behavior and
+  explicit allow interception; focused Browser Runtime passed 10/10 and unit
+  tests passed 64/64. The runner's generic `network` classification false
+  positive was corrected with regression coverage; clean common-HEAD matrix
+  evidence is still required.

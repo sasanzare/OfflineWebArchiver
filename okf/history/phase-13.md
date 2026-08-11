@@ -58,3 +58,13 @@ platform's Node installation, uses explicit argument arrays without a shell,
 and records synchronous spawn errors. Planner regression tests passed 63/63;
 actual Windows reruns reached Chromium and Electron, while the source-change
 diagnostic remained non-promotable and Phase 14 remained blocked.
+
+The follow-up AC-P13-012 investigation on the same approved Windows Chromium
+found a fixture-harness mismatch: Playwright block mode warns and leaves
+`register()` pending instead of rejecting, while the production context still
+has no Service Worker registration, controller, or worker-controlled fetch. The
+fixture now observes that browser-level block and verifies explicit allow
+activation/interception. The focused Browser Runtime suite passed 10/10 and
+the unit suite passed 64/64. A generic `network` stdout token also caused a
+runner environment-classification false positive; its specific-signature fix
+has regression coverage. Native matrix reconciliation remains pending.
