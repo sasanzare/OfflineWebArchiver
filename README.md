@@ -2,6 +2,12 @@
 
 Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest fully gated baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations and the Product Phase 11 Secret Store foundation are present. Product Phase 12 adds the Manual Login and Secure Session Manager. Product Phase 13 adds architecture/security contracts and hardening, but its real pinned-Chromium and native-platform evidence remains blocked in the current environment.
 
+The current product release targets **Windows 11 x64**. Windows 10 is a
+legacy/compatibility target and is non-blocking for the current release. Linux
+and macOS remain future-version targets; the portable architecture and Core
+abstractions are retained for that future work, but those platforms are not
+current Phase 13 acceptance gates.
+
 Current versions are application/workspaces `0.8.0`, transport contract `1.9.0`, Project format `1.1.0`, Project schema `9`, SQLite schema `9`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Session metadata/storage-state/affinity `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store and Session surfaces are metadata-only at transport boundaries and use privileged protected storage. Without Phase 9 it does not discover or enqueue links. The product does not implement guided OTP automation, proxy management, production asset downloading, HTML rewrite, API capture, a full replay engine, an archive runtime, or a full crawl/archive.
 
 ## Safety and authorization
@@ -128,4 +134,4 @@ for the ownership boundaries, source/provenance workflow, CI behavior, and
 review checklist. Hosted CI execution and branch protection are not claimed as
 verified from the local repository.
 
-The current unfinished gates are the real pinned-Chromium validation for **Product Phase 12 — Manual Login and Secure Session Lifecycle**, the Phase 13 Service Worker/browser evidence, and the native platform matrix. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist.
+The current unfinished gates are the real pinned-Chromium validation for **Product Phase 12 — Manual Login and Secure Session Lifecycle**, the Phase 13 Service Worker/browser evidence, and clean committed Windows 11 x64 native evidence. Linux and macOS native validation remains future-version work and is non-blocking for the current release. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist.

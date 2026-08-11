@@ -7,8 +7,29 @@ PARTIAL
 The requested architecture and security hardening is implemented and
 deterministic validation passes. The approved Windows host now provides real
 pinned-Chromium Session, IndexedDB restore, and Service Worker focused evidence;
-Phase 13 remains open because the remediation tree is not yet the clean common
-commit and the required native platform matrix is incomplete.
+Phase 13 remains open because the remediation tree is not yet the clean
+committed Windows 11 x64 release baseline. Linux and macOS are deferred
+future-version targets and are not current native acceptance blockers.
+
+## Current release platform reconciliation — 2026-08-11
+
+The current product release is Windows-only with Windows 11 x64 as its
+mandatory native target. Windows 10 is legacy/compatibility and non-blocking.
+Linux and macOS remain future-version roadmap targets; cross-platform
+abstractions and portable data rules are retained, but their native rows are
+not part of the current Phase 13 gate.
+
+The latest pre-reconciliation bundle
+`.artifacts/phase13-evidence/2026-08-11T13-20-09-585Z-fff15859338a` was
+structurally valid, but its `AC-P13-016` result was `PRODUCT_FAIL` because the
+full regression command contained one Interaction assertion failure and the
+runner still described the native matrix as incomplete. The obsolete
+multi-platform requirement was the reconciliation contract requiring passing
+Linux and macOS rows in addition to Windows 11; it was not a product assertion
+failure in the Windows platform policy. The updated runner now reads the
+versioned platform-support contract, requires only Windows 11 x64 for the
+current release, and records Windows 10/Linux/macOS as optional or deferred
+rows without fabricating a pass.
 
 The follow-up native-evidence work introduced at Git HEAD
 `5881707927131085032707a9e69b27ccb73bd750` and committed into the current
@@ -390,9 +411,9 @@ The [acceptance matrix](../product/ACCEPTANCE_MATRIX.md) uses only `PASS`,
 - `PASS`: AC-P13-001, AC-P13-003, AC-P13-004, AC-P13-006, AC-P13-007,
   AC-P13-009, AC-P13-010, AC-P13-011, AC-P13-013, AC-P13-014, AC-P13-015,
   AC-P13-017, AC-P13-018, AC-P13-019, AC-P13-020, AC-P13-021, and AC-P13-022.
-- `BLOCKED`: AC-P13-016 native platform validation; the current Windows
-  diagnostic also remains non-promotable until the changed source is committed
-  and the required matrix is reconciled.
+- `BLOCKED`: AC-P13-016 current-release Windows 11 x64 native validation; the
+  current Windows diagnostic remains non-promotable until the changed source
+  is committed and the Windows-only contract is rerun.
 - The current Windows focused execution reports `PASS` for AC-P13-002,
   AC-P13-008, and AC-P13-012; the authoritative acceptance table is not
   promoted by a dirty-tree diagnostic bundle.
@@ -419,8 +440,10 @@ the Phase 13 validation and platform-support concepts.
 - The approved pinned-Chromium fixture runs on the verified Windows host; the
   post-remediation working-tree bundle is diagnostic until a clean commit is
   available.
-- Linux and macOS native platform support evidence has not been executed, and
-  no cross-platform support claim is promoted.
+- Windows 10 remains legacy/compatibility and non-blocking. Linux and macOS
+  native platform support evidence has not been executed because those
+  platforms are deferred future-version work; no future-platform support claim
+  is promoted.
 - No full replay engine, archive runtime, downloader, proxy routing, Worker Pool,
   HTML rewrite, or API capture is included.
 - `sessionStorage` persistence remains unsupported.
@@ -451,8 +474,8 @@ reusable lessons discovered during this task were retained.
 
 ## Exact Next Step
 
-Review and commit the unstaged remediation, regenerate the committed baseline,
-then rerun on the clean common HEAD:
+Review and commit the unstaged reconciliation, regenerate the committed
+baseline, then rerun on the clean Windows 11 x64 HEAD:
 
 ```text
 node tools/testing/run-tests.mjs package:browser-runtime
@@ -462,6 +485,6 @@ npm test
 ```
 
 Inspect the real Session, IndexedDB restore, Service Worker, render,
-interaction, CLI, and Electron evidence, then run the required Linux/macOS
-rows and reconcile only same-HEAD bundles. Do not begin Phase 14 while
-AC-P13-016 remains aggregate-blocked.
+interaction, CLI, and Electron evidence, validate the Windows bundle, and
+reconcile it against the versioned Windows-only contract. Do not begin Phase
+14 until AC-P13-016 is `PASS` on clean committed Windows 11 evidence.

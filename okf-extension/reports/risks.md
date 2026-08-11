@@ -3,8 +3,8 @@
 This extension report summarizes R-090 through R-107: browser update and
 provisioning, serialization, crash loops, Context isolation, stability, DNS and
 redirect authorization, artifact and fencing boundaries, screenshot privacy,
-interaction safety/budgets/consent/dialogs, Trace privacy, and unverified Linux
-and macOS behavior.
+interaction safety/budgets/consent/dialogs, Trace privacy, and deferred future
+Linux/macOS behavior.
 
 Phase 10 risks R-102 through R-107 remain watch/open and are indexed against
 the partial implementation. The missing Phase 9 discovery gate is deliberately

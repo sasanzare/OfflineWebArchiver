@@ -10,8 +10,10 @@ should be counted when determining official OKF conformance.
 
 The extension currently indexes Product Phase 10 as `PARTIAL`, Product Phase 11
 as `PARTIAL`, Product Phase 12 as `PARTIAL`, and Product Phase 13 as `PARTIAL`:
-the hardening contracts are present, while real pinned-Chromium and native
-platform evidence remain explicitly blocked. The manifest remains activated at
+the hardening contracts and Windows Chromium evidence are present, while clean
+committed Windows 11 x64 promotion remains blocked. Windows 10 is
+legacy/compatibility and Linux/macOS native evidence is deferred to future
+versions; neither is a current Phase 13 gate. The manifest remains activated at
 Phase 8; later phases are recorded for traceability without advancing the
 activated release.
 

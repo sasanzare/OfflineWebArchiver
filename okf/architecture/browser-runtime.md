@@ -29,6 +29,11 @@ owa:
 
 The owned runtime uses Playwright 1.56.1 with Chromium 141.0.7390.37, revision 1194. The runtime has a versioned manifest model, Context profile 1, one active Job, no system-browser fallback, no normal-launch download, and an explicit Chromium Sandbox.
 
-Each attempt receives a fresh deterministic Context and Page. Windows real-browser and process-kill evidence is recorded as verified; Linux and macOS packaging remains planned. Browser lifecycle is consumed by the [Rendering](../workflow/rendering.md) workflow and is started by the [Application Service](application-service.md) only for an eligible queued Job.
+Each attempt receives a fresh deterministic Context and Page. Windows 11 x64
+is the current native release target; Windows 10 is legacy/compatibility, and
+Linux and macOS packaging remain future-version work. Browser lifecycle is
+consumed by the [Rendering](../workflow/rendering.md) workflow and is started
+by the [Application Service](application-service.md) only for an eligible
+queued Job.
 
 The renderer does not receive a raw Browser privilege from the application boundary. The partial [Browser-Native Human-Paced Interaction](browser-interaction.md) component is the only approved-plan input boundary; it reuses the fixed Context and keeps raw handles inside Browser Runtime. Product Phase 12 adds a separate headed manual Authentication Context and a fresh headless restored Context. Both use the approved Profile, sandbox, HTTPS validation, disabled downloads, and explicit document-origin authorization; only the authentication Context may remain visible for user-driven provider redirects. Storage State capture/restoration stays behind the Browser Runtime port and Phase 11 Secret Store boundary. Network authorization and result persistence remain governed by the [Contracts](contracts.md), [Queue](../workflow/queue.md), and [Checkpoint Recovery](../recovery/checkpoint-recovery.md) Concepts.

@@ -1,7 +1,7 @@
 ---
 type: Test Strategy
 title: Phase 13 Validation
-description: Records Phase 13 focused evidence, closure remediation, blocked browser gates, and closure requirements.
+description: Records Phase 13 focused evidence, Windows-only current-release closure, deferred platform scope, and closure requirements.
 tags: [testing, security, browser, acceptance]
 status: draft
 owa:
@@ -19,17 +19,20 @@ Focused pure, contract, scope, persistence, and authentication-policy suites
 provide local evidence for the hardening changes. On the verified Windows host,
 the registered real Chromium Session and IndexedDB fixtures pass, and the
 Service Worker fixture now passes explicit `block` and `allow` registration and
-fetch-routing checks. Native platform validation remains blocked. The current
-working-tree evidence is diagnostic until the remediation is committed and the
-required native matrix is reconciled.
+fetch-routing checks. The current release gate is Windows 11 x64; its working-
+tree evidence is diagnostic until the reconciliation is committed and the
+Windows evidence is rerun from a clean source baseline. Windows 10 is
+legacy/non-blocking, while Linux and macOS are deferred future-version work.
 
 Phase 13 closure requires rerunning those registered browser fixtures with the
-pinned runtime, executing the claimed platform matrix, and then rerunning the
-full repository gates. The canonical runner, bundle schema, status model,
-platform targets, and reconciliation commands are recorded in
+pinned runtime on the current Windows 11 target, then rerunning the full
+repository gates. The canonical runner, bundle schema, status model, versioned
+platform-support contract, and reconciliation commands are recorded in
 `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md` and implemented by
 `tools/testing/run-phase13-evidence.mjs`. The exact execution and acceptance
 reconciliation are also recorded in `docs/project/PHASE_13_CLOSURE_REPORT.md`.
+Deferred Linux/macOS rows remain available for later support decisions but are
+not required by the current reconciliation.
 Fake-runtime evidence must remain labeled separately.
 
 Final native acceptance must use the clean committed source baseline declared
@@ -44,9 +47,8 @@ include Chromium in the Desktop environment concerns. Regression tests now
 separate `ENVIRONMENT_BLOCKED` for missing required runtimes from
 `PRODUCT_FAIL` for a valid runtime with a product assertion failure. The
 corrected diagnostic bundle remains non-promotable while the remediation tree
-is dirty and the native matrix is incomplete. An unassessable command is
-classified separately as `TEST_INFRA_FAILURE` and is preserved during matrix
-aggregation.
+is dirty. An unassessable command is classified separately as
+`TEST_INFRA_FAILURE` and is preserved during current-release aggregation.
 
 ## Windows evidence-runner compatibility
 
@@ -64,15 +66,15 @@ commands, spaces in paths and arguments, and environment preservation. The
 unit suite passed 63/63. Actual Windows reruns of both runner entry points
 completed without `spawn EINVAL`; the diagnostic bundle validated and recorded
 official Playwright Chromium and Electron. It remains non-promotable because
-the remediation source is uncommitted, the Service Worker focused test had one
-assertion failure, and the required native matrix is incomplete.
+the reconciliation source is uncommitted and the current Windows 11 release
+evidence must be rerun.
 
 The same Windows diagnostic environment ran the pre-remediation full repository
 suite with 168 tests: 166 passed, 2 failed, and 0 skipped. The failures were
 the browser Interaction popup trace assertion and the Service Worker policy
 assertion. After the Service Worker fixture remediation, the full repository
 suite passed 169/169 with 0 skipped; the dirty evidence bundle remains
-non-promotable until a clean commit and the native matrix are available.
+non-promotable until a clean commit and a fresh Windows 11 run are available.
 
 ## AC-P13-012 Service Worker remediation
 

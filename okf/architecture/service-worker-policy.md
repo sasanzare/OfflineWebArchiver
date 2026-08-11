@@ -23,5 +23,7 @@ creation and is not inferred from a target page.
 
 Pure contract and profile compatibility evidence exists. The approved Windows
 Chromium fixture now verifies real block/allow registration behavior, activation,
-controller acquisition, and fetch routing. Cross-platform matrix evidence and
-clean-committed-source promotion remain pending.
+controller acquisition, and fetch routing. The current release still requires
+clean committed Windows 11 x64 promotion. Linux and macOS native evidence is
+deferred future-version work and is not a current Service Worker acceptance
+blocker.

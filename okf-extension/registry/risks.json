@@ -102,7 +102,7 @@
     { "id": "R-098", "name": "Orphan Render artifact before database commit", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-099", "name": "Stale Render owner commit", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-100", "name": "Screenshot or evidence privacy retention", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
-    { "id": "R-101", "name": "Unverified Linux and macOS Browser behavior", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-101", "name": "Unverified deferred Linux and macOS Browser behavior", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-108", "name": "Secret value leakage across artifacts and boundaries", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-109", "name": "Secret backend or KDF portability", "status": "UNKNOWN", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-110", "name": "Portable Vault integrity and crash recovery", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }

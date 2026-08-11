@@ -67,6 +67,16 @@ workflow is authoritative in the
 | 24 | Authorized Target-Site Acceptance | Validate the approximately 600-page target under owner-approved scope, rate, account, proxy, window, and retention | P1–P23 as applicable, OD-001/002/006/016/017/022/025 | Signed measurement snapshot, public/authenticated/recovery/proxy/offline Runs, evidence package, exceptions/sign-off | AC-VALIDATE-001 and TS-001..020 pass; >=95% audited coverage; pending classification zero; no scope/rate/leakage event | Current legal basis, direct-user login/OTP, anti-evasion, stop conditions, PII handling, evidence redaction | Target E2E/manual, recovery, network/rate, coverage audit, offline/link/API, security/leakage |
 | 25 | Cross-Platform Release Readiness | Prove transfer/release integrity and close final release gates across all approved platforms | P21–P24 | Cross-platform Project matrix, full regression, release manifest/SBOM/hashes, migration/upgrade proof, final limitations and sign-off | AC-CROSSPLATFORM-001, AC-PORT-002, AC-TEST-001 and all release-critical criteria pass; DoD signed | Supply chain/signing, secret scans, platform sandbox/permissions, no unsupported claim | Full regression, cross-product platform transfer, clean package E2E, upgrade/migration, security, reproducibility |
 
+## Release-scope lifecycle
+
+The current product release line is Windows 11 x64. Phase 21 is the current
+Windows packaging path; Windows 10 remains a legacy/compatibility concern and
+does not become a mandatory release target by implication. Phase 22 (Linux)
+and Phase 23 (macOS) preserve future native packaging and support obligations,
+but their gates are deferred and non-blocking for the current release. Phase 25
+may reactivate cross-platform transfer and release gates only after those
+future platform decisions and native evidence are approved.
+
 ## OKF responsibilities by product phase
 
 Every row requires an OKF impact review, affected domain/evidence/relationship

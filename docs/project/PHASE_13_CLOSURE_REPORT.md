@@ -7,8 +7,23 @@
 The Phase 13 implementation contracts and deterministic regressions remain
 validated. Approved Windows Chromium evidence is now available for the Session,
 IndexedDB restore, and remediated Service Worker fixtures, but closure is not
-authorized because the remediation must be committed and the native platform
-matrix remains incomplete.
+authorized because the reconciliation changes must be committed and the
+Windows 11 x64 release evidence must be rerun from that clean baseline.
+
+## Current release platform decision — 2026-08-11
+
+The current product version is Windows-only and targets Windows 11 x64.
+Windows 10 is legacy/compatibility, best-effort, and non-blocking. Linux and
+macOS are deferred future-version targets; their native rows are preserved for
+roadmap validation but are not mandatory Phase 13 closure inputs.
+
+The previous AC-P13-016 definition required a Windows 11, Windows 10, Linux,
+macOS, and architecture matrix. That multi-platform denominator is obsolete
+for the current release. The updated definition requires the current Windows
+11 native/Desktop/browser evidence, clean committed source, matching source
+fingerprint and acceptance-definition hash, real Chromium and Electron,
+focused and full gates, and secret-scan success. It does not weaken any native
+runtime or security requirement.
 
 Phase 14 remains prohibited.
 
@@ -346,8 +361,10 @@ blockers:
 - The current Windows focused execution reports `PASS` for AC-P13-002,
   AC-P13-008, and AC-P13-012. Those results are not promoted into final
   acceptance from an unstaged source tree.
-- `BLOCKED`: AC-P13-016 because it is aggregate-only and requires the
-  validated Windows 11, Linux, and macOS matrix.
+- `BLOCKED`: AC-P13-016 because the current Windows 11 x64 release evidence
+  has not yet been rerun from the clean committed post-reconciliation source.
+  Windows 10 is legacy/non-blocking and Linux/macOS are deferred; neither is
+  required for current-release closure.
 - `FAIL`: none identified. The earlier diagnostic matrix inconsistency was
   corrected in the runner; the authoritative acceptance matrix remains
   `BLOCKED` for the environment/native-evidence reasons above.
@@ -366,8 +383,8 @@ rewrite the historical Phase 12 implementation report.
 
 `PHASE_14_BLOCKED`
 
-Phase 14 is not authorized. The aggregate native matrix gate remains open, and
-no OTP or Element Picker production work was added.
+Phase 14 is not authorized. The current Windows 11 x64 native gate remains
+open, and no OTP or Element Picker production work was added.
 
 ## Exact next action
 
@@ -381,7 +398,7 @@ node tools/testing/run-tests.mjs package:browser-runtime
 npm test
 ```
 
-Then execute the documented platform matrix, inspect the real Session,
-IndexedDB, Service Worker, and native results, and update only the affected
-acceptance rows. Do not begin Phase 14 while any mandatory Phase 13 row is
-blocked.
+Then execute the documented Windows 11 x64 release evidence, inspect the real
+Session, IndexedDB, Service Worker, and native results, validate the bundle,
+and reconcile it against the versioned Windows-only contract. Do not begin
+Phase 14 while any mandatory current-release Phase 13 row is blocked.

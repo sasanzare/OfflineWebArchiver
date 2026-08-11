@@ -1,7 +1,7 @@
 ---
 type: Phase Record
 title: Product Phase 13 - Architecture and Security Hardening
-description: Records the partial post-Phase-12 hardening implementation, closure remediation, and blocked browser/platform evidence.
+description: Records the partial post-Phase-12 hardening implementation, Windows-only current-release closure, and deferred future-platform evidence.
 tags: [history, phase-record, architecture, security, portability]
 status: draft
 sources:
@@ -19,6 +19,20 @@ owa:
 ---
 
 # Product Phase 13 - Architecture and Security Hardening
+
+## Current release scope reconciliation — 2026-08-11
+
+The current product version is Windows-only and targets Windows 11 x64.
+Windows 10 is legacy/compatibility and non-blocking. Linux and macOS are
+future-version/deferred targets; their native validation obligations remain
+preserved for later support decisions but are not mandatory Phase 13 rows.
+
+The previous native reconciliation denominator required Windows 11, Windows
+10, Linux, and macOS. It was replaced by the versioned platform-support
+contract in `tools/testing/phase13-evidence-baseline.json`, whose only current
+required target is `windows-11-x64`. The native runtime, real Chromium,
+Electron, clean-source, fingerprint, acceptance-hash, full-regression, and
+secret-scan requirements remain unchanged.
 
 Product Phase 13 closes the Phase 12 all-request Authentication Context
 allowlist gap and establishes versioned contracts for Crawl Run state, Network

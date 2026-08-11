@@ -3,9 +3,11 @@
 ## Scope and status
 
 This document defines the repository-owned execution path for the remaining
-Phase 13 evidence. It does not add product functionality and does not change
-the Phase 13 acceptance criteria. Phase 13 remains `PARTIAL` until real
-approved Chromium and the required native matrix have been executed.
+Phase 13 evidence. It does not add product functionality. The current release
+acceptance target is Windows 11 x64; Windows 10 is legacy/compatibility and
+Linux/macOS are future-version targets. Phase 13 remains `PARTIAL` until the
+real approved Chromium and native Windows 11 evidence are executed from a
+clean committed source baseline.
 
 The canonical runner is
 [`tools/testing/run-phase13-evidence.mjs`](../../tools/testing/run-phase13-evidence.mjs),
@@ -32,10 +34,12 @@ by [`tools/testing/phase13-evidence-baseline.json`](../../tools/testing/phase13-
 
 The source baseline manifest records the pre-commit preparation state, the
 canonical SHA-256 fingerprint, the package-lock, runner, and acceptance
-definition hashes, and the explicit immutable input file list. Its manifest
-file is intentionally excluded from its own fingerprint to avoid a circular
-hash. The final native run must use the commit created after this preparation;
-the manifest does not claim a commit that has not yet been created.
+definition hashes, the explicit immutable input file list, and a versioned
+platform-support contract. Its manifest file is intentionally excluded from
+its own fingerprint to avoid a circular hash. Regenerate it with
+`npm run test:phase13:evidence:baseline`; do not hand-edit hashes. The final
+native run must use the commit created after this preparation; the manifest
+does not claim a commit that has not yet been created.
 
 Chromium must be under `.runtime/browsers`, have a manifest and SHA-256
 matching the executable, remain inside the repository-owned resource root, and
@@ -162,23 +166,23 @@ occurrences. Validate a bundle before transferring it:
 node tools/testing/run-phase13-evidence.mjs validate .artifacts/phase13-evidence/<bundle>
 ```
 
-When multiple hosts are available, reconcile only validated bundles:
+When the current Windows release bundle is available, reconcile only its
+validated bundle:
 
 ```text
 node tools/testing/run-phase13-evidence.mjs reconcile \
   .artifacts/phase13-evidence/<windows-11-bundle> \
-  .artifacts/phase13-evidence/<linux-bundle> \
-  .artifacts/phase13-evidence/<macos-bundle> \
   --output .artifacts/phase13-evidence/reconciliation.json
 ```
 
 Reconciliation rejects invalid bundles, duplicate target rows, different Git
 HEADs, differing source fingerprints, dirty/source-mismatched execution, and
-different acceptance-definition hashes. It requires a passing `windows-11-x64` row and at least one passing
-`linux-<architecture>` and `macos-<architecture>` row. Windows 10 is retained
-as `windows-10-x64` legacy/optional evidence under the current platform policy;
-it is not allowed to masquerade as Windows 11 or to block the primary Windows
-11 classification. Reconciliation never mutates
+different acceptance-definition hashes. It reads the versioned platform-support
+contract from the evidence baseline and currently requires only a passing
+`windows-11-x64` row with `AC-P13-016: PASS`. Windows 10 is retained as
+`windows-10-x64` legacy/compatibility evidence; Linux and macOS rows may be
+retained for future validation, but none is a mandatory current-release row
+and none can block Windows 11 closure. Reconciliation never mutates
 `docs/product/ACCEPTANCE_MATRIX.md` or OKF registries.
 
 ## Acceptance-to-evidence mapping
@@ -188,29 +192,33 @@ it is not allowed to masquerade as Windows 11 or to block the primary Windows
 | AC-P13-002 | Real pinned Chromium authentication fixture, including launch, BrowserContext, fixture navigation, and clean close | `tests/browser/session.test.ts` and the browser-focused command record |
 | AC-P13-008 | Cookie, localStorage, IndexedDB, close, fresh restored context, protected fixture, and unsupported sessionStorage behavior | `tests/browser/session.test.ts` and `runtime.json` |
 | AC-P13-012 | Real Chromium Service Worker fixture in `block` and explicit `allow` modes | `tests/browser/service-worker-policy.test.ts` and the browser-focused command record |
-| AC-P13-016 | Passing browser, Secret Store/filesystem/SQLite quality gates, and Electron smoke on the required native rows | `matrix-entry.json`, per-host bundles, and validated reconciliation |
+| AC-P13-016 | Passing browser, Secret Store/filesystem/SQLite quality gates, and Electron smoke on the current Windows 11 x64 native release target | `matrix-entry.json`, the Windows bundle, and validated reconciliation |
 | AC-P12-001 / 006 / 015 | Same real headed and fresh-context Session evidence, with documentation retaining the limitation until it passes | `tests/browser/session.test.ts`, `acceptance-results.json`, and this matrix |
 
 ## Native platform matrix
 
-The authoritative policy makes Windows 11 x64 the primary target, Windows 10
-legacy/optional, and Linux/macOS compatibility targets that require explicit
-evidence. A generic hosted Windows Server image must be recorded as its actual
-Windows version and cannot be labeled Windows 11. The runner derives Windows
-10/11 from the actual build, records Linux distribution metadata when
-available, and records macOS product version through `sw_vers`.
+The authoritative policy makes Windows 11 x64 the only mandatory current
+release target. Windows 10 is legacy/compatibility and non-blocking; Linux and
+macOS are future-version/deferred targets. A generic hosted Windows Server
+image must be recorded as its actual Windows version and cannot be labeled
+Windows 11. On Windows, the runner uses authoritative registry metadata
+(`ProductName` and current build values) to distinguish Windows 10 from
+Windows 11, while retaining the kernel release as diagnostic metadata. Linux
+distribution metadata and macOS product version remain available for future
+diagnostic validation.
 
 Run the same command without platform-specific test logic on:
 
 | Target | Required host | Current result |
 |---|---|---|
-| `windows-11-x64` | Approved Windows 11 x64 physical host, VM, or self-hosted runner | 2026-08-11 diagnostic run reached Chromium/Electron and the remediated Browser Runtime passed 10/10; not promotable because the remediation tree is not the committed baseline |
-| `windows-10-x64` | Approved Windows 10 x64 host, legacy/optional | Pending external execution |
-| `linux-<architecture>` | Approved Linux host; distribution is recorded and not invented by the runner | Pending external execution |
-| `macos-<architecture>` | Approved macOS host; architecture is recorded from the host | Current macOS arm64 row is blocked by missing Chromium/Electron |
+| `windows-11-x64` | Approved Windows 11 x64 physical host, VM, or self-hosted runner | Current mandatory release target; 2026-08-11 diagnostic run reached Chromium/Electron and the remediated Browser Runtime passed 10/10, but the source tree was not clean/committed |
+| `windows-10-x64` | Approved Windows 10 x64 host, legacy/compatibility | Optional diagnostic evidence; never a Windows 11 substitute or current-release blocker |
+| `linux-<architecture>` | Approved Linux host; distribution is recorded and not invented by the runner | Future-version/deferred; non-blocking for the current release |
+| `macos-<architecture>` | Approved macOS host; architecture is recorded from the host | Future-version/deferred; non-blocking for the current release |
 
-The presence of the current macOS host proves neither its Browser nor its
-Electron acceptance until the repository-owned runtimes launch successfully.
+The presence of a future-platform host proves neither its Browser nor its
+Electron acceptance until the repository-owned runtimes launch successfully,
+but an absent future-platform row does not block the current Windows release.
 
 ## AC-P13-012 Service Worker final remediation — 2026-08-11
 

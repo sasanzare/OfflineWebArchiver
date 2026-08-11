@@ -80,7 +80,7 @@
     { "id": "OKF-REL-077", "name": "Replay contract depends on the Browser Runtime boundary", "status": "PARTIAL", "sourceId": "OKF-NODE-P13-REPLAY", "targetId": "OKF-NODE-P08-BROWSER-RENDER", "type": "depends-on" },
     { "id": "OKF-REL-078", "name": "Service Worker policy is constrained by replay and offline decisions", "status": "PARTIAL", "sourceId": "OKF-NODE-P13-SERVICE-WORKER", "targetId": "OKF-NODE-P13-REPLAY", "type": "depends-on" },
     { "id": "OKF-REL-079", "name": "Canonical path safety is evidenced by persistence tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P13-PATH", "targetId": "OKF-EV-P13-PERSISTENCE", "type": "evidenced-by" },
-    { "id": "OKF-REL-080", "name": "Phase 13 closure remains blocked by incomplete native matrix evidence", "status": "BLOCKED", "sourceId": "OKF-NODE-P13-GATE", "targetId": "OKF-EV-P13-BROWSER", "type": "blocks" },
+    { "id": "OKF-REL-080", "name": "Phase 13 closure remains blocked by unpromoted Windows 11 x64 evidence", "status": "BLOCKED", "sourceId": "OKF-NODE-P13-GATE", "targetId": "OKF-EV-P13-BROWSER", "type": "blocks" },
     { "id": "OKF-REL-081", "name": "Phase 13 record is evidenced by the implementation report", "status": "PARTIAL", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-DOCS", "type": "evidenced-by" },
     { "id": "OKF-REL-082", "name": "Phase 13 closure gate is evidenced by the remediation report", "status": "BLOCKED", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-CLOSURE", "type": "evidenced-by" },
     { "id": "OKF-REL-083", "name": "Phase 13 native evidence and failure classification are executed and reconciled by the canonical runner", "status": "VERIFIED", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-RUNNER", "type": "evidenced-by" },

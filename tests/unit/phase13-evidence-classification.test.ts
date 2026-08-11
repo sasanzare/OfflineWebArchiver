@@ -29,9 +29,10 @@ async function load<T>(relativePath: string): Promise<T> {
   return await import(pathToFileURL(path.resolve(relativePath)).href) as T;
 }
 
-const { classifyDesktopStatus, classifyBrowserAcceptanceStatus } = await load<{
+const { classifyDesktopStatus, classifyBrowserAcceptanceStatus, classifyWindowsRelease } = await load<{
   classifyDesktopStatus(command: EvidenceCommand, runtime: RuntimeInspection): string;
   classifyBrowserAcceptanceStatus(id: string, commands: BrowserCommand[], runtime: RuntimeInspection, sourceAcceptanceEligible: boolean): { status: string; reason: string };
+  classifyWindowsRelease(metadata?: { productName?: string; currentBuildNumber?: string }, kernelRelease?: string): string;
 }>("tools/testing/run-phase13-evidence.mjs");
 
 test("missing required native runtime is classified as environment blocked", () => {
@@ -83,4 +84,10 @@ test("browser assertion output mentioning network is not an environment blocker"
     true,
   );
   assert.equal(result.status, "PRODUCT_FAIL");
+});
+
+test("Windows release classification uses authoritative product metadata", () => {
+  assert.equal(classifyWindowsRelease({ productName: "Windows 11 Pro", currentBuildNumber: "26200" }, "10.0.26200"), "windows-11");
+  assert.equal(classifyWindowsRelease({ productName: "Windows 10 Home", currentBuildNumber: "26200" }, "10.0.26200"), "windows-11");
+  assert.equal(classifyWindowsRelease({ productName: "Windows 10 Pro", currentBuildNumber: "19045" }, "10.0.19045"), "windows-10");
 });

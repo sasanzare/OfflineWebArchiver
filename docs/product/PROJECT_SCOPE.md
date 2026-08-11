@@ -18,6 +18,15 @@ verification details are authoritative in the
 [Acceptance Matrix](ACCEPTANCE_MATRIX.md). Unknown business or legal facts remain
 in the [Open Decision Register](../project/OPEN_DECISIONS.md).
 
+## Current release platform scope
+
+The current product release is Windows-only and targets **Windows 11 x64**.
+Windows 10 is a legacy/compatibility target and is non-blocking unless a later
+release decision makes it mandatory. Linux and macOS are deferred to future
+product versions and are not current Phase 13 acceptance targets. Archive Core,
+portable project data, and platform-aware runtime abstractions remain
+cross-platform-capable so those future releases can be validated separately.
+
 ## Current production capability boundary
 
 Product Phases 3–6 establish npm workspaces, versioned contracts, GUI-independent Archive Core, one Application Service, secure Electron/CLI adapters, canonical OKF, portable Project format `1.1.0`, SQLite schema `4`, Site Profile/Scope Engine `1`, and persistent Page Job Queue state/priority policy `1`. Implemented local commands cover system description, Project lifecycle/transfer, Profile revisions, Scope evaluation/normalization, and Queue enqueue/batch/claim/complete/fail/retry/release/skip/block/get/list/statistics/history/clear-pending.
@@ -61,10 +70,14 @@ Primary use cases are:
 
 ## Platforms, delivery, and language
 
-- **Initial main deliverable:** portable Windows desktop application.
-- **Required later delivery:** supported Linux and macOS desktop packages.
+- **Current release:** portable Windows 11 x64 desktop application.
+- **Windows 10:** legacy/compatibility, best-effort, and non-blocking for the
+  current release.
+- **Future versions:** Linux and macOS desktop packages, with native acceptance
+  gates activated only when their support decisions and evidence are approved.
 - **Architecture constraint:** Archive Core, portable format, and test fixtures
-  must remain platform-neutral; exact OS/architecture matrices are open decisions.
+  must remain platform-neutral; platform-aware runtime resolution and future
+  Linux/macOS extension capability remain supported.
 - **User prerequisites:** no system-installed Node.js, Playwright, Chromium,
   SQLite, separate web server, or background service.
 - **Product language:** English for UI, reports, dialogs, validation output,

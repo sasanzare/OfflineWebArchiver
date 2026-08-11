@@ -12,6 +12,7 @@ const evidenceRoot = path.join(repositoryRoot, ".artifacts", "phase13-evidence")
 const evidenceSchemaVersion = "1.0.0";
 const sourceBaselineRelativePath = "tools/testing/phase13-evidence-baseline.json";
 const sourceFingerprintAlgorithm = "sha256-canonical-path-role-hash-list-v1";
+const platformSupportContractVersion = "1.0.0";
 const allowedAcceptanceStatuses = new Set(["PASS", "PRODUCT_FAIL", "TEST_INFRA_FAILURE", "ENVIRONMENT_BLOCKED", "NOT_APPLICABLE"]);
 const browserAcceptanceIds = ["AC-P13-002", "AC-P13-008", "AC-P13-012"];
 const carryOverAcceptanceIds = ["AC-P12-001", "AC-P12-006", "AC-P12-015"];
@@ -248,6 +249,33 @@ function validRepositoryRelativePath(value) {
   return !normalized.split("/").some((part) => part === ".." || part === "");
 }
 
+function readPlatformSupportContract(manifest) {
+  const contract = manifest?.platformSupportContract;
+  const currentReleaseTargetIds = Array.isArray(contract?.currentReleaseTargetIds)
+    ? [...new Set(contract.currentReleaseTargetIds.filter((item) => typeof item === "string" && item.length > 0))]
+    : [];
+  const requiredPlatforms = Array.isArray(manifest?.requiredPlatforms)
+    ? manifest.requiredPlatforms
+      .filter((item) => isRecord(item) && typeof item.targetId === "string" && typeof item.required === "boolean")
+      .map((item) => ({
+        targetId: item.targetId,
+        required: item.required,
+        releaseStatus: typeof item.releaseStatus === "string" ? item.releaseStatus : null,
+        note: typeof item.note === "string" ? item.note : null,
+      }))
+    : [];
+  if (contract?.version !== platformSupportContractVersion || currentReleaseTargetIds.length === 0 || requiredPlatforms.length === 0) return null;
+  const requiredTargetIds = requiredPlatforms.filter((item) => item.required).map((item) => item.targetId).sort();
+  const currentTargetIds = [...currentReleaseTargetIds].sort();
+  if (JSON.stringify(requiredTargetIds) !== JSON.stringify(currentTargetIds)) return null;
+  return {
+    version: contract.version,
+    currentReleaseTargetIds,
+    futureTargetPatterns: Array.isArray(contract.futureTargetPatterns) ? contract.futureTargetPatterns.filter((item) => typeof item === "string") : [],
+    requiredPlatforms,
+  };
+}
+
 async function inspectSourceBaseline(expected = null) {
   const target = path.join(repositoryRoot, sourceBaselineRelativePath);
   let manifest;
@@ -263,15 +291,18 @@ async function inspectSourceBaseline(expected = null) {
       evidenceRunnerHash: null,
       acceptanceDefinitionHash: null,
       includedFiles: [],
+      platformSupportContract: null,
       match: false,
       errors: ["SOURCE_BASELINE_MANIFEST_MISSING"],
     };
   }
   const errors = [];
   const includedFiles = Array.isArray(manifest?.includedFiles) ? manifest.includedFiles : [];
+  const platformSupportContract = readPlatformSupportContract(manifest);
   if (manifest?.schemaVersion !== "1.0.0" || manifest?.kind !== "phase13-evidence-source-baseline") errors.push("SOURCE_BASELINE_MANIFEST_INVALID");
   if (manifest?.sourceFingerprintAlgorithm !== sourceFingerprintAlgorithm) errors.push("SOURCE_BASELINE_ALGORITHM_UNSUPPORTED");
   if (!/^[a-f0-9]{64}$/i.test(manifest?.sourceFingerprint ?? "")) errors.push("SOURCE_BASELINE_FINGERPRINT_INVALID");
+  if (platformSupportContract === null) errors.push("SOURCE_BASELINE_PLATFORM_CONTRACT_INVALID");
   if (expected !== null) {
     if (manifest?.expectedNodeVersion !== expected.node || manifest?.expectedNpmMajor !== 11 || manifest?.playwrightVersion !== expected.playwrightVersion || manifest?.chromiumRevision !== expected.chromium.revision || manifest?.chromiumBuild !== expected.chromium.version || manifest?.electronVersion !== expected.electronVersion) errors.push("SOURCE_BASELINE_RUNTIME_CONTRACT_MISMATCH");
   }
@@ -324,6 +355,7 @@ async function inspectSourceBaseline(expected = null) {
     evidenceRunnerHash: runner?.sha256 ?? null,
     acceptanceDefinitionHash,
     includedFiles: actualEntries,
+    platformSupportContract,
     match: errors.length === 0 && sourceFingerprint === manifest.sourceFingerprint,
     errors,
     toolchainCategoryHash: categoryHash("toolchain-contract"),
@@ -473,7 +505,62 @@ async function inspectElectron(expected) {
   return result;
 }
 
-async function hostVersion() {
+function parseWindowsRegistryValues(output) {
+  const values = {};
+  for (const line of String(output ?? "").split(/\r?\n/)) {
+    const match = line.match(/^\s*(ProductName|CurrentBuildNumber|CurrentBuild|DisplayVersion|UBR)\s+REG_\w+\s+(.+?)\s*$/i);
+    if (match !== null) values[match[1].toLowerCase()] = match[2];
+  }
+  return values;
+}
+
+export function classifyWindowsRelease(metadata = {}, kernelRelease = "") {
+  const productName = String(metadata.productName ?? "");
+  if (/\bWindows\s+11\b/i.test(productName)) return "windows-11";
+  const registryBuild = Number(metadata.currentBuildNumber ?? metadata.currentbuild ?? 0);
+  if (Number.isFinite(registryBuild) && registryBuild >= 22_000) return "windows-11";
+  if (/\bWindows\s+10\b/i.test(productName)) return "windows-10";
+  if (Number.isFinite(registryBuild) && registryBuild >= 10_240) return "windows-10";
+  const kernelBuild = Number(String(kernelRelease).split(".").at(-1));
+  if (Number.isFinite(kernelBuild) && kernelBuild >= 22_000) return "windows-11";
+  if (Number.isFinite(kernelBuild) && kernelBuild >= 10_240) return "windows-10";
+  return "windows-unknown";
+}
+
+async function inspectWindowsRelease() {
+  if (process.platform !== "win32") return null;
+  const systemRoot = process.env.SystemRoot ?? process.env.WINDIR;
+  const executable = typeof systemRoot === "string" && systemRoot.length > 0
+    ? path.join(systemRoot, "System32", "reg.exe")
+    : "reg.exe";
+  try {
+    const result = await execFile(executable, ["query", "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"], { cwd: repositoryRoot, timeout: 5_000, windowsHide: true });
+    const values = parseWindowsRegistryValues(result.stdout);
+    const currentBuildNumber = values.currentbuildnumber ?? values.currentbuild ?? null;
+    const updateBuildRevision = values.ubr ?? null;
+    const release = classifyWindowsRelease({ productName: values.productname, currentBuildNumber }, os.release());
+    if (release === "windows-unknown") throw new Error("Windows release metadata did not identify Windows 10 or Windows 11.");
+    return {
+      source: "windows-registry",
+      productName: values.productname ?? null,
+      currentBuildNumber,
+      displayVersion: values.displayversion ?? null,
+      updateBuildRevision,
+      release,
+    };
+  } catch {
+    return {
+      source: "unverified-fallback",
+      productName: null,
+      currentBuildNumber: null,
+      displayVersion: null,
+      updateBuildRevision: null,
+      release: classifyWindowsRelease({}, os.release()),
+    };
+  }
+}
+
+async function hostVersion(windowsRelease = null) {
   if (process.platform === "darwin") {
     try {
       const result = await execFile("sw_vers", ["-productVersion"], { cwd: repositoryRoot, timeout: 5_000 });
@@ -481,6 +568,13 @@ async function hostVersion() {
     } catch {}
   }
   if (process.platform === "win32") {
+    if (windowsRelease?.productName !== null && windowsRelease?.productName !== undefined) {
+      const releaseLabel = windowsRelease.release === "windows-11" ? "Windows 11" : windowsRelease.release === "windows-10" ? "Windows 10" : windowsRelease.productName;
+      const build = windowsRelease.currentBuildNumber ?? "unknown";
+      const revision = windowsRelease.updateBuildRevision === null || windowsRelease.updateBuildRevision === undefined ? "" : `.${windowsRelease.updateBuildRevision}`;
+      const displayVersion = windowsRelease.displayVersion === null || windowsRelease.displayVersion === undefined ? "" : ` ${windowsRelease.displayVersion}`;
+      return `${releaseLabel}${displayVersion} (registry ProductName: ${windowsRelease.productName}; build ${build}${revision})`;
+    }
     try {
       const result = await execFile("cmd.exe", ["/d", "/c", "ver"], { cwd: repositoryRoot, timeout: 5_000 });
       return result.stdout.trim() || os.release();
@@ -496,23 +590,21 @@ async function hostVersion() {
   return os.release();
 }
 
-function windowsTarget() {
-  const build = Number(os.release().split(".").at(-1));
-  if (!Number.isFinite(build) || build <= 0) return "windows-unknown";
-  return build >= 22_000 ? "windows-11" : "windows-10";
+function windowsTarget(windowsRelease = null) {
+  return windowsRelease?.release ?? classifyWindowsRelease({}, os.release());
 }
 
-function platformTarget() {
+function platformTarget(windowsRelease = null) {
   if (process.platform === "darwin") return `macos-${os.arch()}`;
   if (process.platform === "linux") return `linux-${os.arch()}`;
-  if (process.platform === "win32") return `${windowsTarget()}-${os.arch()}`;
+  if (process.platform === "win32") return `${windowsTarget(windowsRelease)}-${os.arch()}`;
   return `${process.platform}-${os.arch()}`;
 }
 
 function platformRole(targetId) {
   if (targetId.startsWith("windows-11-x64")) return "primary-required";
   if (targetId.startsWith("windows-10")) return "legacy-optional";
-  if (targetId.startsWith("macos-") || targetId.startsWith("linux-")) return "compatibility-required-for-phase-matrix";
+  if (targetId.startsWith("macos-") || targetId.startsWith("linux-")) return "future-version-deferred";
   return "unsupported";
 }
 
@@ -634,11 +726,59 @@ async function gitMetadata() {
     head: await readGit(["rev-parse", "HEAD"]),
     branch: await readGit(["branch", "--show-current"]),
     dirty: lines.length > 0,
+    statusLines: lines,
     statusLineCount: lines.length,
     stagedCount: staged === null || staged === "" ? 0 : staged.split(/\r?\n/).filter(Boolean).length,
     unstagedCount: unstaged === null || unstaged === "" ? 0 : unstaged.split(/\r?\n/).filter(Boolean).length,
     untrackedCount: untracked === null || untracked === "" ? 0 : untracked.split(/\r?\n/).filter(Boolean).length,
   };
+}
+
+async function regenerateSourceBaseline() {
+  const target = path.join(repositoryRoot, sourceBaselineRelativePath);
+  const manifest = await readJsonFile(target);
+  const expected = await readExpectedRuntime();
+  const git = await gitMetadata();
+  const declaredFiles = Array.isArray(manifest.includedFiles) ? manifest.includedFiles : [];
+  const includedFiles = [];
+  for (const item of declaredFiles) {
+    if (!isRecord(item) || !validRepositoryRelativePath(item.path) || typeof item.role !== "string") throw new Error(`Cannot regenerate baseline: invalid included file entry '${item?.path ?? ""}'.`);
+    const filePath = path.join(repositoryRoot, item.path);
+    includedFiles.push({ path: item.path.replaceAll("\\", "/"), role: item.role, sha256: await sha256(filePath) });
+  }
+  const packageLock = includedFiles.find((item) => item.path === "package-lock.json");
+  const runner = includedFiles.find((item) => item.path === "tools/testing/run-phase13-evidence.mjs");
+  const acceptance = includedFiles.filter((item) => item.role === "acceptance-definition");
+  if (packageLock === undefined || runner === undefined || acceptance.length === 0) throw new Error("Cannot regenerate baseline: required package-lock, runner, or acceptance-definition input is missing.");
+  const refreshed = {
+    ...manifest,
+    schemaVersion: "1.0.0",
+    kind: "phase13-evidence-source-baseline",
+    createdAt: new Date().toISOString(),
+    createdFromDirtyTree: git.dirty,
+    preCommit: {
+      gitHead: git.head,
+      branch: git.branch,
+      workingTreeStatus: git.statusLines,
+    },
+    expectedNodeVersion: expected.node,
+    expectedNpmMajor: 11,
+    playwrightVersion: expected.playwrightVersion,
+    chromiumRevision: expected.chromium.revision,
+    chromiumBuild: expected.chromium.version,
+    electronVersion: expected.electronVersion,
+    sourceFingerprintAlgorithm,
+    sourceFingerprint: sha256Text(sourceEntryText(includedFiles)),
+    packageLockHash: packageLock.sha256,
+    evidenceRunnerHash: runner.sha256,
+    acceptanceDefinitionHash: sha256Text(sourceEntryText(acceptance)),
+    includedFiles,
+  };
+  await writeFile(target, jsonText(refreshed), { encoding: "utf8", flag: "w", mode: 0o600 });
+  process.stdout.write(`Phase 13 source baseline: ${relativeRepositoryPath(target)}\n`);
+  process.stdout.write(`Source fingerprint: ${refreshed.sourceFingerprint}\n`);
+  process.stdout.write(`Acceptance definition hash: ${refreshed.acceptanceDefinitionHash}\n`);
+  return refreshed;
 }
 
 async function npmVersion() {
@@ -654,8 +794,14 @@ async function npmVersion() {
 async function createHostMetadata(expected, browser, electron, sourceBaseline) {
   const git = await gitMetadata();
   const npm = await npmVersion();
-  const version = await hostVersion();
-  const targetId = platformTarget();
+  const windowsRelease = await inspectWindowsRelease();
+  const version = await hostVersion(windowsRelease);
+  const targetId = platformTarget(windowsRelease);
+  const currentReleaseTargetVerified = sourceBaseline.platformSupportContract?.currentReleaseTargetIds?.includes(targetId) === true
+    && process.platform === "win32"
+    && os.arch() === "x64"
+    && windowsRelease?.source === "windows-registry"
+    && windowsRelease?.release === "windows-11";
   return {
     schemaVersion: evidenceSchemaVersion,
     timestamp: new Date().toISOString(),
@@ -672,9 +818,11 @@ async function createHostMetadata(expected, browser, electron, sourceBaseline) {
     platformLabel: process.platform === "darwin" ? "macOS" : process.platform === "win32" ? "Windows" : process.platform === "linux" ? "Linux" : process.platform,
     version,
     kernelRelease: os.release(),
+    windowsRelease,
     architecture: os.arch(),
     targetId,
     targetRole: platformRole(targetId),
+    currentReleaseTargetVerified,
     native: nativeHost(),
     nodeVersion: process.version,
     npmVersion: npm,
@@ -693,6 +841,7 @@ async function createHostMetadata(expected, browser, electron, sourceBaseline) {
       acceptanceDefinitionHash: sourceBaseline.acceptanceDefinitionHash,
       validationErrors: sourceBaseline.errors,
       includedFiles: sourceBaseline.includedFiles,
+      platformSupportContract: sourceBaseline.platformSupportContract,
     },
     browserEnvironment: browser.valid ? "VALID_BROWSER_ENVIRONMENT" : "ENVIRONMENT_BLOCKED",
     electronEnvironment: electron.launchable ? "VALID_NATIVE_ENVIRONMENT" : "ENVIRONMENT_BLOCKED",
@@ -890,7 +1039,7 @@ async function runEvidence(options) {
   const fullFailures = commands.filter((item) => fullCommandIds.includes(item.id) && item.exitCode !== 0);
   const fullProductFailure = fullFailures.some((item) => item.exitCode !== null && item.testResult !== null && !environmentFailure(item, { browser, electron }));
   const fullTestInfrastructureFailure = fullFailures.some((item) => (item.exitCode === null || item.testResult === null) && !environmentFailure(item, { browser, electron }));
-  const matrixStatus = host.sourceAcceptanceEligible && browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS") && desktopStatus === "PASS" && fullGatePass
+  const nativeEvidenceStatus = host.sourceAcceptanceEligible && browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS") && desktopStatus === "PASS" && fullGatePass
     ? "PASS"
     : desktopStatus === "PRODUCT_FAIL" || browserAcceptanceIds.some((id) => browserStatuses[id].status === "PRODUCT_FAIL") || fullProductFailure
       ? "PRODUCT_FAIL"
@@ -899,6 +1048,11 @@ async function runEvidence(options) {
       : environmentClassification === "INVALID_FOR_ACCEPTANCE"
         ? "INVALID_FOR_ACCEPTANCE"
         : "ENVIRONMENT_BLOCKED";
+  const matrixStatus = host.currentReleaseTargetVerified
+    ? nativeEvidenceStatus
+    : host.targetId === "windows-11-x64"
+      ? "INVALID_FOR_ACCEPTANCE"
+      : "NOT_APPLICABLE";
   const matrix = {
     schemaVersion: evidenceSchemaVersion,
     matrixEntryId: `${host.targetId}:${host.gitHead}`,
@@ -909,6 +1063,7 @@ async function runEvidence(options) {
     hostVersion: host.version,
     architecture: host.architecture,
     native: host.native,
+    currentReleaseTargetVerified: host.currentReleaseTargetVerified,
     environmentClassification,
     status: matrixStatus,
     gitHead: host.gitHead,
@@ -927,22 +1082,23 @@ async function runEvidence(options) {
       ...(expected.playwrightVersionMatches ? [] : ["The installed Playwright version does not match the package contract."]),
       ...(host.dirtyState.dirty ? ["DIRTY_SOURCE_TREE"] : []),
       ...(host.sourceBaseline.match ? [] : ["SOURCE_BASELINE_MISMATCH"]),
-      ...(matrixStatus === "ENVIRONMENT_BLOCKED" ? ["AC-P13-016 is aggregate-only and requires validated bundles from the required native matrix."] : []),
+      ...(host.currentReleaseTargetVerified ? [] : [host.targetRole === "legacy-optional" ? "LEGACY_WINDOWS_10_NON_BLOCKING" : "CURRENT_RELEASE_TARGET_UNVERIFIED"]),
+      ...(matrixStatus === "ENVIRONMENT_BLOCKED" ? ["CURRENT_WINDOWS_RELEASE_EVIDENCE_NOT_COMPLETE"] : []),
     ].filter(Boolean),
     timestamp: host.timestamp,
   };
   acceptanceResults.push(acceptanceResult(
     "AC-P13-016",
-    matrixStatus === "PASS" ? "ENVIRONMENT_BLOCKED" : matrixStatus,
-    matrixStatus === "PASS" ? "This bundle proves one native matrix row; aggregate AC-P13-016 still requires reconciliation across the required platforms." : matrix.blockers.join(" ") || "The native matrix row did not complete.",
+    matrixStatus,
+    matrixStatus === "PASS" ? "The current Windows 11 x64 native release target passed the required browser, Desktop, toolchain, regression, and security gates." : matrix.blockers.join(" ") || "The current Windows native release evidence did not complete.",
     commands.find((item) => item.id === "desktop-focused"),
     host,
     versions,
     evidenceFiles("matrix-entry.json"),
     { status: matrixStatus, commandIds: matrix.commandIds, blockers: matrix.blockers },
   ));
-  const phaseStatus = "PARTIAL";
-  const phase14Readiness = "PHASE_14_BLOCKED";
+  const phaseStatus = matrixStatus === "PASS" ? "COMPLETE" : "PARTIAL";
+  const phase14Readiness = phaseStatus === "COMPLETE" ? "PHASE_14_READY" : "PHASE_14_BLOCKED";
   const testResults = {
     schemaVersion: evidenceSchemaVersion,
     timestamp: host.timestamp,
@@ -1002,10 +1158,15 @@ async function runEvidence(options) {
       "matrix-entry.json": matrix,
     },
   });
+  if (bundle.secretScan.status !== "PASS" && bundle.phaseStatus === "COMPLETE") {
+    bundle.phaseStatus = "PARTIAL";
+    bundle.phase14Readiness = "PHASE_14_BLOCKED";
+    await writeJson(path.join(outputDir, "bundle.json"), bundle);
+  }
   process.stdout.write(`Phase 13 evidence bundle: ${relativeRepositoryPath(outputDir)}\n`);
   process.stdout.write(`Phase status: ${phaseStatus}; Phase 14 readiness: ${phase14Readiness}\n`);
   for (const row of acceptanceResults.filter((item) => mandatoryAcceptanceIds.includes(item.acceptanceId))) process.stdout.write(`${row.acceptanceId}: ${row.status}\n`);
-  const executedFailure = browserAcceptanceIds.some((id) => browserStatuses[id].status !== "PASS") || desktopStatus !== "PASS" || (shouldRunFull && !fullGatePass) || bundle.secretScan.status !== "PASS";
+  const executedFailure = matrixStatus !== "PASS" || browserAcceptanceIds.some((id) => browserStatuses[id].status !== "PASS") || desktopStatus !== "PASS" || (shouldRunFull && !fullGatePass) || bundle.secretScan.status !== "PASS";
   return { outputDir, bundle, exitCode: executedFailure ? 1 : 0 };
 }
 
@@ -1042,7 +1203,7 @@ async function loadBundle(bundlePath) {
   if (!isRecord(runtime) || runtime.gitHead !== gitHead || runtime.sourceBaseline?.acceptanceDefinitionHash !== acceptanceDefinitionHash) errors.push("runtime.json: git/source metadata is inconsistent");
   if (!isRecord(testResults) || testResults.gitHead !== gitHead || testResults.sourceFingerprint !== sourceFingerprint || testResults.acceptanceDefinitionHash !== acceptanceDefinitionHash || !Array.isArray(testResults.commands)) errors.push("test-results.json: command/source ledger is missing or inconsistent");
   if (!isRecord(acceptance) || acceptance.gitHead !== gitHead || acceptance.sourceFingerprint !== sourceFingerprint || acceptance.acceptanceDefinitionHash !== acceptanceDefinitionHash || !Array.isArray(acceptance.results)) errors.push("acceptance-results.json: results/source metadata are missing or inconsistent");
-  if (!isRecord(matrix) || matrix.gitHead !== gitHead || matrix.sourceFingerprint !== sourceFingerprint || matrix.acceptanceDefinitionHash !== acceptanceDefinitionHash || typeof matrix.sourceAcceptanceEligible !== "boolean" || typeof matrix.targetId !== "string") errors.push("matrix-entry.json: target/source metadata is missing or inconsistent");
+  if (!isRecord(matrix) || matrix.gitHead !== gitHead || matrix.sourceFingerprint !== sourceFingerprint || matrix.acceptanceDefinitionHash !== acceptanceDefinitionHash || typeof matrix.sourceAcceptanceEligible !== "boolean" || typeof matrix.currentReleaseTargetVerified !== "boolean" || typeof matrix.targetId !== "string") errors.push("matrix-entry.json: target/source metadata is missing or inconsistent");
   if (!isRecord(secretScan) || secretScan.status !== "PASS" || secretScan.unauthorizedOccurrences !== 0) errors.push("secret-scan.json: the artifact scan did not pass with zero unauthorized occurrences");
   const results = Array.isArray(acceptance?.results) ? acceptance.results : [];
   const ids = new Set(results.map((item) => item?.acceptanceId));
@@ -1070,8 +1231,15 @@ async function loadBundle(bundlePath) {
   return { valid: errors.length === 0, errors, directory, bundle, environment, runtime, testResults, acceptance, matrix, secretScan };
 }
 
-function aggregateTarget(entries, prefix) {
-  return entries.find((item) => item.matrix?.targetId?.startsWith(prefix) && item.matrix.status === "PASS") ?? null;
+function targetPatternMatches(targetId, pattern) {
+  if (typeof targetId !== "string" || typeof pattern !== "string") return false;
+  return pattern.includes("<architecture>")
+    ? targetId.startsWith(pattern.replace("<architecture>", ""))
+    : targetId === pattern;
+}
+
+function aggregateTarget(entries, pattern) {
+  return entries.find((item) => targetPatternMatches(item.matrix?.targetId, pattern) && item.matrix?.status === "PASS" && item.matrix?.currentReleaseTargetVerified === true) ?? null;
 }
 
 async function reconcileBundles(bundlePaths, outputPath) {
@@ -1088,13 +1256,22 @@ async function reconcileBundles(bundlePaths, outputPath) {
   if (loaded.some((item) => item.bundle?.sourceBaselineMatch !== true || item.bundle?.cleanCommittedSource !== true || item.matrix?.sourceAcceptanceEligible !== true)) errors.push("Dirty or source-mismatched evidence cannot satisfy final Phase 13 reconciliation.");
   const targetIds = loaded.map((item) => item.matrix?.targetId).filter((item) => typeof item === "string");
   if (new Set(targetIds).size !== targetIds.length) errors.push("Duplicate native matrix target IDs are not accepted.");
-  const windows = aggregateTarget(loaded, "windows-11-x64");
-  const linux = aggregateTarget(loaded, "linux-");
-  const macos = aggregateTarget(loaded, "macos-");
-  const missingTargets = [windows === null ? "windows-11-x64" : null, linux === null ? "linux-native" : null, macos === null ? "macos-native" : null].filter(Boolean);
-  if (missingTargets.length > 0) errors.push(`Required native matrix evidence is missing: ${missingTargets.join(", ")}.`);
-  const allNativeRowsPass = [windows, linux, macos].every((item) => item !== null);
-  const status = errors.length === 0 && allNativeRowsPass ? "PASS" : "ENVIRONMENT_BLOCKED";
+  const platformContracts = loaded.map((item) => item.environment?.sourceBaseline?.platformSupportContract ?? null);
+  const platformContractSignatures = new Set(platformContracts.filter((item) => item !== null).map((item) => JSON.stringify(item)));
+  if (platformContracts.some((item) => item === null)) errors.push("All native evidence bundles must include the versioned platform-support contract.");
+  if (platformContractSignatures.size !== 1) errors.push("All native evidence bundles must use the same platform-support contract.");
+  const platformContract = platformContracts.find((item) => item !== null) ?? null;
+  const requiredTargetPatterns = platformContract?.currentReleaseTargetIds ?? [];
+  if (requiredTargetPatterns.length === 0) errors.push("The platform-support contract declares no current-release target.");
+  const requiredRows = requiredTargetPatterns.map((pattern) => ({ pattern, bundle: aggregateTarget(loaded, pattern) }));
+  const missingTargets = requiredRows.filter((item) => item.bundle === null).map((item) => item.pattern);
+  if (missingTargets.length > 0) errors.push(`Required current-release native evidence is missing: ${missingTargets.join(", ")}.`);
+  for (const row of requiredRows) {
+    const acceptance = row.bundle?.acceptance?.results?.find((item) => item.acceptanceId === "AC-P13-016");
+    if (row.bundle !== null && acceptance?.status !== "PASS") errors.push(`Required target ${row.pattern} does not contain a passing AC-P13-016 result.`);
+  }
+  const allRequiredRowsPass = requiredRows.length > 0 && requiredRows.every((item) => item.bundle !== null);
+  const status = errors.length === 0 && allRequiredRowsPass ? "PASS" : "ENVIRONMENT_BLOCKED";
   const gitHead = heads.size === 1 ? [...heads][0] : null;
   const timestamp = new Date().toISOString();
   const result = {
@@ -1109,11 +1286,12 @@ async function reconcileBundles(bundlePaths, outputPath) {
     phase14Readiness: status === "PASS" ? "PHASE_14_READY" : "PHASE_14_BLOCKED",
     bundles: loaded.map((item) => ({ directory: relativeRepositoryPath(item.directory), valid: item.valid, targetId: item.matrix?.targetId ?? null, status: item.matrix?.status ?? null })),
     matrix: {
-      required: ["windows-11-x64", "linux-native", "macos-native"],
+      required: requiredTargetPatterns,
       observed: targetIds,
-      optional: ["windows-10-x64"],
+      optional: platformContract?.requiredPlatforms?.filter((item) => item.required === false).map((item) => item.targetId) ?? [],
       missing: missingTargets,
-      windows10Observed: loaded.some((item) => item.matrix?.targetId?.startsWith("windows-10-x64")),
+      windows10Observed: loaded.some((item) => targetPatternMatches(item.matrix?.targetId, "windows-10-x64")),
+      futureTargetPatterns: platformContract?.futureTargetPatterns ?? [],
     },
     acceptanceIds: mandatoryAcceptanceIds,
     errors,
@@ -1134,7 +1312,7 @@ function normalizedRepositoryPath(target) {
 }
 
 function parseArguments(args) {
-  const operation = args[0] === "run" || args[0] === "validate" || args[0] === "reconcile" ? args[0] : "run";
+  const operation = args[0] === "run" || args[0] === "validate" || args[0] === "reconcile" || args[0] === "baseline" ? args[0] : "run";
   const remaining = operation === "run" && args[0] !== "run" ? args : args.slice(1);
   const options = { operation, outputDir: null, forceFull: false, skipFull: false, bundlePaths: [] };
   for (let index = 0; index < remaining.length; index += 1) {
@@ -1155,6 +1333,7 @@ function help() {
   return [
     "Usage:",
     "  npm run test:phase13:evidence [-- --output-dir PATH] [--force-full] [--skip-full]",
+    "  npm run test:phase13:evidence:baseline",
     "  node tools/testing/run-phase13-evidence.mjs validate BUNDLE_DIR",
     "  node tools/testing/run-phase13-evidence.mjs reconcile BUNDLE_DIR... [--output PATH]",
     "",
@@ -1174,6 +1353,10 @@ export async function main(args = process.argv.slice(2)) {
       process.stdout.write(`Validation: ${result.valid ? "PASS" : "FAIL"}\n`);
       for (const error of result.errors) process.stdout.write(`- ${error}\n`);
       return result.valid ? 0 : 1;
+    }
+    if (options.operation === "baseline") {
+      await regenerateSourceBaseline();
+      return 0;
     }
     if (options.operation === "reconcile") return (await reconcileBundles(options.bundlePaths.filter((item) => item !== options.outputDir), options.outputDir)).exitCode;
     return (await runEvidence(options)).exitCode;

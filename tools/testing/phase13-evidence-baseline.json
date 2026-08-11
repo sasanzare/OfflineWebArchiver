@@ -2,36 +2,45 @@
   "schemaVersion": "1.0.0",
   "kind": "phase13-evidence-source-baseline",
   "lifecycle": "PRE_COMMIT_PREPARATION",
-  "createdAt": "2026-08-11T07:50:12.6237779Z",
+  "createdAt": "2026-08-11T14:03:12.746Z",
   "createdFromDirtyTree": true,
   "preCommit": {
-    "gitHead": "bdaac54b3c26cbd6e3dc038dae44bfbc1437446e",
+    "gitHead": "fff15859338a6ab8d13113b2be2a5ff66b1847b9",
     "branch": "main",
     "workingTreeStatus": [
-      " M HANDOFF.md",
+      "M README.md",
       " M docs/architecture/PHASE_13_SECURITY_REVIEW.md",
+      " M docs/architecture/PLATFORM_SUPPORT_POLICY.md",
+      " M docs/product/ACCEPTANCE_MATRIX.md",
+      " M docs/product/PROJECT_SCOPE.md",
       " M docs/project/PHASE_13_CLOSURE_REPORT.md",
       " M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
       " M docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
+      " M docs/project/PHASE_PLAN.md",
+      " M okf-extension/README.md",
       " M okf-extension/registry/evidence.json",
+      " M okf-extension/registry/nodes.json",
       " M okf-extension/registry/relationships.json",
+      " M okf-extension/registry/risks.json",
+      " M okf-extension/reports/risks.md",
+      " M okf/architecture/browser-runtime.md",
       " M okf/architecture/service-worker-policy.md",
       " M okf/history/phase-13.md",
       " M okf/log.md",
       " M okf/operations/platform-support.md",
       " M okf/testing/phase-13-validation.md",
-      " M tests/browser/service-worker-policy.test.ts",
-      " M tests/support/render-fixture-server.ts",
+      " M package.json",
       " M tests/unit/phase13-evidence-classification.test.ts",
+      " M tools/testing/phase13-evidence-baseline.json",
       " M tools/testing/run-phase13-evidence.mjs"
     ]
   },
   "finalCommittedBaseline": null,
   "sourceFingerprintAlgorithm": "sha256-canonical-path-role-hash-list-v1",
-  "sourceFingerprint": "9484b630e0cd3d6fc031753db654da20ff0414a9d3fd32b2ac911bfd56fb8fac",
+  "sourceFingerprint": "c31b5c5d170ef7b3ab15e58419713dab77f54c9ec82fb35cecbd2192b53f6407",
   "packageLockHash": "7be6a3fe3cf46b291d15a10c8a79613976f8385d97dc6d5ed1f244e051c449ad",
-  "evidenceRunnerHash": "f298ef9dc8a4b78604f917371ab6b7f23e4a46ee5bf0f57205eb1481afae7d34",
-  "acceptanceDefinitionHash": "b2882276d4e4680ed7499cac9678ee54126ff704e495680d96dc427a6eabfcba",
+  "evidenceRunnerHash": "002c2fa9d5088f3e1c102e48093f69d22c4719f4158e0dbe1233db88c84f43a6",
+  "acceptanceDefinitionHash": "798bb6d11185b637359fbb64af1feb5ac977ed607f81312b87fa86d94a16e050",
   "expectedNodeVersion": ">=24.0.0 <25",
   "expectedNpmMajor": 11,
   "playwrightVersion": "1.56.1",
@@ -40,23 +49,39 @@
   "chromiumSource": "official-playwright",
   "browserRoot": ".runtime/browsers",
   "electronVersion": "43.2.0",
+  "platformSupportContract": {
+    "version": "1.0.0",
+    "currentReleaseTargetIds": [
+      "windows-11-x64"
+    ],
+    "futureTargetPatterns": [
+      "linux-<architecture>",
+      "macos-<architecture>"
+    ]
+  },
   "requiredPlatforms": [
     {
       "targetId": "windows-11-x64",
-      "required": true
-    },
-    {
-      "targetId": "linux-<architecture>",
-      "required": true
-    },
-    {
-      "targetId": "macos-<architecture>",
-      "required": true
+      "required": true,
+      "releaseStatus": "CURRENT_RELEASE"
     },
     {
       "targetId": "windows-10-x64",
       "required": false,
-      "note": "legacy/optional"
+      "releaseStatus": "LEGACY",
+      "note": "legacy/compatibility/non-blocking"
+    },
+    {
+      "targetId": "linux-<architecture>",
+      "required": false,
+      "releaseStatus": "FUTURE_VERSION",
+      "note": "deferred/non-blocking for current release"
+    },
+    {
+      "targetId": "macos-<architecture>",
+      "required": false,
+      "releaseStatus": "FUTURE_VERSION",
+      "note": "deferred/non-blocking for current release"
     }
   ],
   "includedFiles": [
@@ -78,47 +103,57 @@
     {
       "path": "docs/architecture/PHASE_13_SECURITY_REVIEW.md",
       "role": "evidence-policy",
-      "sha256": "6f94271258b14192724bbec5aead9602c0ff6cb692e9db8704bbb745a9895e43"
+      "sha256": "15866990fef749c6f398c8b4afa1188a07b2f3ec47cdd8de3bfa51b98c18eeb2"
     },
     {
       "path": "docs/architecture/PLATFORM_SUPPORT_POLICY.md",
       "role": "evidence-policy",
-      "sha256": "5486ed666222e3d708d71b7476273e991e5611836b0dd0bf8549b993ffd7b7b0"
+      "sha256": "cc13109c9336cfd4412a4d19589729e0996ad96b31f5e824c40e74a9911c9890"
+    },
+    {
+      "path": "docs/product/PROJECT_SCOPE.md",
+      "role": "evidence-policy",
+      "sha256": "5df4ff9a46a4b2a32324b72026c56b8af86d99cec04dac2d688fea57a6a20f69"
+    },
+    {
+      "path": "README.md",
+      "role": "evidence-policy",
+      "sha256": "33fc38c4d7258ba0ce402a1d2e0f47c86a08883d35aea15b337fa5b7f8ae8d04"
     },
     {
       "path": "docs/product/ACCEPTANCE_MATRIX.md",
       "role": "acceptance-definition",
-      "sha256": "b821c5024972419763f7440b924daa36df46ddaaeef680cddb3b33a1c6aa5c24"
+      "sha256": "43d5a84dc8929bd91001bcf0c7e552651fd5a0045902829d97d8e5b570f02e3c"
     },
     {
       "path": "docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
       "role": "evidence-policy",
-      "sha256": "fb492ada4c5ff583aac0b810261f696607cfded45b39ef1d593745d001b7c807"
+      "sha256": "6d8d6c26699fd4800f86e7fc6ca9f3349758b9a844a0e85dc125cd8bd2c75dc5"
     },
     {
       "path": "docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
       "role": "evidence-policy",
-      "sha256": "3b8c92ac7cec14c01ce5739c40999dbf22ebd17b7470c3d809f1ce1c9c866331"
+      "sha256": "a87a409a32710b2dd58fee09872ed854fc6b8bb3a201cf185b53fdf7b52a1260"
     },
     {
       "path": "okf-extension/registry/evidence.json",
       "role": "evidence-policy",
-      "sha256": "e2c0bebfc592d8cfcc67b2ad96827c2068f89143496d1edf88f519555c0f91f6"
+      "sha256": "1abcb750e128a81b38e9a9a7c5541edc3e72a09bc06d69fff27f61f9dc6fa959"
     },
     {
       "path": "okf/log.md",
       "role": "evidence-policy",
-      "sha256": "9ad634adbd5c85879f4bedfa65b254ed594b2bb52d5046b065a9e0d8e284dd5e"
+      "sha256": "236acccb938c40433cf61c08e4b9118a1d5d1f0d48b5931363a4f2c5a92a9a40"
     },
     {
       "path": "okf/operations/platform-support.md",
       "role": "evidence-policy",
-      "sha256": "ce13aa4ae2e50837987ef00b94c96ad0f23fb824eaf14fc40a407ae742ec0e53"
+      "sha256": "576b47e9134550fa85844eca22d0c5cab9eb4e85deb782130326b27411860c7a"
     },
     {
       "path": "okf/testing/phase-13-validation.md",
       "role": "evidence-policy",
-      "sha256": "ecbed989e16125ae824dde77a5a53e70318d099b4647ec5d63d3730eff62a4e5"
+      "sha256": "834d624b7626837b9d27f5b60984f6e2989f39ab92e6c9206a9541005456c20b"
     },
     {
       "path": "package-lock.json",
@@ -128,7 +163,7 @@
     {
       "path": "package.json",
       "role": "toolchain-contract",
-      "sha256": "7a3e7d8e37e1a46d3a8df7a74efafd9312a3a7e0038e73382c6d3aab757fd5e2"
+      "sha256": "71b0ac7b5175044e6c39243e8b400adbd7ac948dcac6baa491f6e065e6133f87"
     },
     {
       "path": "packages/archive-core/package.json",
@@ -263,7 +298,7 @@
     {
       "path": "tests/unit/phase13-evidence-classification.test.ts",
       "role": "quality-gate",
-      "sha256": "c1a5fdd33fd4e51c04d164a61f4a0fd61a4f2f4c3204ac29193afee295c97544"
+      "sha256": "1700edceebd1d2d77126aef65726290b66d7df1b064c1e2a2b72842d090e9840"
     },
     {
       "path": "tests/unit/phase13-evidence-command-planning.test.ts",
@@ -333,7 +368,7 @@
     {
       "path": "tools/testing/run-phase13-evidence.mjs",
       "role": "evidence-runner",
-      "sha256": "f298ef9dc8a4b78604f917371ab6b7f23e4a46ee5bf0f57205eb1481afae7d34"
+      "sha256": "002c2fa9d5088f3e1c102e48093f69d22c4719f4158e0dbe1233db88c84f43a6"
     },
     {
       "path": "tools/testing/run-tests.mjs",

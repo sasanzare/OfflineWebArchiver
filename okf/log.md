@@ -70,3 +70,9 @@ bundle. It is not a copy of Git history or a task diary.
   tests passed 64/64. The runner's generic `network` classification false
   positive was corrected with regression coverage; clean common-HEAD matrix
   evidence is still required.
+- Reconciled the current release scope to Windows 11 x64 only. Windows 10 is
+  legacy/non-blocking, while Linux and macOS are deferred future-version
+  targets. Updated the Phase 13 acceptance contract and runner reconciliation
+  to derive one required Windows row from the versioned platform-support
+  contract; native runtime, security, clean-source, fingerprint, and
+  acceptance-hash requirements remain unchanged.
