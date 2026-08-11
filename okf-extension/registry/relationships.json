@@ -83,6 +83,7 @@
     { "id": "OKF-REL-080", "name": "Phase 13 closure is blocked by unavailable browser evidence", "status": "BLOCKED", "sourceId": "OKF-NODE-P13-GATE", "targetId": "OKF-EV-P13-BROWSER", "type": "blocks" },
     { "id": "OKF-REL-081", "name": "Phase 13 record is evidenced by the implementation report", "status": "PARTIAL", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-DOCS", "type": "evidenced-by" },
     { "id": "OKF-REL-082", "name": "Phase 13 closure gate is evidenced by the remediation report", "status": "BLOCKED", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-CLOSURE", "type": "evidenced-by" },
-    { "id": "OKF-REL-083", "name": "Phase 13 native evidence and failure classification are executed and reconciled by the canonical runner", "status": "VERIFIED", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-RUNNER", "type": "evidenced-by" }
+    { "id": "OKF-REL-083", "name": "Phase 13 native evidence and failure classification are executed and reconciled by the canonical runner", "status": "VERIFIED", "sourceId": "OKF-PHASE-013", "targetId": "OKF-EV-P13-RUNNER", "type": "evidenced-by" },
+    { "id": "OKF-REL-084", "name": "Windows subprocess portability is evidenced by command-planner regressions", "status": "VERIFIED", "sourceId": "OKF-EV-P13-RUNNER", "targetId": "OKF-EV-P13-TESTS", "type": "evidenced-by" }
   ]
 }

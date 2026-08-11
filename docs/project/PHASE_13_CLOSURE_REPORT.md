@@ -264,13 +264,46 @@ prove that a missing required runtime maps to `ENVIRONMENT_BLOCKED`, a valid
 runtime with an application assertion maps to `PRODUCT_FAIL`, and a runtime
 blocker emitted on stdout remains `ENVIRONMENT_BLOCKED`.
 
-The latest corrected escalated diagnostic bundle is recorded in `HANDOFF.md`.
+The 2026-08-10 corrected escalated diagnostic bundle is recorded in
+`HANDOFF.md`.
 It validated successfully, reported zero unauthorized secret-scan occurrences,
 matched the declared source fingerprint, and classified `AC-P13-016` as
 `ENVIRONMENT_BLOCKED`. It remains
 non-promotable because the remediation tree is dirty, the repository-owned
-Chromium installation is still missing, and the required Windows 11, Linux,
-and macOS native rows have not been reconciled.
+Chromium installation was missing on that historical macOS host, and the
+required Windows 11, Linux, and macOS native rows had not been reconciled.
+
+## Windows spawn EINVAL remediation — 2026-08-11
+
+On Windows 11 x64, both canonical runner entry points initially failed before
+evidence collection with `spawn EINVAL`. The exact failing call was the direct
+`spawn("npm.cmd", ["run", "browser:verify"], ...)` path. A focused Node probe
+confirmed `spawnSync npm.cmd EINVAL`; the host's Node 24 and npm 11 majors were
+within the repository contract. This incident is therefore classified as
+`TEST_INFRA_FAILURE`, not a product failure.
+
+The runner now uses `process.execPath` plus explicit JavaScript module paths and
+argument arrays for repository-owned Node/npm tools. It resolves the npm CLI
+from `npm_execpath` or the standard Windows installation path, preserves the
+absolute `cwd` and inherited environment, avoids `shell: true`, and records
+synchronous spawn errors as bounded diagnostics. The new command-planner tests
+pass as part of the 63/63 unit suite.
+
+After the fix, both `node tools/testing/run-phase13-evidence.mjs run` and
+`npm run test:phase13:evidence` completed on the actual Windows host without
+`spawn EINVAL`. The validated diagnostic bundle
+`.artifacts/phase13-evidence/2026-08-11T05-44-03-612Z-759e4c4e1ad2`
+verified official Chromium 1.56.1/revision 1194 and Electron 43.2.0. Its
+browser-focused result was 9/10 with one Service Worker assertion failure and
+its Desktop-focused result was 2/2. Because the remediation source is not yet
+committed and the cross-platform matrix is incomplete, this bundle is not
+final acceptance evidence.
+
+The subsequent full Windows regression run reported 168 tests: 166 passed, 2
+failed, and 0 skipped. The failing cases were the browser Interaction popup
+trace assertion and the Service Worker policy assertion. They require a clean
+committed rerun and separate triage; this runner remediation does not classify
+them as product failures.
 
 ## Acceptance reconciliation
 

@@ -50,8 +50,51 @@ function relativeRepositoryPath(target) {
   return normalizedPath(path.relative(repositoryRoot, target));
 }
 
-function npmExecutable() {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
+function commandOptions(context = {}) {
+  const platform = context.platform ?? process.platform;
+  const environment = context.env ?? process.env;
+  return {
+    cwd: context.cwd ?? repositoryRoot,
+    env: { ...environment },
+    windowsHide: platform === "win32",
+  };
+}
+
+function isNpmCliPath(value, platform) {
+  if (typeof value !== "string" || value.length === 0) return false;
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
+  return pathApi.isAbsolute(value) && pathApi.basename(value).toLowerCase() === "npm-cli.js";
+}
+
+function npmCliPath(platform, execPath, environment) {
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
+  const candidates = [environment.npm_execpath];
+  if (platform === "win32") {
+    candidates.push(
+      pathApi.join(pathApi.dirname(execPath), "node_modules", "npm", "bin", "npm-cli.js"),
+      typeof environment.npm_config_prefix === "string"
+        ? pathApi.join(environment.npm_config_prefix, "node_modules", "npm", "bin", "npm-cli.js")
+        : null,
+    );
+  }
+  return candidates.find((candidate) => isNpmCliPath(candidate, platform)) ?? null;
+}
+
+export function resolvePortableCommand(kind, args = [], context = {}) {
+  const platform = context.platform ?? process.platform;
+  const execPath = context.execPath ?? process.execPath;
+  const environment = context.env ?? process.env;
+  const options = commandOptions({ ...context, platform, env: environment });
+  if (kind === "node") return { command: execPath, args: [...args], options };
+  if (kind !== "npm") throw new Error(`Unsupported portable command kind '${kind}'.`);
+  const cliPath = npmCliPath(platform, execPath, environment);
+  if (cliPath !== null) return { command: execPath, args: [cliPath, ...args], options };
+  if (platform === "win32") throw new Error("Unable to resolve the npm CLI JavaScript entry point on Windows.");
+  return { command: "npm", args: [...args], options };
+}
+
+function resolveDirectCommand(command, args = [], context = {}) {
+  return { command, args: [...args], options: commandOptions(context) };
 }
 
 function redactText(value, maximum = maxSafeDiagnostic) {
@@ -86,12 +129,19 @@ async function runCommand(executable, args, options = {}) {
   let signal = null;
   const append = (current, chunk) => current.length >= maxCapturedOutput ? current : `${current}${chunk.toString("utf8")}`.slice(0, maxCapturedOutput);
   const result = await new Promise((resolve) => {
-    const child = spawn(executable, args, {
-      cwd: repositoryRoot,
-      env: { ...process.env },
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-    });
+    let child;
+    try {
+      child = spawn(executable, args, {
+        cwd: options.cwd ?? repositoryRoot,
+        env: options.env ?? { ...process.env },
+        stdio: ["ignore", "pipe", "pipe"],
+        windowsHide: options.windowsHide ?? process.platform === "win32",
+      });
+    } catch (error) {
+      spawnError = error;
+      resolve({ code: null, signal: null });
+      return;
+    }
     child.stdout.on("data", (chunk) => { stdout = append(stdout, chunk); });
     child.stderr.on("data", (chunk) => { stderr = append(stderr, chunk); });
     const timeout = setTimeout(() => {
@@ -593,7 +643,8 @@ async function gitMetadata() {
 
 async function npmVersion() {
   try {
-    const result = await execFile(npmExecutable(), ["--version"], { cwd: repositoryRoot, timeout: 10_000 });
+    const command = resolvePortableCommand("npm", ["--version"]);
+    const result = await execFile(command.command, command.args, { ...command.options, timeout: 10_000 });
     return result.stdout.trim();
   } catch {
     return null;
@@ -756,19 +807,19 @@ async function runEvidence(options) {
   const host = await createHostMetadata(expected, browser, electron, sourceBaseline);
   host.sourceAcceptanceEligible = host.native && !host.dirtyState.dirty && host.sourceBaseline.match && expected.playwrightVersionMatches;
   const commands = [];
-  const runRecorded = async (id, executable, args, displayCommand, timeoutMs) => {
-    const result = compactCommand(await runCommand(executable, args, { displayCommand, timeoutMs }));
+  const runRecorded = async (id, command, displayCommand, timeoutMs) => {
+    const result = compactCommand(await runCommand(command.command, command.args, { ...command.options, displayCommand, timeoutMs }));
     commands.push({ id, ...result });
     return result;
   };
 
-  const browserVerify = await runRecorded("browser-verify", npmExecutable(), ["run", "browser:verify"], "npm run browser:verify", 120_000);
-  const browserFocused = await runRecorded("browser-runtime-focused", process.execPath, ["tools/testing/run-tests.mjs", "package:browser-runtime"], "node tools/testing/run-tests.mjs package:browser-runtime", 10 * 60_000);
+  const browserVerify = await runRecorded("browser-verify", resolvePortableCommand("npm", ["run", "browser:verify"]), "npm run browser:verify", 120_000);
+  const browserFocused = await runRecorded("browser-runtime-focused", resolvePortableCommand("node", ["tools/testing/run-tests.mjs", "package:browser-runtime"]), "node tools/testing/run-tests.mjs package:browser-runtime", 10 * 60_000);
   const electronVersion = electron.executablePresent
-    ? await runRecorded("electron-version", path.join(repositoryRoot, electron.executablePath), ["--version"], `${electron.executablePath} --version`, 30_000)
+    ? await runRecorded("electron-version", resolveDirectCommand(path.join(repositoryRoot, electron.executablePath), ["--version"]), `${electron.executablePath} --version`, 30_000)
     : { id: "electron-version", command: `${electron.executablePath ?? "node_modules/electron/dist/<platform-binary>"} --version`, exitCode: null, testResult: null, stderrSafe: "Electron binary is missing from the locked package.", redactionsApplied: 0 };
   if (!electron.executablePresent) commands.push(electronVersion);
-  const desktopFocused = await runRecorded("desktop-focused", process.execPath, ["tools/testing/run-tests.mjs", "package:desktop"], "node tools/testing/run-tests.mjs package:desktop", 5 * 60_000);
+  const desktopFocused = await runRecorded("desktop-focused", resolvePortableCommand("node", ["tools/testing/run-tests.mjs", "package:desktop"]), "node tools/testing/run-tests.mjs package:desktop", 5 * 60_000);
 
   if (electron.executablePresent) {
     const versionText = `${electronVersion.stdoutSafe ?? ""}`.trim();
@@ -787,21 +838,21 @@ async function runEvidence(options) {
   const fullCommandIds = [];
   if (shouldRunFull) {
     const fullCommands = [
-      ["full-regression", npmExecutable(), ["test"], "npm test", 20 * 60_000],
-      ["typecheck", npmExecutable(), ["run", "typecheck"], "npm run typecheck", 10 * 60_000],
-      ["build", npmExecutable(), ["run", "build"], "npm run build", 10 * 60_000],
-      ["lint", npmExecutable(), ["run", "lint"], "npm run lint", 5 * 60_000],
-      ["format-check", npmExecutable(), ["run", "format:check"], "npm run format:check", 5 * 60_000],
-      ["architecture", npmExecutable(), ["run", "test:architecture"], "npm run test:architecture", 5 * 60_000],
-      ["contracts", npmExecutable(), ["run", "contracts:check"], "npm run contracts:check", 5 * 60_000],
-      ["migrations", npmExecutable(), ["run", "migrations:validate"], "npm run migrations:validate", 5 * 60_000],
-      ["security", npmExecutable(), ["run", "security:check"], "npm run security:check", 5 * 60_000],
-      ["docs", npmExecutable(), ["run", "docs:validate"], "npm run docs:validate", 5 * 60_000],
-      ["okf", npmExecutable(), ["run", "okf:validate"], "npm run okf:validate", 5 * 60_000],
-      ["okf-tests", npmExecutable(), ["run", "test:okf"], "npm run test:okf", 10 * 60_000],
+      ["full-regression", resolvePortableCommand("npm", ["test"]), "npm test", 20 * 60_000],
+      ["typecheck", resolvePortableCommand("npm", ["run", "typecheck"]), "npm run typecheck", 10 * 60_000],
+      ["build", resolvePortableCommand("npm", ["run", "build"]), "npm run build", 10 * 60_000],
+      ["lint", resolvePortableCommand("npm", ["run", "lint"]), "npm run lint", 5 * 60_000],
+      ["format-check", resolvePortableCommand("npm", ["run", "format:check"]), "npm run format:check", 5 * 60_000],
+      ["architecture", resolvePortableCommand("npm", ["run", "test:architecture"]), "npm run test:architecture", 5 * 60_000],
+      ["contracts", resolvePortableCommand("npm", ["run", "contracts:check"]), "npm run contracts:check", 5 * 60_000],
+      ["migrations", resolvePortableCommand("npm", ["run", "migrations:validate"]), "npm run migrations:validate", 5 * 60_000],
+      ["security", resolvePortableCommand("npm", ["run", "security:check"]), "npm run security:check", 5 * 60_000],
+      ["docs", resolvePortableCommand("npm", ["run", "docs:validate"]), "npm run docs:validate", 5 * 60_000],
+      ["okf", resolvePortableCommand("npm", ["run", "okf:validate"]), "npm run okf:validate", 5 * 60_000],
+      ["okf-tests", resolvePortableCommand("npm", ["run", "test:okf"]), "npm run test:okf", 10 * 60_000],
     ];
-    for (const [id, executable, args, display, timeoutMs] of fullCommands) {
-      await runRecorded(id, executable, args, display, timeoutMs);
+    for (const [id, command, display, timeoutMs] of fullCommands) {
+      await runRecorded(id, command, display, timeoutMs);
       fullCommandIds.push(id);
     }
   }

@@ -45,3 +45,20 @@ bundle. It is not a copy of Git history or a task diary.
   text on stdout. Added focused classification regression coverage and recorded
   the corrected `ENVIRONMENT_BLOCKED` result; no acceptance requirement was
   changed or promoted.
+
+## 2026-08-11
+
+- Reproduced the Windows Phase 13 runner failure in both invocation forms and
+  traced `spawn EINVAL` to direct `npm.cmd` execution. Classified the incident
+  as `TEST_INFRA_FAILURE`, then changed the runner to resolve Node/npm commands
+  through `process.execPath` and explicit argument arrays without weakening
+  shell or security boundaries.
+- Added command-planner regression coverage for POSIX/Windows paths, npm CLI
+  resolution, spaces, and environment preservation. The actual Windows reruns
+  reached Chromium/Electron and the validated diagnostic bundle remained
+  non-promotable because the remediation commit and complete native matrix are
+  still required.
+- The final Windows diagnostic checkpoint recorded full-suite totals of 168
+  tests, 166 passed, 2 failed, and 0 skipped. The two browser assertion
+  failures remain separate clean-HEAD triage items and do not change the
+  runner incident classification.

@@ -49,3 +49,12 @@ spawn diagnostics. Regression coverage distinguishes missing-runtime
 `ENVIRONMENT_BLOCKED` from valid-runtime `PRODUCT_FAIL`; the corrected bundle
 remains diagnostic until a clean committed source baseline and all required
 native rows are available.
+
+The 2026-08-11 Windows evidence execution found and corrected a separate
+runner portability defect. Direct execution of `npm.cmd` through Node child
+process APIs raised `spawn EINVAL` before valid evidence collection. The
+runner now resolves npm's JavaScript CLI through `npm_execpath` or the
+platform's Node installation, uses explicit argument arrays without a shell,
+and records synchronous spawn errors. Planner regression tests passed 63/63;
+actual Windows reruns reached Chromium and Electron, while the source-change
+diagnostic remained non-promotable and Phase 14 remained blocked.

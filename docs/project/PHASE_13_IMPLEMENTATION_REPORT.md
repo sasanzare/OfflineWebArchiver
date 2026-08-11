@@ -11,7 +11,8 @@ plus the native platform matrix, are blocked or unavailable in this
 environment.
 
 The follow-up native-evidence work introduced at Git HEAD
-`5881707927131085032707a9e69b27ccb73bd750` adds the canonical
+`5881707927131085032707a9e69b27ccb73bd750` and committed into the current
+matrix-history line at `759e4c4e1ad21618abdd593008ee0b638b101885` adds the canonical
 [Phase 13 Native Evidence Execution Matrix](PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 and its runner at `tools/testing/run-phase13-evidence.mjs`. This infrastructure
 is validated, but it does not change the blocked runtime acceptance rows or
@@ -80,6 +81,43 @@ and the artifact secret scan found zero unauthorized occurrences. The source
 tree is intentionally dirty after this remediation, so the bundle is
 diagnostic and is not eligible for native acceptance or cross-platform
 reconciliation.
+
+## Windows Evidence Runner Compatibility Remediation — 2026-08-11
+
+The native Windows execution exposed a test-infrastructure defect before any
+valid Phase 13 evidence could be collected. Both supported runner entry points
+failed with `spawn EINVAL`. The exact failing subprocess was the direct
+`spawn("npm.cmd", ["run", "browser:verify"], ...)` call; a direct Node probe
+confirmed `spawnSync npm.cmd EINVAL`. The host used supported Node 24 and npm
+11 majors, so this incident is classified as `TEST_INFRA_FAILURE`, not
+`PRODUCT_FAIL`.
+
+The smallest correction keeps the existing runner and evidence model but adds
+an explicit `resolvePortableCommand` planner. Repository-owned Node commands
+use `process.execPath` with explicit module paths and argument arrays. npm
+commands use the JavaScript CLI named by `process.env.npm_execpath` or the
+standard Windows Node installation path; no `.cmd` file is passed directly to
+`spawn` or `execFile`, no shell is enabled, and the copied environment retains
+the repository `cwd`, `PATH`, `ComSpec`, `SystemRoot`, and temporary-directory
+values. Synchronous spawn errors are recorded as bounded diagnostics.
+
+The new planner regression suite covers POSIX/Windows Node and npm commands,
+spaces in repository paths and arguments, npm CLI fallback, and environment
+preservation. `npm run test:unit` passed 63/63. Actual Windows reruns of both
+`node tools/testing/run-phase13-evidence.mjs run` and
+`npm run test:phase13:evidence` completed without `spawn EINVAL`; the latter
+used the npm-provided `npm_execpath` JavaScript CLI. The validated diagnostic
+bundle recorded official Chromium and Electron runtime checks, a 9/10 browser
+focused result with one Service Worker assertion failure, and a 2/2 Desktop
+focused result. Because this source changed after `deb26e7e0ca65cde1c60f75b72bda8b385fdaa66`,
+the old evidence baseline is superseded and the diagnostic bundle is not
+eligible for final native acceptance.
+
+The full escalated `npm test` run on the same Windows host reported 168 tests:
+166 passed, 2 failed, and 0 skipped. The failures were the browser-native
+Interaction popup trace assertion and the Service Worker policy assertion.
+They remain separate follow-up diagnostics; the dirty remediation bundle does
+not promote either failure to a Phase 13 product or acceptance result.
 
 ## Baseline Audit
 

@@ -42,3 +42,11 @@ classifies the row as `ENVIRONMENT_BLOCKED`; this changes no platform
 requirement and does not promote macOS, Windows, or Linux support. Harness
 failures remain `TEST_INFRA_FAILURE` and are not promoted to product failures.
 A new clean committed baseline is required before native matrix execution.
+
+The 2026-08-11 Windows diagnostic confirmed that the runner itself can reach
+the native gates after its subprocess correction. The host reported Windows
+11 x64, Node 24, npm 11, official Playwright Chromium revision 1194/build
+141.0.7390.37, and Electron 43.2.0; browser verification and Desktop smoke
+executed, but the dirty remediation tree and incomplete matrix prevent any
+support or acceptance promotion. The original direct `npm.cmd` spawn failure
+is recorded as `TEST_INFRA_FAILURE` and does not change platform requirements.

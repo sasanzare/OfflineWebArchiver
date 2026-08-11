@@ -2,228 +2,258 @@
 
 ## Last Updated
 
-2026-08-10
+2026-08-11
 
 ## Project Summary
 
-Offline Web Archive Builder is a local, authorized archiving monorepo. The
-repository contains the Phase 3–8 foundation, Phase 10 interaction baseline,
-Phase 11 Secret Store, Phase 12 manual-login/session manager, and Phase 13
-architecture/security hardening. Phase 9 Discovery and all later product
-features remain outside the current implementation scope.
+Offline Web Archive Builder is a local, authorized archiving monorepo. It
+contains the Phase 3-8 foundation, Phase 10 interaction baseline, Phase 11
+Secret Store, Phase 12 Manual Login and Secure Session Manager, and Phase 13
+architecture/security hardening. Phase 9 discovery and Phase 14 features are
+outside the current scope.
 
 ## Current Objective
 
-Complete Phase 13 final runtime remediation and acceptance reconciliation. Do
-not begin Phase 14. The remaining native/browser gates must be reported from
-real approved runtimes and the required platform matrix.
+Remediate the Phase 13 Windows evidence-runner spawn EINVAL failure, preserve
+all acceptance and security requirements, and prepare a new immutable source
+baseline for native evidence. Do not start Phase 14.
 
 ## Current Phase or Milestone
 
-The Phase 13 evidence runner had a classification defect: a valid diagnostic
-bundle recorded `ENVIRONMENT_BLOCKED` at runtime level but `PRODUCT_FAIL` for
-the native matrix because missing Chromium was not included in Desktop
-environment concerns and the smoke blocker was emitted on stdout. The runner
-and regression tests are corrected. Phase 13 remains `PARTIAL` and Phase 14
-remains `PHASE_14_BLOCKED` because repository-owned Chromium and the required
-Windows 11/Linux/macOS matrix are unavailable.
+Phase 13 remains PARTIAL; Phase 14 remains PHASE_14_BLOCKED. The Windows
+runner portability defect is corrected and the actual Windows host can execute
+the runner, but the remediation is uncommitted and the required
+Windows/Linux/macOS clean common-HEAD matrix is not complete.
 
 ## Repository State
 
-- Repository path: `/Users/sasan/Desktop/codex/OfflineWebArchiver`
-- Current branch: `main`
-- Base or starting commit: `deb26e7e0ca65cde1c60f75b72bda8b385fdaa66`
-- Current HEAD: `deb26e7e0ca65cde1c60f75b72bda8b385fdaa66`
-- Working tree status: 12 modified files and 1 untracked regression test; no
-  unrelated changes were observed.
-- Staged changes: none.
-- Unstaged changes: Phase 13 runner, baseline manifest, reports, OKF records,
-  and registries listed below.
-- Untracked files: `tests/unit/phase13-evidence-classification.test.ts`.
+- Repository path: D:\All projects\OfflineWebArchiver
+- Current branch: main
+- Base or starting commit for this task: 759e4c4e1ad21618abdd593008ee0b638b101885
+- Previous requested evidence baseline: deb26e7e0ca65cde1c60f75b72bda8b385fdaa66
+- Current HEAD: 759e4c4e1ad21618abdd593008ee0b638b101885
+- Working tree status: unstaged remediation and documentation changes; no unrelated changes observed
+- Staged changes: none
+- Unstaged changes: runner, baseline manifest, Phase 13 reports, OKF records/registries, and HANDOFF
+- Untracked files: tests/unit/phase13-evidence-command-planning.test.ts
 
 ## Completed Work
 
-- Inspected the valid baseline bundle
-  `.artifacts/phase13-evidence/2026-08-10T20-59-38-509Z-deb26e7e0ca6`.
-- Confirmed the authoritative Acceptance Matrix still defines AC-P13-016 as
-  `BLOCKED`; no acceptance requirement was changed.
-- Corrected Desktop/native evidence classification to consider both required
-  Chromium and Electron runtimes and bounded stdout, stderr, and spawn
-  diagnostics.
-- Added regression coverage for missing runtimes, stdout runtime blockers,
-  valid-runtime product assertion failures, and unassessable test-infrastructure
-  failures.
-- Updated Phase 13 reports, execution matrix, OKF v0.2 concepts/registries,
-  maintenance log, and the pre-commit source-baseline manifest.
-- Reviewed and updated `/Users/sasan/Mistakes/mistakes.md` with the new
-  reusable classification lesson.
+- Verified the task-start branch, HEAD, clean tree, recent history, and diff
+  check. The repository was not on the requested prior baseline: it was on
+  759e4c4, a later committed Phase 13 matrix line.
+- Captured the Windows environment: Windows build 10.0.26200.8875, x64,
+  Node v24.17.0, shell npm 11.17.0, and ComSpec set to
+  C:\WINDOWS\system32\cmd.exe. The runner observed npm 11.13.0 through the
+  npm CLI path supplied by an earlier wrapper run; the final diagnostic bundle
+  observed npm 11.17.0. Both are supported npm 11 majors.
+- Reproduced both original invocations before editing:
+  npm run test:phase13:evidence and
+  node tools/testing/run-phase13-evidence.mjs run. Both failed immediately
+  with spawn EINVAL.
+- Proved the failing subprocess: the runner selected npm.cmd, and a direct
+  Node probe returned spawnSync npm.cmd EINVAL for the --version argument.
+  This is a test-infrastructure defect, not a product assertion or npm-major
+  failure.
+- Replaced direct .cmd execution with an explicit portable command planner.
+  Node tools use process.execPath; npm uses the JavaScript CLI from
+  npm_execpath or the standard Windows Node installation path. Arguments are
+  passed as arrays, the inherited environment and absolute repository cwd are
+  preserved, and no blanket shell mode is used.
+- Added synchronous-spawn error capture so an unassessable child process is
+  recorded in evidence instead of terminating the runner with usage text.
+- Added POSIX/Windows Node/npm planner regression coverage, including paths and
+  arguments containing spaces and environment preservation.
+- Actual Windows reruns of both runner entry points completed without
+  spawn EINVAL. The wrapper used its npm_execpath JavaScript CLI.
+- Verified official Chromium and Electron on Windows. Chromium is Playwright
+  1.56.1, revision 1194, build 141.0.7390.37, source official-playwright,
+  under .runtime/browsers; Electron is 43.2.0 and
+  node_modules/electron/dist/electron.exe launches with --version.
+- Generated and validated the diagnostic bundle
+  .artifacts/phase13-evidence/2026-08-11T05-56-50-247Z-759e4c4e1ad2.
+  Its artifact secret scan passed with zero unauthorized occurrences.
+- Regenerated the source-baseline manifest with the canonical algorithm. The
+  current diagnostic fingerprint is
+  1bc25491f1bbf72add9fd166511a659fd9e0142466fd0c9de8613ae160424198;
+  finalCommittedBaseline remains null.
+- Updated the Phase 13 execution matrix, implementation/closure reports,
+  Google OKF validation/platform/history/log records, and evidence/relationship
+  registries. No acceptance definition or security invariant was weakened.
+- Reviewed the cross-project mistakes log and recorded the reusable Windows
+  npm.cmd spawn EINVAL lesson at D:\All projects\Mistakes\mistakes.md.
 
 ## Work in Progress
 
-No product implementation is in progress. The remediation set is intentionally
-unstaged and uncommitted. The latest source baseline manifest is
-`PRE_COMMIT_PREPARATION` with `finalCommittedBaseline: null`.
+The remediation tree is intentionally unstaged and uncommitted. The source
+baseline manifest has been regenerated from the final current source set using
+the existing sha256-canonical-path-role-hash-list-v1 algorithm. Its
+finalCommittedBaseline remains null until the user creates the new commit.
 
 ## Remaining Work
 
-1. Review and commit the unstaged remediation set.
-2. On the resulting clean commit, use Node 24/npm 11 and provision the exact
-   repository-owned Playwright Chromium and locked Electron runtime.
-3. Run the Phase 13 evidence runner on approved macOS, Linux, and Windows 11
-   hosts; Windows 10 remains legacy/optional.
-4. Validate every bundle and reconcile only same-HEAD, clean-source bundles.
-5. Keep Phase 14 blocked until all mandatory Phase 13 rows pass.
+1. Review the focused Windows Service Worker failure separately; it is not
+   evidence that the original spawn EINVAL incident was a product failure.
+2. User reviews, commits, and pushes the remediation set.
+3. Run the full native evidence matrix from that new clean common HEAD on
+   Windows 11, Linux, and macOS; validate each bundle and reconcile only
+   same-HEAD, clean-source bundles.
+4. Keep AC-P13-002, AC-P13-008, AC-P13-012, and AC-P13-016 blocked until their
+   required real evidence passes.
 
 ## Exact Next Steps
 
-```text
-git diff --check
-npm ci
-npm run browser:install
-npm run browser:verify
-npm run test:phase13:evidence
-npm run test:phase13:evidence:validate -- <bundle>
-node tools/testing/run-phase13-evidence.mjs reconcile <windows> <linux> <macos>
-```
+After review, the user should commit the exact remediation file set listed
+below, then record the new commit hash and run on each required host:
 
-Do not use system Chrome/Edge, a fake manifest, or an unsupported runtime as
-evidence.
+    node --version
+    npm --version
+    git rev-parse HEAD
+    npm run browser:verify
+    npm run test:phase13:evidence
+    npm run test:phase13:evidence:validate -- <bundle>
+    node tools/testing/run-phase13-evidence.mjs reconcile <windows> <linux> <macos>
+
+Use the repository-owned official Chromium only. Do not use system Chrome/Edge,
+fake manifests, mixed revisions, or dirty-tree bundles as final acceptance.
 
 ## Files Created
 
-- `tests/unit/phase13-evidence-classification.test.ts`
+- tests/unit/phase13-evidence-command-planning.test.ts
 
 ## Files Modified
 
-- `HANDOFF.md`
-- `docs/project/PHASE_13_CLOSURE_REPORT.md`
-- `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`
-- `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`
-- `okf-extension/registry/evidence.json`
-- `okf-extension/registry/relationships.json`
-- `okf/history/phase-13.md`
-- `okf/log.md`
-- `okf/operations/platform-support.md`
-- `okf/testing/phase-13-validation.md`
-- `tools/testing/phase13-evidence-baseline.json`
-- `tools/testing/run-phase13-evidence.mjs`
+- HANDOFF.md
+- docs/project/PHASE_13_CLOSURE_REPORT.md
+- docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md
+- docs/project/PHASE_13_IMPLEMENTATION_REPORT.md
+- okf-extension/registry/evidence.json
+- okf-extension/registry/relationships.json
+- okf/history/phase-13.md
+- okf/log.md
+- okf/operations/platform-support.md
+- okf/testing/phase-13-validation.md
+- tools/testing/phase13-evidence-baseline.json
+- tools/testing/run-phase13-evidence.mjs
 
 ## Important Architecture and Design Decisions
 
-- Trusted UI, privileged Application Service, and future untrusted archive
-  runtime remain separate trust zones.
-- Browser Runtime owns Playwright lifecycle and uses only repository-owned,
-  checksum-verified Chromium; no system-browser fallback exists.
-- Raw Storage State remains Secret Store-only; logs, SQLite, contracts, reports,
-  and evidence contain metadata only.
-- AC-P13-016 remains an aggregate native-matrix criterion. A single macOS row
-  cannot promote it to `PASS`.
-- Service Worker policy, authentication allowlists, IPC sender checks, path
-  safety, and Secret Store boundaries were not weakened.
+- The evidence runner retains fixed repository-owned command definitions and
+  does not accept user-controlled shell command strings.
+- Repository-owned Node tools execute through process.execPath with explicit
+  module paths. npm commands execute the npm JavaScript CLI, not npm.cmd or a
+  shell wrapper.
+- The planner returns command, argument array, and subprocess options with
+  preserved cwd, environment, and Windows visibility behavior. Arguments are
+  never manually quoted.
+- The runner's environment/test-infrastructure/product classification remains
+  separate. spawn EINVAL is TEST_INFRA_FAILURE; missing runtime or dirty source
+  is ENVIRONMENT_BLOCKED; a valid runtime assertion failure is the only path to
+  PRODUCT_FAIL.
+- Chromium manifest verification, revision/source checks, sandbox policy,
+  system-browser prohibition, evidence redaction, same-HEAD reconciliation,
+  clean-source requirements, IPC security, Secret Store isolation, and path
+  safety remain unchanged.
 
 ## Commands Executed
 
-- Repository inspection: `git status`, `git status --porcelain=v2`, branch,
-  HEAD, log, diff check, request attachment, HANDOFF, reports, OKF, and valid
-  evidence bundle inspection.
-- `node --version` → `v24.19.0`; `npm --version` → `11.19.0`.
-- `npm run browser:info` and `npm run browser:verify` → blocked because
-  `.runtime/browsers/browser-manifest.json` is absent.
-- `npm run browser:install` → blocked because no approved Chromium executable
-  exists under the repository-owned browser root.
-- `npm run test:unit` → PASS, 57/57.
-- `npm run typecheck`, `npm run build`, `npm run lint`, `npm run format:check`,
-  `npm run test:architecture`, `npm run contracts:check`,
-  `npm run migrations:validate`, `npm run project-format:validate`, scope,
-  queue, recovery, checkpoint, render, Secret Store, diagnostics, and security
-  validators → PASS.
-- `npm run docs:validate` → PASS, 158 required artifacts, 387 active links,
-  98 archived Markdown files.
-- `npm run okf:validate` → PASS, all layers 0 errors/0 warnings.
-- `npm run test:okf` → PASS, 43/43.
-- Normal `npm test` → 162 total, 146 passed, 14 failed, 2 skipped; failures
-  were loopback `listen EPERM` and browser-dependent paths.
-- Escalated `npm test` → 162 total, 147 passed, 13 failed, 2 skipped; remaining
-  failures were approved Chromium launch/manifest and dependent CLI,
-  interaction, render, and Electron paths.
-- Normal and escalated Phase 13 evidence runs → exit 1 as expected for the
-  blocked host; all mandatory rows were `ENVIRONMENT_BLOCKED` after the fix.
-- Final diagnostic bundle:
-  `.artifacts/phase13-evidence/2026-08-10T23-30-25-501Z-deb26e7e0ca6`.
-- Final bundle validation → PASS.
-- Final reconciliation → `ENVIRONMENT_BLOCKED`, `PHASE_14_BLOCKED`; dirty
-  evidence and required Windows 11/Linux/macOS passing rows were rejected.
-- Final reconciliation artifact:
-  `.artifacts/phase13-evidence/reconciliation-2026-08-10T23-30-38-048Z.json`.
-- `/Users/sasan/Mistakes/mistakes.md` → reviewed and updated.
+- Repository baseline: branch, HEAD, status, porcelain status, latest log, and
+  git diff --check.
+- Windows environment: node --version, npm --version, where.exe node,
+  where.exe npm, where.exe npx, ComSpec, ver, and Node runtime metadata.
+- Original failure reproduction: both Phase 13 runner entry points.
+- Direct subprocess probes: npm.cmd returned EINVAL; direct Node spawning was
+  separately blocked by the normal sandbox with EPERM.
+- node --check tools/testing/run-phase13-evidence.mjs.
+- npm run test:unit with escalated subprocess permissions: PASS, 63/63.
+- Normal-sandbox diagnostic runs of the direct and npm-wrapper runner: no
+  spawn EINVAL; child execution was recorded as sandbox EPERM.
+- Escalated actual Windows runs of the direct and npm-wrapper runner: no
+  spawn EINVAL; both produced diagnostic bundles.
+- npm run browser:info: PASS.
+- npm run browser:verify: PASS.
+- Evidence bundle validation for the final Windows diagnostic
+  .artifacts/phase13-evidence/2026-08-11T05-56-50-247Z-759e4c4e1ad2: PASS.
+- npm run test:phase13:evidence:validate --
+  .artifacts/phase13-evidence/2026-08-11T05-56-50-247Z-759e4c4e1ad2: PASS.
 
 ## Validation and Test Results
 
-The final bundle records Git HEAD `deb26e7e0ca65cde1c60f75b72bda8b385fdaa66`,
-source fingerprint
-`483ef27581e9cced4ce696bef75ea9350ac9c77a30aa4097a11d7b298920f22a`,
-`sourceBaselineMatch: true`, and `cleanCommittedSource: false`. Its mandatory
-rows are AC-P13-002, AC-P13-008, AC-P13-012, and AC-P13-016:
-`ENVIRONMENT_BLOCKED`. Chromium is missing; Electron 43.2.0 is installed and
-the escalated `--version` check passes. The artifact secret scan is `PASS` with
-0 unauthorized occurrences.
+- Command-planner and existing unit tests: 63 passed, 0 failed.
+- Windows Browser verification: PASS for official Playwright Chromium 1.56.1,
+  revision 1194, build 141.0.7390.37, sandbox enabled, no system fallback.
+- Windows Electron --version: PASS for v43.2.0.
+- Windows focused browser suite: 10 total, 9 passed, 1 failed. The one failure
+  was the Service Worker policy assertion; it requires separate clean-HEAD
+  investigation and is not attributed to the spawn incident.
+- Windows focused Desktop suite: 2 total, 2 passed.
+- Full escalated npm test: 168 total, 166 passed, 2 failed, 0 skipped. The
+  failures were the browser-native Interaction popup trace assertion and the
+  Service Worker policy assertion; they are separate diagnostic findings and
+  were not promoted to product or acceptance failures from the dirty tree.
+- Windows diagnostic bundle validation: PASS; sourceBaselineMatch: true;
+  secret scan: PASS with 0
+  unauthorized occurrences.
+- Full regression, all quality gates, and cross-platform reconciliation were
+  not run to completion in this remediation checkpoint.
 
 ## Known Issues and Blockers
 
-- Approved Playwright Chromium revision 1194/build 141.0.7390.37 is not
-  provisioned under `.runtime/browsers`.
-- Normal sandbox loopback fixture binding reports `listen EPERM`; escalated
-  execution reaches the real missing-browser/launch blockers.
-- The native matrix has no Windows 11, Linux, or macOS passing bundle.
-- System Chrome/Edge is not an accepted substitute.
-- AC-P13-008 IndexedDB/fresh-context restore and AC-P13-012 real Service Worker
-  execution remain blocked.
-- `sessionStorage` persistence remains intentionally unsupported.
+- The remediation source tree is dirty, so the Windows bundle is diagnostic and
+  cannot satisfy final native acceptance.
+- The required Linux and macOS passing rows are not present at the new common
+  source revision.
+- The Windows Service Worker focused test failed once with the approved
+  Chromium runtime; do not promote AC-P13-012 or call the runner incident a
+  product failure until a clean committed rerun classifies the failure.
+- The normal sandbox blocks child-process creation with EPERM; escalated
+  Windows execution was used for the actual runner and runtime checks.
+- Phase 14 is blocked and must not be started.
 
 ## Database or Migration State
 
-SQLite schema remains version 9. Migration `009_add_crawl_run_state` is
-unchanged and earlier migrations are immutable. No database migration or
-schema change was made in this remediation.
+No database, schema, or migration changed. SQLite schema remains version 9;
+migration 009 is unchanged and applied migrations remain immutable.
 
 ## Configuration and Environment Notes
 
-The project requires Node 24 and npm 11; the current shell satisfies both.
-Electron package version is 43.2.0. Browser provisioning is explicit,
-repository-owned, checksum-verified, sandboxed, and has no system-browser
-fallback. No credentials, raw Storage State, Secret Store payloads, or machine
-secrets were added.
+The declared toolchain is Node >=24.0.0 <25 and npm >=11.0.0 <12.
+Observed npm paths expose two npm 11 patch versions (11.17.0 from the shell
+and 11.13.0 from the runner's CLI path); this is recorded separately and was
+not treated as the cause of spawn EINVAL. No credentials, raw Storage State,
+Secret Store payloads, or machine secrets were added.
 
 ## Uncommitted or Partially Applied Changes
 
-The remediation files listed above are unstaged and uncommitted. The baseline
-manifest records the remediation source fingerprint and leaves
-`finalCommittedBaseline` null. Generated `.artifacts/` evidence is ignored and
-must not be promoted until the source is committed and the native matrix is
-complete.
+The files listed under Files Modified are unstaged and uncommitted. Generated
+.artifacts/, .build-tests/, and runtime browser files are ignored and are
+diagnostic only. The new command-planning test is untracked until the user
+reviews the complete remediation set.
 
 ## Recovery or Rollback Notes
 
-No reset, clean, restore, stash, rebase, branch change, commit, push, or
-destructive operation was performed. To recover, inspect `git status`, preserve
-the unstaged set, and review this handoff before continuing. Do not edit an
-already-applied migration in place.
+No reset, restore, clean, stash, rebase, branch change, commit, push, or
+destructive cleanup was performed. Preserve the current unstaged files. If a
+review rejects the remediation, inspect the diff and revert only with explicit
+user authorization; do not discard the user's working tree.
 
 ## Related Documentation
 
-- `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`
-- `docs/project/PHASE_13_CLOSURE_REPORT.md`
-- `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`
-- `docs/product/ACCEPTANCE_MATRIX.md`
-- `docs/architecture/PHASE_13_SECURITY_REVIEW.md`
-- `okf/history/phase-13.md`
-- `okf/testing/phase-13-validation.md`
-- `tools/testing/phase13-evidence-baseline.json`
+- docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md
+- docs/project/PHASE_13_IMPLEMENTATION_REPORT.md
+- docs/project/PHASE_13_CLOSURE_REPORT.md
+- docs/product/ACCEPTANCE_MATRIX.md
+- okf/testing/phase-13-validation.md
+- okf/operations/platform-support.md
+- okf-extension/registry/evidence.json
+- tools/testing/phase13-evidence-baseline.json
 
 ## Notes for the Next Agent
 
-Treat the corrected `AC-P13-016` result as `ENVIRONMENT_BLOCKED`, not as a
-product failure. Re-run from a clean commit after provisioning the approved
-runtime. Do not start Guided OTP, Element Picker, Proxy Manager, Worker Pool,
-Asset Downloader, HTML Rewriter, full Replay, Validation Engine, packaging, or
-other Phase 14/later work.
+Treat the original Windows spawn EINVAL as TEST_INFRA_FAILURE, not
+PRODUCT_FAIL. Do not use the old deb26e7 evidence baseline after the runner or
+fingerprinted inputs change. The user must create the new clean common commit,
+then rerun official Chromium/Electron evidence on Windows 11, Linux, and macOS
+and reconcile bundles from that exact HEAD. Do not begin Guided OTP, Element
+Picker, Proxy Manager, Worker Pool, Asset Downloader, HTML Rewriter, full
+Replay, Validation Engine, packaging, or any other Phase 14 or later work.

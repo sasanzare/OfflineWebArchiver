@@ -51,3 +51,28 @@ corrected diagnostic bundle remains non-promotable while the remediation tree
 is dirty and the native matrix is incomplete. An unassessable command is
 classified separately as `TEST_INFRA_FAILURE` and is preserved during matrix
 aggregation.
+
+## Windows evidence-runner compatibility
+
+On 2026-08-11 the Windows native runner exposed a subprocess-planning defect:
+both entry points passed `npm.cmd` directly to Node child-process execution,
+which failed with `spawn EINVAL` before evidence collection. The incident is
+`TEST_INFRA_FAILURE`, not a product result. The corrected runner uses
+`process.execPath` with the npm JavaScript CLI from `npm_execpath` (or the
+standard Windows installation path), explicit argument arrays, inherited
+environment preservation, and no blanket shell invocation. Synchronous spawn
+errors are retained as bounded diagnostics.
+
+The focused command-planning regression covers POSIX and Windows Node/npm
+commands, spaces in paths and arguments, and environment preservation. The
+unit suite passed 63/63. Actual Windows reruns of both runner entry points
+completed without `spawn EINVAL`; the diagnostic bundle validated and recorded
+official Playwright Chromium and Electron. It remains non-promotable because
+the remediation source is uncommitted, the Service Worker focused test had one
+assertion failure, and the required native matrix is incomplete.
+
+The same Windows diagnostic environment ran the full repository suite with
+168 tests: 166 passed, 2 failed, and 0 skipped. The failures were the browser
+Interaction popup trace assertion and the Service Worker policy assertion;
+they remain separate clean-HEAD follow-up diagnostics and are not promoted by
+the dirty evidence bundle.

@@ -204,13 +204,57 @@ Run the same command without platform-specific test logic on:
 
 | Target | Required host | Current result |
 |---|---|---|
-| `windows-11-x64` | Approved Windows 11 x64 physical host, VM, or self-hosted runner | Pending external execution |
+| `windows-11-x64` | Approved Windows 11 x64 physical host, VM, or self-hosted runner | 2026-08-11 diagnostic run reached Chromium/Electron; not promotable because the remediation tree is not the committed baseline |
 | `windows-10-x64` | Approved Windows 10 x64 host, legacy/optional | Pending external execution |
 | `linux-<architecture>` | Approved Linux host; distribution is recorded and not invented by the runner | Pending external execution |
 | `macos-<architecture>` | Approved macOS host; architecture is recorded from the host | Current macOS arm64 row is blocked by missing Chromium/Electron |
 
 The presence of the current macOS host proves neither its Browser nor its
 Electron acceptance until the repository-owned runtimes launch successfully.
+
+## Windows subprocess compatibility remediation — 2026-08-11
+
+The Windows runner initially failed before collecting evidence. Both
+`npm run test:phase13:evidence` and `node tools/testing/run-phase13-evidence.mjs run`
+failed with `spawn EINVAL`. The exact failing command was the runner's
+`spawn("npm.cmd", ["run", "browser:verify"], ...)` path; a direct Node probe
+reported `spawnSync npm.cmd EINVAL`. Node `v24.17.0`, npm `11.17.0`, and the
+declared Node/npm major contracts were otherwise supported, so the incident is
+classified as `TEST_INFRA_FAILURE`, not a product failure or an npm-major
+compatibility claim.
+
+The runner now plans repository-owned Node tools with `process.execPath` and
+argument arrays. npm commands use the JavaScript CLI from `npm_execpath` when
+available, with a Windows installation-path fallback for direct Node
+invocation. The planner preserves the absolute repository `cwd`, a copied
+environment containing `PATH`, `ComSpec`, `SystemRoot`, and temporary-directory
+values, and Windows process hiding; it does not enable `shell: true` or add
+manual quotes. Synchronous spawn errors are captured into the bounded command
+record so an unavailable harness produces diagnostic evidence rather than
+terminating the runner.
+
+`tests/unit/phase13-evidence-command-planning.test.ts` covers POSIX and Windows
+Node/npm planning, npm CLI resolution, paths and arguments containing spaces,
+and environment preservation. The focused unit suite passed 63/63. On the
+actual Windows 11 x64 host after the fix, both invocation forms completed
+without `spawn EINVAL`; the wrapper used its `npm_execpath` JavaScript CLI.
+The diagnostic bundle
+`.artifacts/phase13-evidence/2026-08-11T05-44-03-612Z-759e4c4e1ad2`
+validated successfully. It recorded official Playwright Chromium 1.56.1 /
+revision 1194 / build 141.0.7390.37, Electron 43.2.0, browser-focused 9/10,
+and Desktop-focused 2/2. The Service Worker fixture was the one browser-suite
+failure; the bundle remains `ENVIRONMENT_BLOCKED` because the source changed
+after the prior baseline and the required native matrix is incomplete.
+
+This diagnostic result does not satisfy AC-P13-016 and does not promote any
+platform claim. A new clean committed baseline is required before final native
+matrix execution.
+
+The same escalated Windows environment ran the full repository suite with 168
+tests: 166 passed, 2 failed, and 0 skipped. The failures were the browser
+Interaction popup trace assertion and the Service Worker policy assertion.
+They are retained as separate diagnostic results and are not attributed to the
+subprocess portability incident or promoted from the dirty source tree.
 
 The runner's failure classification is intentionally separate from the
 environment label. A required runtime that is missing or cannot launch is
@@ -246,16 +290,15 @@ missing Chromium concern and its stderr-only blocker scan. The runner now
 checks both required runtimes and all bounded command-output channels; focused
 regression tests cover both environment and product outcomes.
 
-The latest corrected escalated diagnostic bundle is recorded in `HANDOFF.md`.
+The 2026-08-10 corrected escalated diagnostic bundle is recorded in
+`HANDOFF.md`.
 Validation passed, the secret scan found zero unauthorized occurrences, and
 `AC-P13-016` is now `ENVIRONMENT_BLOCKED`. The bundle is not final evidence:
-the remediation source tree is dirty, Chromium revision 1194/build
-141.0.7390.37 is not provisioned under `.runtime/browsers`, and the required
-Windows 11, Linux, and macOS passing rows are absent. The current canonical
-`npm run browser:install` attempt also failed because no approved Chromium
-executable exists under the repository-owned browser root. Electron 43.2.0 is
-installed and its escalated `--version` check passed, but this does not satisfy
-the missing Browser or cross-platform gates.
+the remediation source tree was dirty, the required Windows 11, Linux, and
+macOS passing rows were absent, and that historical macOS host did not have
+the approved Browser runtime. Electron 43.2.0 was installed there and its
+escalated `--version` check passed, but this did not satisfy the missing Browser
+or cross-platform gates.
 
 The canonical next action is to run the same command on an approved host after
 provisioning the exact locked runtimes, preserve the bundle directory, then
