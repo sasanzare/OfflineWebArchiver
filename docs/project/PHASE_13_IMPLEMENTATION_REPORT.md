@@ -10,12 +10,13 @@ real pinned-Chromium Session, IndexedDB restore, and Service Worker evidence,
 plus the native platform matrix, are blocked or unavailable in this
 environment.
 
-The follow-up native-evidence work at Git HEAD
+The follow-up native-evidence work introduced at Git HEAD
 `5881707927131085032707a9e69b27ccb73bd750` adds the canonical
 [Phase 13 Native Evidence Execution Matrix](PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 and its runner at `tools/testing/run-phase13-evidence.mjs`. This infrastructure
 is validated, but it does not change the blocked runtime acceptance rows or
-authorize Phase 14.
+authorize Phase 14. The committed evidence baseline at the start of the final
+runtime remediation is `deb26e7e0ca65cde1c60f75b72bda8b385fdaa66`.
 
 ## Phase 12 Closure Result
 
@@ -50,6 +51,35 @@ Phase 12 is reconciled explicitly rather than promoted from fake-runtime tests:
   unstaged; no files are staged.
 - No commit, push, branch change, reset, restore, clean, stash, rebase, or
   history rewrite occurred.
+
+## Final Runtime Remediation and Classification Reconciliation
+
+The validated baseline bundle
+`.artifacts/phase13-evidence/2026-08-10T20-59-38-509Z-deb26e7e0ca6` recorded
+`AC-P13-016` as `PRODUCT_FAIL` in `matrix-entry.json` even though its
+`environmentClassification` and the related browser acceptance rows were
+`ENVIRONMENT_BLOCKED`. The authoritative Acceptance Matrix still defines
+`AC-P13-016` as `BLOCKED`; the bundle inconsistency was in the evidence runner,
+not in the product acceptance requirement.
+
+The root cause was the Desktop classification path: it checked Electron
+availability but did not treat the required Chromium runtime as a Desktop
+environment prerequisite, and its blocker scan ignored `stdoutSafe` even
+though the Desktop smoke emitted `BROWSER_INSTALLATION_MISSING` there. The
+runner now checks both required runtimes and scans bounded stdout, stderr, and
+spawn diagnostics before allowing `PRODUCT_FAIL`. The regression suite covers
+missing browser/Electron runtime, stdout-reported runtime blockers, and a valid
+runtime with an application assertion failure; a separate unassessable command
+is retained as `TEST_INFRA_FAILURE` rather than being collapsed into an
+environment or product result.
+
+The latest corrected escalated diagnostic bundle recorded in `HANDOFF.md`
+classified all mandatory rows, including `AC-P13-016`, as
+`ENVIRONMENT_BLOCKED`; bundle validation passed, the source baseline matched,
+and the artifact secret scan found zero unauthorized occurrences. The source
+tree is intentionally dirty after this remediation, so the bundle is
+diagnostic and is not eligible for native acceptance or cross-platform
+reconciliation.
 
 ## Baseline Audit
 
@@ -273,13 +303,13 @@ Repository-native validation and focused suites:
 | Contracts / migrations / Project Format | PASS | Contract 1.9.0, 9 immutable migrations/schema 9, and Project Format 1.1.0 validators. |
 | Architecture / security / docs | PASS | `test:architecture`, `security:check`, and `docs:validate`; docs reported 158 required artifacts, 387 active relative links, and 98 readable archived Markdown files. |
 | Scope / queue / recovery / checkpoint / render / Secret Store validators | PASS | All 9 applicable validators passed. |
-| Unit tests | PASS | `node tools/testing/run-tests.mjs unit`: 53/53. |
+| Unit tests | PASS | `node tools/testing/run-tests.mjs unit`: 57/57, including the Phase 13 evidence-classification regression tests. |
 | Focused pure package suites | PASS | Archive Core 2/2, Project Format 3/3, SQLite 22/22, Scope Engine 10/10, Contracts 7/7, Recovery 10/10, Queue 13/13, Secret Store 12/12. |
 | OKF | PASS | `npm run okf:validate`: all layers 0 errors/0 warnings; `npm run test:okf`: 43/43. |
 | Browser package, normal sandbox | BLOCKED | 2 pass, 6 fail at loopback `listen EPERM`, 2 skipped; the registered Service Worker fixture is included. |
 | Browser package, loopback escalation | BLOCKED | 2 pass, 6 fail, 2 skipped; real cases report `BROWSER_INSTALLATION_MISSING` or `BROWSER_LAUNCH_FAILED`, with one installation assertion false. |
-| Full suite, normal sandbox | BLOCKED | 158 tests: 142 pass, 14 fail, 2 skipped. 13 failures are loopback `listen EPERM`; the CLI smoke failure is missing/invalid browser installation. |
-| Full suite, loopback escalation | BLOCKED | 158 tests: 143 pass, 13 fail, 2 skipped. Failures are approved Chromium launch/manifest, browser-backed CLI/Application Service/render, and missing Electron binary (`electron.exe` ENOENT). |
+| Full suite, normal sandbox | BLOCKED | 162 tests: 146 pass, 14 fail, 2 skipped. Failures are loopback `listen EPERM` and browser-dependent paths. |
+| Full suite, loopback escalation | BLOCKED | 162 tests: 147 pass, 13 fail, 2 skipped. Failures are approved Chromium launch/manifest and dependent browser-backed CLI/Application Service, interaction, render, and Electron paths. |
 | Browser provisioning | BLOCKED | `npm run browser:verify` reports missing `.runtime/browsers/browser-manifest.json`; the official provisioning attempt failed with DNS `getaddrinfo ENOTFOUND`. |
 | Native platform matrix | BLOCKED | Not executable from this macOS environment. |
 
@@ -301,7 +331,9 @@ The [acceptance matrix](../product/ACCEPTANCE_MATRIX.md) uses only `PASS`,
 - `NOT_APPLICABLE`: AC-P13-005 because the current product has no archive
   runtime; the required isolated baseline is documented.
 - `FAIL`: none identified. Environment failures remain blocked rather than
-  being reclassified as product failures or passes.
+  being reclassified as product failures or passes. The earlier diagnostic
+  `PRODUCT_FAIL` matrix field was corrected in the runner and is not an
+  authoritative product failure.
 
 ## OKF Updates
 
@@ -310,7 +342,9 @@ zones, replay/offline policy, Service Workers, canonical paths, Crawl Run state,
 platform support, and validation evidence; the extension registries link those
 concepts to ADRs, acceptance rows, evidence, risks, and this report. All
 official, reference, provenance, extension, quality, format, and internal OKF
-validators pass with zero errors and warnings.
+validators pass with zero errors and warnings. The runner-classification
+regression and the corrected `AC-P13-016` environment result are recorded in
+the Phase 13 validation and platform-support concepts.
 
 ## Known Limitations
 

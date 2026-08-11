@@ -496,7 +496,7 @@ function runtimeVersions(expected, npmVersion, browser, electron) {
 }
 
 function commandFailureText(command) {
-  return `${command?.stderrSafe ?? ""} ${command?.spawnErrorSafe ?? ""}`.toLowerCase();
+  return `${command?.stdoutSafe ?? ""} ${command?.stderrSafe ?? ""} ${command?.spawnErrorSafe ?? ""}`.toLowerCase();
 }
 
 function environmentFailure(command, runtime, concerns = {}) {
@@ -504,6 +504,19 @@ function environmentFailure(command, runtime, concerns = {}) {
   if (concerns.electron === true && runtime.electron.executablePresent === false) return true;
   const text = commandFailureText(command);
   return /browser_installation|browser_launch|listen eperm|enoent|dns|enotfound|fetch failed|network|sandbox/.test(text);
+}
+
+export function classifyDesktopStatus(command, runtime) {
+  const desktopEnvironmentBlocked = !runtime.electron.executablePresent
+    || !runtime.electron.versionMatches
+    || environmentFailure(command, runtime, { browser: true, electron: true });
+  return command.exitCode === 0 && command.testResult?.failed === 0
+    ? "PASS"
+    : desktopEnvironmentBlocked
+      ? "ENVIRONMENT_BLOCKED"
+      : command.exitCode === null || command.testResult === null || command.testResult === undefined || command.exitCode === 0
+        ? "TEST_INFRA_FAILURE"
+        : "PRODUCT_FAIL";
 }
 
 function subtestStatus(command, predicate) {
@@ -821,19 +834,17 @@ async function runEvidence(options) {
     const sourceResult = browserStatuses["AC-P13-002"];
     acceptanceResults.push(acceptanceResult(id, sourceResult.status, `This carry-over row reuses the same real headed/fresh-context Session evidence: ${sourceResult.reason}`, sourceResult.command, host, versions, evidenceFiles(source)));
   }
-  const desktopEnvironmentBlocked = !electron.executablePresent || !electron.versionMatches || environmentFailure(desktopFocused, runtimeFromInspection(browser, electron), { electron: true });
-  const desktopStatus = desktopFocused.exitCode === 0 && desktopFocused.testResult?.failed === 0
-    ? "PASS"
-    : desktopEnvironmentBlocked
-      ? "ENVIRONMENT_BLOCKED"
-      : desktopFocused.exitCode === 0
-        ? "TEST_INFRA_FAILURE"
-        : "PRODUCT_FAIL";
+  const desktopStatus = classifyDesktopStatus(desktopFocused, runtimeFromInspection(browser, electron));
   const fullGatePass = shouldRunFull && allCommandsPassed(commands, fullCommandIds);
+  const fullFailures = commands.filter((item) => fullCommandIds.includes(item.id) && item.exitCode !== 0);
+  const fullProductFailure = fullFailures.some((item) => item.exitCode !== null && item.testResult !== null && !environmentFailure(item, { browser, electron }));
+  const fullTestInfrastructureFailure = fullFailures.some((item) => (item.exitCode === null || item.testResult === null) && !environmentFailure(item, { browser, electron }));
   const matrixStatus = host.sourceAcceptanceEligible && browserAcceptanceIds.every((id) => browserStatuses[id].status === "PASS") && desktopStatus === "PASS" && fullGatePass
     ? "PASS"
-    : desktopStatus === "PRODUCT_FAIL" || browserAcceptanceIds.some((id) => browserStatuses[id].status === "PRODUCT_FAIL") || commands.some((item) => fullCommandIds.includes(item.id) && item.exitCode !== 0 && !environmentFailure(item, { browser, electron }))
+    : desktopStatus === "PRODUCT_FAIL" || browserAcceptanceIds.some((id) => browserStatuses[id].status === "PRODUCT_FAIL") || fullProductFailure
       ? "PRODUCT_FAIL"
+      : desktopStatus === "TEST_INFRA_FAILURE" || browserAcceptanceIds.some((id) => browserStatuses[id].status === "TEST_INFRA_FAILURE") || fullTestInfrastructureFailure
+        ? "TEST_INFRA_FAILURE"
       : environmentClassification === "INVALID_FOR_ACCEPTANCE"
         ? "INVALID_FOR_ACCEPTANCE"
         : "ENVIRONMENT_BLOCKED";

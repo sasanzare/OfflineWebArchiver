@@ -212,7 +212,16 @@ Run the same command without platform-specific test logic on:
 The presence of the current macOS host proves neither its Browser nor its
 Electron acceptance until the repository-owned runtimes launch successfully.
 
-## Current host result
+The runner's failure classification is intentionally separate from the
+environment label. A required runtime that is missing or cannot launch is
+`ENVIRONMENT_BLOCKED`; a valid runtime with a failing application assertion is
+`PRODUCT_FAIL`; and a harness failure without a valid product assessment is
+`TEST_INFRA_FAILURE`. Desktop classification uses both the required Chromium
+and Electron inspections and scans bounded stdout, stderr, and spawn
+diagnostics. This prevents a blocker printed by a smoke test on stdout from
+being promoted to a product failure.
+
+## Prior host result
 
 On 2026-08-10 at Git HEAD
 `5881707927131085032707a9e69b27ccb73bd750`, the runner classified the host as
@@ -225,6 +234,28 @@ It was written and validated; its source fingerprint matched the manifest, but
 the pre-commit tree was dirty, so the bundle remained non-promotable. The
 artifact secret scan found zero unauthorized occurrences, and no acceptance
 row was promoted to `PASS`.
+
+## Final runtime remediation result
+
+The committed baseline bundle
+`.artifacts/phase13-evidence/2026-08-10T20-59-38-509Z-deb26e7e0ca6` contained a
+classification inconsistency: its matrix environment was
+`ENVIRONMENT_BLOCKED`, but the matrix and `AC-P13-016` row were marked
+`PRODUCT_FAIL`. The source of the inconsistency was the Desktop classifier's
+missing Chromium concern and its stderr-only blocker scan. The runner now
+checks both required runtimes and all bounded command-output channels; focused
+regression tests cover both environment and product outcomes.
+
+The latest corrected escalated diagnostic bundle is recorded in `HANDOFF.md`.
+Validation passed, the secret scan found zero unauthorized occurrences, and
+`AC-P13-016` is now `ENVIRONMENT_BLOCKED`. The bundle is not final evidence:
+the remediation source tree is dirty, Chromium revision 1194/build
+141.0.7390.37 is not provisioned under `.runtime/browsers`, and the required
+Windows 11, Linux, and macOS passing rows are absent. The current canonical
+`npm run browser:install` attempt also failed because no approved Chromium
+executable exists under the repository-owned browser root. Electron 43.2.0 is
+installed and its escalated `--version` check passed, but this does not satisfy
+the missing Browser or cross-platform gates.
 
 The canonical next action is to run the same command on an approved host after
 provisioning the exact locked runtimes, preserve the bundle directory, then

@@ -33,3 +33,12 @@ The execution and transfer procedure is maintained in
 The final matrix also requires one clean committed source baseline, the
 matching source fingerprint, and the matching acceptance-definition hash from
 `tools/testing/phase13-evidence-baseline.json`.
+
+The 2026-08-10 runtime reconciliation corrected a runner classification defect:
+the macOS diagnostic bundle had an `ENVIRONMENT_BLOCKED` runtime but a
+`PRODUCT_FAIL` matrix status because the Desktop classifier omitted the
+Chromium prerequisite and ignored blocker text on stdout. The corrected runner
+classifies the row as `ENVIRONMENT_BLOCKED`; this changes no platform
+requirement and does not promote macOS, Windows, or Linux support. Harness
+failures remain `TEST_INFRA_FAILURE` and are not promoted to product failures.
+A new clean committed baseline is required before native matrix execution.

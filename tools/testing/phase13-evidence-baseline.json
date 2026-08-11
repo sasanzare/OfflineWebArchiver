@@ -2,25 +2,30 @@
   "schemaVersion": "1.0.0",
   "kind": "phase13-evidence-source-baseline",
   "lifecycle": "PRE_COMMIT_PREPARATION",
-  "createdAt": "2026-08-10T18:36:20.464Z",
+  "createdAt": "2026-08-10T21:42:29.000Z",
   "createdFromDirtyTree": true,
   "preCommit": {
-    "gitHead": "5881707927131085032707a9e69b27ccb73bd750",
+    "gitHead": "deb26e7e0ca65cde1c60f75b72bda8b385fdaa66",
     "branch": "main",
     "workingTreeStatus": [
-      "M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
+      " M docs/project/PHASE_13_CLOSURE_REPORT.md",
+      " M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
+      " M docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
       " M okf-extension/registry/evidence.json",
+      " M okf-extension/registry/relationships.json",
+      " M okf/history/phase-13.md",
       " M okf/log.md",
       " M okf/operations/platform-support.md",
       " M okf/testing/phase-13-validation.md",
-      " M tools/testing/run-phase13-evidence.mjs"
+      " M tools/testing/run-phase13-evidence.mjs",
+      "?? tests/unit/phase13-evidence-classification.test.ts"
     ]
   },
   "finalCommittedBaseline": null,
   "sourceFingerprintAlgorithm": "sha256-canonical-path-role-hash-list-v1",
-  "sourceFingerprint": "5f72396f0ae6f227f50ec06b566c12842cb46193a7b045dcf4b85674b3bc41fb",
+  "sourceFingerprint": "483ef27581e9cced4ce696bef75ea9350ac9c77a30aa4097a11d7b298920f22a",
   "packageLockHash": "7c6da7d506d2fabfff740824ac6de3dac35d6cada66e421a31e462d7118001e4",
-  "evidenceRunnerHash": "3a088af2fcab2dc86297b589a8b8ed093e141a67fe9706b2a67d16c200403149",
+  "evidenceRunnerHash": "be6f4e3dc55d5235e55fa99fae0f10bc6a7821e6cbed69fe06e75e6939631cd0",
   "acceptanceDefinitionHash": "8d83372556de3b2f0dfbfef17472a38e2f49eb1a82e3ca6b8495447282097fdc",
   "expectedNodeVersion": ">=24.0.0 <25",
   "expectedNpmMajor": 11,
@@ -83,32 +88,32 @@
     {
       "path": "docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
       "role": "evidence-policy",
-      "sha256": "ad73d7afecc2d71b167c5ba70cf87a27cc78f140091dc4b8c0202f1d82d2f4ed"
+      "sha256": "2ff1db92f0bf16b5faecbd4587634f969796c8c6fd5618ccc1edfdf77e83cc9b"
     },
     {
       "path": "docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
       "role": "evidence-policy",
-      "sha256": "8b2dff9404b49abc8ba328de9273d18422f654bc136bbd78e820b537fa273237"
+      "sha256": "92aa76cf925fefa2af87744f3bd2b08fde9cea9b74c76a0ede02fa56da56e596"
     },
     {
       "path": "okf-extension/registry/evidence.json",
       "role": "evidence-policy",
-      "sha256": "8795cd4844b1104cb0a0eb909e5cf56f446b6e123847e1cf0f5fd3d4b82547a2"
+      "sha256": "674bc07b0b95cd41b424cdf7c010b2d0f8412dbad7aacdcace299f01ccbfe0d3"
     },
     {
       "path": "okf/log.md",
       "role": "evidence-policy",
-      "sha256": "ed4886f2cef83c959c9fad958c05be7803d3c0b2a6f63890f58e1752cec9c788"
+      "sha256": "d8e049e2512ac3c73cd4411d120966d2c7295a8b3790e39c462c3db523558335"
     },
     {
       "path": "okf/operations/platform-support.md",
       "role": "evidence-policy",
-      "sha256": "133beab462483490d25804eb65b2870318330906be23c50dcd58a9c29d57c06f"
+      "sha256": "42133fb5c6f4812e99bdcf4c4ed815ff228892ef57a9a8f37d2cabe513b8e12e"
     },
     {
       "path": "okf/testing/phase-13-validation.md",
       "role": "evidence-policy",
-      "sha256": "03920b3ffb4eb54f02870f03da93ddb8bee373a04c9d14dd294f386ec4b6c543"
+      "sha256": "fac09d96db168a8695383b4d69a452010b0f03fa3c766d60f2d0e29afe0a1f56"
     },
     {
       "path": "package-lock.json",
@@ -251,6 +256,11 @@
       "sha256": "19a998e60edd7a4230b85b7c30e35bd64e84830f72a10334f3ee4f6e6d17f5b0"
     },
     {
+      "path": "tests/unit/phase13-evidence-classification.test.ts",
+      "role": "quality-gate",
+      "sha256": "57bb92f286531e588f2b7c7c3cc8333b6d9c03a531ccf7183ea4fb43d955f722"
+    },
+    {
       "path": "tools/architecture/validate.mjs",
       "role": "quality-gate",
       "sha256": "562bc15086b92b9c7b98a2969c22fbd957ffeb866387b2ffb435d91e409e6084"
@@ -313,7 +323,7 @@
     {
       "path": "tools/testing/run-phase13-evidence.mjs",
       "role": "evidence-runner",
-      "sha256": "3a088af2fcab2dc86297b589a8b8ed093e141a67fe9706b2a67d16c200403149"
+      "sha256": "be6f4e3dc55d5235e55fa99fae0f10bc6a7821e6cbed69fe06e75e6939631cd0"
     },
     {
       "path": "tools/testing/run-tests.mjs",

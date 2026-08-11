@@ -193,18 +193,17 @@ behavior and introduces no public contract version change.
 
 The canonical full suite was run in both environments:
 
-- `npm test` in the normal sandbox: 158 tests — 142 passed, 14 failed, 2
-  skipped. The failures were loopback `listen EPERM` plus browser/Electron
-  dependent paths.
-- `npm test` with loopback escalation: 158 tests — 143 passed, 13 failed, 2
+- `npm test` in the normal sandbox: 162 tests — 146 passed, 14 failed, 2
+  skipped. The failures were loopback `listen EPERM` plus browser-dependent
+  paths.
+- `npm test` with loopback escalation: 162 tests — 147 passed, 13 failed, 2
   skipped. All remaining failures were classified as browser/native
-  environment blockers: missing approved Chromium, browser launch failure,
-  CLI/render/interaction paths dependent on that browser, or missing
-  Electron binary.
-- `node tools/testing/run-tests.mjs unit`: 53/53 PASS.
+  environment blockers: missing approved Chromium, browser launch failure, and
+  CLI/render/interaction/Electron paths dependent on that browser.
+- `node tools/testing/run-tests.mjs unit`: 57/57 PASS.
 - `npm run test:okf`: 43/43 PASS.
 - `npm run okf:validate`: PASS with 0 errors and 0 warnings across all layers.
-- `npm run docs:validate`: PASS for 158 required artifacts, 393 active
+- `npm run docs:validate`: PASS for 158 required artifacts, 387 active
   relative links, and 98 readable archived Markdown files.
 
 The final gate reran the independent repository validators after focused and
@@ -246,6 +245,33 @@ rows are still missing. No acceptance row was promoted and the authoritative
 matrix remains unchanged. The exact transfer, validation, and reconciliation
 commands are maintained in the execution matrix.
 
+## Final runtime remediation and classification reconciliation — 2026-08-10
+
+The committed baseline bundle
+`.artifacts/phase13-evidence/2026-08-10T20-59-38-509Z-deb26e7e0ca6` exposed a
+runner inconsistency: `matrix-entry.json` reported
+`environmentClassification: ENVIRONMENT_BLOCKED` but `status: PRODUCT_FAIL`,
+and the generated `AC-P13-016` row inherited that product-failure status. The
+browser rows in the same bundle correctly reported `ENVIRONMENT_BLOCKED`
+because the approved Chromium manifest was absent.
+
+This was a `CLASSIFICATION_DEFECT`, not a product defect. The Desktop
+classifier did not include missing Chromium in its runtime concerns and only
+searched stderr/spawn diagnostics, while the Desktop smoke's bounded blocker
+diagnostic was in stdout. The runner now checks browser and Electron
+availability and scans stdout, stderr, and spawn diagnostics. Regression tests
+prove that a missing required runtime maps to `ENVIRONMENT_BLOCKED`, a valid
+runtime with an application assertion maps to `PRODUCT_FAIL`, and a runtime
+blocker emitted on stdout remains `ENVIRONMENT_BLOCKED`.
+
+The latest corrected escalated diagnostic bundle is recorded in `HANDOFF.md`.
+It validated successfully, reported zero unauthorized secret-scan occurrences,
+matched the declared source fingerprint, and classified `AC-P13-016` as
+`ENVIRONMENT_BLOCKED`. It remains
+non-promotable because the remediation tree is dirty, the repository-owned
+Chromium installation is still missing, and the required Windows 11, Linux,
+and macOS native rows have not been reconciled.
+
 ## Acceptance reconciliation
 
 The authoritative Phase 13 matrix remains unchanged for the mandatory
@@ -259,8 +285,9 @@ blockers:
   and no trusted renderer loads archive HTML/JavaScript.
 - `BLOCKED`: AC-P13-002, AC-P13-008, AC-P13-012, and AC-P13-016 for the
   environment evidence reasons above.
-- `FAIL`: none identified. Environment failures were not converted into
-  product failures or passes.
+- `FAIL`: none identified. The earlier diagnostic matrix inconsistency was
+  corrected in the runner; the authoritative acceptance matrix remains
+  `BLOCKED` for the environment/native-evidence reasons above.
 
 Phase 12 carry-over reconciliation remains historical and traceable:
 

@@ -40,3 +40,14 @@ Final native acceptance must use the clean committed source baseline declared
 by `tools/testing/phase13-evidence-baseline.json`. Each bundle records the
 deterministic source fingerprint and acceptance-definition hash; reconciliation
 rejects dirty or source-mismatched bundles even when their test commands pass.
+
+The final runtime remediation found and corrected an evidence-classification
+defect: the Desktop smoke reported the missing Chromium runtime on bounded
+stdout, while the runner only inspected stderr/spawn diagnostics and did not
+include Chromium in the Desktop environment concerns. Regression tests now
+separate `ENVIRONMENT_BLOCKED` for missing required runtimes from
+`PRODUCT_FAIL` for a valid runtime with a product assertion failure. The
+corrected diagnostic bundle remains non-promotable while the remediation tree
+is dirty and the native matrix is incomplete. An unassessable command is
+classified separately as `TEST_INFRA_FAILURE` and is preserved during matrix
+aggregation.

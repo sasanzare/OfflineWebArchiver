@@ -38,3 +38,14 @@ Related records are maintained in `docs/project/PHASE_13_IMPLEMENTATION_REPORT.m
 `docs/project/POST_PHASE_12_BASELINE_AUDIT.md`,
 `docs/architecture/PHASE_13_SECURITY_REVIEW.md`, and
 `docs/product/ACCEPTANCE_MATRIX.md`.
+
+The final runtime reconciliation on 2026-08-10 found a classification defect
+in the evidence runner, not a product failure. A valid structured bundle had
+reported `ENVIRONMENT_BLOCKED` at the runtime level but `PRODUCT_FAIL` for its
+Desktop/native matrix status because missing Chromium was not a Desktop
+environment concern and the blocker was emitted on stdout. The runner now
+checks both required native runtimes and scans bounded stdout, stderr, and
+spawn diagnostics. Regression coverage distinguishes missing-runtime
+`ENVIRONMENT_BLOCKED` from valid-runtime `PRODUCT_FAIL`; the corrected bundle
+remains diagnostic until a clean committed source baseline and all required
+native rows are available.

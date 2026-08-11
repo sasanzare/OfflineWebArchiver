@@ -39,3 +39,9 @@ bundle. It is not a copy of Git history or a task diary.
 - Added the Phase 13 source-baseline freeze invariant: native bundles record a
   deterministic source fingerprint and acceptance-definition hash, and final
   reconciliation requires a clean committed tree with matching source inputs.
+- Reconciled the 2026-08-10 Phase 13 runtime diagnostic: a matrix
+  `PRODUCT_FAIL` conflicted with its `ENVIRONMENT_BLOCKED` runtime because the
+  Desktop classifier omitted the Chromium prerequisite and ignored blocker
+  text on stdout. Added focused classification regression coverage and recorded
+  the corrected `ENVIRONMENT_BLOCKED` result; no acceptance requirement was
+  changed or promoted.
