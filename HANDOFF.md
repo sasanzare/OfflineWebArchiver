@@ -13,8 +13,8 @@ This section supersedes the historical Phase 14 checkpoint retained below.
 Offline Web Archive Builder is a local authorized archiving monorepo. Product
 Phase 13 architecture/security hardening and Product Phase 14 OTP Flow/Element
 Picker remain complete on the accepted native Windows 11 x64 baseline. Product
-Phase 15 Proxy Manager and Health Monitor is implemented in the current
-worktree and is awaiting the final clean-HEAD evidence run.
+Phase 15 Proxy Manager and Health Monitor is implemented and validated within
+its declared boundary on a clean committed Windows 11 x64 baseline.
 
 ## Current Objective
 
@@ -26,7 +26,7 @@ worker-scheduling boundary.
 
 - Phase 13: COMPLETE
 - Phase 14: COMPLETE
-- Phase 15: IMPLEMENTED; final exact-HEAD evidence pending
+- Phase 15: COMPLETE within declared boundary
 
 ## Repository State
 
@@ -34,8 +34,11 @@ worker-scheduling boundary.
 - Current branch: `main`
 - Base or starting commit: `68fe3ca` (`fix(phase13): close native evidence gate`)
 - Current HEAD at task start: `68fe3ca`
-- Promoted evidence HEAD: Phase 14 remains recorded in its accepted bundle;
-  Phase 15 exact final HEAD is not yet recorded
+- Phase 15 implementation commit: `1fa68547f4a42b28f3bce0c4e8b0c81dfdc029fe`
+- Final Phase 15 evidence HEAD: recorded exactly in
+  `.artifacts/phase15-evidence/final-native-windows-11-x64/summary.json`
+- Working tree at final evidence: clean; staged, unstaged, and untracked source
+  changes: none
 - Working tree at Phase 15 start: clean
 - Staged changes at Phase 15 start: none
 - Unstaged changes at Phase 15 start: none
@@ -64,30 +67,26 @@ worker-scheduling boundary.
 
 ## Work in Progress
 
-Phase 15 implementation and documentation are complete in the working tree.
 The Phase 14 final evidence directory
-`.artifacts/phase14-evidence/final-native-windows-11-x64` validated successfully.
-Focused Phase 15 checks already pass: unit `74/74`, application-service `8/8`,
-persistence `23/23`, and Browser Runtime/Chromium `12/12`. The sandboxed unit
+`.artifacts/phase14-evidence/final-native-windows-11-x64` and the final Phase 15
+evidence directory `.artifacts/phase15-evidence/final-native-windows-11-x64`
+both validate successfully. Phase 15 records full `184/184`, unit `74/74`,
+integration `28/28`, real Chromium `12/12`, Browser Runtime proxy `12/12`,
+Application Service `8/8`, and SQLite `23/23` passes. The sandboxed unit
 invocation hit an environment `EPERM` while spawning esbuild; the same gate was
-rerun with elevated execution and passed. A clean local commit and the
-sequential full Phase 15 evidence run remain.
+rerun with elevated execution and passed.
 
 ## Remaining Work
 
-No Phase 13/14 promotion blocker remains. Phase 9 remains an independent
-discovery prerequisite for the earlier Phase 10/11 completion line. Phase 15
-exact-HEAD evidence and final handoff checkpoint are the remaining work. Phase
-16 Worker Pool/rate-limit scheduling is intentionally not implemented.
+No Phase 13/14 or Phase 15 promotion blocker remains. Phase 9 remains an
+independent discovery prerequisite for the earlier Phase 10/11 completion line.
+Phase 16 Worker Pool/rate-limit scheduling is intentionally not implemented.
 
 ## Exact Next Steps
 
-Review the Phase 15 diff and run focused quality/documentation checks, create a
-local Phase 15 commit without push or history rewrite, then run
-`npm run test:phase15:evidence -- --output-dir .artifacts/phase15-evidence/final-native-windows-11-x64`
-sequentially and validate it with
-`npm run test:phase15:evidence:validate -- .artifacts/phase15-evidence/final-native-windows-11-x64`.
-Do not regenerate or overwrite accepted Phase 13/14 evidence.
+For the next task, preserve the validated Phase 15 evidence and exact HEAD.
+Do not regenerate or overwrite accepted Phase 13/14/15 evidence unless the
+source changes and a new exact-HEAD bundle is intentionally promoted.
 
 ## Files Created
 
@@ -127,23 +126,26 @@ HANDOFF.
 ## Commands Executed
 
 The official Phase 13 run/validate/reconcile commands and Phase 14
-run/validate commands were executed. Phase 15 focused commands included
-typecheck, unit, application-service, persistence, Browser Runtime/Chromium,
-architecture, contracts, migrations, project-format, lint, format, security,
-docs, and OKF validation. The full sequential Phase 15 evidence command is
-still pending the clean local commit.
+run/validate commands were executed. Phase 15 exact evidence and validation
+were executed with `npm run test:phase15:evidence -- --output-dir
+.artifacts/phase15-evidence/final-native-windows-11-x64` and
+`npm run test:phase15:evidence:validate --
+.artifacts/phase15-evidence/final-native-windows-11-x64`; all commands were
+sequential and the summary binds to the exact clean commit.
 
 ## Validation and Test Results
 
 - Baseline before Phase 15: unit `70/70 PASS`; Phase 14 final evidence validator
   `PASS`.
-- Phase 15 focused: unit `74/74 PASS`; application-service `8/8 PASS`;
-  persistence `23/23 PASS`; Browser Runtime/Chromium `12/12 PASS`.
-- Architecture `106` production TypeScript files PASS; contracts `1.11.0`
+- Phase 15 focused: unit `74/74 PASS`; integration `28/28 PASS`;
+  application-service `8/8 PASS`; persistence `23/23 PASS`; Browser
+  Runtime/Chromium `12/12 PASS`.
+- Architecture `107` production TypeScript files PASS; contracts `1.11.0`
   validated with 67 commands; migrations schema `10` PASS; project format,
   lint, format, security, docs, and OKF checks PASS.
-- Full Phase 1–14 regression, final native evidence, and exact-HEAD validation
-  are not yet recorded for this working tree.
+- Full regression `184/184 PASS`; Phase 14 baseline validator `PASS`; Phase 15
+  evidence runner and exact-HEAD validator `PASS`; release promotion `PASS`.
+- Sensitive evidence findings: `0`.
 - Historical full: `177/177 PASS`
 - Unit: `70/70 PASS`
 - Integration: `26/26 PASS`
@@ -179,8 +181,8 @@ Node `v24.17.0`; npm `11.17.0`; Playwright `1.56.1`; official Chromium
 
 ## Uncommitted or Partially Applied Changes
 
-Phase 15 changes are currently uncommitted. No destructive rollback, branch
-change, push, reset, rebase, or amend has occurred.
+No uncommitted or partially applied Phase 15 changes remain. No destructive
+rollback, branch change, push, reset, rebase, or amend has occurred.
 
 ## Recovery or Rollback Notes
 
@@ -201,14 +203,13 @@ forward Git commits rather than destructive cleanup.
 - `docs/project/PHASE_15_IMPLEMENTATION_REPORT.md`
 - `docs/architecture/PHASE_15_SECURITY_REVIEW.md`
 - `docs/project/adr/ADR-058-proxy-manager-and-health-monitor.md`
-- `.artifacts/phase15-evidence/final-native-windows-11-x64` (to be generated)
+- `.artifacts/phase15-evidence/final-native-windows-11-x64`
 
 ## Notes for the Next Agent
 
-Before the final response, ensure the Phase 15 commit is clean, the evidence
-summary and validator bind to the same HEAD, the Phase 14 validator still
-passes, and this handoff is updated with the final exact results. Preserve the
-Phase 16 scheduling boundary and the accepted evidence semantics.
+The Phase 15 commit is clean; the evidence summary and validator bind to the
+same HEAD; the Phase 14 validator still passes. Preserve the Phase 16
+scheduling boundary and the accepted evidence semantics.
 
 ## Historical Handoff (superseded)
 
