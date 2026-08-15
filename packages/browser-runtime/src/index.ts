@@ -367,10 +367,18 @@ class PlaywrightPageSession implements BrowserPageSession {
   }
   public async captureScreenshot(): Promise<Uint8Array> { return this.pageOperation(() => this.page.screenshot({ type: "png", fullPage: false, animations: "disabled" })); }
   public async executeInteractionPlan(input: import("@offline-web-archive/archive-core").InteractionExecutionInput): Promise<import("@offline-web-archive/archive-core").InteractionExecutionResult> {
+    let potentialPopup = Promise.resolve();
     const handlers: PlaywrightInteractionHandlers = {
       setDialogHandler: (handler) => { this.dialogHandler = handler; },
       setPopupHandler: (handler) => { this.popupHandler = handler; },
-      waitForHandlers: () => this.waitForInteractionHandlers(),
+      prepareForPotentialPopup: (timeoutMs) => {
+        potentialPopup = this.context.waitForEvent("page", { timeout: timeoutMs }).then(() => undefined).catch(() => undefined);
+      },
+      waitForHandlers: async () => {
+        await potentialPopup;
+        potentialPopup = Promise.resolve();
+        await this.waitForInteractionHandlers();
+      },
       clearHandlers: () => { this.dialogHandler = null; this.popupHandler = null; },
       isCrashed: () => this.crashed || !this.browserConnected(),
     };

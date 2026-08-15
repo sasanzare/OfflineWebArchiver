@@ -1,7 +1,7 @@
 ---
 type: Phase Record
 title: Product Phase 13 - Architecture and Security Hardening
-description: Records the partial post-Phase-12 hardening implementation, Windows-only current-release closure, and deferred future-platform evidence.
+description: Records the completed post-Phase-12 hardening implementation, accepted Windows 11 x64 closure, and deferred future-platform evidence.
 tags: [history, phase-record, architecture, security, portability]
 status: draft
 sources:
@@ -10,7 +10,7 @@ sources:
     title: Current Phase 13 source and evidence set
 owa:
   implementation_status: implemented
-  verification_status: partial
+  verification_status: verified
   requirement_ids: [NFR-SEC-003, NFR-TEST-001, NFR-REL-001, NFR-REL-002, NFR-PORT-001, NFR-PORT-002, NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004]
   acceptance_ids: [AC-P13-001, AC-P13-002, AC-P13-003, AC-P13-004, AC-P13-005, AC-P13-006, AC-P13-007, AC-P13-008, AC-P13-009, AC-P13-010, AC-P13-011, AC-P13-012, AC-P13-013, AC-P13-014, AC-P13-015, AC-P13-016, AC-P13-017, AC-P13-018, AC-P13-019, AC-P13-020, AC-P13-021, AC-P13-022]
   decision_ids: [OD-077, OD-078, OD-079, OD-080, OD-081]
@@ -19,6 +19,10 @@ owa:
 ---
 
 # Product Phase 13 - Architecture and Security Hardening
+
+The accepted clean committed Windows 11 x64 bundle and reconciliation close
+this phase. Historical blocked diagnostic results below are retained only for
+traceability and do not override the verified status in frontmatter.
 
 ## Current release scope reconciliation — 2026-08-11
 
@@ -40,11 +44,12 @@ Replay/Strict Offline behavior, Service Worker policy, canonical paths, trust
 zones, and worker/network concurrency. SQLite schema 9 persists Crawl Run state
 through migration 009; the transport contract is 1.9.0.
 
-The implementation is partial. Focused local tests cover the pure policies,
+The implementation and current-release evidence gate are complete. Tests cover the pure policies,
 authentication routing, scope/profile compatibility, persistence, and contract
 surfaces. The registered real pinned-Chromium Session, IndexedDB restore, and
-Service Worker fixtures, plus native platform evidence, remain blocked by the
-current environment. No Phase 14 engine or later product feature is claimed.
+Service Worker fixtures, Session/IndexedDB restore, native Windows 11 x64,
+and the full quality/security gate. The accepted bundle and reconciliation are
+recorded in the Phase 13 closure report.
 
 Related records are maintained in `docs/project/PHASE_13_IMPLEMENTATION_REPORT.md`,
 `docs/project/PHASE_13_CLOSURE_REPORT.md`,

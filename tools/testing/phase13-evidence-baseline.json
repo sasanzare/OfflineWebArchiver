@@ -2,21 +2,42 @@
   "schemaVersion": "1.0.0",
   "kind": "phase13-evidence-source-baseline",
   "lifecycle": "PRE_COMMIT_PREPARATION",
-  "createdAt": "2026-08-15T05:47:10.074Z",
+  "createdAt": "2026-08-15T06:18:55.641Z",
   "createdFromDirtyTree": true,
   "preCommit": {
-    "gitHead": "b00dc009e8eebe2d210ac47b34763dfe4e89c83e",
+    "gitHead": "7fbc5eaba60f4ae22753fc5bb9d67da51fd7a090",
     "branch": "main",
     "workingTreeStatus": [
-      "M tools/testing/phase13-evidence-baseline.json"
+      "M HANDOFF.md",
+      " M README.md",
+      " M docs/architecture/PHASE_13_SECURITY_REVIEW.md",
+      " M docs/architecture/PHASE_14_SECURITY_REVIEW.md",
+      " M docs/product/ACCEPTANCE_MATRIX.md",
+      " M docs/project/PHASE_13_CLOSURE_REPORT.md",
+      " M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
+      " M docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
+      " M docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md",
+      " M docs/project/PHASE_PLAN.md",
+      " M okf-extension/registry/evidence.json",
+      " M okf-extension/registry/phases.json",
+      " M okf-extension/registry/relationships.json",
+      " M okf/history/phase-13.md",
+      " M okf/history/phase-14.md",
+      " M okf/log.md",
+      " M okf/testing/phase-13-validation.md",
+      " M okf/testing/phase-14-validation.md",
+      " M packages/browser-runtime/src/index.ts",
+      " M packages/browser-runtime/src/interaction.ts",
+      " M tests/unit/phase13-evidence-classification.test.ts",
+      " M tools/testing/run-phase13-evidence.mjs"
     ]
   },
   "finalCommittedBaseline": null,
   "sourceFingerprintAlgorithm": "sha256-canonical-path-role-hash-list-v1",
-  "sourceFingerprint": "74c1a21c7d3672460066096f866f607f6875c7894bf11d2981a6313fd601024d",
+  "sourceFingerprint": "7b0b9d998c0f9695e161adb8bbe7f67b0fcbb5b06548d3880633f98ead12fd48",
   "packageLockHash": "7be6a3fe3cf46b291d15a10c8a79613976f8385d97dc6d5ed1f244e051c449ad",
-  "evidenceRunnerHash": "002c2fa9d5088f3e1c102e48093f69d22c4719f4158e0dbe1233db88c84f43a6",
-  "acceptanceDefinitionHash": "d3be2d6f80aaf7e081024618e56ea0cc6b945b82f50fb77bc943f00d21275406",
+  "evidenceRunnerHash": "d286fd30b89403e5cba1a6bcc2a346a3683cdff5750e61e7bc44b3f30d14039a",
+  "acceptanceDefinitionHash": "5b38b2b7701ea25fdb1b0eb8f3f07db8e481f91f1ecfaf48ad427d1e469868b9",
   "expectedNodeVersion": ">=24.0.0 <25",
   "expectedNpmMajor": 11,
   "playwrightVersion": "1.56.1",
@@ -79,7 +100,7 @@
     {
       "path": "docs/architecture/PHASE_13_SECURITY_REVIEW.md",
       "role": "evidence-policy",
-      "sha256": "15866990fef749c6f398c8b4afa1188a07b2f3ec47cdd8de3bfa51b98c18eeb2"
+      "sha256": "3fca07ed8b965a41e3ea6715dd116b05aa515a885a8868fae00f9ac2ee4a6b27"
     },
     {
       "path": "docs/architecture/PLATFORM_SUPPORT_POLICY.md",
@@ -94,32 +115,32 @@
     {
       "path": "README.md",
       "role": "evidence-policy",
-      "sha256": "aab6394a40288a67de1467740dca518c0c4d414df13f4d4dd471abb483f9337b"
+      "sha256": "c14395781cfd49288f1a71e3b96cdb29db29ceb59fcd19e04aaad839b5c402fa"
     },
     {
       "path": "docs/product/ACCEPTANCE_MATRIX.md",
       "role": "acceptance-definition",
-      "sha256": "5723ee328750f0cfefee47947aec7e24304ff7eb2cc2a1fc77c0a7c717d6247d"
+      "sha256": "7d76c66fa357397377004ffd4f5fec2af34832c203604906a2bd82d078fe77fc"
     },
     {
       "path": "docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
       "role": "evidence-policy",
-      "sha256": "6d8d6c26699fd4800f86e7fc6ca9f3349758b9a844a0e85dc125cd8bd2c75dc5"
+      "sha256": "95e76a4c6aac6a9447cd10180fa6abf7cf5600087a237831a95c0d989e0bad1f"
     },
     {
       "path": "docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
       "role": "evidence-policy",
-      "sha256": "a87a409a32710b2dd58fee09872ed854fc6b8bb3a201cf185b53fdf7b52a1260"
+      "sha256": "7b33a304e5381fbbe2279f49762505c99133646b37952b46006cd00e21078e51"
     },
     {
       "path": "okf-extension/registry/evidence.json",
       "role": "evidence-policy",
-      "sha256": "0e1d6ac9f4022ff34e3201e4323f9ea6e8569ac902bd726fff6c9e52d5640c62"
+      "sha256": "e3066779a7b38c5528773af331eb8e68c345bf9c611e9a5a294a9a70751a58ec"
     },
     {
       "path": "okf/log.md",
       "role": "evidence-policy",
-      "sha256": "0d18f5cbef207c5ec9d896f91e6cf1edae8e1d23753147abdc6a89c2fcd9e103"
+      "sha256": "455fcb1ff0f867d970cedfde7aa5e08dc27cd8e2f802aa1775876f468ea1cade"
     },
     {
       "path": "okf/operations/platform-support.md",
@@ -129,7 +150,7 @@
     {
       "path": "okf/testing/phase-13-validation.md",
       "role": "evidence-policy",
-      "sha256": "834d624b7626837b9d27f5b60984f6e2989f39ab92e6c9206a9541005456c20b"
+      "sha256": "e3a834d40db1f294921b3ee2bf49e8b74569d77e65a61a6cd1b3f9e6332c6fd7"
     },
     {
       "path": "package-lock.json",
@@ -199,12 +220,12 @@
     {
       "path": "packages/browser-runtime/src/index.ts",
       "role": "browser-runtime-source",
-      "sha256": "06b141efb0d2ed2b228af698c63c6bbf1b193df594fdd4ab363913f5e2075892"
+      "sha256": "5a745d26fa0ca172b53aae844f3eef55385991b037ba9bbee40b40bea6034bbf"
     },
     {
       "path": "packages/browser-runtime/src/interaction.ts",
       "role": "browser-runtime-source",
-      "sha256": "de88986ab8e9e50551ca5e05e4570c2f5130fe81d39b43e07c0c8973f1aa35d6"
+      "sha256": "7098c868bb05d96863172a908241adc94cfd13ca41978f8e3bc03e30f9ae3daa"
     },
     {
       "path": "tests/browser/browser-runtime.test.ts",
@@ -274,7 +295,7 @@
     {
       "path": "tests/unit/phase13-evidence-classification.test.ts",
       "role": "quality-gate",
-      "sha256": "1700edceebd1d2d77126aef65726290b66d7df1b064c1e2a2b72842d090e9840"
+      "sha256": "5f4a089f4eea322a1674764dfa3e3d34135b02007aae26287d319505b3fd6bc8"
     },
     {
       "path": "tests/unit/phase13-evidence-command-planning.test.ts",
@@ -344,7 +365,7 @@
     {
       "path": "tools/testing/run-phase13-evidence.mjs",
       "role": "evidence-runner",
-      "sha256": "002c2fa9d5088f3e1c102e48093f69d22c4719f4158e0dbe1233db88c84f43a6"
+      "sha256": "d286fd30b89403e5cba1a6bcc2a346a3683cdff5750e61e7bc44b3f30d14039a"
     },
     {
       "path": "tools/testing/run-tests.mjs",

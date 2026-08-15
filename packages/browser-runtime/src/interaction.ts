@@ -146,6 +146,7 @@ function statusFromFailure(error: unknown): { status: "failed" | "paused" | "can
 export interface PlaywrightInteractionHandlers {
   setDialogHandler(handler: (dialog: Dialog) => Promise<void>): void;
   setPopupHandler(handler: (popup: Page) => Promise<void>): void;
+  prepareForPotentialPopup?(timeoutMs: number): void;
   waitForHandlers?(): Promise<void>;
   clearHandlers(): void;
   isCrashed(): boolean;
@@ -283,6 +284,7 @@ export async function executePlaywrightInteractionPlan(
       while (!completed && attempt < (step.retryPolicy?.maxAttempts ?? 1)) {
         attempt += 1;
         try {
+          if (step.stepType === "click") handlers.prepareForPotentialPopup?.(Math.min(profile.popupPolicy.maximumHandlingDurationMs, 500));
           await executeStep(page, profile, budget, random, timing, input.signal, step);
           await handlers.waitForHandlers?.();
           await assertPostcondition(page, step);

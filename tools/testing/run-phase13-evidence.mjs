@@ -527,6 +527,11 @@ export function classifyWindowsRelease(metadata = {}, kernelRelease = "") {
   return "windows-unknown";
 }
 
+export function normalizeWindowsUpdateBuildRevision(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? String(parsed) : null;
+}
+
 async function inspectWindowsRelease() {
   if (process.platform !== "win32") return null;
   const systemRoot = process.env.SystemRoot ?? process.env.WINDIR;
@@ -537,7 +542,7 @@ async function inspectWindowsRelease() {
     const result = await execFile(executable, ["query", "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"], { cwd: repositoryRoot, timeout: 5_000, windowsHide: true });
     const values = parseWindowsRegistryValues(result.stdout);
     const currentBuildNumber = values.currentbuildnumber ?? values.currentbuild ?? null;
-    const updateBuildRevision = values.ubr ?? null;
+    const updateBuildRevision = normalizeWindowsUpdateBuildRevision(values.ubr);
     const release = classifyWindowsRelease({ productName: values.productname, currentBuildNumber }, os.release());
     if (release === "windows-unknown") throw new Error("Windows release metadata did not identify Windows 10 or Windows 11.");
     return {

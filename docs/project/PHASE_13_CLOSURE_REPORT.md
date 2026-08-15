@@ -2,13 +2,26 @@
 
 ## Phase status
 
-`PARTIAL`
+`COMPLETE`
 
-The Phase 13 implementation contracts and deterministic regressions remain
-validated. Approved Windows Chromium evidence is now available for the Session,
-IndexedDB restore, and remediated Service Worker fixtures, but closure is not
-authorized because the reconciliation changes must be committed and the
-Windows 11 x64 release evidence must be rerun from that clean baseline.
+The clean committed native Windows 11 x64 gate passed on Git HEAD
+`7fbc5eaba60f4ae22753fc5bb9d67da51fd7a090`. The authoritative bundle is
+`.artifacts/phase13-evidence/final-native-windows-11-x64`; its validator passes,
+its secret scan reports zero unauthorized occurrences, and
+`.artifacts/phase13-evidence/final-reconciliation.json` records `PASS` with
+`PHASE_14_READY`.
+
+The accepted host is a physical HP Victus x64 system running Windows 11 Home
+25H2, build `26200.8875`. Node is `v24.17.0`, npm is `11.17.0`, Playwright is
+`1.56.1`, the repository-owned official Chromium build is `141.0.7390.37`
+(revision `1194`), and Electron is `43.2.0`. The source fingerprint,
+acceptance-definition hash, clean-tree state, exact HEAD, browser/Desktop
+fixtures, full regression, quality, migration, security, documentation, OKF,
+and sensitive-evidence gates all match.
+
+This closes the prior procedural/evidence blocker. Phase 14 was previously
+partial because this upstream promotion gate was unresolved, not because its
+OTP/Element Picker implementation failed.
 
 ## Current release platform decision — 2026-08-11
 
@@ -25,7 +38,14 @@ fingerprint and acceptance-definition hash, real Chromium and Electron,
 focused and full gates, and secret-scan success. It does not weaken any native
 runtime or security requirement.
 
-Phase 14 remains prohibited.
+Phase 14 revalidation is authorized from this accepted baseline. Phase 15 was
+not started by this closure task.
+
+## Historical diagnostic context (superseded)
+
+The remaining sections preserve earlier diagnostic runs and root-cause history.
+Their blocked/partial statements are superseded by the accepted closure result
+above.
 
 ## Baseline
 

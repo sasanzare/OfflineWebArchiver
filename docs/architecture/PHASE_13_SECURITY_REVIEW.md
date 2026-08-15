@@ -2,16 +2,16 @@
 
 ## Review status
 
-**Status:** PARTIAL — no Critical finding is open, but current-release
-Windows 11 x64 evidence remains non-promotable until a clean committed run.
-Linux and macOS evidence is deferred future-version work, not a current-release
-security blocker.
+**Status:** PASS — no Critical finding is open. The clean committed Windows 11
+x64 evidence, real Chromium/Electron fixtures, full regression/security gates,
+and sensitive scan pass on the accepted Phase 13 baseline. Linux and macOS
+evidence is deferred future-version work, not a current-release blocker.
 
 **Scope:** post-Phase-12 architecture and security hardening only. This review
 does not approve Phase 14 authentication/OTP, proxy, downloader, replay-engine,
 archive-runtime, or Worker Pool functionality.
 
-## Closure remediation checkpoint — 2026-08-09
+## Historical closure remediation checkpoint — 2026-08-09 (superseded)
 
 The registered Session fixture was strengthened so its protected marker depends
 on cookie, localStorage, and an IndexedDB record; it also asserts that the
@@ -28,8 +28,8 @@ totals are in [the Phase 13 Closure Report](../project/PHASE_13_CLOSURE_REPORT.m
 
 | Finding | Severity | Owner | Target | Evidence / disposition | Acceptance |
 |---|---|---|---|---|---|
-| S13-001: Registered real Chromium session fixture cannot currently execute | High | Browser Runtime / QA | Before Phase 13 closure | Approved Windows Chromium now passes the registered Session fixture; current-release promotion still requires a clean committed Windows 11 x64 run. Linux/macOS execution is deferred. | AC-P13-002 |
-| S13-002: Service Worker block/allow behavior lacks real browser evidence | High | Browser Runtime / QA | Before Phase 13 closure | Approved Windows Chromium now passes the registered block/allow fixture; current-release promotion still requires a clean committed Windows 11 x64 run. Linux/macOS execution is deferred. | AC-P13-012 |
+| S13-001: Registered real Chromium session fixture cannot currently execute | High | Browser Runtime / QA | Closed | Accepted Windows Chromium Session/IndexedDB evidence passes on the clean committed baseline. Linux/macOS execution is deferred. | AC-P13-002 |
+| S13-002: Service Worker block/allow behavior lacks real browser evidence | High | Browser Runtime / QA | Closed | Accepted Windows Chromium block/allow evidence passes on the clean committed baseline. Linux/macOS execution is deferred. | AC-P13-012 |
 | S13-003: Future platform support is unverified | High | Platform / QA | Before any future-platform claim | Windows 11 x64 is the only mandatory current-release target; Windows 10 is legacy/non-blocking and Linux/macOS remain deferred until their own native evidence exists. | AC-P13-016 |
 | S13-004: Full Worker Pool concurrency stress is not executable yet | Medium | Queue / Reliability | Phase 14+ scheduler work | NOT_APPLICABLE to the current runtime because no Worker Pool scheduler exists. The versioned contract and SQLite stress plan prevent premature implementation claims. | AC-P13-018, AC-P13-019 |
 | S13-005: Archive runtime isolation is a future boundary | Medium | Desktop / Security | Before archive HTML is introduced | NOT_APPLICABLE to the current product. A separate untrusted-runtime baseline is documented and the current trusted renderer cannot load archive content. | AC-P13-005 |

@@ -1,12 +1,12 @@
 ---
 type: Test Strategy
 title: Phase 14 Validation
-description: Records focused OTP/Picker tests, leakage controls, Run continuation, and the Phase 13 prerequisite gate.
+description: Records passing OTP/Picker tests, leakage controls, Run continuation, and the accepted Phase 13 prerequisite gate.
 tags: [testing, authentication, otp, browser, security]
-status: draft
+status: stable
 owa:
   implementation_status: implemented
-  verification_status: partial
+  verification_status: verified
   requirement_ids: [NFR-TEST-001, NFR-SEC-002, NFR-SEC-003, NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004]
   acceptance_ids: [AC-P14-008, AC-P14-009, AC-P14-010, AC-P14-011, AC-P14-012, AC-P14-013]
   risk_ids: [R-090, R-101, RISK-KNOW-001]
@@ -42,7 +42,8 @@ field clearing, Session validation, same-Run `waiting_for_auth` continuation,
 temporary picker teardown, and absence of phone/OTP markers from snapshots,
 results, logs, and persistence.
 
-The current worktree's focused Phase 14 unit, integration, and browser checks
-are passing. This is not a Phase 13 release promotion: the required clean
-committed Windows 11 x64/native evidence gate remains blocked and is recorded
-as `OKF-EV-P14-GATE` and `AC-P14-013`.
+The accepted clean committed baseline passes full `177/177`, unit `70/70`,
+integration `26/26`, and real Chromium `11/11`, plus build, typecheck, lint,
+format, architecture, contracts, migrations, security, docs, OKF, and a
+zero-finding sensitive scan. `OKF-EV-P14-GATE` and `AC-P14-013` pass through
+the accepted Phase 13 bundle/reconciliation and same-HEAD Phase 14 evidence.

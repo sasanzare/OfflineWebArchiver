@@ -1,13 +1,13 @@
 # 25-Phase Plan
 
-## Current phase position — 2026-08-12
+## Current phase position — 2026-08-15
 
-Product Phase 8 — Browser Lifecycle and Rendering Engine remains the latest fully gated product phase. The repository also contains a partial Product Phase 10 interaction foundation, the Product Phase 11 Secret Store foundation, the Product Phase 12 Manual Login and Secure Session Manager implementation, a partial Product Phase 13 hardening pass, and a partial Product Phase 14 OTP/Element Picker implementation: contract `1.10.0`, SQLite schema `9`, Project schema `9`, Interaction Profile/Trace schema `1`, Locator/Login Flow/Element Picker/OTP contracts `1`, Secret Reference/Vault/Envelope schema `1`, Session metadata/storage-state/affinity schema `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, approved-plan validation, user-driven headed authentication, protected session persistence, visible OTP participation, temporary native element selection, fresh restore validation, redacted traces, project-scoped encrypted storage, metadata-only transport, and safe export/diagnostic boundaries. The Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 remain conditional; Phase 12/13 real browser/platform evidence and the Phase 13 prerequisite gate remain blocked for release promotion.
+Product Phases 13 and 14 are complete on the accepted clean committed Windows 11 x64 baseline. Phase 14 retains contract `1.10.0` and SQLite schema `9`; the full suite, focused suites, native Chromium, security, documentation, and OKF gates pass with zero sensitive findings. The independent Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 discovery-related completion remains conditional. Phase 15 Proxy Manager and Health Monitor is ready but has not started.
 
 **Document status:** Proposed baseline  
 **Owner:** Product Owner  
-**Current product status:** **Phase 8 complete; Phase 9 is the open prerequisite for discovery; Phase 10 partial; Phase 11 conditional; Phase 12 implementation present with a real-browser validation gate; Phase 13 partial with browser/platform validation gates; Phase 14 partial with focused OTP/Picker validation passed but the Phase 13 release gate still open**
-**Last updated:** 2026-08-12
+**Current product status:** **Phase 9 remains the open discovery prerequisite; Phase 10 partial; Phase 11 conditional; Phase 13 complete; Phase 14 complete; Phase 15 ready and not started**
+**Last updated:** 2026-08-15
 
 This is the authoritative concise delivery sequence. The attached Product Phase 11
 specification adds a cross-cutting Secret Store foundation before later

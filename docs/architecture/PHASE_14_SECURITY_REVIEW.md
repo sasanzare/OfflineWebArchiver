@@ -2,10 +2,9 @@
 
 ## Review status
 
-**PASS for the focused Phase 14 controls; PARTIAL for release promotion.**
-The Phase 13 security regression suite and `npm run security:check` pass in the
-current worktree. The unresolved Phase 13 clean committed Windows 11 x64/native
-evidence gate remains a release blocker and is not silently accepted here.
+**PASS.** The Phase 13 security regression suite, `npm run security:check`,
+clean committed Windows 11 x64 dependency gate, Phase 14 revalidation, and
+sensitive evidence scan all pass on the accepted baseline.
 
 ## Control review
 
@@ -20,12 +19,12 @@ evidence gate remains a release blocker and is not silently accepted here.
 | Durable boundary | optional Profile Login Flow only; no OTP/phone schema or migration | migration validation and persistence review | PASS |
 | Run continuation | same Run moves to `waiting_for_auth` and resumes only after validation | Application Service integration | PASS |
 | Phase 13 regression gate | existing security/navigation/IPC/path/redaction suites | `npm run security:check` and regression tests | PASS |
-| Release promotion prerequisite | clean committed Windows 11 x64/native Phase 13 evidence | Phase 13 closure report/evidence matrix | BLOCKED |
+| Release promotion prerequisite | clean committed Windows 11 x64/native Phase 13 evidence | accepted Phase 13 bundle and reconciliation | PASS |
 
 ## Residual risks
 
-- A product deployment must still execute and inspect the approved Phase 13
-  native evidence procedure on a clean committed Windows 11 x64 source state.
+- Future promoted baselines must rerun the same native evidence procedure on
+  their exact clean committed Windows 11 x64 source state.
 - Login Flow descriptors remain user/configuration supplied; malformed or
   unsafe locators are rejected, but target-site behavior can still cause an
   explicit flow failure or timeout.
@@ -33,5 +32,4 @@ evidence gate remains a release blocker and is not silently accepted here.
   challenge mechanisms. Those remain visible-user responsibilities.
 
 No critical Phase 14 security defect was identified in the implemented scope.
-The `BLOCKED` release status is evidence promotion state, not a claim that the
-focused security controls failed.
+Phase 14 release promotion is `PASS`; no Phase 15 implementation is included.

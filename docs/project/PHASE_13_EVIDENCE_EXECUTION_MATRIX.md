@@ -2,12 +2,19 @@
 
 ## Scope and status
 
-This document defines the repository-owned execution path for the remaining
-Phase 13 evidence. It does not add product functionality. The current release
-acceptance target is Windows 11 x64; Windows 10 is legacy/compatibility and
-Linux/macOS are future-version targets. Phase 13 remains `PARTIAL` until the
-real approved Chromium and native Windows 11 evidence are executed from a
-clean committed source baseline.
+This document defines the repository-owned execution path for Phase 13
+evidence. It does not add product functionality. The current release target is
+Windows 11 x64; Windows 10 is legacy/compatibility and Linux/macOS are
+future-version targets. Phase 13 is `COMPLETE`: real Chromium, Electron, and
+native Windows 11 x64 evidence passed from clean committed Git HEAD
+`7fbc5eaba60f4ae22753fc5bb9d67da51fd7a090`.
+
+The accepted bundle is
+`.artifacts/phase13-evidence/final-native-windows-11-x64`; official validation
+passes. Reconciliation is recorded at
+`.artifacts/phase13-evidence/final-reconciliation.json` with `PASS` and
+`PHASE_14_READY`. The host is Windows 11 Home 25H2 build `26200.8875`, x64;
+the sensitive scan has zero findings.
 
 The canonical runner is
 [`tools/testing/run-phase13-evidence.mjs`](../../tools/testing/run-phase13-evidence.mjs),

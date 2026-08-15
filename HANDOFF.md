@@ -1,5 +1,154 @@
 # Project Handoff
 
+## Authoritative Remediation Handoff
+
+This section supersedes the historical Phase 14 checkpoint retained below.
+
+## Last Updated
+
+2026-08-15
+
+## Project Summary
+
+Offline Web Archive Builder is a local authorized archiving monorepo. Product
+Phase 13 architecture/security hardening and Product Phase 14 OTP Flow/Element
+Picker are complete on the accepted native Windows 11 x64 baseline. Phase 15
+Proxy Manager and Health Monitor is ready but has not started.
+
+## Current Objective
+
+Preserve the accepted Phase 13/14 promotion baseline and begin Phase 15 only
+under a separate explicit task.
+
+## Current Phase or Milestone
+
+- Phase 13: COMPLETE
+- Phase 14: COMPLETE
+- Phase 15: READY, not started
+
+## Repository State
+
+- Repository path: `D:\All projects\OfflineWebArchiver`
+- Current branch: `main`
+- Base or starting commit: `8757bbf7bd9b208e7c7d7069e52ac0d4752d4f2d`
+- Promoted evidence HEAD: recorded exactly in both final evidence bundles
+- Working tree requirement: clean for final evidence
+- Staged changes: none after the final baseline commit
+- Unstaged changes: none after the final baseline commit
+- Untracked files: none outside ignored generated artifacts
+
+## Completed Work
+
+- Committed the Phase 14 OTP/Element Picker implementation and its tests.
+- Fixed asynchronous popup-handler settling exposed by the real browser gate.
+- Upgraded Phase 14 evidence tooling to require an accepted same-HEAD Phase 13
+  bundle/reconciliation and to validate full/focused/browser and quality gates.
+- Fixed Windows UBR normalization so evidence records build `26200.8875`.
+- Produced and validated final Phase 13 and Phase 14 evidence from clean source.
+- Synchronized Acceptance Matrix, reports, security reviews, OKF, and HANDOFF.
+
+## Work in Progress
+
+Not applicable.
+
+## Remaining Work
+
+No Phase 13/14 promotion blocker remains. Phase 9 remains an independent
+discovery prerequisite for the earlier Phase 10/11 completion line.
+
+## Exact Next Steps
+
+Start **Phase 15 — Proxy Manager and Health Monitor** only after a new explicit
+request. Do not regenerate or overwrite accepted evidence when merely reading
+the repository state.
+
+## Files Created
+
+Phase 14 source/tests/reports and `tools/testing/run-phase14-evidence.mjs` were
+created by the Phase 14 implementation commit; see Git history for the exact
+inventory.
+
+## Files Modified
+
+Phase 13/14 reports, Acceptance Matrix, security reviews, evidence tooling,
+OKF concepts/registries/log, `README.md`, `package.json`, and this HANDOFF.
+
+## Important Architecture and Design Decisions
+
+- Phase 13 current-release native scope is Windows 11 x64; Windows 10 is
+  legacy/non-blocking and Linux/macOS are future-version targets.
+- Phase 14 promotion requires a validated Phase 13 bundle/reconciliation on
+  the exact same clean committed HEAD.
+- SQLite remains schema `9`; transport remains `1.10.0`.
+- Phone/OTP values remain ephemeral and absent from durable/evidence outputs.
+
+## Commands Executed
+
+The official Phase 13 run/validate/reconcile commands and Phase 14
+run/validate commands were executed, together with full/focused tests, build,
+typecheck, lint, format, architecture, contracts, migrations, security, docs,
+and OKF validation.
+
+## Validation and Test Results
+
+- Full: `177/177 PASS`
+- Unit: `70/70 PASS`
+- Integration: `26/26 PASS`
+- Real Chromium: `11/11 PASS`
+- Phase 13 bundle validation/reconciliation: `PASS`
+- Phase 14 validation/promotion: `PASS`
+- Build/typecheck/lint/format/architecture/contracts/migrations/security/docs/OKF: `PASS`
+- Sensitive findings: `0`
+
+## Known Issues and Blockers
+
+No blocker prevents Phase 15. Deferred Linux/macOS native evidence and the
+independent missing Phase 9 discovery engine remain known scope limitations.
+
+## Risks and Assumptions
+
+Future promoted commits must rerun the same clean-source native evidence gates;
+the accepted bundles prove only their recorded Git HEAD.
+
+## Database or Migration State
+
+SQLite schema `9`; no Phase 14 migration was added.
+
+## Configuration and Environment Notes
+
+Accepted host: physical HP Victus x64, Windows 11 Home 25H2 build `26200.8875`;
+Node `v24.17.0`; npm `11.17.0`; Playwright `1.56.1`; official Chromium
+`141.0.7390.37` revision `1194`; Electron `43.2.0`.
+
+## Uncommitted or Partially Applied Changes
+
+Not applicable after the final baseline commit.
+
+## Recovery or Rollback Notes
+
+No push, force-push, reset, rebase, or history rewrite occurred. Generated
+evidence is ignored under `.artifacts/`; source rollback should use ordinary
+forward Git commits rather than destructive cleanup.
+
+## Related Documentation
+
+- `docs/project/PHASE_13_CLOSURE_REPORT.md`
+- `docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md`
+- `docs/product/ACCEPTANCE_MATRIX.md`
+- `okf/testing/phase-13-validation.md`
+- `okf/testing/phase-14-validation.md`
+- `.artifacts/phase13-evidence/final-native-windows-11-x64`
+- `.artifacts/phase13-evidence/final-reconciliation.json`
+- `.artifacts/phase14-evidence/final-native-windows-11-x64`
+
+## Notes for the Next Agent
+
+Treat the remainder of this file as historical context. Phase 15 is ready but
+not started; preserve schema `9`, contract `1.10.0`, the trust zones, and the
+accepted evidence semantics.
+
+## Historical Handoff (superseded)
+
 ## Last Updated
 
 2026-08-12

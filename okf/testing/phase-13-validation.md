@@ -6,7 +6,7 @@ tags: [testing, security, browser, acceptance]
 status: draft
 owa:
   implementation_status: implemented
-  verification_status: partial
+  verification_status: verified
   requirement_ids: [NFR-TEST-001, NFR-SEC-003, NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004]
   acceptance_ids: [AC-P13-002, AC-P13-012, AC-P13-016, AC-P13-020, AC-P13-022]
   risk_ids: [R-090, R-101, RISK-KNOW-001]
@@ -14,6 +14,12 @@ owa:
 ---
 
 # Phase 13 Validation
+
+The accepted bundle at
+`.artifacts/phase13-evidence/final-native-windows-11-x64` and reconciliation at
+`.artifacts/phase13-evidence/final-reconciliation.json` pass on clean committed
+Windows 11 x64 source with zero sensitive findings. Historical diagnostic
+classifications below remain as test-strategy context.
 
 Focused pure, contract, scope, persistence, and authentication-policy suites
 provide local evidence for the hardening changes. On the verified Windows host,
@@ -24,7 +30,7 @@ tree evidence is diagnostic until the reconciliation is committed and the
 Windows evidence is rerun from a clean source baseline. Windows 10 is
 legacy/non-blocking, while Linux and macOS are deferred future-version work.
 
-Phase 13 closure requires rerunning those registered browser fixtures with the
+Phase 13 closure reran those registered browser fixtures with the
 pinned runtime on the current Windows 11 target, then rerunning the full
 repository gates. The canonical runner, bundle schema, status model, versioned
 platform-support contract, and reconciliation commands are recorded in

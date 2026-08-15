@@ -2,11 +2,12 @@
 
 ## Status
 
-**PARTIAL** — the Phase 14 implementation boundary, focused tests, integration
-coverage, and real Chromium fixture pass in the current worktree. Final phase
-promotion remains blocked by the pre-existing Phase 13 clean-committed
-Windows 11 x64/native evidence gate. This report does not authorize Phase 15
-proxy implementation by itself.
+**COMPLETE** — the Phase 13 clean committed Windows 11 x64 dependency passes,
+and Phase 14 was revalidated on the same Git HEAD. The new evidence at
+`.artifacts/phase14-evidence/final-native-windows-11-x64` validates with full
+suite `177/177`, unit `70/70`, integration `26/26`, real Chromium `11/11`, all
+quality/security/documentation/OKF gates, and zero sensitive findings. Release
+promotion is `PASS`. This report does not start Phase 15 proxy work.
 
 ## Scope
 
@@ -93,28 +94,25 @@ are:
 - `npm run docs:validate`
 - `npm run okf:validate`
 
-The repository-owned `npm run test:phase14:evidence` command records a
-redacted, same-HEAD evidence summary under `.artifacts/phase14-evidence/`.
-The bundle records command status, runtime facts, and the unresolved Phase 13
-prerequisite; it never records phone/OTP values or raw browser state.
+The repository-owned `npm run test:phase14:evidence` command accepts the
+official Phase 13 bundle and reconciliation paths and records a redacted,
+same-HEAD evidence summary under `.artifacts/phase14-evidence/`. Validate the
+result with `npm run test:phase14:evidence:validate -- <bundle>`. The bundle
+records command status, runtime facts, and the accepted Phase 13 prerequisite;
+it never records phone/OTP values or raw browser state.
 
 ## Acceptance mapping
 
 The authoritative rows are [AC-P14-001 through AC-P14-013](../product/ACCEPTANCE_MATRIX.md).
-AC-P14-001 through AC-P14-012 are locally evidenced by source, focused tests,
-the security check, and documentation validators. AC-P14-013 remains
-`BLOCKED` until the Phase 13 clean committed Windows 11 x64/native evidence
-bundle is inspected and reconciled.
+AC-P14-001 through AC-P14-013 pass. AC-P14-013 is supported by the accepted
+Phase 13 bundle/reconciliation and the new same-HEAD Phase 14 evidence bundle.
 
 ## Known limitations and next step
 
-The current environment can execute the focused real Chromium fixture, but
-that result is not a substitute for the Phase 13 release-promotion procedure,
-which requires clean committed source, the approved native matrix, and
-inspection of the registered evidence bundle. The next safe step is to close
-that Phase 13 gate. After that product decision, the next user-requested phase
-is **Phase 15 — Proxy Manager and Health Monitor**; no proxy code is included
-in Phase 14.
+The Phase 13 release-promotion procedure and Phase 14 revalidation both pass.
+Future baselines must repeat the same clean-source evidence procedure. The next
+user-requested phase is **Phase 15 — Proxy Manager and Health Monitor**; it is
+ready but was not started, and no proxy code is included in Phase 14.
 
 Related records:
 

@@ -2,7 +2,7 @@
 
 **Document status:** Proposed baseline  
 **Owner:** QA Lead  
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-15
 
 This matrix is the authoritative inventory of product acceptance criteria.
 Requirements are defined in [Project Scope](PROJECT_SCOPE.md); phases are defined
@@ -498,7 +498,7 @@ portable architecture.
 | AC-P13-013 | NFR-SEC-003, NFR-PORT-002 | Canonical path contract | Test traversal, URL/double encoding, absolute/UNC/drive, reserved names, Unicode, and length | One helper rejects unsafe paths and creates deterministic normalized/collision keys | path corpus tests; ADR-056 | Critical | PASS |
 | AC-P13-014 | NFR-SEC-003, FR-PROJECT-004 | Path consumer and symlink safety | Import and verify outputs through root/symlink boundaries | Project-relative writes and output verification cannot escape the root | Persistence path tests and source review | Critical | PASS |
 | AC-P13-015 | NFR-PORT-001 | Platform policy | Review primary/legacy/compatibility target rules and decision inputs | Windows 11 is primary; Windows 10 and non-Windows claims require explicit evidence | `docs/architecture/PLATFORM_SUPPORT_POLICY.md` | High | PASS |
-| AC-P13-016 | NFR-PORT-001, NFR-TEST-001 | Current-release native validation | Execute the required Phase 13 native/Desktop/browser evidence on the supported Windows 11 x64 release environment; retain Windows 10 as legacy/compatibility evidence and Linux/macOS as future-version evidence | The current Windows release target passes real Chromium, real Electron, focused browser, full regression, quality, security, clean-source, fingerprint, and acceptance-hash gates; deferred platforms are not required for this release | platform evidence matrix and reconciliation | High | BLOCKED |
+| AC-P13-016 | NFR-PORT-001, NFR-TEST-001 | Current-release native validation | Execute the required Phase 13 native/Desktop/browser evidence on the supported Windows 11 x64 release environment; retain Windows 10 as legacy/compatibility evidence and Linux/macOS as future-version evidence | The current Windows release target passes real Chromium, real Electron, focused browser, full regression, quality, security, clean-source, fingerprint, and acceptance-hash gates; deferred platforms are not required for this release | `.artifacts/phase13-evidence/final-native-windows-11-x64`; final reconciliation | High | PASS |
 | AC-P13-017 | NFR-TEST-001 | Acceptance metrics | Review metric formulas and outcome classifications | Six versioned metrics distinguish archived/skipped/blocked/unreproducible/limitation/failure outcomes | `docs/architecture/ACCEPTANCE_METRICS.md` | High | PASS |
 | AC-P13-018 | NFR-REL-001, NFR-SEC-003 | Worker/network concurrency contract | Review global, Proxy, origin, request, rate, Retry-After, and cooldown dimensions | Contract prevents Proxy multiplication of origin budgets and bounds waits | core contract tests; concurrency architecture doc | High | PASS |
 | AC-P13-019 | NFR-REL-001, NFR-REL-002 | SQLite concurrency stress plan | Run current SQLite races and review crash/commit/fencing matrix | Current ledgers remain consistent; full Worker Pool stress is deferred until a scheduler exists | persistence/concurrency suite; stress plan | Critical | PASS |
@@ -526,12 +526,11 @@ without promoting the unresolved Phase 13 native/release prerequisite.
 | AC-P14-010 | NFR-TEST-001, NFR-PORT-001 | Real Chromium OTP/Picker fixture | Run the registered Chromium fixture against the local OTP page | Native browser interaction, picker teardown, OTP completion, and Session validation pass in the current worktree | `npm run test:browser`; `tests/browser/otp-flow.test.ts` | Critical | PASS |
 | AC-P14-011 | NFR-SEC-002, NFR-SEC-003 | Phase 13 security regressions | Run existing security, transport, navigation, permission, redaction, Session, and path checks after Phase 14 changes | No Phase 13 security regression or privileged-boundary bypass is introduced | `npm run security:check`; existing regression suites | Critical | PASS |
 | AC-P14-012 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and OKF synchronization | Validate Phase 14 report, ADR, architecture docs, OKF v0.2 concepts, extension registries, and HANDOFF | Implementation, evidence, privacy limitations, and Phase 13 dependency status agree without sensitive values | docs/OKF validators; Phase 14 report; HANDOFF | Critical | PASS |
-| AC-P14-013 | NFR-PORT-001, NFR-TEST-001 | Phase 13 prerequisite and release promotion | Reconcile Phase 14 against the clean committed Windows 11 x64 Phase 13 evidence gate | Phase 14 is promoted only after the unresolved Phase 13 prerequisite/native evidence gate is closed | `docs/project/PHASE_13_CLOSURE_REPORT.md`; Phase 14 evidence bundle | High | BLOCKED |
+| AC-P14-013 | NFR-PORT-001, NFR-TEST-001 | Phase 13 prerequisite and release promotion | Reconcile Phase 14 against the clean committed Windows 11 x64 Phase 13 evidence gate | Phase 14 is promoted only after the unresolved Phase 13 prerequisite/native evidence gate is closed | accepted Phase 13 bundle/reconciliation; `.artifacts/phase14-evidence/final-native-windows-11-x64` | High | PASS |
 
-The Phase 14 implementation is therefore `PARTIAL`: AC-P14-001 through
-AC-P14-012 are locally evidenced, while AC-P14-013 remains blocked by the
-pre-existing Phase 13 clean-commit/native release gate. This status does not
-authorize proxy or other later-phase implementation.
+Phase 14 is `COMPLETE`: AC-P14-001 through AC-P14-013 pass on the accepted
+clean committed Windows 11 x64 baseline. Phase 15 is ready but is not started
+by this acceptance decision.
 
 ### Phase 12 reconciliation for Phase 13 closure
 
