@@ -28,6 +28,13 @@ executes through the optional Interaction port, checkpoints the operation,
 and persists a fenced redacted trace. Projects without a profile receive the
 disabled default and preserve prior behavior.
 
+Phase 14 adds a separate Login Flow interaction adapter for the existing
+headed Authentication Context. It uses the same Browser Runtime ownership and
+native Playwright input primitives but has its own versioned Locator and OTP
+state contracts. The Element Picker is a temporary page-local overlay with
+safe locator descriptors only; it is not a general script or privileged IPC
+surface.
+
 ## Profile and plan
 
 Interaction Profile schema `1` defines the enabled/mode/seed values, action,
@@ -99,9 +106,10 @@ SQLite ownership/fencing boundary.
 
 ## Phase boundary
 
-This foundation does not implement login, Session persistence, OTP, Secret
-Store, proxies, downloading, rewriting, API capture, or a GUI configuration
-surface. It also does not implement Phase 9 discovery. Once Phase 9 supplies
+This foundation does not implement proxies, downloading, rewriting, API
+capture, or a final GUI configuration surface. Phase 14 implements only the
+configured OTP flow and minimal internal Element Picker on top of the existing
+Session boundary. It also does not implement Phase 9 discovery. Once Phase 9 supplies
 approved discovery opportunities, a later integration can evaluate resulting
 URLs through Scope and enqueue them through Queue without changing this
 browser-native safety boundary.

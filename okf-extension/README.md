@@ -9,9 +9,10 @@ extension files are not official OKF Concepts, and no file under this directory
 should be counted when determining official OKF conformance.
 
 The extension currently indexes Product Phase 10 as `PARTIAL`, Product Phase 11
-as `PARTIAL`, Product Phase 12 as `PARTIAL`, and Product Phase 13 as `PARTIAL`:
-the hardening contracts and Windows Chromium evidence are present, while clean
-committed Windows 11 x64 promotion remains blocked. Windows 10 is
+as `PARTIAL`, Product Phase 12 as `PARTIAL`, Product Phase 13 as `PARTIAL`, and
+Product Phase 14 as `PARTIAL`: the OTP/Picker contracts, focused tests, and
+current-worktree Chromium fixture are present, while clean committed Windows
+11 x64 Phase 13 promotion remains blocked. Windows 10 is
 legacy/compatibility and Linux/macOS native evidence is deferred to future
 versions; neither is a current Phase 13 gate. The manifest remains activated at
 Phase 8; later phases are recorded for traceability without advancing the
@@ -55,3 +56,5 @@ validation and reporting may consume both layers.
 - Phase 13 closure/remediation report: `docs/project/PHASE_13_CLOSURE_REPORT.md`
 - Phase 13 native evidence execution matrix: `docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md`
 - Phase 13 security review: `docs/architecture/PHASE_13_SECURITY_REVIEW.md`
+- Phase 14 implementation report: `docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md`
+- Phase 14 security review: `docs/architecture/PHASE_14_SECURITY_REVIEW.md`

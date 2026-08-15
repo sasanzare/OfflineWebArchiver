@@ -4,7 +4,7 @@
 
 An authorized operator selects a Project/queued Job through Desktop or CLI. Application Service composes the Scope/Queue/Recovery stores with Browser Runtime and Rendering Engine. Owned Chromium may contact only runtime-authorized destinations; deterministic loopback is test-only. Final rendered artifacts remain inside the Project. There is no automatic discovery, Asset Downloader, authentication provider, proxy, remote control service, or external telemetry actor.
 
-In the current baseline the authorized local user can manage a portable Project/Profile, evaluate scope, queue an eligible Page Job, and run one controlled Browser Render through contract 1.9.0. A bounded approved Interaction Plan can also run through the Browser Runtime foundation, and a privileged Secret Store can manage opaque references/encrypted values without exposing them to the general transport. Phase 13 additionally persists Crawl Run state and defines replay/offline, Service Worker, canonical path, trust-zone, and concurrency contracts without implementing their later engines. Phase 9 discovery is absent and no interaction-generated URL is enqueued. Owned Chromium and the system DNS resolver are runtime actors behind authorization; authentication/session UI, OTP, proxies, production downloaders, discovery Workers, and Worker Pools remain outside the running system.
+In the current baseline the authorized local user can manage a portable Project/Profile, evaluate scope, queue an eligible Page Job, and run one controlled Browser Render through contract 1.10.0. A bounded approved Interaction Plan can also run through the Browser Runtime foundation, and a privileged Secret Store can manage opaque references/encrypted values without exposing them to the general transport. Phase 13 additionally persists Crawl Run state and defines replay/offline, Service Worker, canonical path, trust-zone, and concurrency contracts without implementing their later engines. Phase 14 adds versioned Locator/Login Flow descriptors, a temporary native Element Picker, and visible single/segmented OTP participation on an existing authenticated Session boundary; phone and OTP inputs remain ephemeral and are never persisted or emitted in diagnostics. Phase 9 discovery is absent and no interaction-generated URL is enqueued. Owned Chromium and the system DNS resolver are runtime actors behind authorization; proxies, production downloaders, discovery Workers, and Worker Pools remain outside the running system.
 
 The English Electron Desktop and internal CLI call one local Application Service. The service composes Archive Core ports, Scope/Queue/Recovery/Rendering/Interaction policy, Browser Runtime, and the Node SQLite adapter. SQLite schema 9 persists Leases, Checkpoints, Run control/state, Recovery, Render, Interaction, Session metadata, output, and execution-session state. The Render and Interaction runtimes can make only authorized outbound GET/HEAD requests; fixture servers are test-only and no production network listener exists.
 
@@ -20,7 +20,7 @@ flowchart LR
   Service --> Persistence["SQLite adapter / schema 7"]
   Service --> Browser["Owned Chromium Browser Runtime"]
   Persistence --> Files["Portable Project directory / ZIP"]
-  Contracts["Contract 1.9.0"] -.-> Desktop
+  Contracts["Contract 1.10.0"] -.-> Desktop
   Contracts -.-> CLI
   Contracts -.-> Service
 ```

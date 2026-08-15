@@ -16,6 +16,7 @@ const browserTests = [
   "browser/browser-runtime.test.js",
   "browser/interaction.test.js",
   "browser/session.test.js",
+  "browser/otp-flow.test.js",
   "browser/service-worker-policy.test.js",
   "process-kill/browser-process-kill.test.js",
 ];
@@ -37,7 +38,7 @@ const packageTests = new Map([
   ["package:secrets", ["secrets/secret-store.test.js"]],
   ["package:platform", ["unit/platform.test.js"]],
   ["package:application-service", ["integration/application-service.test.js", "integration/render-lifecycle.test.js"]],
-  ["package:browser-runtime", ["unit/authentication-route.test.js", "browser/browser-runtime.test.js", "browser/session.test.js", "browser/service-worker-policy.test.js", "process-kill/browser-process-kill.test.js"]],
+  ["package:browser-runtime", ["unit/authentication-route.test.js", "browser/browser-runtime.test.js", "browser/session.test.js", "browser/otp-flow.test.js", "browser/service-worker-policy.test.js", "process-kill/browser-process-kill.test.js"]],
   ["package:rendering", ["rendering/render-engine.test.js", "integration/render-lifecycle.test.js", "integration/render-persistence-faults.test.js"]],
   ["package:test-support", ["unit/test-support.test.js"]],
   ["package:cli", ["unit/cli.test.js", "cli/cli-smoke.test.js", "cli/cli-render-smoke.test.js"]],

@@ -506,6 +506,33 @@ portable architecture.
 | AC-P13-021 | NFR-SEC-003, NFR-MAINT-001 | Phase 13 security review | Review all Critical/High findings with owner, target, and acceptance | No Critical finding is open; blocked High evidence is explicit and not silently accepted | `docs/architecture/PHASE_13_SECURITY_REVIEW.md` | Critical | PASS |
 | AC-P13-022 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and OKF synchronization | Validate ADRs, baseline, report, OKF v0.2, extension registries, and traceability | Actual implementation, evidence, limitations, and deferrals agree | docs/OKF validators; Phase 13 report | Critical | PASS |
 
+## Product Phase 14 OTP Flow and Element Picker criteria
+
+Phase 14 uses strict status values: `PASS`, `FAIL`, `BLOCKED`, and
+`NOT_APPLICABLE`. Focused Phase 14 implementation and test evidence may pass
+without promoting the unresolved Phase 13 native/release prerequisite.
+
+| Acceptance ID | Requirement ID | Capability | Direct scenario | Expected result | Evidence | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| AC-P14-001 | FR-AUTH-001, NFR-MAINT-001 | Versioned Locator and Login Flow contract | Parse, serialize, reject unsafe locators, and preserve optional Profile Login Flow | Locator strategies, frame context, URL/condition, OTP mode, bounds, and version fields are strict and deterministic | `packages/archive-core/src/authentication.ts`; `packages/contracts/src/index.ts`; contract/unit tests | Critical | PASS |
+| AC-P14-002 | FR-AUTH-001, NFR-SEC-003 | Temporary Element Picker | Start picker in a live Session, select a supported element, and stop it on completion/cancel/close | Native Playwright overlay returns only a bounded locator/kind; listeners and overlay are torn down; no preload bridge or raw value metadata exists | `packages/browser-runtime/src/authentication-interaction.ts`; `tests/browser/otp-flow.test.ts` | Critical | PASS |
+| AC-P14-003 | FR-AUTH-001 | Phone and country-code controls | Resolve configured phone input and country-code control and request OTP | Controls are visible/user-driven through the existing Session boundary; no phone value crosses result/log/trace boundaries | `packages/archive-core/src/authentication.ts`; OTP integration/browser tests | High | PASS |
+| AC-P14-004 | FR-AUTH-001 | Single and segmented OTP | Fill one bounded OTP field and a bounded ordered set of segments | Values are typed only into the configured visible fields, segment count is bounded, and fields are cleared after use | `tests/unit/authentication.test.ts`; `tests/integration/otp-flow.test.ts`; `tests/browser/otp-flow.test.ts` | Critical | PASS |
+| AC-P14-005 | FR-AUTH-002 | OTP outcomes and resend | Exercise success, invalid code, expired code, resend cooldown, timeout, cancel, and browser-close paths | State machine returns bounded outcomes, limits resend/attempt behavior, and never retries by bypassing the user | `packages/archive-core/src/authentication.ts`; unit/integration tests | Critical | PASS |
+| AC-P14-006 | FR-AUTH-002, FR-RECOVERY-001 | Authentication pause and Run continuation | Start OTP for the current Run, inspect waiting state, then complete or cancel | The same Run transitions to `waiting_for_auth` and back to `running` only after validated authentication; cancellation remains resumable/recoverable | `packages/application-service/src/index.ts`; `tests/integration/otp-flow.test.ts` | Critical | PASS |
+| AC-P14-007 | FR-AUTH-002, NFR-SEC-002 | Session create and validate | Save the validated Session through the existing protected boundary and validate it afterward | Session metadata remains Project/Profile-bound, protected payload stays in Secret Store, and validation is explicit | `packages/application-service/src/index.ts`; Session integration/browser tests | Critical | PASS |
+| AC-P14-008 | NFR-SEC-002, NFR-SEC-003, NFR-PRIV-001 | Ephemeral input and leakage prevention | Inspect snapshots, results, logs, traces, screenshots/diagnostics policy, and storage after OTP flow | Phone and OTP values are absent; OTP fields are cleared; no OTP/phone SQLite schema or migration exists | `tests/unit/authentication.test.ts`; `tests/integration/otp-flow.test.ts`; security check; Phase 14 security review | Critical | PASS |
+| AC-P14-009 | NFR-TEST-001 | Unit and integration validation | Run focused Core, Contracts, Application Service, persistence, and fixture tests | All focused deterministic tests pass without weakening Phase 13 security or architecture checks | `npm run test:unit`; `npm run test:integration`; Phase 14 evidence bundle | Critical | PASS |
+| AC-P14-010 | NFR-TEST-001, NFR-PORT-001 | Real Chromium OTP/Picker fixture | Run the registered Chromium fixture against the local OTP page | Native browser interaction, picker teardown, OTP completion, and Session validation pass in the current worktree | `npm run test:browser`; `tests/browser/otp-flow.test.ts` | Critical | PASS |
+| AC-P14-011 | NFR-SEC-002, NFR-SEC-003 | Phase 13 security regressions | Run existing security, transport, navigation, permission, redaction, Session, and path checks after Phase 14 changes | No Phase 13 security regression or privileged-boundary bypass is introduced | `npm run security:check`; existing regression suites | Critical | PASS |
+| AC-P14-012 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Documentation and OKF synchronization | Validate Phase 14 report, ADR, architecture docs, OKF v0.2 concepts, extension registries, and HANDOFF | Implementation, evidence, privacy limitations, and Phase 13 dependency status agree without sensitive values | docs/OKF validators; Phase 14 report; HANDOFF | Critical | PASS |
+| AC-P14-013 | NFR-PORT-001, NFR-TEST-001 | Phase 13 prerequisite and release promotion | Reconcile Phase 14 against the clean committed Windows 11 x64 Phase 13 evidence gate | Phase 14 is promoted only after the unresolved Phase 13 prerequisite/native evidence gate is closed | `docs/project/PHASE_13_CLOSURE_REPORT.md`; Phase 14 evidence bundle | High | BLOCKED |
+
+The Phase 14 implementation is therefore `PARTIAL`: AC-P14-001 through
+AC-P14-012 are locally evidenced, while AC-P14-013 remains blocked by the
+pre-existing Phase 13 clean-commit/native release gate. This status does not
+authorize proxy or other later-phase implementation.
+
 ### Phase 12 reconciliation for Phase 13 closure
 
 | Acceptance ID | Reconciled status | Phase 13 basis |

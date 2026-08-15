@@ -27,6 +27,8 @@
     "test:architecture": "node tools/architecture/validate.mjs",
     "test:electron": "node tools/testing/run-tests.mjs electron",
     "test:phase13:evidence": "node tools/testing/run-phase13-evidence.mjs run",
+    "test:phase14:evidence": "node tools/testing/run-phase14-evidence.mjs",
+    "test:phase14:evidence:validate": "node tools/testing/run-phase14-evidence.mjs validate",
     "test:phase13:evidence:baseline": "node tools/testing/run-phase13-evidence.mjs baseline",
     "test:phase13:evidence:validate": "node tools/testing/run-phase13-evidence.mjs validate",
     "test:phase13:evidence:reconcile": "node tools/testing/run-phase13-evidence.mjs reconcile",

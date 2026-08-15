@@ -76,3 +76,10 @@ bundle. It is not a copy of Git history or a task diary.
   to derive one required Windows row from the versioned platform-support
   contract; native runtime, security, clean-source, fingerprint, and
   acceptance-hash requirements remain unchanged.
+
+## 2026-08-12
+
+- Added the partial Phase 14 OTP Flow and Element Picker knowledge layer:
+  versioned Locator/Login Flow/OTP contracts, temporary native picker,
+  same-Run authentication continuation, ephemeral-input boundaries, focused
+  evidence, and the unresolved Phase 13 release prerequisite.

@@ -4,6 +4,7 @@ import { lookup } from "node:dns/promises";
 import {
   BROWSER_CONTEXT_PROFILE_VERSION,
   createArchiveCore,
+  AuthenticationContractError,
   InteractionOperationError,
   InteractionTraceBuilder,
   isSafeInteractionKey,
@@ -16,6 +17,9 @@ import {
   RenderOperationError,
   RENDER_ENGINE_VERSION,
   SecretStoreError,
+  OtpFlowEngine,
+  OtpFlowError,
+  parseLoginFlow,
   SessionOperationError,
   SESSION_STORAGE_CAPABILITIES,
   assertSessionMetadata,
@@ -46,6 +50,9 @@ import {
   type RuntimeNetworkDecision,
   type SecretRef,
   type SecretStorePort,
+  type LoginFlow,
+  type OtpBrowserInteraction,
+  type OtpFlowSnapshot,
 } from "@offline-web-archive/archive-core";
 import { createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } from "@offline-web-archive/browser-runtime";
 import {
@@ -74,6 +81,7 @@ import {
   getScopeEngineInfo,
   ScopeEngineError,
   type ProfileStoragePort,
+  type SiteProfileDraft,
 } from "@offline-web-archive/scope-engine";
 
 export type LocalTransport = "cli" | "electron-ipc";
@@ -346,6 +354,32 @@ function sessionError(error: SessionOperationError): ErrorContract {
   };
 }
 
+function authenticationContractError(error: AuthenticationContractError): ErrorContract {
+  return {
+    code: error.code,
+    category: "validation",
+    message: error.message,
+    userMessage: "The Login Flow or Element Picker configuration is invalid.",
+    retryable: false,
+  };
+}
+
+function otpFlowError(error: OtpFlowError): ErrorContract {
+  const securityCodes = new Set(["OTP_BROWSER_CLOSED", "OTP_NAVIGATION_CHANGED", "ELEMENT_PICKER_NAVIGATION_CHANGED"]);
+  const validationCodes = new Set(["LOCATOR_NOT_FOUND", "LOCATOR_AMBIGUOUS", "LOCATOR_NOT_INTERACTABLE", "OTP_INVALID", "OTP_EXPIRED", "OTP_RESEND_NOT_CONFIGURED", "ELEMENT_PICKER_NOT_ACTIVE"]);
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : "application",
+    message: error.message,
+    userMessage: validationCodes.has(error.code)
+      ? "The Login Flow could not complete because the configured page element or supplied code was not accepted."
+      : error.code === "OTP_TIMEOUT"
+        ? "The one-time code expired before verification completed. Request a new code."
+        : "The authentication flow could not be completed safely.",
+    retryable: error.retryable,
+  };
+}
+
 function safeSessionMetadata(metadata: SessionMetadata): Record<string, unknown> {
   return {
     sessionId: metadata.sessionId,
@@ -419,6 +453,8 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "session.metadata") return { resultType: result.resultType, action: result.action, sessionId: result.session.sessionId, state: result.session.state, validationResult: result.session.validationResult, requiresReauthentication: result.session.requiresReauthentication };
   if (result.resultType === "session.list") return { resultType: result.resultType, sessionCount: result.sessions.length, sessionIds: result.sessions.map((session) => session.sessionId) };
   if (result.resultType === "session.delete") return { resultType: result.resultType, sessionId: result.sessionId };
+  if (result.resultType === "otp.flow") return { resultType: result.resultType, action: result.action, sessionId: result.sessionId, state: result.flow.state, authenticationState: result.flow.authenticationState, attemptCount: result.flow.attemptCount, lastErrorCode: result.flow.lastErrorCode, runState: result.run?.runState ?? null };
+  if (result.resultType === "elementPicker.result") return { resultType: result.resultType, action: result.action, sessionId: result.sessionId, selectionKind: result.selection?.kind ?? null, selectionStrategy: result.selection?.locator.strategy ?? null };
   return { resultType: result.resultType };
 }
 
@@ -448,6 +484,15 @@ interface ActiveAuthentication {
   readonly sessionId: string;
   readonly browserSession: BrowserAuthenticationSession;
   readonly previousMetadata: SessionMetadata | null;
+}
+
+interface ActiveOtpFlow {
+  readonly projectId: string;
+  readonly projectPath: string;
+  readonly sessionId: string;
+  readonly runId: string;
+  readonly engine: OtpFlowEngine;
+  readonly interaction: OtpBrowserInteraction;
 }
 
 type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort;
@@ -825,6 +870,7 @@ async function executeProjectCommand(
   activeRenders: Map<string, ActiveRender>,
   activeInteractions: Map<string, ActiveInteraction>,
   activeAuthentications: Map<string, ActiveAuthentication>,
+  activeOtpFlows: Map<string, ActiveOtpFlow>,
   interactionPlanProvider: NonNullable<ApplicationServiceDependencies["interactionPlanProvider"]> | undefined,
   renderTestMode: boolean,
   fixtureOrigins: readonly string[],
@@ -874,6 +920,7 @@ async function executeProjectCommand(
     }
   };
   const activeAuthenticationFor = (sessionId: string): ActiveAuthentication | undefined => activeAuthentications.get(sessionId);
+  const activeOtpFlowFor = (sessionId: string): ActiveOtpFlow | undefined => activeOtpFlows.get(sessionId);
   const assertAuthenticationSlot = (sessionId?: string): void => {
     for (const active of activeAuthentications.values()) {
       if (active.sessionId !== sessionId) throw new SessionOperationError("SESSION_STATE_CONFLICT", "Another manual Authentication Browser is already open");
@@ -893,6 +940,7 @@ async function executeProjectCommand(
   const closeAuthentication = async (active: ActiveAuthentication, restorePrevious: boolean): Promise<SessionMetadata | null> => {
     await active.browserSession.close().catch(() => undefined);
     activeAuthentications.delete(active.sessionId);
+    activeOtpFlows.delete(active.sessionId);
     if (!restorePrevious || storage.getCurrent()?.projectId !== active.projectId) return null;
     return restorePreviousMetadata(active).catch(() => null);
   };
@@ -1144,6 +1192,119 @@ async function executeProjectCommand(
       return { resultType: "session.delete", sessionId: command.payload.sessionId };
     });
   };
+  const executeOtpCommand = async (command: Extract<CommandEnvelope, { commandType: "otp.start" | "otp.provide" | "otp.resend" | "otp.cancel" | "otp.status" | "elementPicker.start" | "elementPicker.select" | "elementPicker.stop" }>): Promise<unknown> => {
+    const activeAuthentication = activeAuthenticationFor(command.payload.sessionId);
+    if (activeAuthentication === undefined || path.resolve(activeAuthentication.projectPath) !== path.resolve(command.payload.projectPath)) {
+      throw new SessionOperationError("SESSION_STATE_CONFLICT", "Open the manual Authentication Browser before using the Login Flow");
+    }
+    const interaction = activeAuthentication.browserSession.getAuthenticationInteraction?.();
+    if (interaction === undefined) throw new OtpFlowError("ELEMENT_PICKER_NOT_ACTIVE", "The Authentication Browser does not expose the Login Flow interaction capability");
+    const runFor = async (projectId: string, runId: string): Promise<Awaited<ReturnType<ApplicationStorage["getRunState"]>>> => storage.getRunState({ projectId, runId });
+    const flowResult = async (action: "start" | "provide" | "resend" | "cancel" | "status", sessionId: string, flow: OtpFlowSnapshot, run: Awaited<ReturnType<ApplicationStorage["getRunState"]>> | null): Promise<Record<string, unknown>> => ({ resultType: "otp.flow", action, sessionId, flow, run });
+    const closeAfterBrowserClosed = async (active: ActiveAuthentication): Promise<void> => {
+      if (active.previousMetadata !== null) {
+        await closeAuthentication(active, true);
+        return;
+      }
+      const latest = await storage.getSession({ projectId: active.projectId, sessionId: active.sessionId });
+      const closed = updateSessionMetadata(latest, now, { state: "reauth_required", validationResult: "not_validated", failureReason: "browser_crashed" });
+      await storage.updateSession({ projectId: active.projectId, sessionId: active.sessionId, expectedRevision: latest.revision, metadata: closed }).catch(() => undefined);
+      await closeAuthentication(active, false);
+    };
+    if (command.commandType === "elementPicker.start" || command.commandType === "elementPicker.select" || command.commandType === "elementPicker.stop") {
+      const picker = interaction.picker;
+      if (picker === undefined) throw new OtpFlowError("ELEMENT_PICKER_NOT_ACTIVE", "The Authentication Browser does not expose the Element Picker");
+      if (command.commandType === "elementPicker.start") {
+        await picker.start();
+        return { resultType: "elementPicker.result", action: "start", sessionId: command.payload.sessionId, selection: null };
+      }
+      if (command.commandType === "elementPicker.select") {
+        const selection = await picker.select(command.payload.kind, command.payload.timeoutMs);
+        return { resultType: "elementPicker.result", action: "select", sessionId: command.payload.sessionId, selection };
+      }
+      await picker.stop();
+      return { resultType: "elementPicker.result", action: "stop", sessionId: command.payload.sessionId, selection: null };
+    }
+    return withSessionProject(command.payload.projectPath, true, async (project) => {
+      const current = await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
+      const activeFlow = activeOtpFlowFor(command.payload.sessionId);
+      if (command.commandType === "otp.start") {
+        if (activeFlow !== undefined) throw new OtpFlowError("OTP_FLOW_STATE_CONFLICT", "The Login Flow is already active");
+        const profile = await storage.getProfile(project.projectPath);
+        const configured = command.payload.loginFlow ?? profile.loginFlow;
+        if (configured === undefined || configured === null) throw new AuthenticationContractError("LOGIN_FLOW_INVALID", "The selected Site Profile has no Login Flow configuration");
+        const flow = parseLoginFlow(configured);
+        if (flow.profileId !== profile.profileId) throw new AuthenticationContractError("LOGIN_FLOW_INVALID", "The Login Flow belongs to another Site Profile");
+        const runId = command.payload.runId ?? project.runId;
+        if (runId !== project.runId) throw new QueueOperationError("QUEUE_RUN_NOT_FOUND", "The selected Run does not belong to the open Project");
+        let run = await runFor(project.projectId, runId);
+        if (run.runState !== "running" && run.runState !== "waiting_for_auth") throw new OtpFlowError("OTP_FLOW_STATE_CONFLICT", "The selected Run is not available for authentication");
+        let metadata = current;
+        if (current.state !== "authentication_in_progress") {
+          const next = updateSessionMetadata(current, now, { state: "authentication_in_progress", failureReason: "none" });
+          metadata = await storage.updateSession({ projectId: project.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: next });
+        }
+        if (run.runState === "running") run = await storage.setRunState({ projectId: project.projectId, runId, state: "waiting_for_auth", operationId: command.payload.operationId, correlationId: command.correlationId });
+        const engine = new OtpFlowEngine({
+          flow,
+          browser: interaction,
+          hooks: {
+            validateSession: async () => {
+              const validation = await activeAuthentication.browserSession.validate();
+              return { status: validation.status };
+            },
+            onAuthenticated: async () => {
+              const saveCommand = {
+                contractVersion: CONTRACT_VERSION,
+                commandId: `${command.payload.operationId}:save`,
+                correlationId: command.correlationId,
+                timestamp: now(),
+                commandType: "session.save" as const,
+                payload: { projectPath: project.projectPath, sessionId: command.payload.sessionId, confirmation: "SAVE-SESSION" as const },
+              } as Extract<CommandEnvelope, { commandType: "session.save" }>;
+              const saved = await executeSessionCommand(saveCommand) as { resultType?: string; session?: { state?: string } };
+              if (saved.resultType !== "session.metadata" || saved.session?.state !== "valid") throw new OtpFlowError("AUTHENTICATION_SESSION_INVALID", "The authenticated Session could not be saved safely", true);
+              await storage.setRunState({ projectId: project.projectId, runId, state: "running", operationId: `${command.payload.operationId}:resume`, correlationId: command.correlationId });
+            },
+          },
+        });
+        const active: ActiveOtpFlow = { projectId: project.projectId, projectPath: project.projectPath, sessionId: command.payload.sessionId, runId, engine, interaction };
+        activeOtpFlows.set(command.payload.sessionId, active);
+        try {
+          const snapshot = await engine.start({ phoneNumber: command.payload.phoneNumber, ...(command.payload.countryCode === undefined ? {} : { countryCode: command.payload.countryCode }) });
+          return flowResult("start", command.payload.sessionId, snapshot, await runFor(project.projectId, runId));
+        } catch (error) {
+          activeOtpFlows.delete(command.payload.sessionId);
+          if (error instanceof OtpFlowError && error.code === "OTP_BROWSER_CLOSED") await closeAfterBrowserClosed(activeAuthentication);
+          throw error;
+        }
+      }
+      if (activeFlow === undefined) throw new OtpFlowError("OTP_FLOW_STATE_CONFLICT", "No active Login Flow exists for this Session");
+      if (activeFlow.interaction.isClosed()) {
+        const snapshot = await activeFlow.engine.handleBrowserClosed();
+        await closeAfterBrowserClosed(activeAuthentication);
+        return flowResult("status", command.payload.sessionId, snapshot, await runFor(project.projectId, activeFlow.runId));
+      }
+      if (command.commandType === "otp.provide") {
+        const snapshot = await activeFlow.engine.provideOtp(command.payload.otp);
+        return flowResult("provide", command.payload.sessionId, snapshot, await runFor(project.projectId, activeFlow.runId));
+      }
+      if (command.commandType === "otp.resend") {
+        const snapshot = await activeFlow.engine.resend();
+        return flowResult("resend", command.payload.sessionId, snapshot, await runFor(project.projectId, activeFlow.runId));
+      }
+      if (command.commandType === "otp.cancel") {
+        const snapshot = await activeFlow.engine.cancel();
+        const latest = await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
+        const cancelled = updateSessionMetadata(latest, now, { state: "reauth_required", validationResult: "not_validated", failureReason: "manual_login_cancelled" });
+        await storage.updateSession({ projectId: project.projectId, sessionId: command.payload.sessionId, expectedRevision: latest.revision, metadata: cancelled });
+        await closeAuthentication(activeAuthentication, false);
+        return flowResult("cancel", command.payload.sessionId, snapshot, await runFor(project.projectId, activeFlow.runId));
+      }
+      const snapshot = activeFlow.engine.snapshot();
+      return flowResult("status", command.payload.sessionId, snapshot, await runFor(project.projectId, activeFlow.runId));
+    });
+  };
   const prepareEnqueue = async (
     project: NonNullable<ReturnType<typeof storage.getCurrent>>,
     profile: Awaited<ReturnType<ProfileStoragePort["getProfile"]>>,
@@ -1303,13 +1464,27 @@ async function executeProjectCommand(
     case "session.restore":
     case "session.delete":
       return executeSessionCommand(command);
+    case "otp.start":
+    case "otp.provide":
+    case "otp.resend":
+    case "otp.cancel":
+    case "otp.status":
+    case "elementPicker.start":
+    case "elementPicker.select":
+    case "elementPicker.stop":
+      return executeOtpCommand(command);
     case "profile.create":
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "profile.value", profile: await storage.createProfile({ projectPath: command.payload.projectPath, draft: createDefaultSiteProfileDraft({ name: command.payload.name, seedUrl: command.payload.seedUrl }) }) }));
     case "profile.get":
       return withOpenProject(command.payload.projectPath, async () => ({ resultType: "profile.value", profile: await storage.getProfile(command.payload.projectPath) }));
     case "profile.update":
       return withOpenProject(command.payload.projectPath, async () => {
-        const update = await storage.updateProfile(command.payload);
+        const { loginFlow, ...draftWithoutLoginFlow } = command.payload.draft;
+        const draft = {
+          ...draftWithoutLoginFlow,
+          ...(loginFlow === undefined ? {} : { loginFlow: loginFlow === null ? null : parseLoginFlow(loginFlow) }),
+        } as SiteProfileDraft;
+        const update = await storage.updateProfile({ ...command.payload, draft });
         return { resultType: "profile.value", profile: update.profile, changedPaths: update.changedPaths };
       });
     case "profile.validate":
@@ -1470,6 +1645,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
   const activeRenders = new Map<string, ActiveRender>();
   const activeInteractions = new Map<string, ActiveInteraction>();
   const activeAuthentications = new Map<string, ActiveAuthentication>();
+  const activeOtpFlows = new Map<string, ActiveOtpFlow>();
   const interactionPlanProvider = dependencies.interactionPlanProvider;
 
   const response = (raw: unknown, result: unknown, error: ErrorContract | null): ResponseEnvelope => {
@@ -1516,7 +1692,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               runtime: dependencies.runtime,
               platform: dependencies.platform,
             }
-          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, renderEngine, activeRenders, activeInteractions, activeAuthentications, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
+          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, renderEngine, activeRenders, activeInteractions, activeAuthentications, activeOtpFlows, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
         const completed = response(rawCommand, result, null);
         const completionMetadata = completed.status === "success" ? resultLogMetadata(completed.result) : {};
         logger.log({
@@ -1544,6 +1720,10 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
                   ? renderError(error)
               : error instanceof SessionOperationError
                 ? sessionError(error)
+              : error instanceof AuthenticationContractError
+                ? authenticationContractError(error)
+              : error instanceof OtpFlowError
+                ? otpFlowError(error)
               : error instanceof SecretStoreError
                 ? secretStoreError(error)
               : internalError();
@@ -1577,6 +1757,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
         }
       }
       activeAuthentications.clear();
+      activeOtpFlows.clear();
       for (const store of secretStores.values()) {
         await store.lock();
         await store.dispose();

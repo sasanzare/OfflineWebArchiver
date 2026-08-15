@@ -23,11 +23,14 @@ import {
   type BrowserSessionPolicy,
   type NavigationObservation,
   type PageStabilitySnapshot,
+  type OtpBrowserInteraction,
 } from "@offline-web-archive/archive-core";
 import { executePlaywrightInteractionPlan, type PlaywrightInteractionHandlers } from "./interaction.js";
 import { decideAuthenticationRequest } from "./authentication-policy.js";
+import { createPlaywrightAuthenticationInteraction, PlaywrightElementPicker } from "./authentication-interaction.js";
 
 export { authenticationRequestMetadata, decideAuthenticationRequest } from "./authentication-policy.js";
+export { createPlaywrightAuthenticationInteraction, PlaywrightElementPicker } from "./authentication-interaction.js";
 
 export const PLAYWRIGHT_VERSION = "1.56.1" as const;
 export const BROWSER_MANIFEST_VERSION = 1 as const;
@@ -191,6 +194,7 @@ class PlaywrightPageSession implements BrowserPageSession {
   }
 
   private async waitForInteractionHandlers(): Promise<void> {
+    await new Promise<void>((resolve) => setImmediate(resolve));
     while (this.pendingInteractionHandlers.size > 0) {
       await Promise.all([...this.pendingInteractionHandlers]);
     }
@@ -483,6 +487,7 @@ function contextProfile(headless: boolean): BrowserContextProfileDescriptor {
 class PlaywrightAuthenticationSession implements BrowserAuthenticationSession {
   private closed = false;
   private blockedNavigation = false;
+  private readonly authenticationInteraction: OtpBrowserInteraction;
 
   public constructor(
     public readonly sessionId: string,
@@ -492,7 +497,9 @@ class PlaywrightAuthenticationSession implements BrowserAuthenticationSession {
     private readonly policy: BrowserAuthenticationPolicy,
     private readonly headless: boolean,
     private readonly onClosed: () => void,
-  ) {}
+  ) {
+    this.authenticationInteraction = createPlaywrightAuthenticationInteraction(page);
+  }
 
   public markNavigationBlocked(): void {
     this.blockedNavigation = true;
@@ -504,6 +511,10 @@ class PlaywrightAuthenticationSession implements BrowserAuthenticationSession {
 
   public getCurrentUrlSafe(): string {
     return safeUrl(this.page.url());
+  }
+
+  public getAuthenticationInteraction(): OtpBrowserInteraction {
+    return this.authenticationInteraction;
   }
 
   public async captureStorageState(): Promise<Uint8Array> {
@@ -567,6 +578,7 @@ class PlaywrightAuthenticationSession implements BrowserAuthenticationSession {
   public async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+    await this.authenticationInteraction.picker?.stop().catch(() => undefined);
     await this.page.close({ runBeforeUnload: false }).catch(() => undefined);
     await this.context.close().catch(() => undefined);
     this.onClosed();

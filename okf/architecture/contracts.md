@@ -24,13 +24,16 @@ owa:
 
 # Contracts
 
-The contract surface is versioned at 1.9.0. It includes strict Browser
+The contract surface is versioned at 1.10.0. It includes strict Browser
 information, validation, health, and restart commands, Render and Interaction
-commands/results, metadata-only Secret Store and Session commands, and
-validated Crawl Run state in Pause Status. Raw typed text, secret values,
-passphrases, Playwright handles, and arbitrary scripts remain outside the
-contract. Phase 13 replay/offline, Service Worker, path, and concurrency
-contracts are versioned pure-policy surfaces rather than transport payloads.
+commands/results, metadata-only Secret Store and Session commands, OTP and
+temporary Element Picker commands/results, and validated Crawl Run state in
+Pause Status. Locator and Login Flow descriptors are versioned at `1`; raw
+typed text, phone/OTP values, secret values, passphrases, Playwright handles,
+DOM objects, and arbitrary scripts remain outside the contract. Phase 13
+replay/offline, Service Worker, path, and concurrency contracts and the Phase
+14 authentication descriptors are versioned pure-policy surfaces rather than
+unbounded transport payloads.
 
 Render start identifies an existing Job and bounded policy. It exposes no URL override, executable path, raw Browser handle, headers, bodies, cookies, or launch arguments. Error and progress envelopes retain version and correlation fields. The [Application Service](application-service.md) is the single orchestration consumer, while Desktop and CLI are transport adapters.
 

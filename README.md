@@ -1,6 +1,6 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest fully gated baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations and the Product Phase 11 Secret Store foundation are present. Product Phase 12 adds the Manual Login and Secure Session Manager. Product Phase 13 adds architecture/security contracts and hardening, but its real pinned-Chromium and native-platform evidence remains blocked in the current environment.
+Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phase 8 remains the latest fully gated baseline: the monorepo includes an owned Playwright/Chromium Browser Runtime, deterministic Context/Page lifecycle, queued single-Job rendering, combined DOM/network stability, final rendered HTML and optional screenshot artifacts, safe browser evidence, and Browser/Page crash recovery integrated with Phase 7 Leases, Heartbeats, Fencing, Checkpoints, Pause, and Resume. Product Phase 10 interaction foundations and the Product Phase 11 Secret Store foundation are present. Product Phase 12 adds the Manual Login and Secure Session Manager. Product Phase 13 adds architecture/security contracts and hardening. Product Phase 14 adds versioned Login Flow/Locator contracts, a temporary native Element Picker, and visible single/segmented OTP participation, while its release status remains conditional on the existing Phase 13 native-evidence gate.
 
 The current product release targets **Windows 11 x64**. Windows 10 is a
 legacy/compatibility target and is non-blocking for the current release. Linux
@@ -8,7 +8,7 @@ and macOS remain future-version targets; the portable architecture and Core
 abstractions are retained for that future work, but those platforms are not
 current Phase 13 acceptance gates.
 
-Current versions are application/workspaces `0.8.0`, transport contract `1.9.0`, Project format `1.1.0`, Project schema `9`, SQLite schema `9`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Session metadata/storage-state/affinity `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store and Session surfaces are metadata-only at transport boundaries and use privileged protected storage. Without Phase 9 it does not discover or enqueue links. The product does not implement guided OTP automation, proxy management, production asset downloading, HTML rewrite, API capture, a full replay engine, an archive runtime, or a full crawl/archive.
+Current versions are application/workspaces `0.8.0`, transport contract `1.10.0`, Project format `1.1.0`, Project schema `9`, SQLite schema `9`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Session metadata/storage-state/affinity `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, Locator contract `1`, Login Flow contract `1`, Element Picker contract `1`, OTP policy `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store, Session, and OTP surfaces are metadata-only at transport boundaries and use privileged protected storage. Phone and OTP values are ephemeral and are not persisted or emitted in results, logs, traces, screenshots, diagnostics, or reports. Without Phase 9 it does not discover or enqueue links. The product does not implement proxy management, production asset downloading, HTML rewrite, API capture, a full replay engine, an archive runtime, or a full crawl/archive.
 
 ## Safety and authorization
 
@@ -26,7 +26,7 @@ packages/recovery        pure Lease/Checkpoint/Recovery/partial-file policy
 packages/queue           pure Queue state/idempotency policy
 packages/persistence-sqlite  SQLite schema 9 and repositories
 packages/application-service use-case and ownership orchestration
-packages/contracts       runtime-validated contract 1.9.0
+packages/contracts       runtime-validated contract 1.10.0
 packages/secrets         encrypted Secret Store adapters and sensitive-data policy
 ```
 
@@ -96,9 +96,11 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Phase 11 implementation report](docs/project/PHASE_11_IMPLEMENTATION_REPORT.md)
 - [Phase 12 implementation report](docs/project/PHASE_12_IMPLEMENTATION_REPORT.md)
 - [Phase 13 implementation report](docs/project/PHASE_13_IMPLEMENTATION_REPORT.md)
+- [Phase 14 OTP Flow and Element Picker report](docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md)
 - [Phase 13 native evidence execution matrix](docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 - [Post-Phase-12 baseline audit](docs/project/POST_PHASE_12_BASELINE_AUDIT.md)
 - [Phase 13 security review](docs/architecture/PHASE_13_SECURITY_REVIEW.md)
+- [Phase 14 security review](docs/architecture/PHASE_14_SECURITY_REVIEW.md)
 - [Authentication Sessions architecture](docs/architecture/AUTHENTICATION_SESSIONS.md)
 - [Secret Store architecture](docs/architecture/SECRET_STORE.md)
 - [Phase 11 security review](docs/architecture/PHASE_11_SECURITY_REVIEW.md)
@@ -134,4 +136,4 @@ for the ownership boundaries, source/provenance workflow, CI behavior, and
 review checklist. Hosted CI execution and branch protection are not claimed as
 verified from the local repository.
 
-The current unfinished gates are the real pinned-Chromium validation for **Product Phase 12 — Manual Login and Secure Session Lifecycle**, the Phase 13 Service Worker/browser evidence, and clean committed Windows 11 x64 native evidence. Linux and macOS native validation remains future-version work and is non-blocking for the current release. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist.
+The current unfinished gates are the real pinned-Chromium validation for **Product Phase 12 — Manual Login and Secure Session Lifecycle**, the Phase 13 Service Worker/browser evidence, and clean committed Windows 11 x64 native evidence. Phase 14 focused OTP/Picker tests pass in this worktree, but Phase 14 remains `PARTIAL` until the Phase 13 prerequisite/release evidence gate is promoted. Linux and macOS native validation remains future-version work and is non-blocking for the current release. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist. The next user-requested phase is Phase 15 Proxy Manager and Health Monitor; proxy implementation is intentionally outside this change.

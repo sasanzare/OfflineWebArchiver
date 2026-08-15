@@ -18,6 +18,13 @@ before the Application Service sees a command. The Service then validates the
 versioned command envelope and payload schema and applies transport
 authorization.
 
+Phase 14 OTP and Element Picker commands remain inside the trusted local UI to
+privileged Application Service path. The Picker overlay runs in the already
+authorized manual Authentication page and returns only a versioned locator
+descriptor. It does not install a preload bridge, expose a capability token,
+read form values, or provide any path from the page to Secret Store or SQLite
+payloads. Untrusted archived content cannot invoke these commands.
+
 The future archive runtime must have no preload, no IPC bridge, no Node
 integration, and no external navigation. It may read only explicitly approved
 archive content through a non-privileged runtime contract. It cannot read

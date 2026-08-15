@@ -110,6 +110,39 @@ request.onsuccess = () => {
 </script></body></html>`);
       return;
     }
+    if (pathname === "/otp-login") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      response.end(`<!doctype html><html><body><main id="otp-login">
+<label for="phone">Phone number</label><input id="phone" autocomplete="tel" placeholder="Phone number">
+<button id="request" type="button">Request code</button><p id="requested" hidden>Code requested</p>
+<label for="otp">One-time code</label><input id="otp" autocomplete="one-time-code" inputmode="numeric">
+<button id="submit" type="button">Verify code</button><button id="resend" type="button">Resend code</button>
+<p id="success" hidden>OTP signed in</p><p id="invalid" hidden>Invalid code</p><p id="expired" hidden>Expired code</p>
+</main><script>
+const phone = document.querySelector("#phone");
+const otp = document.querySelector("#otp");
+const request = document.querySelector("#request");
+const resend = document.querySelector("#resend");
+const requested = document.querySelector("#requested");
+const success = document.querySelector("#success");
+const invalid = document.querySelector("#invalid");
+request.addEventListener("click", () => { requested.hidden = false; invalid.hidden = true; expired.hidden = true; });
+resend.addEventListener("click", () => { requested.hidden = false; invalid.hidden = true; expired.hidden = true; otp.value = ""; });
+document.querySelector("#submit").addEventListener("click", () => {
+  if (otp.value === "2468") { success.hidden = false; invalid.hidden = true; document.cookie = "owa_auth=otp-fixture; Path=/"; }
+  else { invalid.hidden = false; success.hidden = true; }
+});
+</script></body></html>`);
+      return;
+    }
+    if (pathname === "/otp-account") {
+      if (!cookies.includes("owa_auth=otp-fixture")) {
+        finish(response, 401, "unauthorized");
+        return;
+      }
+      finish(response, 200, `<!doctype html><html><body><main id="authenticated">OTP signed in fixture</main></body></html>`, "text/html; charset=utf-8");
+      return;
+    }
     if (pathname === "/auth-account") {
       if (!cookies.includes("owa_auth=fixture-session")) {
         finish(response, 401, "unauthorized");

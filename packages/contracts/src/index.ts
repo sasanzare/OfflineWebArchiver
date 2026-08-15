@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.9.0" as const;
+export const CONTRACT_VERSION = "1.10.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -23,6 +23,14 @@ export const COMMAND_TYPES = [
   "session.validate",
   "session.restore",
   "session.delete",
+  "otp.start",
+  "otp.provide",
+  "otp.resend",
+  "otp.cancel",
+  "otp.status",
+  "elementPicker.start",
+  "elementPicker.select",
+  "elementPicker.stop",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -262,6 +270,25 @@ export const ERROR_CODES = [
   "SESSION_VALIDATION_UNAVAILABLE",
   "SESSION_SECRET_INCONSISTENT",
   "SESSION_DELETION_FAILED",
+  "LOGIN_FLOW_INVALID",
+  "LOCATOR_INVALID",
+  "LOCATOR_FRAME_INVALID",
+  "ELEMENT_PICKER_SELECTION_INVALID",
+  "OTP_FLOW_STATE_CONFLICT",
+  "LOCATOR_NOT_FOUND",
+  "LOCATOR_AMBIGUOUS",
+  "LOCATOR_NOT_INTERACTABLE",
+  "OTP_TIMEOUT",
+  "OTP_INVALID",
+  "OTP_EXPIRED",
+  "OTP_RESEND_COOLDOWN_ACTIVE",
+  "OTP_RESEND_NOT_CONFIGURED",
+  "OTP_BROWSER_CLOSED",
+  "OTP_NAVIGATION_CHANGED",
+  "OTP_CANCELLED",
+  "AUTHENTICATION_SESSION_INVALID",
+  "ELEMENT_PICKER_NOT_ACTIVE",
+  "ELEMENT_PICKER_NAVIGATION_CHANGED",
 ] as const;
 
 const identifierSchema = z
@@ -418,6 +445,71 @@ export const SessionValidateCommandSchema = z.object({ ...commandBase, commandTy
 export const SessionRestoreCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.restore"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
 export const SessionDeleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.delete"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, confirmation: z.literal("DELETE-SESSION") }).strict() }).strict();
 
+const locatorFrameContractSchema = z.object({
+  strategy: z.enum(["css", "name", "url"]),
+  value: z.string().min(1).max(2_048).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Locator frame values may not contain control characters"),
+}).strict();
+const locatorCommonContract = {
+  version: z.literal(1),
+  frame: locatorFrameContractSchema.nullable().optional(),
+};
+export const ElementLocatorContractSchema = z.discriminatedUnion("strategy", [
+  z.object({ ...locatorCommonContract, strategy: z.literal("role"), role: z.string().min(1).max(64), name: z.string().max(512).optional(), exact: z.boolean().optional() }).strict(),
+  z.object({ ...locatorCommonContract, strategy: z.literal("label"), text: z.string().min(1).max(512), exact: z.boolean().optional() }).strict(),
+  z.object({ ...locatorCommonContract, strategy: z.literal("placeholder"), text: z.string().min(1).max(512), exact: z.boolean().optional() }).strict(),
+  z.object({ ...locatorCommonContract, strategy: z.literal("test-id"), value: z.string().min(1).max(512).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/) }).strict(),
+  z.object({ ...locatorCommonContract, strategy: z.literal("attribute"), name: z.string().min(1).max(64).regex(/^(?:id|name|autocomplete|aria-label|data-[a-z0-9._:-]+)$/), value: z.string().min(1).max(512) }).strict(),
+  z.object({ ...locatorCommonContract, strategy: z.literal("css"), selector: z.string().min(1).max(512).refine((value) => !/^javascript\s*:/i.test(value) && !/[{};]/.test(value), "Unsafe CSS selector") }).strict(),
+]);
+const loginConditionContractSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("url"), origin: sessionOriginSchema, path: z.string().min(1).max(2_048).startsWith("/"), exactPath: z.boolean().optional() }).strict(),
+  z.object({ kind: z.literal("locator"), locator: ElementLocatorContractSchema, text: z.string().max(512).nullable().optional() }).strict(),
+]);
+const otpConfigurationContractSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("single"), locator: ElementLocatorContractSchema }).strict(),
+  z.object({ mode: z.literal("segmented"), locators: z.array(ElementLocatorContractSchema).min(2).max(20) }).strict(),
+]);
+export const LoginFlowContractSchema = z.object({
+  version: z.literal(1),
+  profileId: z.string().uuid(),
+  loginUrl: sessionNavigationUrlSchema,
+  phoneNumberLocator: ElementLocatorContractSchema,
+  countryCodeLocator: ElementLocatorContractSchema.nullable(),
+  requestOtpLocator: ElementLocatorContractSchema,
+  otp: otpConfigurationContractSchema,
+  otpSubmitLocator: ElementLocatorContractSchema.nullable(),
+  successCondition: loginConditionContractSchema,
+  incorrectCodeCondition: loginConditionContractSchema.nullable(),
+  expiredCodeCondition: loginConditionContractSchema.nullable(),
+  resendControl: ElementLocatorContractSchema.nullable(),
+  resendCooldownMs: z.number().int().min(0).max(600_000),
+  otpTimeoutMs: z.number().int().min(1_000).max(900_000),
+}).strict().superRefine((value, context) => {
+  if (value.resendControl === null && value.resendCooldownMs !== 0) context.addIssue({ code: "custom", path: ["resendCooldownMs"], message: "A resend control is required when cooldown is enabled" });
+});
+const phoneNumberInputSchema = z.string().min(1).max(128).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Phone input may not contain control characters");
+const countryCodeInputSchema = z.string().max(32).refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Country code input may not contain control characters");
+const otpInputSchema = z.string().min(1).max(128).regex(/^[A-Za-z0-9]+$/);
+const loginElementKindSchema = z.enum(["phone-input", "country-code-control", "request-otp-control", "otp-input", "otp-segment", "verify-control", "success-indicator", "invalid-code-indicator", "expired-code-indicator", "resend-control"]);
+const otpFlowSnapshotContractSchema = z.object({
+  version: z.literal(1),
+  state: z.enum(["idle", "opening_login", "resolving_elements", "entering_phone", "requesting_otp", "waiting_for_otp", "verifying", "invalid_code", "expired_code", "timed_out", "authenticated", "cancelled", "browser_closed", "navigation_changed", "failed"]),
+  authenticationState: z.enum(["unauthenticated", "authenticating", "authenticated", "expired", "re_auth_required"]),
+  attemptCount: z.number().int().nonnegative(),
+  resendAvailableAt: timestampSchema.nullable(),
+  expiresAt: timestampSchema.nullable(),
+  lastErrorCode: z.enum(["OTP_FLOW_STATE_CONFLICT", "LOCATOR_NOT_FOUND", "LOCATOR_AMBIGUOUS", "LOCATOR_NOT_INTERACTABLE", "OTP_TIMEOUT", "OTP_INVALID", "OTP_EXPIRED", "OTP_RESEND_COOLDOWN_ACTIVE", "OTP_RESEND_NOT_CONFIGURED", "OTP_BROWSER_CLOSED", "OTP_NAVIGATION_CHANGED", "OTP_CANCELLED", "AUTHENTICATION_SESSION_INVALID", "ELEMENT_PICKER_NOT_ACTIVE", "ELEMENT_PICKER_NAVIGATION_CHANGED"]).nullable(),
+  lastTransitionAt: timestampSchema,
+}).strict();
+export const OtpStartCommandSchema = z.object({ ...commandBase, commandType: z.literal("otp.start"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, runId: z.string().uuid().optional(), phoneNumber: phoneNumberInputSchema, countryCode: countryCodeInputSchema.optional(), loginFlow: LoginFlowContractSchema.optional(), operationId: identifierSchema }).strict() }).strict();
+export const OtpProvideCommandSchema = z.object({ ...commandBase, commandType: z.literal("otp.provide"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, otp: otpInputSchema, operationId: identifierSchema }).strict() }).strict();
+export const OtpResendCommandSchema = z.object({ ...commandBase, commandType: z.literal("otp.resend"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, operationId: identifierSchema }).strict() }).strict();
+export const OtpCancelCommandSchema = z.object({ ...commandBase, commandType: z.literal("otp.cancel"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, operationId: identifierSchema }).strict() }).strict();
+export const OtpStatusCommandSchema = z.object({ ...commandBase, commandType: z.literal("otp.status"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
+export const ElementPickerStartCommandSchema = z.object({ ...commandBase, commandType: z.literal("elementPicker.start"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
+export const ElementPickerSelectCommandSchema = z.object({ ...commandBase, commandType: z.literal("elementPicker.select"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, kind: loginElementKindSchema, timeoutMs: z.number().int().min(1_000).max(300_000).optional() }).strict() }).strict();
+export const ElementPickerStopCommandSchema = z.object({ ...commandBase, commandType: z.literal("elementPicker.stop"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
+
 const profileDraftFields = {
   name: z.string().trim().min(1).max(120),
   baseUrl: baseUrlSchema,
@@ -437,6 +529,7 @@ const profileDraftFields = {
   canonicalPolicy: z.object({ external: z.enum(["ignore", "reject"]) }).strict(),
   networkPolicy: z.object({ allowedIpClasses: z.array(z.enum(["public", "loopback", "private", "link-local", "multicast", "reserved", "unspecified"])).max(7) }).strict(),
   serviceWorkerPolicy: z.object({ version: z.literal(1), mode: z.enum(["block", "allow"]) }).strict().default({ version: 1, mode: "block" }),
+  loginFlow: LoginFlowContractSchema.nullable().optional(),
   limits: z.object({ maxDepth: z.number().int().nonnegative().max(1_000).nullable(), maxPages: z.number().int().nonnegative().max(10_000_000).nullable(), maxRedirects: z.number().int().nonnegative().max(20), maxBatchSize: z.number().int().positive().max(500) }).strict(),
 };
 
@@ -656,6 +749,14 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   SessionValidateCommandSchema,
   SessionRestoreCommandSchema,
   SessionDeleteCommandSchema,
+  OtpStartCommandSchema,
+  OtpProvideCommandSchema,
+  OtpResendCommandSchema,
+  OtpCancelCommandSchema,
+  OtpStatusCommandSchema,
+  ElementPickerStartCommandSchema,
+  ElementPickerSelectCommandSchema,
+  ElementPickerStopCommandSchema,
   ProfileCreateCommandSchema,
   ProfileGetCommandSchema,
   ProfileUpdateCommandSchema,
@@ -858,9 +959,12 @@ export const SecretBackendStatusResultSchema = z.object({ resultType: z.literal(
 export const SecretListResultSchema = z.object({ resultType: z.literal("secret.list"), metadata: z.array(SecretMetadataContractSchema).max(1_000) }).strict();
 export const SecretVaultLockResultSchema = z.object({ resultType: z.literal("secret.vault.lock"), status: SecretBackendStatusContractSchema }).strict();
 export const SecretDeleteResultSchema = z.object({ resultType: z.literal("secret.delete"), ref: secretRefSchema }).strict();
+const PauseStatusContractSchema = z.object({ projectId: z.string().uuid(), runId: z.string().uuid(), controlState: z.enum(["active", "pause_requested", "paused", "resuming", "recovering", "stopped", "completed", "failed"]), runState: z.enum(["running", "pausing", "paused", "waiting_for_network", "waiting_for_auth", "waiting_for_rate_limit", "cancelling", "cancelled", "completed", "failed"]), requestedAt: timestampSchema.nullable(), pausedAt: timestampSchema.nullable(), activeLeaseCount: z.number().int().nonnegative() }).strict();
 export const SessionMetadataResultSchema = z.object({ resultType: z.literal("session.metadata"), action: z.enum(["open", "reauthenticate", "save", "get", "validate", "restore"]), session: sessionMetadataContractSchema, browser: sessionBrowserStatusSchema.nullable() }).strict();
 export const SessionListResultSchema = z.object({ resultType: z.literal("session.list"), sessions: z.array(sessionMetadataContractSchema).max(200) }).strict();
 export const SessionDeleteResultSchema = z.object({ resultType: z.literal("session.delete"), sessionId: sessionIdSchema }).strict();
+export const OtpFlowResultSchema = z.object({ resultType: z.literal("otp.flow"), action: z.enum(["start", "provide", "resend", "cancel", "status"]), sessionId: sessionIdSchema, flow: otpFlowSnapshotContractSchema, run: PauseStatusContractSchema.nullable() }).strict();
+export const ElementPickerResultSchema = z.object({ resultType: z.literal("elementPicker.result"), action: z.enum(["start", "select", "stop"]), sessionId: sessionIdSchema, selection: z.object({ version: z.literal(1), kind: loginElementKindSchema, locator: ElementLocatorContractSchema }).strict().nullable() }).strict();
 
 export const ProfileResultSchema = z.object({ resultType: z.literal("profile.value"), profile: SiteProfileContractSchema, changedPaths: z.array(z.string()).optional() }).strict();
 export const ProfileValidationResultSchema = z.object({
@@ -975,7 +1079,6 @@ export const RecoveryReportContractSchema = z.object({
   dryRun: z.boolean(), evaluationTime: timestampSchema, scanned: z.number().int().nonnegative(), interrupted: z.number().int().nonnegative(), requeued: z.number().int().nonnegative(), paused: z.number().int().nonnegative(),
   outputIssues: z.number().int().nonnegative(), cursor: z.number().int().nonnegative(), hasMore: z.boolean(), items: z.array(RecoveryInspectionItemContractSchema).max(500), startedAt: timestampSchema, completedAt: timestampSchema.nullable(),
 }).strict();
-const PauseStatusContractSchema = z.object({ projectId: z.string().uuid(), runId: z.string().uuid(), controlState: z.enum(["active", "pause_requested", "paused", "resuming", "recovering", "stopped", "completed", "failed"]), runState: z.enum(["running", "pausing", "paused", "waiting_for_network", "waiting_for_auth", "waiting_for_rate_limit", "cancelling", "cancelled", "completed", "failed"]), requestedAt: timestampSchema.nullable(), pausedAt: timestampSchema.nullable(), activeLeaseCount: z.number().int().nonnegative() }).strict();
 export const RecoveryReportResultSchema = z.object({ resultType: z.literal("recovery.report"), report: RecoveryReportContractSchema }).strict();
 export const LeaseValueResultSchema = z.object({ resultType: z.literal("lease.value"), lease: JobLeaseContractSchema }).strict();
 export const LeaseListResultSchema = z.object({ resultType: z.literal("lease.list"), leases: z.array(JobLeaseContractSchema).max(200) }).strict();
@@ -1041,6 +1144,8 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   SessionMetadataResultSchema,
   SessionListResultSchema,
   SessionDeleteResultSchema,
+  OtpFlowResultSchema,
+  ElementPickerResultSchema,
   ProfileResultSchema,
   ProfileValidationResultSchema,
   ProfileComparisonResultSchema,
@@ -1163,6 +1268,9 @@ export type SecretBackendStatusContract = z.infer<typeof SecretBackendStatusCont
 export type SecretStoreCapabilityContract = z.infer<typeof SecretStoreCapabilityContractSchema>;
 export type SessionMetadataContract = z.infer<typeof sessionMetadataContractSchema>;
 export type SessionBrowserStatusContract = z.infer<typeof sessionBrowserStatusSchema>;
+export type ElementLocatorContract = z.infer<typeof ElementLocatorContractSchema>;
+export type LoginFlowContract = z.infer<typeof LoginFlowContractSchema>;
+export type OtpFlowSnapshotContract = z.infer<typeof otpFlowSnapshotContractSchema>;
 export type SiteProfileContract = z.infer<typeof SiteProfileContractSchema>;
 export type PageJobContract = z.infer<typeof PageJobContractSchema>;
 export type JobLeaseContract = z.infer<typeof JobLeaseContractSchema>;

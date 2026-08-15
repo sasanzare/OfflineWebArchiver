@@ -8,10 +8,12 @@ website's login flow personally, and explicitly confirms `Save Session` only
 after the configured validation check succeeds.
 
 Authentication is intentionally user-driven. The application does not read,
-capture, log, or transport passwords, OTP values, CAPTCHA answers, MFA values,
-or raw browser handles. Manual OTP entry inside the displayed website remains
-part of the Manual Login boundary; guided OTP automation is deferred to Phase
-13.
+capture, log, or transport passwords, CAPTCHA answers, MFA values, or raw
+browser handles. Phase 14 adds an explicit, visible OTP flow for configured
+phone and OTP controls. Phone numbers and supplied OTPs remain ephemeral
+inputs: they are used only for the native Browser interaction and are never
+stored in Session metadata, SQLite, Secret Store payloads, transport results,
+logs, traces, screenshots, diagnostics, or project documentation.
 
 ## Layer ownership
 
@@ -21,11 +23,35 @@ part of the Manual Login boundary; guided OTP automation is deferred to Phase
   authentication Contexts, navigation authorization, Storage State parsing,
   capture, validation, and Context cleanup.
 - `packages/application-service` owns Project/session authorization, explicit
-  save/replace ordering, Secret Store purpose boundaries, metadata transitions,
-  and safe result/error projection.
+  save/replace ordering, Secret Store purpose boundaries, Login Flow/Run-state
+  orchestration, metadata transitions, and safe result/error projection.
 - `packages/persistence-sqlite` stores only non-sensitive Session metadata and
   an opaque Phase 11 Secret Reference.
 - CLI/Desktop expose only safe metadata and literal confirmations.
+
+## Phase 14 Login Flow and Element Picker
+
+`packages/archive-core/src/authentication.ts` defines versioned Locator,
+Login Flow, Authentication State, Element Picker selection, and OTP lifecycle
+contracts. Locator values are serializable descriptors, never DOM nodes or
+Playwright handles. Supported strategies are role, label, placeholder, test
+ID, approved stable attributes, and bounded CSS, with optional frame context.
+Resolution requires exactly one visible and enabled target and returns safe
+diagnostics for missing or ambiguous matches.
+
+The trusted local UI can start a temporary Element Picker in the active manual
+Authentication Context. `packages/browser-runtime` installs and removes a
+page-local overlay using native Playwright primitives; it has no privileged
+bridge, capability token, credential access, or value metadata. Picker teardown
+is performed when a Session Context closes or navigation changes.
+
+`OtpFlowEngine` handles opening the configured Login URL, resolving the phone
+and country controls, requesting a code, single-field or segmented OTP entry,
+controlled resend cooldown, expiry, invalid/expired outcomes, Session
+validation, and explicit Session save. The existing Crawl Run is transitioned
+to `waiting_for_auth` before the flow and back to `running` only after the same
+Session is validated and saved. No automatic SMS retrieval or CAPTCHA bypass
+is implemented.
 
 ## Lifecycle and validation
 

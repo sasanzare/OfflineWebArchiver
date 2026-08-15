@@ -6,6 +6,8 @@ import {
   SERVICE_WORKER_POLICY_MODES,
   SERVICE_WORKER_POLICY_VERSION,
   normalizeServiceWorkerPolicy,
+  parseLoginFlow,
+  type LoginFlow,
 } from "@offline-web-archive/archive-core";
 
 export const SCOPE_ENGINE_VERSION = 1 as const;
@@ -74,6 +76,14 @@ const policyFields = {
     version: z.literal(SERVICE_WORKER_POLICY_VERSION),
     mode: z.enum(SERVICE_WORKER_POLICY_MODES),
   }).strict().default({ version: SERVICE_WORKER_POLICY_VERSION, mode: "block" }),
+  loginFlow: z.custom<LoginFlow>((value) => {
+    try {
+      parseLoginFlow(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }).nullable().optional(),
   limits: z.object({
     maxDepth: z.number().int().nonnegative().max(1_000).nullable(),
     maxPages: z.number().int().nonnegative().max(10_000_000).nullable(),
@@ -255,6 +265,9 @@ export function normalizeSiteProfileDraft(value: unknown): SiteProfileDraft {
     networkPolicy: { allowedIpClasses: [...new Set(initial.data.networkPolicy.allowedIpClasses)].sort() },
     serviceWorkerPolicy: normalizeServiceWorkerPolicy(initial.data["serviceWorkerPolicy"]),
   } satisfies SiteProfileDraft;
+  if (initial.data.loginFlow !== undefined && initial.data.loginFlow !== null) {
+    (normalized as SiteProfileDraft & { loginFlow?: LoginFlow | null }).loginFlow = parseLoginFlow(initial.data.loginFlow);
+  }
   uniqueIds(normalized.domainRules, "domain");
   uniqueIds(normalized.pathRules, "path");
   const queryKeys = new Set<string>();

@@ -2,42 +2,47 @@
 
 ## Last Updated
 
-2026-08-11
+2026-08-12
 
 ## Project Summary
 
 Offline Web Archive Builder is a local, authorized archiving monorepo. It
 contains the Phase 3-8 foundation, Phase 10 interaction baseline, Phase 11
 Secret Store, Phase 12 Manual Login and Secure Session Manager, and Phase 13
-architecture/security hardening. Phase 9 discovery and Phase 14 features are
-outside the current scope.
+architecture/security hardening. Phase 9 discovery is still absent. The
+current user-directed Phase 14 OTP Flow and Element Picker implementation is
+present but remains partial pending the existing Phase 13 release gate. Proxy,
+Worker Pool, downloader, rewrite, replay execution, and later-phase engines
+are not implemented here.
 
 ## Current Objective
 
-Complete Phase 13 Windows-only release-scope reconciliation and final closure
-preparation. The current mandatory target is Windows 11 x64; preserve the
-fail-closed browser/security policy, correct evidence classification, and
-future Linux/macOS portability without starting Phase 14.
+Implement and validate the user-directed Phase 14 boundary: versioned Locator
+and Login Flow contracts, temporary native Element Picker, visible single and
+segmented OTP participation, bounded outcomes/resend/expiry, Session
+save/validate, and same-Run `waiting_for_auth` continuation. Preserve Phase 13
+security and release-gate semantics.
 
 ## Current Phase or Milestone
 
-Phase 13 remains PARTIAL; Phase 14 remains PHASE_14_BLOCKED. The Windows
-runner portability defect is corrected, the Service Worker browser fixture
-passes on the approved Chromium, and the current Windows 11 evidence is
-diagnostic because this reconciliation is uncommitted. Linux/macOS are
-deferred future-version targets and are not current closure blockers.
+Phase 14 is PARTIAL. Focused implementation, full local regression, real
+Chromium, security, documentation, and OKF checks pass in the current
+worktree. Phase 13 remains partial because its clean committed Windows 11
+x64/native release evidence gate is unresolved; that prerequisite blocks Phase
+14 promotion but is not a focused Phase 14 test failure. The next
+user-requested phase is Phase 15 Proxy Manager and Health Monitor.
 
 ## Repository State
 
 - Repository path: D:\All projects\OfflineWebArchiver
 - Current branch: main
-- Base or starting commit for this task: fff15859338a6ab8d13113b2be2a5ff66b1847b9
-- Previous evidence bundle: .artifacts/phase13-evidence/2026-08-11T13-20-09-585Z-fff15859338a
-- Current HEAD: fff15859338a6ab8d13113b2be2a5ff66b1847b9
-- Working tree status: unstaged Windows-only scope, runner, baseline, test, documentation, and OKF changes; no unrelated changes observed
+- Base or starting commit for this task: 8757bbf7bd9b208e7c7d7069e52ac0d4752d4f2d
+- Final Phase 14 evidence bundle: `.artifacts/phase14-evidence/2026-08-12T05-39-23-723Z-8757bbf7bd9b/summary.json`
+- Current HEAD: 8757bbf7bd9b208e7c7d7069e52ac0d4752d4f2d
+- Working tree status: unstaged Phase 14 source, tests, docs, OKF, and evidence-runner changes; no unrelated changes observed
 - Staged changes: none
-- Unstaged changes: README, Phase 13/product/platform/roadmap reports, OKF records, package script, Windows release detection and reconciliation runner, classification test, baseline manifest, and HANDOFF
-- Untracked files: none
+- Unstaged changes: Phase 14 source/runtime/contracts, tests, docs, OKF registries, package script, evidence runner, and this HANDOFF
+- Untracked files: new Phase 14 source, tests, reports, OKF concepts, and evidence runner
 
 ## Completed Work
 
@@ -118,56 +123,54 @@ deferred future-version targets and are not current closure blockers.
 - Reviewed `D:\All projects\Mistakes\mistakes.md` and appended the reusable
   Windows edition-metadata lesson; no duplicate entry was present.
 
+### Phase 14 implementation checkpoint
+
+- Added strict versioned Locator, Login Flow, Element Picker, OTP policy,
+  authentication transitions, outcomes, and `OtpFlowEngine` in Archive Core.
+- Added contract `1.10.0` `otp.*` and `elementPicker.*` commands/results/errors;
+  Login Flow is optional Profile JSON and does not require a SQLite migration.
+- Added native Playwright interaction and temporary page-local picker with
+  teardown on selection, timeout, navigation, close, and error.
+- Added Application Service same-Run `waiting_for_auth` continuation through
+  protected Session save/validate, plus recoverable cancel/browser-close paths.
+- Added single/segmented OTP, resend/expiry/invalid/success/timeout handling,
+  field clearing, privacy assertions, local fixtures, and registered tests.
+- Added Phase 14 acceptance/report/ADR/security/architecture documents, OKF
+  concepts/history/testing records and extension registry entries.
+- Added `npm run test:phase14:evidence`, which writes only bounded redacted
+  summaries and keeps the Phase 13 promotion gate explicitly blocked.
+
 ## Work in Progress
 
-The current reconciliation tree is intentionally unstaged and uncommitted.
-The source-baseline manifest was regenerated by
-`npm run test:phase13:evidence:baseline` using
-`sha256-canonical-path-role-hash-list-v1`. The current diagnostic source
-fingerprint is
-`c31b5c5d170ef7b3ab15e58419713dab77f54c9ec82fb35cecbd2192b53f6407`; the
-acceptance-definition hash is
-`798bb6d11185b637359fbb64af1feb5ac977ed607f81312b87fa86d94a16e050`; the
-runner hash is
-`002c2fa9d5088f3e1c102e48093f69d22c4719f4158e0dbe1233db88c84f43a6`. The
-baseline remains a `PRE_COMMIT_PREPARATION` manifest with
-`finalCommittedBaseline: null` by design; final evidence must run from the
-clean commit created from this exact preparation.
-
-The newest Windows diagnostic bundle is
-`.artifacts/phase13-evidence/2026-08-11T14-03-24-184Z-fff15859338a`.
-It validates, records Windows 11 x64 from registry/build metadata, passes
-Browser Runtime 10/10 and Desktop 2/2, and is non-promotable because the
-working tree is dirty. Its AC-P13-016 status is `ENVIRONMENT_BLOCKED`, not a
-product failure.
+The Phase 14 tree is intentionally unstaged and uncommitted. The final Phase
+14 evidence bundle is
+`.artifacts/phase14-evidence/2026-08-12T05-39-23-723Z-8757bbf7bd9b/summary.json`:
+all nine command groups passed, the sensitive scan passed with zero findings,
+validation is `PASS`, phase status is `PARTIAL`, and release promotion is
+`BLOCKED` because the working tree is dirty and the Phase 13 native gate is
+unresolved.
 
 ## Remaining Work
 
-1. Review the validated diagnostic bundle
-   `.artifacts/phase13-evidence/2026-08-11T14-03-24-184Z-fff15859338a`:
-   sourceBaselineMatch is true, Windows 11 x64 is verified from registry/build
-   metadata, Browser Runtime is 10/10, Desktop is 2/2, and cleanCommittedSource
-   is false.
-2. User reviews and commits the exact unstaged reconciliation set.
-3. Ensure the working tree is clean and rerun the Windows 11 x64 evidence from
-   that commit; validate the new bundle and reconcile it using the updated
-   Windows-only contract.
-4. If all current Windows acceptance criteria pass, Phase 13 may become
-   COMPLETE and Phase 14 may become PHASE_14_READY. Linux/macOS bundles are
-   not required for this release.
+1. Review the final Phase 14 evidence bundle after the last validation rerun.
+2. Close the Phase 13 clean committed Windows 11 x64/native evidence gate with
+   the existing Phase 13 evidence matrix and runner.
+3. Reconcile product-plan numbering if the legacy 25-phase table is replaced;
+   the current user-directed mapping is Phase 14 OTP/Picker and Phase 15 Proxy
+   Manager/Health Monitor.
+4. Only after the prerequisite/product decision, begin Phase 15 proxy work.
 
 ## Exact Next Steps
 
-After review, the user should commit the exact reconciliation file set listed
-below, record the new commit hash, ensure the working tree is clean, and run on
-the clean Windows 11 x64 host. The current baseline is the pre-commit
-preparation for that exact file set; do not hand-edit or regenerate it after
-the commit unless an included input changes.
+For this worktree, review the final Phase 14 summary and preserve its
+`PASS` validation plus `PARTIAL/BLOCKED` promotion status. For release
+promotion, use the existing clean-source Phase 13 procedure; do not treat a
+dirty-tree bundle as final acceptance.
 
     node --version
     npm --version
     git rev-parse HEAD
-    npm run browser:verify
+    npm run test:phase14:evidence
     npm run test:phase13:evidence
     npm run test:phase13:evidence:validate -- <bundle>
     node tools/testing/run-phase13-evidence.mjs reconcile <windows-11-bundle>
@@ -179,37 +182,33 @@ validation work.
 
 ## Files Created
 
-None for the Windows-only scope reconciliation. The existing command-planning
-test remains part of the Phase 13 runner evidence.
+- `packages/archive-core/src/authentication.ts`
+- `packages/browser-runtime/src/authentication-interaction.ts`
+- `tests/unit/authentication.test.ts`
+- `tests/integration/otp-flow.test.ts`
+- `tests/browser/otp-flow.test.ts`
+- `tools/testing/run-phase14-evidence.mjs`
+- `docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md`
+- `docs/project/adr/ADR-057-otp-flow-and-element-picker.md`
+- `docs/architecture/PHASE_14_SECURITY_REVIEW.md`
+- `okf/architecture/otp-flow-element-picker.md`
+- `okf/testing/phase-14-validation.md`
+- `okf/history/phase-14.md`
 
 ## Files Modified
 
-- HANDOFF.md
-- README.md
-- package.json
-- docs/architecture/PHASE_13_SECURITY_REVIEW.md
-- docs/architecture/PLATFORM_SUPPORT_POLICY.md
-- docs/product/ACCEPTANCE_MATRIX.md
-- docs/product/PROJECT_SCOPE.md
-- docs/project/PHASE_13_CLOSURE_REPORT.md
-- docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md
-- docs/project/PHASE_13_IMPLEMENTATION_REPORT.md
-- docs/project/PHASE_PLAN.md
-- okf-extension/README.md
-- okf-extension/registry/evidence.json
-- okf-extension/registry/nodes.json
-- okf-extension/registry/relationships.json
-- okf-extension/registry/risks.json
-- okf-extension/reports/risks.md
-- okf/architecture/browser-runtime.md
-- okf/architecture/service-worker-policy.md
-- okf/history/phase-13.md
-- okf/log.md
-- okf/operations/platform-support.md
-- okf/testing/phase-13-validation.md
-- tests/unit/phase13-evidence-classification.test.ts
-- tools/testing/phase13-evidence-baseline.json
-- tools/testing/run-phase13-evidence.mjs
+- `README.md`, `package.json`, and `HANDOFF.md`.
+- `docs/architecture/` Phase 14 authentication, browser interaction,
+  contracts, process/transport, persistence, system context, trust zones,
+  test architecture, and security review records.
+- `docs/product/ACCEPTANCE_MATRIX.md` and `docs/project/PHASE_PLAN.md`.
+- `packages/application-service/src/index.ts`,
+  `packages/archive-core/src/index.ts`, `packages/browser-runtime/src/index.ts`,
+  `packages/contracts/src/index.ts`, and `packages/scope-engine/src/index.ts`.
+- `tests/support/render-fixture-server.ts`, `tools/testing/run-tests.mjs`,
+  `tests/okf/layered-validator.test.ts`, and
+  `tests/okf/strict-validator.test.ts`.
+- `okf/` and `okf-extension/` Phase 14 concepts, indexes, log, and registries.
 
 ## Important Architecture and Design Decisions
 
@@ -243,6 +242,21 @@ test remains part of the Phase 13 runner evidence.
   system-browser prohibition, evidence redaction, same-HEAD reconciliation,
   clean-source requirements, IPC security, Secret Store isolation, and path
   safety remain unchanged.
+
+### Phase 14 architecture decisions
+
+- Core owns pure contracts/transitions; Browser Runtime is the sole Playwright
+  adapter; Application Service owns Session/Run orchestration.
+- Locator/Login Flow/Picker/OTP descriptors are strict and versioned. Login
+  Flow is optional Profile JSON and is absent from legacy Profiles.
+- Phone and OTP inputs are ephemeral visible-browser inputs. They are not
+  persisted or emitted in SQLite, Secret Store metadata, Session metadata,
+  results, events, logs, traces, screenshots, diagnostics, evidence, HANDOFF,
+  or OKF.
+- The picker returns only a safe locator and semantic kind, and uses no preload
+  bridge, capability token, DOM handle, or arbitrary script transport.
+- There is no SMS interception, CAPTCHA solving, password capture, or
+  automatic challenge bypass. No SQLite migration was added; schema remains 9.
 
 ## Commands Executed
 
@@ -298,64 +312,63 @@ test remains part of the Phase 13 runner evidence.
   CurrentBuildNumber `26200`, DisplayVersion `25H2`, and verified target
   `windows-11-x64`; focused Browser Runtime is 10/10 and Desktop is 2/2.
 
+### Phase 14 commands executed
+
+- `npm run typecheck`, `npm run build`, `npm run lint`,
+  `npm run format:check`, `npm run test:architecture`,
+  `npm run contracts:check`, `npm run migrations:validate`,
+  `npm run test:unit`, `npm run test:integration`, `npm run test:browser`,
+  `npm run test`, `npm run security:check`, `npm run docs:validate`,
+  `npm run okf:validate`, and `npm run test:phase14:evidence`.
+- Child-process/browser/full-suite commands used escalated Windows execution
+  because normal sandbox child creation previously returned `EPERM`.
+- No commit, push, reset, branch change, rebase, or destructive cleanup was
+  performed.
+
 ## Validation and Test Results
 
-- The focused unit suite after this reconciliation: 65 passed, 0 failed.
-- Windows Browser verification: PASS for official Playwright Chromium 1.56.1,
-  revision 1194, build 141.0.7390.37, sandbox enabled, no system fallback.
-- Windows Electron --version: PASS for v43.2.0.
-- Windows focused browser suite before the fix: 10 total, 9 passed, 1 failed.
-  After the fixture/classification remediation: 10 total, 10 passed, 0 failed,
-  0 skipped.
-- Windows focused Desktop suite: 2 total, 2 passed.
-- Full escalated npm test after this reconciliation: 170 total, 170 passed, 0
-  failed, 0 skipped. The earlier 168/169-test results were pre-reconciliation
-  checkpoints and are retained only in the historical project reports.
-- Windows diagnostic bundle validation: PASS for
-  `.artifacts/phase13-evidence/2026-08-11T07-50-37-760Z-bdaac54b3c26`;
-  sourceBaselineMatch: true, cleanCommittedSource: false, Browser Runtime
-  10/10, Desktop 2/2, and secret scan PASS with 0 unauthorized occurrences.
-- Final canonical gates: typecheck, build, lint, format, architecture,
-  contracts, migrations, Project Format, security, docs, and OKF validation
-  all passed; `npm run test:okf` passed 43/43.
-- `git diff --check`: PASS; Git reported only its normal LF-to-CRLF working-copy
-  warnings. The final status remains `main` with 26 unstaged modified files,
-  no staged files, and no untracked files.
-
-Current scope-reconciliation checkpoint:
-
-- Current source fingerprint: `c31b5c5d170ef7b3ab15e58419713dab77f54c9ec82fb35cecbd2192b53f6407`.
-- Current acceptance-definition hash: `798bb6d11185b637359fbb64af1feb5ac977ed607f81312b87fa86d94a16e050`.
-- Current Windows bundle: `.artifacts/phase13-evidence/2026-08-11T14-03-24-184Z-fff15859338a`.
-- Bundle validation: PASS; `sourceBaselineMatch=true`,
-  `currentReleaseTargetVerified=true`, `cleanCommittedSource=false`, and
-  artifact secret scan PASS with zero unauthorized occurrences.
-- Current bundle statuses: AC-P13-002/008/012/016 are
-  `ENVIRONMENT_BLOCKED` only because the source tree is dirty; no product
-  assertion failure was recorded by the focused commands.
-- Final bundle validation was rerun and passed. Diagnostic reconciliation was
-  also rerun to
-  `.artifacts/phase13-evidence/reconciliation-windows-diagnostic-final.json`;
-  it correctly returned `ENVIRONMENT_BLOCKED` because dirty evidence cannot
-  satisfy the required `windows-11-x64` aggregate.
+- `npm run typecheck`, `npm run build`, `npm run lint`, `npm run format:check`,
+  and `npm run test:architecture`: PASS.
+- `npm run contracts:check`: PASS for contract `1.10.0` and 56 commands plus
+  response/error/event envelopes.
+- `npm run migrations:validate`: PASS for 9 immutable migrations at schema 9.
+- `npm run test:unit`: PASS, 69/69.
+- `npm run test:integration`: PASS, 26/26 in the focused run.
+- `npm run test:browser`: PASS, 11/11 after picker teardown/browser-close
+  fixes.
+- Full `npm run test`: PASS, 176/176, 0 failed, 0 skipped after the final
+  picker teardown/browser-close lifecycle fix.
+- `npm run security:check`, `npm run docs:validate`, and `npm run okf:validate`:
+  PASS. OKF official, references, provenance, extension, quality, and format
+  layers all pass.
+- The final Phase 14 evidence bundle is
+  `.artifacts/phase14-evidence/2026-08-12T05-39-23-723Z-8757bbf7bd9b/summary.json`.
+  It records all nine command groups as `PASS`, unit `69/69`, integration
+  `26/26`, browser `11/11`, sensitive scan `PASS` with zero findings,
+  validation `PASS`, phase `PARTIAL`, and release promotion `BLOCKED`.
+- `git diff --check`: PASS; Git reported only normal LF-to-CRLF working-copy
+  warnings. Branch remains `main`; no files are staged.
 
 ## Known Issues and Blockers
 
-- The remediation source tree is dirty, so the Windows bundle is diagnostic and
-  cannot satisfy final native acceptance.
+- The Phase 13/14 source tree is dirty, so evidence is diagnostic and cannot
+  satisfy final native acceptance.
 - Linux and macOS passing rows are intentionally not required by the current
   Windows-only release contract; their support remains future-version work.
-- The latest Windows bundle passes the focused Browser Runtime/Desktop
-  commands, but because this tree is dirty it cannot satisfy final native
-  acceptance.
+- The current Phase 14 bundle passes focused commands and sensitive scanning,
+  but its release-promotion status is intentionally `BLOCKED`.
 - The normal sandbox blocks child-process creation with EPERM; escalated
   Windows execution was used for the actual runner and runtime checks.
-- Phase 14 is blocked and must not be started.
+- Phase 14 implementation is present but partial; do not promote it until the
+  Phase 13 prerequisite is closed. Do not begin proxy implementation in this
+  phase.
 
 ## Database or Migration State
 
 No database, schema, or migration changed. SQLite schema remains version 9;
-migration 009 is unchanged and applied migrations remain immutable.
+migration 009 is unchanged and applied migrations remain immutable. Login Flow
+is optional Profile JSON; phone and OTP inputs have no SQLite table, column,
+migration, export field, or Secret Store metadata payload.
 
 ## Configuration and Environment Notes
 
@@ -366,13 +379,15 @@ not treated as the cause of spawn EINVAL. The current host is recorded as
 Windows 11 x64 from registry CurrentBuildNumber 26200 / DisplayVersion 25H2;
 its registry ProductName remains `Windows 10 Home`, so the ProductName and
 kernel string are not used alone for release classification. No credentials,
-raw Storage State, Secret Store payloads, or machine secrets were added.
+raw Storage State, phone/OTP values, Secret Store payloads, or machine secrets
+were added to project records.
 
 ## Uncommitted or Partially Applied Changes
 
-The files listed under Files Modified are unstaged and uncommitted. Generated
-.artifacts/, .build-tests/, and runtime browser files are ignored and are
-diagnostic only. No staged or untracked changes remain.
+The files listed under Files Modified and Files Created are unstaged and
+uncommitted. Generated `.artifacts/`, `.build-tests/`, and runtime browser
+files are ignored and diagnostic only. No files are staged; new Phase 14 files
+remain untracked until the user reviews them.
 
 ## Recovery or Rollback Notes
 
@@ -384,6 +399,9 @@ user authorization; do not discard the user's working tree.
 ## Related Documentation
 
 - docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md
+- docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md
+- docs/architecture/PHASE_14_SECURITY_REVIEW.md
+- docs/project/adr/ADR-057-otp-flow-and-element-picker.md
 - docs/project/PHASE_13_IMPLEMENTATION_REPORT.md
 - docs/project/PHASE_13_CLOSURE_REPORT.md
 - docs/product/ACCEPTANCE_MATRIX.md
@@ -392,19 +410,18 @@ user authorization; do not discard the user's working tree.
 - docs/project/PHASE_PLAN.md
 - README.md
 - okf/testing/phase-13-validation.md
+- okf/architecture/otp-flow-element-picker.md
+- okf/testing/phase-14-validation.md
 - okf/operations/platform-support.md
 - okf-extension/registry/evidence.json
 - tools/testing/phase13-evidence-baseline.json
 
 ## Notes for the Next Agent
 
-Treat the original Windows spawn EINVAL as TEST_INFRA_FAILURE, not PRODUCT_FAIL,
-and the pre-remediation Service Worker fixture failure as TEST_INFRA_FAILURE,
-not an environment or product result. Do not use an old evidence baseline after
-fingerprinted inputs change. The user must review and commit this exact
-unstaged Windows-only reconciliation, then rerun official Chromium/Electron
-evidence on clean Windows 11 x64, validate the bundle, and reconcile the
-single current-release row. Do not require Linux/macOS bundles for the current
-version; retain them only for future support work. Do not begin Guided OTP,
-Element Picker, Proxy Manager, Worker Pool, Asset Downloader, HTML Rewriter,
-full Replay, Validation Engine, packaging, or any other Phase 14 or later work.
+Treat the original Windows spawn EINVAL and pre-remediation Service Worker
+fixture failure as TEST_INFRA_FAILURE, not PRODUCT_FAIL. Review the Phase 14
+bundle as local implementation evidence only; its dirty-tree status cannot
+promote Phase 13/14 release acceptance. Keep phone/OTP values out of durable
+or diagnostic surfaces. The next user-requested implementation is Phase 15
+Proxy Manager and Health Monitor, but start it only after the Phase 13
+prerequisite and product-plan decision are resolved.

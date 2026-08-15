@@ -22,6 +22,14 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "session.validate",
   "session.restore",
   "session.delete",
+  "otp.start",
+  "otp.provide",
+  "otp.resend",
+  "otp.cancel",
+  "otp.status",
+  "elementPicker.start",
+  "elementPicker.select",
+  "elementPicker.stop",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -93,6 +101,7 @@ export * from "./network.js";
 export * from "./path-safety.js";
 export * from "./run-state.js";
 export * from "./service-worker.js";
+export * from "./authentication.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"
@@ -876,6 +885,7 @@ export interface BrowserAuthenticationSession {
   getCurrentUrlSafe(): string;
   captureStorageState(): Promise<Uint8Array>;
   validate(): Promise<BrowserAuthenticationValidation>;
+  getAuthenticationInteraction?(): import("./authentication.js").OtpBrowserInteraction;
   close(): Promise<void>;
 }
 
