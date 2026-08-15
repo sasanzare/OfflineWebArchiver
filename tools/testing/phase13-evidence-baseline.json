@@ -2,45 +2,21 @@
   "schemaVersion": "1.0.0",
   "kind": "phase13-evidence-source-baseline",
   "lifecycle": "PRE_COMMIT_PREPARATION",
-  "createdAt": "2026-08-11T14:03:12.746Z",
+  "createdAt": "2026-08-15T05:47:10.074Z",
   "createdFromDirtyTree": true,
   "preCommit": {
-    "gitHead": "fff15859338a6ab8d13113b2be2a5ff66b1847b9",
+    "gitHead": "b00dc009e8eebe2d210ac47b34763dfe4e89c83e",
     "branch": "main",
     "workingTreeStatus": [
-      "M README.md",
-      " M docs/architecture/PHASE_13_SECURITY_REVIEW.md",
-      " M docs/architecture/PLATFORM_SUPPORT_POLICY.md",
-      " M docs/product/ACCEPTANCE_MATRIX.md",
-      " M docs/product/PROJECT_SCOPE.md",
-      " M docs/project/PHASE_13_CLOSURE_REPORT.md",
-      " M docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
-      " M docs/project/PHASE_13_IMPLEMENTATION_REPORT.md",
-      " M docs/project/PHASE_PLAN.md",
-      " M okf-extension/README.md",
-      " M okf-extension/registry/evidence.json",
-      " M okf-extension/registry/nodes.json",
-      " M okf-extension/registry/relationships.json",
-      " M okf-extension/registry/risks.json",
-      " M okf-extension/reports/risks.md",
-      " M okf/architecture/browser-runtime.md",
-      " M okf/architecture/service-worker-policy.md",
-      " M okf/history/phase-13.md",
-      " M okf/log.md",
-      " M okf/operations/platform-support.md",
-      " M okf/testing/phase-13-validation.md",
-      " M package.json",
-      " M tests/unit/phase13-evidence-classification.test.ts",
-      " M tools/testing/phase13-evidence-baseline.json",
-      " M tools/testing/run-phase13-evidence.mjs"
+      "M tools/testing/phase13-evidence-baseline.json"
     ]
   },
   "finalCommittedBaseline": null,
   "sourceFingerprintAlgorithm": "sha256-canonical-path-role-hash-list-v1",
-  "sourceFingerprint": "c31b5c5d170ef7b3ab15e58419713dab77f54c9ec82fb35cecbd2192b53f6407",
+  "sourceFingerprint": "74c1a21c7d3672460066096f866f607f6875c7894bf11d2981a6313fd601024d",
   "packageLockHash": "7be6a3fe3cf46b291d15a10c8a79613976f8385d97dc6d5ed1f244e051c449ad",
   "evidenceRunnerHash": "002c2fa9d5088f3e1c102e48093f69d22c4719f4158e0dbe1233db88c84f43a6",
-  "acceptanceDefinitionHash": "798bb6d11185b637359fbb64af1feb5ac977ed607f81312b87fa86d94a16e050",
+  "acceptanceDefinitionHash": "d3be2d6f80aaf7e081024618e56ea0cc6b945b82f50fb77bc943f00d21275406",
   "expectedNodeVersion": ">=24.0.0 <25",
   "expectedNpmMajor": 11,
   "playwrightVersion": "1.56.1",
@@ -118,12 +94,12 @@
     {
       "path": "README.md",
       "role": "evidence-policy",
-      "sha256": "33fc38c4d7258ba0ce402a1d2e0f47c86a08883d35aea15b337fa5b7f8ae8d04"
+      "sha256": "aab6394a40288a67de1467740dca518c0c4d414df13f4d4dd471abb483f9337b"
     },
     {
       "path": "docs/product/ACCEPTANCE_MATRIX.md",
       "role": "acceptance-definition",
-      "sha256": "43d5a84dc8929bd91001bcf0c7e552651fd5a0045902829d97d8e5b570f02e3c"
+      "sha256": "5723ee328750f0cfefee47947aec7e24304ff7eb2cc2a1fc77c0a7c717d6247d"
     },
     {
       "path": "docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md",
@@ -138,12 +114,12 @@
     {
       "path": "okf-extension/registry/evidence.json",
       "role": "evidence-policy",
-      "sha256": "1abcb750e128a81b38e9a9a7c5541edc3e72a09bc06d69fff27f61f9dc6fa959"
+      "sha256": "0e1d6ac9f4022ff34e3201e4323f9ea6e8569ac902bd726fff6c9e52d5640c62"
     },
     {
       "path": "okf/log.md",
       "role": "evidence-policy",
-      "sha256": "236acccb938c40433cf61c08e4b9118a1d5d1f0d48b5931363a4f2c5a92a9a40"
+      "sha256": "0d18f5cbef207c5ec9d896f91e6cf1edae8e1d23753147abdc6a89c2fcd9e103"
     },
     {
       "path": "okf/operations/platform-support.md",
@@ -163,7 +139,7 @@
     {
       "path": "package.json",
       "role": "toolchain-contract",
-      "sha256": "71b0ac7b5175044e6c39243e8b400adbd7ac948dcac6baa491f6e065e6133f87"
+      "sha256": "2c0abdd58c66cb037ff788a7408187caf9132e6981b3ce57bf6d8ee159b235d6"
     },
     {
       "path": "packages/archive-core/package.json",
@@ -173,7 +149,7 @@
     {
       "path": "packages/archive-core/src/index.ts",
       "role": "browser-policy-source",
-      "sha256": "999d109bdd2a3e953f79ef615e7f33ff1916ef4c7a3ebe34eb488b88cc293c3e"
+      "sha256": "b22ad6cb0753bfe357f2ebf7f242a7a0feb98f8d0a53511faf77f5dfa0c7e194"
     },
     {
       "path": "packages/archive-core/src/interaction.ts",
@@ -223,7 +199,7 @@
     {
       "path": "packages/browser-runtime/src/index.ts",
       "role": "browser-runtime-source",
-      "sha256": "c4cb4baedafd21bda6004878d16ecb4479670c778320b71434bbf099b75f281d"
+      "sha256": "06b141efb0d2ed2b228af698c63c6bbf1b193df594fdd4ab363913f5e2075892"
     },
     {
       "path": "packages/browser-runtime/src/interaction.ts",
@@ -268,12 +244,12 @@
     {
       "path": "tests/okf/layered-validator.test.ts",
       "role": "quality-gate",
-      "sha256": "aa4b4b618de7c67bb8a53400a14e2ff858c6099a3f1763cf4a79144370d9c366"
+      "sha256": "5a657b2d99385aa4fd6df37d752b854210cfda34947eaceb9cba9c57f31ac78f"
     },
     {
       "path": "tests/okf/strict-validator.test.ts",
       "role": "quality-gate",
-      "sha256": "7233551dea587cac317db229f7568a500576d3a9ebaad345316e8ba8163a08b0"
+      "sha256": "5c56d983a59a54dde808a6f198e267cc18489dd65ee88cb9f710b5d282e3c161"
     },
     {
       "path": "tests/okf/validator.test.ts",
@@ -288,7 +264,7 @@
     {
       "path": "tests/support/render-fixture-server.ts",
       "role": "browser-and-native-tests",
-      "sha256": "58858cf719e1a9da20f47d417cfaa89897b5d3ee2eb0e98d4e230bc431a1a8e8"
+      "sha256": "7ea1d1650b92cb799d413e8ab4f599ea44d4ae87ec10552a852eb964ea107ab0"
     },
     {
       "path": "tests/unit/authentication-route.test.ts",
@@ -373,7 +349,7 @@
     {
       "path": "tools/testing/run-tests.mjs",
       "role": "evidence-orchestration",
-      "sha256": "d789e2fdb7c9a49304af59427c32a954fc185edd855125d2847bc8c33e2c6496"
+      "sha256": "3f18823f063f5a71b198a5adce238a14fcbf9f48cfe00b5b27612a6e09e3c9cf"
     },
     {
       "path": "tsconfig.base.json",
