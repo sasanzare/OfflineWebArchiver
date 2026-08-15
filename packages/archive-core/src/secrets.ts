@@ -17,6 +17,7 @@ export type SecretKind = (typeof SECRET_KINDS)[number];
 export const SECRET_SCOPE_TYPES = Object.freeze([
   "application",
   "project",
+  "proxy",
   "profile",
   "session",
   "login_flow",

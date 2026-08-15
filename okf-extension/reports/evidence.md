@@ -13,3 +13,12 @@ records the blocking fact that the repository baseline has no completed Phase 9
 Discovery Engine; it is not a completion claim for discovery integration.
 
 Paths are repository-relative. External targets and discovery or downloader evidence are not claimed. All Phase 1 through 7 evidence remains preserved, and `okf-extension/registry/evidence.json` remains authoritative for evidence identity and location.
+
+Phase 15 evidence (`OKF-EV-P15-*`) covers Core proxy policy, contract 1.11,
+SQLite schema 10, Secret Store-backed Application Service orchestration, real
+Chromium HTTP/HTTPS/SOCKS5 connectivity, health/cooldown/eligibility,
+authenticated Session affinity, security review, documentation, and the
+repository-owned exact-HEAD runner. The HTTPS certificate exception is
+generated-fixture-only and gated by `OWAB_TEST_MODE=1`; no production TLS
+validation is weakened. Worker scheduling, rate-limit coordination, rotation,
+downloader, replay, and rewrite evidence is not claimed.

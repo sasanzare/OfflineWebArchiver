@@ -606,6 +606,45 @@ ALTER TABLE run_control ADD COLUMN run_state TEXT NOT NULL DEFAULT 'running' CHE
 ALTER TABLE run_checkpoints ADD COLUMN run_state TEXT NOT NULL DEFAULT 'running' CHECK (run_state IN ('running', 'pausing', 'paused', 'waiting_for_network', 'waiting_for_auth', 'waiting_for_rate_limit', 'cancelling', 'cancelled', 'completed', 'failed'));
 `;
 
+const ADD_PROXIES_SQL = `
+CREATE TABLE proxies (
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  proxy_id TEXT NOT NULL CHECK (length(proxy_id) BETWEEN 1 AND 128),
+  label TEXT,
+  protocol TEXT NOT NULL CHECK (protocol IN ('http', 'https', 'socks5')),
+  host TEXT NOT NULL CHECK (length(host) BETWEEN 1 AND 253),
+  port INTEGER NOT NULL CHECK (port BETWEEN 1 AND 65535),
+  bypass_json TEXT NOT NULL CHECK (json_valid(bypass_json)),
+  credential_ref TEXT,
+  weight INTEGER NOT NULL CHECK (weight BETWEEN 1 AND 1000),
+  priority INTEGER NOT NULL CHECK (priority BETWEEN 0 AND 1000),
+  max_concurrency INTEGER NOT NULL CHECK (max_concurrency BETWEEN 1 AND 1000),
+  enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
+  health_state TEXT NOT NULL CHECK (health_state IN ('healthy', 'degraded', 'cooldown', 'disabled')),
+  last_health_check_at TEXT,
+  last_success_at TEXT,
+  last_failure_at TEXT,
+  latency_ms INTEGER CHECK (latency_ms IS NULL OR latency_ms BETWEEN 0 AND 86400000),
+  success_count INTEGER NOT NULL DEFAULT 0 CHECK (success_count >= 0),
+  failure_count INTEGER NOT NULL DEFAULT 0 CHECK (failure_count >= 0),
+  consecutive_failure_count INTEGER NOT NULL DEFAULT 0 CHECK (consecutive_failure_count >= 0),
+  success_rate REAL NOT NULL DEFAULT 0 CHECK (success_rate BETWEEN 0 AND 1),
+  cooldown_until TEXT,
+  last_error_code TEXT,
+  last_error_summary TEXT CHECK (last_error_summary IS NULL OR length(last_error_summary) <= 240),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  revision INTEGER NOT NULL CHECK (revision > 0),
+  PRIMARY KEY (project_id, proxy_id),
+  UNIQUE (project_id, protocol, host, port)
+) STRICT;
+
+CREATE INDEX proxies_project_health
+ON proxies(project_id, enabled, health_state, priority, proxy_id);
+CREATE INDEX proxies_project_updated
+ON proxies(project_id, updated_at DESC, proxy_id);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -620,6 +659,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "007_add_browser_interaction", sequence: 7, sql: ADD_BROWSER_INTERACTION_SQL, checksum: checksum(ADD_BROWSER_INTERACTION_SQL) }),
   Object.freeze({ id: "008_add_browser_sessions", sequence: 8, sql: ADD_BROWSER_SESSIONS_SQL, checksum: checksum(ADD_BROWSER_SESSIONS_SQL) }),
   Object.freeze({ id: "009_add_crawl_run_state", sequence: 9, sql: ADD_CRAWL_RUN_STATE_SQL, checksum: checksum(ADD_CRAWL_RUN_STATE_SQL) }),
+  Object.freeze({ id: "010_add_proxies", sequence: 10, sql: ADD_PROXIES_SQL, checksum: checksum(ADD_PROXIES_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

@@ -12,30 +12,35 @@ This section supersedes the historical Phase 14 checkpoint retained below.
 
 Offline Web Archive Builder is a local authorized archiving monorepo. Product
 Phase 13 architecture/security hardening and Product Phase 14 OTP Flow/Element
-Picker are complete on the accepted native Windows 11 x64 baseline. Phase 15
-Proxy Manager and Health Monitor is ready but has not started.
+Picker remain complete on the accepted native Windows 11 x64 baseline. Product
+Phase 15 Proxy Manager and Health Monitor is implemented in the current
+worktree and is awaiting the final clean-HEAD evidence run.
 
 ## Current Objective
 
-Preserve the accepted Phase 13/14 promotion baseline and begin Phase 15 only
-under a separate explicit task.
+Implement and validate Phase 15 Proxy Manager and Health Monitor while
+preserving the accepted Phase 13/14 promotion baseline and the Phase 16
+worker-scheduling boundary.
 
 ## Current Phase or Milestone
 
 - Phase 13: COMPLETE
 - Phase 14: COMPLETE
-- Phase 15: READY, not started
+- Phase 15: IMPLEMENTED; final exact-HEAD evidence pending
 
 ## Repository State
 
 - Repository path: `D:\All projects\OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `8757bbf7bd9b208e7c7d7069e52ac0d4752d4f2d`
-- Promoted evidence HEAD: recorded exactly in both final evidence bundles
-- Working tree requirement: clean for final evidence
-- Staged changes: none after the final baseline commit
-- Unstaged changes: none after the final baseline commit
-- Untracked files: none outside ignored generated artifacts
+- Base or starting commit: `68fe3ca` (`fix(phase13): close native evidence gate`)
+- Current HEAD at task start: `68fe3ca`
+- Promoted evidence HEAD: Phase 14 remains recorded in its accepted bundle;
+  Phase 15 exact final HEAD is not yet recorded
+- Working tree at Phase 15 start: clean
+- Staged changes at Phase 15 start: none
+- Unstaged changes at Phase 15 start: none
+- Untracked files at Phase 15 start: Phase 15 proxy source, fixtures, tests,
+  evidence runner, reports, ADR, and OKF concepts/registry updates
 
 ## Completed Work
 
@@ -46,32 +51,64 @@ under a separate explicit task.
 - Fixed Windows UBR normalization so evidence records build `26200.8875`.
 - Produced and validated final Phase 13 and Phase 14 evidence from clean source.
 - Synchronized Acceptance Matrix, reports, security reviews, OKF, and HANDOFF.
+- Implemented Phase 15 Core proxy validation/health/eligibility/affinity,
+  contract 1.11, SQLite schema 10 and migration 010, Project format schema 10,
+  Secret Store proxy scope, Application Service commands, Browser Runtime
+  HTTP/HTTPS/SOCKS5 routing checks, and explicit Session affinity.
+- Added deterministic CSV/JSON import, local HTTP/HTTPS/SOCKS5 fixtures,
+  fail-closed/dead-proxy coverage, secret-leakage assertions, security and
+  contract boundary checks, and the exact-HEAD Phase 15 evidence runner.
+- Updated Phase 15 architecture/security/report/ADR/acceptance/risk/HANDOFF
+  records and canonical/extension OKF navigation, concepts, registries, and
+  maintenance log.
 
 ## Work in Progress
 
-Not applicable.
+Phase 15 implementation and documentation are complete in the working tree.
+The Phase 14 final evidence directory
+`.artifacts/phase14-evidence/final-native-windows-11-x64` validated successfully.
+Focused Phase 15 checks already pass: unit `74/74`, application-service `8/8`,
+persistence `23/23`, and Browser Runtime/Chromium `12/12`. The sandboxed unit
+invocation hit an environment `EPERM` while spawning esbuild; the same gate was
+rerun with elevated execution and passed. A clean local commit and the
+sequential full Phase 15 evidence run remain.
 
 ## Remaining Work
 
 No Phase 13/14 promotion blocker remains. Phase 9 remains an independent
-discovery prerequisite for the earlier Phase 10/11 completion line.
+discovery prerequisite for the earlier Phase 10/11 completion line. Phase 15
+exact-HEAD evidence and final handoff checkpoint are the remaining work. Phase
+16 Worker Pool/rate-limit scheduling is intentionally not implemented.
 
 ## Exact Next Steps
 
-Start **Phase 15 — Proxy Manager and Health Monitor** only after a new explicit
-request. Do not regenerate or overwrite accepted evidence when merely reading
-the repository state.
+Review the Phase 15 diff and run focused quality/documentation checks, create a
+local Phase 15 commit without push or history rewrite, then run
+`npm run test:phase15:evidence -- --output-dir .artifacts/phase15-evidence/final-native-windows-11-x64`
+sequentially and validate it with
+`npm run test:phase15:evidence:validate -- .artifacts/phase15-evidence/final-native-windows-11-x64`.
+Do not regenerate or overwrite accepted Phase 13/14 evidence.
 
 ## Files Created
 
-Phase 14 source/tests/reports and `tools/testing/run-phase14-evidence.mjs` were
-created by the Phase 14 implementation commit; see Git history for the exact
-inventory.
+Phase 15 created `packages/archive-core/src/proxy.ts`,
+`packages/persistence-sqlite/src/proxy.ts`,
+`tests/support/proxy-fixtures.ts`,
+`tests/unit/proxy.test.ts`,
+`tests/integration/proxy-lifecycle.test.ts`,
+`tools/testing/run-phase15-evidence.mjs`,
+`docs/architecture/PROXY_MANAGER.md`,
+`docs/architecture/PHASE_15_SECURITY_REVIEW.md`,
+`docs/project/PHASE_15_IMPLEMENTATION_REPORT.md`,
+`docs/project/adr/ADR-058-proxy-manager-and-health-monitor.md`, and the Phase
+15 OKF concepts/records. Phase 14 inventory remains in Git history.
 
 ## Files Modified
 
-Phase 13/14 reports, Acceptance Matrix, security reviews, evidence tooling,
-OKF concepts/registries/log, `README.md`, `package.json`, and this HANDOFF.
+Phase 15 source/tests, Phase 13/14-compatible contract/persistence/runtime
+files, Acceptance Matrix, Phase Plan, risk register, security/architecture
+reviews, evidence tooling, OKF concepts/registries/log, `package.json`, and this
+HANDOFF.
 
 ## Important Architecture and Design Decisions
 
@@ -79,19 +116,35 @@ OKF concepts/registries/log, `README.md`, `package.json`, and this HANDOFF.
   legacy/non-blocking and Linux/macOS are future-version targets.
 - Phase 14 promotion requires a validated Phase 13 bundle/reconciliation on
   the exact same clean committed HEAD.
-- SQLite remains schema `9`; transport remains `1.10.0`.
+- Phase 15 advances SQLite to schema `10`, Project format schema to `10`, and
+  transport to `1.11.0`; migration `010_add_proxies` is forward-only and stores
+  proxy metadata/health only. Raw proxy credentials remain in the Secret Store.
+- Configured proxy routing is fail-closed, and authenticated Session affinity
+  changes are explicit and require reauthentication. Worker scheduling,
+  rotation, and rate-limit coordination remain the Phase 16 boundary.
 - Phone/OTP values remain ephemeral and absent from durable/evidence outputs.
 
 ## Commands Executed
 
 The official Phase 13 run/validate/reconcile commands and Phase 14
-run/validate commands were executed, together with full/focused tests, build,
-typecheck, lint, format, architecture, contracts, migrations, security, docs,
-and OKF validation.
+run/validate commands were executed. Phase 15 focused commands included
+typecheck, unit, application-service, persistence, Browser Runtime/Chromium,
+architecture, contracts, migrations, project-format, lint, format, security,
+docs, and OKF validation. The full sequential Phase 15 evidence command is
+still pending the clean local commit.
 
 ## Validation and Test Results
 
-- Full: `177/177 PASS`
+- Baseline before Phase 15: unit `70/70 PASS`; Phase 14 final evidence validator
+  `PASS`.
+- Phase 15 focused: unit `74/74 PASS`; application-service `8/8 PASS`;
+  persistence `23/23 PASS`; Browser Runtime/Chromium `12/12 PASS`.
+- Architecture `106` production TypeScript files PASS; contracts `1.11.0`
+  validated with 67 commands; migrations schema `10` PASS; project format,
+  lint, format, security, docs, and OKF checks PASS.
+- Full Phase 1–14 regression, final native evidence, and exact-HEAD validation
+  are not yet recorded for this working tree.
+- Historical full: `177/177 PASS`
 - Unit: `70/70 PASS`
 - Integration: `26/26 PASS`
 - Real Chromium: `11/11 PASS`
@@ -102,8 +155,10 @@ and OKF validation.
 
 ## Known Issues and Blockers
 
-No blocker prevents Phase 15. Deferred Linux/macOS native evidence and the
-independent missing Phase 9 discovery engine remain known scope limitations.
+No repository blocker prevents Phase 15. The sandboxed esbuild subprocess
+restriction requires elevated execution for build/test commands. Deferred
+Linux/macOS native evidence and the independent missing Phase 9 discovery engine
+remain known scope limitations.
 
 ## Risks and Assumptions
 
@@ -112,7 +167,9 @@ the accepted bundles prove only their recorded Git HEAD.
 
 ## Database or Migration State
 
-SQLite schema `9`; no Phase 14 migration was added.
+SQLite schema `10` is implemented with forward-only migration
+`010_add_proxies`; the `proxies` table contains no raw credential columns.
+Project format schema is `10`; transport contract is `1.11.0`.
 
 ## Configuration and Environment Notes
 
@@ -122,7 +179,8 @@ Node `v24.17.0`; npm `11.17.0`; Playwright `1.56.1`; official Chromium
 
 ## Uncommitted or Partially Applied Changes
 
-Not applicable after the final baseline commit.
+Phase 15 changes are currently uncommitted. No destructive rollback, branch
+change, push, reset, rebase, or amend has occurred.
 
 ## Recovery or Rollback Notes
 
@@ -140,12 +198,17 @@ forward Git commits rather than destructive cleanup.
 - `.artifacts/phase13-evidence/final-native-windows-11-x64`
 - `.artifacts/phase13-evidence/final-reconciliation.json`
 - `.artifacts/phase14-evidence/final-native-windows-11-x64`
+- `docs/project/PHASE_15_IMPLEMENTATION_REPORT.md`
+- `docs/architecture/PHASE_15_SECURITY_REVIEW.md`
+- `docs/project/adr/ADR-058-proxy-manager-and-health-monitor.md`
+- `.artifacts/phase15-evidence/final-native-windows-11-x64` (to be generated)
 
 ## Notes for the Next Agent
 
-Treat the remainder of this file as historical context. Phase 15 is ready but
-not started; preserve schema `9`, contract `1.10.0`, the trust zones, and the
-accepted evidence semantics.
+Before the final response, ensure the Phase 15 commit is clean, the evidence
+summary and validator bind to the same HEAD, the Phase 14 validator still
+passes, and this handoff is updated with the final exact results. Preserve the
+Phase 16 scheduling boundary and the accepted evidence semantics.
 
 ## Historical Handoff (superseded)
 

@@ -1,5 +1,6 @@
 import type { CrawlRunState } from "./run-state.js";
 import type { ServiceWorkerPolicy } from "./service-worker.js";
+import type { ProxyConnectivityRequest, ProxyConnectivityResult, ProxyRuntimeConfiguration } from "./proxy.js";
 
 export const IMPLEMENTED_CORE_CAPABILITIES = [
   "system.describe",
@@ -30,6 +31,17 @@ export const IMPLEMENTED_CORE_CAPABILITIES = [
   "elementPicker.start",
   "elementPicker.select",
   "elementPicker.stop",
+  "proxy.create",
+  "proxy.get",
+  "proxy.list",
+  "proxy.update",
+  "proxy.enable",
+  "proxy.disable",
+  "proxy.delete",
+  "proxy.import",
+  "proxy.test",
+  "proxy.eligibility",
+  "session.setProxyAffinity",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -91,7 +103,6 @@ export const PLANNED_CORE_CAPABILITIES = [
   "crawl.execution",
   "link.discovery",
   "archive.generation",
-  "proxy.management",
 ] as const;
 
 export * from "./secrets.js";
@@ -102,6 +113,7 @@ export * from "./path-safety.js";
 export * from "./run-state.js";
 export * from "./service-worker.js";
 export * from "./authentication.js";
+export * from "./proxy.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"
@@ -876,6 +888,7 @@ export interface BrowserAuthenticationPolicy {
   readonly validation: import("./sessions.js").SessionValidationPolicy;
   readonly navigationTimeoutMs: number;
   readonly testMode: boolean;
+  readonly proxy?: ProxyRuntimeConfiguration;
 }
 
 export interface BrowserAuthenticationSession {
@@ -895,6 +908,7 @@ export interface BrowserSessionPolicy {
   maxEvidenceEntries: number;
   authorizeUrl(url: string): Promise<RuntimeNetworkDecision>;
   serviceWorkerPolicy?: ServiceWorkerPolicy;
+  proxy?: ProxyRuntimeConfiguration;
 }
 
 export interface BrowserRuntimePort {
@@ -907,6 +921,7 @@ export interface BrowserRuntimePort {
   createPageSession(jobId: string, policy: BrowserSessionPolicy): Promise<BrowserPageSession>;
   openManualLoginSession(sessionId: string, policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession>;
   restoreAuthenticationSession(sessionId: string, storageState: Uint8Array, policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession>;
+  testProxy?(input: ProxyConnectivityRequest): Promise<ProxyConnectivityResult>;
   close(): Promise<void>;
 }
 

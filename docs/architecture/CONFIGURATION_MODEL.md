@@ -12,4 +12,16 @@ Build-owned Phase 8 values are application `0.8.0`, contract `1.5.0`, Project fo
 
 Runtime/platform facts expose only normalized Node version, OS family, and architecture.
 
-Archive/Profile/Scope/Queue safety limits, priority categories, retry bounds, pagination, and SQLite pragmas are code/profile constants, not untrusted renderer/environment settings. Project locations are per-command local values selected by CLI arguments or granted native Desktop dialogs; they are never persisted inside the Project. Queue state is Project-local SQLite data. Credentials, proxy settings, browser paths, crawler settings, Lease timers, and secret stores remain absent.
+Archive/Profile/Scope/Queue safety limits, priority categories, retry bounds, pagination, and SQLite pragmas are code/profile constants, not untrusted renderer/environment settings. Project locations are per-command local values selected by CLI arguments or granted native Desktop dialogs; they are never persisted inside the Project. Queue state is Project-local SQLite data. Credentials, browser paths, crawler settings, Lease timers, and secret stores remain absent from general configuration.
+
+## Product Phase 15 proxy configuration
+
+The optional `proxyPool` configuration is metadata-only and defaults to
+`mode: "direct"`, `failOpenToDirect: false`, health checks enabled, a bounded
+cooldown, sticky authenticated Sessions enabled, multi-proxy authenticated
+Sessions disabled, and bounded per-proxy worker concurrency. Proxy credentials
+are referenced through the Secret Store and are not configuration values. A
+configured single proxy or pool never authorizes a silent direct fallback.
+The health-test and eligibility behavior is implemented now; background
+worker scheduling, rate-limit coordination, and automatic rotation remain the
+Phase 16 boundary.

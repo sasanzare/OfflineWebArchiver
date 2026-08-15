@@ -9,14 +9,14 @@ extension files are not official OKF Concepts, and no file under this directory
 should be counted when determining official OKF conformance.
 
 The extension currently indexes Product Phase 10 as `PARTIAL`, Product Phase 11
-as `PARTIAL`, Product Phase 12 as `PARTIAL`, Product Phase 13 as `PARTIAL`, and
-Product Phase 14 as `PARTIAL`: the OTP/Picker contracts, focused tests, and
-current-worktree Chromium fixture are present, while clean committed Windows
-11 x64 Phase 13 promotion remains blocked. Windows 10 is
-legacy/compatibility and Linux/macOS native evidence is deferred to future
-versions; neither is a current Phase 13 gate. The manifest remains activated at
-Phase 8; later phases are recorded for traceability without advancing the
-activated release.
+as `PARTIAL`, Product Phase 12 as `PARTIAL`, and the historical Phase 13/14
+records with their preserved status. Product Phase 15 is indexed as `VERIFIED`
+within the Proxy Manager and Health Monitor boundary: the exact-HEAD evidence
+runner, real Chromium protocol fixtures, security review, and documentation
+records are registered. Windows 10 is legacy/compatibility and Linux/macOS
+native evidence is deferred to future versions; neither is a current Phase 15
+gate. The manifest remains activated at Phase 8; later phases are recorded for
+traceability without advancing the activated release.
 
 Official validation and extension validation are logically separate. Official
 validation scans only `okf/`; extension validation may consume both the official
@@ -58,3 +58,5 @@ validation and reporting may consume both layers.
 - Phase 13 security review: `docs/architecture/PHASE_13_SECURITY_REVIEW.md`
 - Phase 14 implementation report: `docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md`
 - Phase 14 security review: `docs/architecture/PHASE_14_SECURITY_REVIEW.md`
+- Phase 15 implementation report: `docs/project/PHASE_15_IMPLEMENTATION_REPORT.md`
+- Phase 15 security review: `docs/architecture/PHASE_15_SECURITY_REVIEW.md`

@@ -83,7 +83,10 @@ for (const token of ["lookup(url.hostname", "classifyHost", "RUNTIME_PRIVATE_OR_
 }
 if (/networkidle/i.test(renderEngine + browserRuntime)) errors.push("Browser/Render production code uses forbidden networkidle readiness");
 if (/--no-sandbox|chromiumSandbox:\s*false|channel:\s*["']chrome/i.test(browserRuntime)) errors.push("Browser Runtime contains an unsafe sandbox or system-browser fallback");
-if (/\b(?:proxy|httpCredentials)\s*:/.test(browserRuntime)) errors.push("Browser Runtime contains out-of-scope proxy or authentication state");
+const hasTestOnlyProxyCertificateBoundary = ["testOnlyAllowInsecureProxyCertificates", "OWAB_TEST_MODE", "--ignore-certificate-errors"].every((token) => browserRuntime.includes(token));
+if (/--ignore-certificate-errors/.test(browserRuntime) && !hasTestOnlyProxyCertificateBoundary) errors.push("Browser Runtime contains an uncontrolled certificate-validation bypass");
+const hasControlledProxyBoundary = ["createProxyRuntimeConfiguration", "testProxy(input", "toPlaywrightProxy"].every((token) => browserRuntime.includes(token)) && applicationService.includes("PROXY_DIRECT_FALLBACK_BLOCKED");
+if (/\bhttpCredentials\s*:/.test(browserRuntime) || (/\bproxy\s*:/.test(browserRuntime) && !hasControlledProxyBoundary)) errors.push("Browser Runtime contains an uncontrolled proxy or authentication state");
 const hasControlledAuthenticationStateBoundary = [
   "PlaywrightAuthenticationSession",
   "parseStorageState",

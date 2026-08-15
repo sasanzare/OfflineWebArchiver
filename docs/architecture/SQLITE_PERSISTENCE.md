@@ -37,4 +37,20 @@ The adapter uses Node 24 `node:sqlite`, extensions disabled, defensive mode, `fo
 
 Enqueue, claim, completion, failure, retry schedule/release, skip, block, and clear-pending mutations use short `BEGIN IMMEDIATE` transactions. Claim selects one due `pending` Job in total order, performs a guarded update, assigns a UUID token, increments the attempt, and records attempt/transition atomically. Database uniqueness resolves concurrent duplicates without an unprotected select/insert assumption.
 
-Queue, Recovery, Render, and Interaction ledgers survive close/reopen and bounded export/import snapshots. Clearing pending work writes terminal `skipped` transitions and never deletes Jobs or histories. Schema 7 has Render and Interaction tables, but no Phase 9 Discovery, production Asset, Proxy, Authentication/Session, or API-capture table.
+Queue, Recovery, Render, and Interaction ledgers survive close/reopen and bounded export/import snapshots. Clearing pending work writes terminal `skipped` transitions and never deletes Jobs or histories. Schema 7 has Render and Interaction tables, but no Phase 9 Discovery, production Asset, or API-capture table.
+
+## Schema 10 proxy metadata ledger
+
+Migration `010_add_proxies` adds the Project-owned `proxies` table. It stores
+canonical protocol/host/port identity, safe display/configuration metadata,
+opaque `credential_ref`, enabled and health state, latency and success/failure
+counters, cooldown time, bounded safe error code/summary, timestamps, and a
+revision. A unique Project/protocol/host/port constraint prevents duplicate
+identities. Username/password bytes are not columns and are never written to
+SQLite. Proxy credential material remains in the dedicated Secret Store.
+
+The `SqliteProjectStorage` adapter exposes proxy CRUD/import operations through
+short transactions with Project ownership and revision checks. Existing
+schema-9 Projects migrate forward without rewriting prior ledgers; the
+manifest advertises proxy support only at schema 10. Browser Runtime and the
+future Worker Pool are separate adapters and do not read the table directly.

@@ -21,6 +21,10 @@ import {
   type BrowserPageSession,
   type BrowserRuntimePort,
   type BrowserSessionPolicy,
+  type ProxyRuntimeConfiguration,
+  type ProxyConnectivityRequest,
+  type ProxyConnectivityResult,
+  createProxyRuntimeConfiguration,
   type NavigationObservation,
   type PageStabilitySnapshot,
   type OtpBrowserInteraction,
@@ -69,10 +73,52 @@ export interface PlaywrightBrowserRuntimeOptions {
   now?: () => string;
   maximumPagesPerProcess?: number;
   maximumLifetimeMs?: number;
+  /** Test-fixture-only escape hatch for a generated local HTTPS proxy certificate. */
+  testOnlyAllowInsecureProxyCertificates?: boolean;
 }
 
 const MAX_EVIDENCE_ENTRIES = 100;
 const RESTART_WINDOW_MS = 5 * 60_000;
+
+function toPlaywrightProxy(proxy: ProxyRuntimeConfiguration | undefined): { server: string; bypass?: string; username?: string; password?: string } | undefined {
+  if (proxy === undefined) return undefined;
+  return {
+    server: proxy.server,
+    ...(proxy.bypass.length === 0 ? {} : { bypass: proxy.bypass.join(",") }),
+    ...(proxy.username === undefined ? {} : { username: proxy.username }),
+    ...(proxy.password === undefined ? {} : { password: proxy.password }),
+  };
+}
+
+function safeProxyTargetUrl(rawUrl: string): string {
+  try {
+    const url = new URL(rawUrl);
+    if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username !== "" || url.password !== "") throw new Error("unsafe target");
+    return `${url.origin}${url.pathname || "/"}`;
+  } catch {
+    throw new RenderOperationError("RENDER_INPUT_INVALID", "The Proxy health-check target is invalid");
+  }
+}
+
+function proxyFailureCode(error: unknown): string {
+  if (error instanceof Error) {
+    if (/407|proxy authentication|authentication required/i.test(error.message)) return "PROXY_AUTH_FAILED";
+    if (/timeout|timed out/i.test(error.message)) return "PROXY_CONNECT_TIMEOUT";
+    if (/ENOTFOUND|EAI_AGAIN|DNS|name could not be resolved/i.test(error.message)) return "PROXY_DNS_FAILED";
+    if (/certificate|TLS|SSL/i.test(error.message)) return "PROXY_TLS_FAILED";
+  }
+  return "PROXY_UNREACHABLE";
+}
+
+function extractObservedIp(value: string): string | null {
+  const candidate = value.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b|\b[0-9a-f]{0,4}(?::[0-9a-f]{0,4}){2,7}\b/i)?.[0] ?? null;
+  if (candidate === null) return null;
+  if (candidate.includes(".")) {
+    const octets = candidate.split(".").map(Number);
+    return octets.length === 4 && octets.every((octet) => Number.isInteger(octet) && octet >= 0 && octet <= 255) ? candidate : null;
+  }
+  return candidate.includes(":") ? candidate : null;
+}
 const MAX_RESTARTS_PER_WINDOW = 3;
 
 function sanitizeText(value: string, maximum = 800): string {
@@ -600,6 +646,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
   const now = options.now ?? (() => new Date().toISOString());
   const maximumPages = options.maximumPagesPerProcess ?? 100;
   const maximumLifetimeMs = options.maximumLifetimeMs ?? 30 * 60_000;
+  const testOnlyAllowInsecureProxyCertificates = options.testOnlyAllowInsecureProxyCertificates === true && process.env["OWAB_TEST_MODE"] === "1";
   let browser: Browser | null = null;
   let authenticationBrowser: Browser | null = null;
   let restoredBrowser: Browser | null = null;
@@ -643,7 +690,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
         executablePath,
         headless,
         chromiumSandbox: true,
-        args: ["--deny-permission-prompts"],
+        args: ["--deny-permission-prompts", ...(testOnlyAllowInsecureProxyCertificates ? ["--ignore-certificate-errors"] : [])],
         handleSIGHUP: false,
         handleSIGINT: false,
         handleSIGTERM: false,
@@ -696,6 +743,8 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
     if (!policy.allowedOrigins.includes(origin)) throw new RenderOperationError("BROWSER_AUTHENTICATION_NAVIGATION_BLOCKED", "The Authentication Browser URL is not in the approved origin set");
     const parsedStorageState = storageState === undefined ? undefined : parseStorageState(storageState);
     const headless = mode === "restored";
+    const { proxy, ...safePolicy } = policy;
+    const playwrightProxy = toPlaywrightProxy(proxy);
     let owner: Browser;
     if (mode === "manual") {
       if (authenticationBrowser?.isConnected() !== true) authenticationBrowser = await launchOwnedBrowser(false);
@@ -720,6 +769,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
         userAgent: CONTEXT_PROFILE.userAgent,
         bypassCSP: false,
         ignoreHTTPSErrors: false,
+        ...(playwrightProxy === undefined ? {} : { proxy: playwrightProxy }),
       });
       await context.clearPermissions();
       const sessionState = { current: null as PlaywrightAuthenticationSession | null };
@@ -740,7 +790,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
         await route.continue().catch(() => undefined);
       });
       const page = await context.newPage();
-      const session = new PlaywrightAuthenticationSession(sessionId, mode, context, page, policy, headless, () => {
+      const session = new PlaywrightAuthenticationSession(sessionId, mode, context, page, safePolicy, headless, () => {
         if (activeAuthenticationSession?.sessionId === sessionId) activeAuthenticationSession = null;
       });
       sessionState.current = session;
@@ -808,6 +858,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
       if (browser?.isConnected() !== true) throw new RenderOperationError("BROWSER_UNHEALTHY", "The Browser Runtime is not connected", true);
       activeJobId = jobId;
       try {
+        const playwrightProxy = toPlaywrightProxy(policy.proxy);
         const context = await browser.newContext({
           viewport: CONTEXT_PROFILE.viewport,
           deviceScaleFactor: CONTEXT_PROFILE.deviceScaleFactor,
@@ -822,10 +873,12 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
           userAgent: CONTEXT_PROFILE.userAgent,
           bypassCSP: false,
           ignoreHTTPSErrors: false,
+          ...(playwrightProxy === undefined ? {} : { proxy: playwrightProxy }),
         });
         await context.clearPermissions();
         const page = await context.newPage();
-        const session = new PlaywrightPageSession(jobId, context, page, policy, () => browser?.isConnected() === true, () => {
+        const { proxy: _proxy, ...safePolicy } = policy;
+        const session = new PlaywrightPageSession(jobId, context, page, safePolicy, () => browser?.isConnected() === true, () => {
           activeJobId = null;
           pagesRendered += 1;
         });
@@ -843,6 +896,83 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
     },
     async restoreAuthenticationSession(sessionId, storageState, policy) {
       return createAuthenticationContext(sessionId, policy, "restored", storageState);
+    },
+    async testProxy(input: ProxyConnectivityRequest): Promise<ProxyConnectivityResult> {
+      if (activeJobId !== null || activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime is busy with another isolated Context");
+      if (browser?.isConnected() !== true) await api.start();
+      if (browser?.isConnected() !== true) throw new RenderOperationError("BROWSER_UNHEALTHY", "The Browser Runtime is not connected", true);
+      const targetUrlSafe = safeProxyTargetUrl(input.targetUrl);
+      const runtimeProxy = createProxyRuntimeConfiguration(input.proxy, input.credential ?? null);
+      const playwrightProxy = toPlaywrightProxy(runtimeProxy);
+      if (playwrightProxy === undefined) throw new RenderOperationError("RENDER_INPUT_INVALID", "A Proxy configuration is required for a Proxy health check");
+      const checkedAt = now();
+      const startedAtMs = performance.now();
+      let context: BrowserContext | null = null;
+      try {
+        context = await browser.newContext({
+          viewport: CONTEXT_PROFILE.viewport,
+          deviceScaleFactor: CONTEXT_PROFILE.deviceScaleFactor,
+          locale: CONTEXT_PROFILE.locale,
+          timezoneId: CONTEXT_PROFILE.timezoneId,
+          colorScheme: CONTEXT_PROFILE.colorScheme,
+          reducedMotion: CONTEXT_PROFILE.reducedMotion,
+          javaScriptEnabled: CONTEXT_PROFILE.javaScriptEnabled,
+          serviceWorkers: "block",
+          acceptDownloads: false,
+          extraHTTPHeaders: { "Accept-Language": CONTEXT_PROFILE.acceptLanguage },
+          userAgent: CONTEXT_PROFILE.userAgent,
+          bypassCSP: false,
+          ignoreHTTPSErrors: testOnlyAllowInsecureProxyCertificates,
+          proxy: playwrightProxy,
+        });
+        await context.clearPermissions();
+        const page = await context.newPage();
+        const response = await page.goto(targetUrlSafe, { waitUntil: "domcontentloaded", timeout: input.timeoutMs });
+        const statusCode = response?.status() ?? null;
+        const status: "success" | "failure" = response !== null && statusCode !== null && statusCode !== 407 && statusCode < 500 ? "success" : "failure";
+        let ipCheckStatus: ProxyConnectivityResult["ipCheckStatus"] = "unavailable";
+        let observedIp: string | null = null;
+        if (input.ipCheckUrl !== undefined && input.ipCheckUrl !== null) {
+          try {
+            const ipResponse = await page.goto(safeProxyTargetUrl(input.ipCheckUrl), { waitUntil: "domcontentloaded", timeout: input.timeoutMs });
+            const body = await page.locator("body").innerText({ timeout: input.timeoutMs }).catch(() => "");
+            observedIp = extractObservedIp(body.slice(0, 4_096));
+            ipCheckStatus = ipResponse !== null && observedIp !== null ? "verified" : "invalid";
+          } catch {
+            ipCheckStatus = "unavailable";
+            observedIp = null;
+          }
+        }
+        return {
+          proxyId: input.proxy.id,
+          protocol: input.proxy.protocol,
+          status,
+          checkedAt,
+          latencyMs: Math.max(0, Math.round(performance.now() - startedAtMs)),
+          targetUrlSafe,
+          targetEndpointId: "target",
+          ipCheckStatus,
+          observedIp,
+          errorCode: status === "success" ? null : statusCode === 407 ? "PROXY_AUTH_FAILED" : "PROXY_HEALTHCHECK_FAILED",
+          errorSummary: status === "success" ? null : "The Proxy health-check target did not return a successful response",
+        };
+      } catch (error) {
+        return {
+          proxyId: input.proxy.id,
+          protocol: input.proxy.protocol,
+          status: "failure",
+          checkedAt,
+          latencyMs: Math.max(0, Math.round(performance.now() - startedAtMs)),
+          targetUrlSafe,
+          targetEndpointId: "target",
+          ipCheckStatus: "unavailable",
+          observedIp: null,
+          errorCode: proxyFailureCode(error),
+          errorSummary: "The Proxy connectivity check failed",
+        };
+      } finally {
+        await context?.close().catch(() => undefined);
+      }
     },
     async close() {
       await closeAuthenticationBrowser();

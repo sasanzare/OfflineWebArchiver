@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
-import { RenderOperationError } from "@offline-web-archive/archive-core";
+import { createProxyMetadata, RenderOperationError } from "@offline-web-archive/archive-core";
 import { CONTEXT_PROFILE, createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } from "@offline-web-archive/browser-runtime";
+import { startHttpProxyFixture, startProxyFixtureTarget, startSocks5ProxyFixture } from "../support/proxy-fixtures.js";
 import { startRenderFixtureServer } from "../support/render-fixture-server.js";
 
 test("repository-owned Chromium has a deterministic one-Job lifecycle and explicit restart", async () => {
@@ -126,5 +127,43 @@ test("Browser Runtime applies one global evidence cap", async () => {
   } finally {
     await runtime.close();
     await fixture.close();
+  }
+});
+
+test("Browser Runtime sends connectivity checks through HTTP, HTTPS, and SOCKS5 proxies", async () => {
+  const target = await startProxyFixtureTarget();
+  const httpProxy = await startHttpProxyFixture();
+  const httpsProxy = await startHttpProxyFixture({ secure: true });
+  const socksProxy = await startSocks5ProxyFixture();
+  const runtime = createPlaywrightBrowserRuntime({ browserRoot: path.resolve(".runtime", "browsers"), testOnlyAllowInsecureProxyCertificates: true });
+  try {
+    if (runtime.testProxy === undefined) throw new Error("Browser Runtime does not expose Proxy connectivity testing");
+    for (const [index, fixture] of [httpProxy, httpsProxy, socksProxy].entries()) {
+      const parsed = new URL(fixture.server);
+      const proxy = createProxyMetadata({ id: `proxy-${index}`, protocol: fixture.protocol, host: parsed.hostname, port: Number(parsed.port), now: "2026-08-15T12:00:00.000Z" });
+      const result = await runtime.testProxy({ proxy, targetUrl: target.url("/health"), ipCheckUrl: target.url("/ip"), timeoutMs: 5_000 });
+      assert.equal(result.status, "success", `${fixture.protocol} proxy: ${result.errorCode ?? "unknown failure"}`);
+      assert.equal(result.ipCheckStatus, "verified");
+      assert.equal(result.observedIp, "203.0.113.42");
+      assert.ok(fixture.requestCount() >= 2, `${fixture.protocol} proxy did not carry both target requests`);
+    }
+    const deadProxy = await startHttpProxyFixture();
+    const deadAddress = new URL(deadProxy.server);
+    await deadProxy.close();
+    const beforeDeadCheck = target.requestCount();
+    const deadResult = await runtime.testProxy({
+      proxy: createProxyMetadata({ id: "proxy-dead", protocol: "http", host: deadAddress.hostname, port: Number(deadAddress.port), now: "2026-08-15T12:00:00.000Z" }),
+      targetUrl: target.url("/dead-proxy"),
+      timeoutMs: 1_000,
+    });
+    assert.equal(deadResult.status, "failure");
+    assert.equal(target.requestCount(), beforeDeadCheck);
+    assert.ok(target.requestCount() >= 6);
+  } finally {
+    await runtime.close();
+    await socksProxy.close();
+    await httpsProxy.close();
+    await httpProxy.close();
+    await target.close();
   }
 });

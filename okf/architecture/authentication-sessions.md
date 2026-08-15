@@ -38,9 +38,13 @@ Profile checks, creates a fresh controlled Context, validates the configured
 URL/marker, and closes the Context. Failed reauthentication preserves the last
 completed reference until a new validated save succeeds.
 
-`sessionStorage` is not persisted. Future proxy affinity is represented only by
-a versioned nullable identifier; proxy selection and routing are later-phase
-responsibilities.
+`sessionStorage` is not persisted. Phase 15 uses a versioned nullable
+`proxyId` affinity identifier. Open, restore, and reauthentication resolve the
+bound proxy through eligibility and require a healthy, enabled proxy with any
+needed Secret Store reference. `session.setProxyAffinity` is explicit; a live
+Authentication Browser cannot be rebound and an authenticated change requires
+reauthentication. Cooldown, disabled, unhealthy, missing-secret, and runtime
+failures fail closed without direct fallback.
 
 Phase 14 Login Flow descriptors are optional Profile JSON and contain only
 bounded locator/policy metadata. The temporary Element Picker runs in the

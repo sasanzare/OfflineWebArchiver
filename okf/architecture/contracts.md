@@ -24,17 +24,18 @@ owa:
 
 # Contracts
 
-The contract surface is versioned at 1.10.0. It includes strict Browser
+The contract surface is versioned at 1.11.0. It includes strict Browser
 information, validation, health, and restart commands, Render and Interaction
-commands/results, metadata-only Secret Store and Session commands, OTP and
-temporary Element Picker commands/results, and validated Crawl Run state in
-Pause Status. Locator and Login Flow descriptors are versioned at `1`; raw
+commands/results, metadata-only Secret Store, Session, proxy, and explicit
+Session-affinity commands, OTP and temporary Element Picker commands/results,
+and validated Crawl Run state in Pause Status. Locator and Login Flow
+descriptors are versioned at `1`; raw
 typed text, phone/OTP values, secret values, passphrases, Playwright handles,
 DOM objects, and arbitrary scripts remain outside the contract. Phase 13
 replay/offline, Service Worker, path, and concurrency contracts and the Phase
 14 authentication descriptors are versioned pure-policy surfaces rather than
 unbounded transport payloads.
 
-Render start identifies an existing Job and bounded policy. It exposes no URL override, executable path, raw Browser handle, headers, bodies, cookies, or launch arguments. Error and progress envelopes retain version and correlation fields. The [Application Service](application-service.md) is the single orchestration consumer, while Desktop and CLI are transport adapters.
+Render start identifies an existing Job and bounded policy. It exposes no URL override, executable path, raw Browser handle, headers, bodies, cookies, or launch arguments. Proxy results expose metadata, health, safe connectivity, import summaries, and eligibility only; raw credentials remain outside transport. Error and progress envelopes retain version and correlation fields. The [Application Service](application-service.md) is the single orchestration consumer, while Desktop and CLI are transport adapters.
 
 The contract boundary constrains the [Queue](../workflow/queue.md), [Rendering](../workflow/rendering.md), and [Browser Runtime](browser-runtime.md) relationships without making transport details part of those Concepts.

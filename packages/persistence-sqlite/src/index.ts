@@ -10,6 +10,7 @@ import {
   RecoveryOperationError,
   RenderOperationError,
   SessionOperationError,
+  ProxyOperationError,
   createSessionMetadata,
   assertSessionMetadata,
   assertSessionProjectOwnership,
@@ -31,6 +32,7 @@ import {
   type QueueRepositoryPort,
   type RecoveryRepositoryPort,
   type RenderRepositoryPort,
+  type ProxyRepositoryPort,
 } from "@offline-web-archive/archive-core";
 import {
   normalizeSiteProfileDraft,
@@ -70,6 +72,7 @@ import { createSqliteQueueRepository } from "./queue.js";
 import { createSqliteRecoveryRepository } from "./recovery.js";
 import { createSqliteRenderRepository } from "./render.js";
 import { createSqliteInteractionRepository } from "./interaction.js";
+import { createSqliteProxyRepository } from "./proxy.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -86,6 +89,7 @@ export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "
 export { createSqliteRecoveryRepository, type RecoveryFaultPoint, type SqliteRecoveryRepositoryOptions } from "./recovery.js";
 export { createSqliteRenderRepository, type SqliteRenderRepositoryOptions } from "./render.js";
 export { createSqliteInteractionRepository, type SqliteInteractionRepositoryOptions } from "./interaction.js";
+export { createSqliteProxyRepository, type SqliteProxyRepositoryOptions } from "./proxy.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -200,7 +204,7 @@ const BROWSER_SESSION_SELECT = `
   FROM browser_sessions
 `;
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -576,7 +580,7 @@ function updateManifestForOpen(manifest: ProjectManifest, timestamp: string, sch
     application: { version: manifest.application.version },
     project: { ...manifest.project, lastOpenedAt: timestamp },
     database: { ...manifest.database, schemaVersion },
-    features: { ...manifest.features, crawlQueue: schemaVersion >= 4 },
+    features: { ...manifest.features, crawlQueue: schemaVersion >= 4, proxies: schemaVersion >= 10 },
     lifecycle: { state: "ready", lastValidatedAt: timestamp },
   });
 }
@@ -626,6 +630,11 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const interactionForCurrent = (): InteractionProfileRepositoryPort & InteractionTraceRepositoryPort => {
     if (current === null) throw new InteractionOperationError("INTERACTION_PERSISTENCE_FAILED", "Open the selected Project before using Interaction operations");
     return createSqliteInteractionRepository(current.database, { now });
+  };
+
+  const proxyForCurrent = (): ProxyRepositoryPort => {
+    if (current === null) throw new ProxyOperationError("PROXY_NOT_FOUND", "Open the selected Project before using Proxies");
+    return createSqliteProxyRepository(current.database, { now });
   };
 
   const sessionForCurrent = (): SessionRepositoryPort => {
@@ -1387,6 +1396,30 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async deleteSession(input) {
       return sessionForCurrent().deleteSession(input);
+    },
+
+    async createProxy(input) {
+      return proxyForCurrent().createProxy(input);
+    },
+
+    async getProxy(input) {
+      return proxyForCurrent().getProxy(input);
+    },
+
+    async listProxies(input) {
+      return proxyForCurrent().listProxies(input);
+    },
+
+    async updateProxy(input) {
+      return proxyForCurrent().updateProxy(input);
+    },
+
+    async deleteProxy(input) {
+      return proxyForCurrent().deleteProxy(input);
+    },
+
+    async importProxies(input) {
+      return proxyForCurrent().importProxies(input);
     },
 
     async getCompatibility(projectPath) {

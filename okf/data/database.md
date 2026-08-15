@@ -27,9 +27,10 @@ owa:
 
 # Database
 
-SQLite schema 9 adds the Project-owned `run_state` columns to `run_control` and
-`run_checkpoints` alongside the schema 8 `browser_sessions` metadata ledger and
-the schema 7 Interaction Profile and Trace ledgers. Earlier schema history
+SQLite schema 10 adds the Project-owned `proxies` metadata ledger through
+forward-only migration `010_add_proxies`, alongside the schema 9 `run_state`
+columns, schema 8 `browser_sessions` metadata ledger, and schema 7 Interaction
+Profile and Trace ledgers. Earlier schema history
 remains preserved: schema 6 covers Render Result, Event, and Failure; schema 5
 covers Lease, Checkpoint, and Recovery; schema 4 covers Queue; schema 3 covers
 Profile; and schemas 1 and 2 cover Project history.
@@ -43,6 +44,8 @@ tokens, or serialized Storage State; its `secret_ref` is an opaque Phase 11
 reference. `run_state` is constrained to the versioned Crawl Run state
 vocabulary and is separate from legacy pause-control fields. Migration
 `009_add_crawl_run_state` is forward-only and defaults upgraded rows to
-`running`. The [Project Format](project-format.md) and
+`running`; `010_add_proxies` adds no raw credential columns. The [Project Format](project-format.md) and
 [Persistence](persistence.md) Concepts describe the data boundary. Discovery,
-Asset, API, Proxy, and worker tables remain outside this schema.
+Asset, API, and worker tables remain outside this schema. Proxy identity,
+health, and safe configuration metadata are now in schema 10; proxy credential
+bytes remain in the Secret Store.

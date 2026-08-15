@@ -105,6 +105,10 @@
     { "id": "R-101", "name": "Unverified deferred Linux and macOS Browser behavior", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-108", "name": "Secret value leakage across artifacts and boundaries", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-109", "name": "Secret backend or KDF portability", "status": "UNKNOWN", "recordPath": "docs/project/RISK_REGISTER.md" },
-    { "id": "R-110", "name": "Portable Vault integrity and crash recovery", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }
+    { "id": "R-110", "name": "Portable Vault integrity and crash recovery", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-111", "name": "Proxy credential leakage", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-112", "name": "Proxy direct fallback or Session affinity loss", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-113", "name": "Proxy protocol and TLS portability variance", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-114", "name": "Proxy health and eligibility drift", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" }
   ]
 }

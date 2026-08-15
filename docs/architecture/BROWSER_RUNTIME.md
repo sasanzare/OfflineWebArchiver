@@ -18,3 +18,23 @@ Provisioning commands are `npm run browser:install`, `npm run browser:verify`, a
 Launch uses `headless: true`, `chromiumSandbox: true`, and the single reviewed fixed argument `--deny-permission-prompts`. There is no persistent user-data directory, arbitrary executable path, caller-supplied Chromium argument, HTTPS-error bypass, extension loading, or exposed debugging port. The Playwright Node dependency remains external to the Electron main bundle and must be copied as a packaged runtime dependency.
 
 Upgrade policy: update Playwright and its matching Chromium together, provision from the official Playwright artifact source, regenerate and review the manifest/checksum, rerun all browser/render/crash/packaging checks, and retain the prior verified pin for rollback until release evidence passes. This is an update process, not a long-term security-support claim.
+
+## Proxy routing and connectivity checks
+
+Phase 15 adds HTTP, HTTPS, and SOCKS5 proxy configuration at the Browser Runtime
+boundary. `packages/browser-runtime/src/index.ts` is the only production code
+that maps a validated `ProxyRuntimeConfiguration` to Playwright's proxy
+settings. A configured proxy is required for proxy-bound work; the runtime
+does not silently retry direct or rotate to another proxy.
+
+`testProxy` uses the approved single Chromium process and a fresh isolated
+context, performs a real navigation through the supplied proxy, optionally
+checks a bounded outbound-IP response, and returns only latency, status, safe
+error, and IP-verification metadata. The Application Service persists health
+state and counters; it does not receive a browser handle or raw credential.
+
+The generated local HTTPS fixture is the only case allowed to use
+`testOnlyAllowInsecureProxyCertificates`, and the option is effective only when
+`OWAB_TEST_MODE=1`. Normal authentication and rendering contexts keep strict
+certificate validation. This test-only boundary is checked by
+`tools/security/check.mjs`; it is not a production trust bypass.

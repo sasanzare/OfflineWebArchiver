@@ -106,6 +106,7 @@
     { "id": "OD-078", "name": "Separate versioned Crawl Run state", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-053-separated-crawl-run-state.md" },
     { "id": "OD-079", "name": "Versioned replay and strict offline contract", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-054-network-replay-and-strict-offline-contract.md" },
     { "id": "OD-080", "name": "Safe-default Service Worker policy", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-055-versioned-service-worker-policy.md" },
-    { "id": "OD-081", "name": "Central canonical path and symlink safety", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-056-canonical-path-safety.md" }
+    { "id": "OD-081", "name": "Central canonical path and symlink safety", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-056-canonical-path-safety.md" },
+    { "id": "OD-082", "name": "Proxy Manager and Health Monitor boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-058-proxy-manager-and-health-monitor.md" }
   ]
 }

@@ -21,6 +21,7 @@ import {
   OtpFlowError,
   parseLoginFlow,
   SessionOperationError,
+  ProxyOperationError,
   SESSION_STORAGE_CAPABILITIES,
   assertSessionMetadata,
   assertSessionTransition,
@@ -53,6 +54,23 @@ import {
   type LoginFlow,
   type OtpBrowserInteraction,
   type OtpFlowSnapshot,
+  type ProxyConnectivityPort,
+  type ProxyCredential,
+  type ProxyMetadata,
+  type ProxyRepositoryPort,
+  type ProxyRuntimeConfiguration,
+  type ProxyDraft,
+  assertProxyMetadata,
+  createProxyMetadata,
+  createProxyRuntimeConfiguration,
+  deriveImportedProxyId,
+  expireProxyCooldown,
+  getProxyEligibility,
+  normalizeProxyCredential,
+  parseProxyImport,
+  recordProxyHealthCheck,
+  sanitizeProxyErrorCode,
+  sanitizeProxyErrorSummary,
 } from "@offline-web-archive/archive-core";
 import { createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } from "@offline-web-archive/browser-runtime";
 import {
@@ -112,6 +130,7 @@ export interface ApplicationServiceDependencies {
   logger?: Logger;
   now?: () => string;
   secretStoreFactory?: (input: { readonly projectRoot: string; readonly projectId: string; readonly now: () => string }) => SecretStorePort;
+  proxyConnectivity?: ProxyConnectivityPort;
 }
 
 function safeIdentifiers(raw: unknown): { commandId: string; correlationId: string } {
@@ -354,6 +373,42 @@ function sessionError(error: SessionOperationError): ErrorContract {
   };
 }
 
+function proxyError(error: ProxyOperationError): ErrorContract {
+  const securityCodes = new Set([
+    "PROXY_SECRET_MISSING",
+    "PROXY_SECRET_INVALID",
+    "PROXY_AFFINITY_MISMATCH",
+    "PROXY_DIRECT_FALLBACK_BLOCKED",
+  ]);
+  const validationCodes = new Set([
+    "PROXY_CONFIG_INVALID",
+    "PROXY_PROTOCOL_UNSUPPORTED",
+    "PROXY_IMPORT_INVALID",
+    "PROXY_NOT_FOUND",
+    "PROXY_ALREADY_EXISTS",
+    "PROXY_REVISION_CONFLICT",
+  ]);
+  const userMessages: Partial<Record<ProxyOperationError["code"], string>> = {
+    PROXY_NOT_FOUND: "The selected Proxy was not found.",
+    PROXY_ALREADY_EXISTS: "A Proxy with the same identifier or canonical endpoint already exists.",
+    PROXY_REVISION_CONFLICT: "The Proxy changed before this update was applied.",
+    PROXY_SECRET_MISSING: "The selected Proxy credential is unavailable in the Secret Store.",
+    PROXY_SECRET_INVALID: "The selected Proxy credential is invalid or not a Proxy credential.",
+    PROXY_DISABLED: "The selected Proxy is disabled.",
+    PROXY_COOLDOWN: "The selected Proxy is in cooldown and cannot be used yet.",
+    PROXY_UNAVAILABLE: "No eligible Proxy is available; Direct fallback is blocked.",
+    PROXY_AFFINITY_MISMATCH: "The authenticated Session is bound to another Proxy.",
+    PROXY_DIRECT_FALLBACK_BLOCKED: "Direct fallback is blocked for this Proxy-affined Session.",
+  };
+  return {
+    code: error.code,
+    category: securityCodes.has(error.code) ? "security" : validationCodes.has(error.code) ? "validation" : error.code.startsWith("PROXY_") ? "platform" : "application",
+    message: error.message,
+    userMessage: userMessages[error.code] ?? "The Proxy operation could not be completed safely.",
+    retryable: error.retryable,
+  };
+}
+
 function authenticationContractError(error: AuthenticationContractError): ErrorContract {
   return {
     code: error.code,
@@ -453,6 +508,12 @@ function resultLogMetadata(result: SuccessResponseEnvelope["result"]): Record<st
   if (result.resultType === "session.metadata") return { resultType: result.resultType, action: result.action, sessionId: result.session.sessionId, state: result.session.state, validationResult: result.session.validationResult, requiresReauthentication: result.session.requiresReauthentication };
   if (result.resultType === "session.list") return { resultType: result.resultType, sessionCount: result.sessions.length, sessionIds: result.sessions.map((session) => session.sessionId) };
   if (result.resultType === "session.delete") return { resultType: result.resultType, sessionId: result.sessionId };
+  if (result.resultType === "proxy.metadata") return { resultType: result.resultType, action: result.action, proxyId: result.proxy.id, protocol: result.proxy.protocol, healthState: result.proxy.healthState, enabled: result.proxy.enabled, revision: result.proxy.revision };
+  if (result.resultType === "proxy.list") return { resultType: result.resultType, proxyCount: result.proxies.length, proxyIds: result.proxies.map((proxy) => proxy.id) };
+  if (result.resultType === "proxy.delete") return { resultType: result.resultType, proxyId: result.proxyId };
+  if (result.resultType === "proxy.import") return { resultType: result.resultType, ...result.summary, errorCount: result.errors.length };
+  if (result.resultType === "proxy.test") return { resultType: result.resultType, proxyId: result.result.proxyId, protocol: result.result.protocol, status: result.result.status, latencyMs: result.result.latencyMs, ipCheckStatus: result.result.ipCheckStatus, errorCode: result.result.errorCode };
+  if (result.resultType === "proxy.eligibility") return { resultType: result.resultType, proxyId: result.proxyId, eligible: result.eligibility.eligible, reasonCode: result.eligibility.reasonCode };
   if (result.resultType === "otp.flow") return { resultType: result.resultType, action: result.action, sessionId: result.sessionId, state: result.flow.state, authenticationState: result.flow.authenticationState, attemptCount: result.flow.attemptCount, lastErrorCode: result.flow.lastErrorCode, runState: result.run?.runState ?? null };
   if (result.resultType === "elementPicker.result") return { resultType: result.resultType, action: result.action, sessionId: result.sessionId, selectionKind: result.selection?.kind ?? null, selectionStrategy: result.selection?.locator.strategy ?? null };
   return { resultType: result.resultType };
@@ -495,7 +556,7 @@ interface ActiveOtpFlow {
   readonly interaction: OtpBrowserInteraction;
 }
 
-type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort;
+type ApplicationStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort;
 
 type SecretStoreFactory = NonNullable<ApplicationServiceDependencies["secretStoreFactory"]>;
 
@@ -516,6 +577,80 @@ function getOrCreateSecretStore(
   const created = factory({ projectRoot: path.resolve(projectPath), projectId, now });
   stores.set(key, created);
   return created;
+}
+
+function encodeProxyCredential(credential: ProxyCredential): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify({ username: credential.username, password: credential.password }));
+}
+
+function decodeProxyCredential(bytes: Uint8Array): ProxyCredential {
+  try {
+    const credential = normalizeProxyCredential(JSON.parse(new TextDecoder().decode(bytes)));
+    if (credential === null) throw new Error("missing credential");
+    return credential;
+  } catch {
+    throw new ProxyOperationError("PROXY_SECRET_INVALID", "The Proxy credential in the Secret Store is invalid");
+  }
+}
+
+async function assertProxySecretReference(store: SecretStorePort, projectId: string, proxyId: string, ref: SecretRef): Promise<void> {
+  let parsed;
+  try { parsed = parseSecretRef(ref); }
+  catch { throw new ProxyOperationError("PROXY_SECRET_INVALID", "The Proxy credential reference is invalid"); }
+  if (parsed.projectId !== projectId.toLowerCase()) throw new ProxyOperationError("PROXY_SECRET_INVALID", "The Proxy credential reference belongs to another Project");
+  try {
+    const metadata = await store.getSecretMetadata({ projectId, ref: parsed.serialized });
+    if (metadata.kind !== "proxy_credential" || metadata.scope.scopeType !== "proxy" || metadata.scope.scopeId !== proxyId || metadata.lifecycleState !== "active") {
+      throw new ProxyOperationError("PROXY_SECRET_INVALID", "The Secret Reference is not an active Proxy credential");
+    }
+  } catch (error) {
+    if (error instanceof ProxyOperationError) throw error;
+    if (error instanceof SecretStoreError && error.code === "SECRET_NOT_FOUND") throw new ProxyOperationError("PROXY_SECRET_MISSING", "The Proxy credential is missing from the Secret Store");
+    throw error;
+  }
+}
+
+async function createProxyCredentialSecret(store: SecretStorePort, projectId: string, proxyId: string, credential: ProxyCredential): Promise<SecretRef> {
+  const bytes = encodeProxyCredential(credential);
+  try {
+    const created = await store.createSecret({
+      projectId,
+      scope: { scopeType: "proxy", projectId, scopeId: proxyId },
+      kind: "proxy_credential",
+      value: bytes,
+      displayLabel: "proxy-auth",
+      secureExportPolicy: "forbidden",
+    });
+    return created.ref;
+  } finally {
+    bytes.fill(0);
+  }
+}
+
+async function withProxyRuntimeConfiguration<T>(
+  store: SecretStorePort,
+  projectId: string,
+  proxy: ProxyMetadata,
+  consumer: (configuration: ProxyRuntimeConfiguration) => Promise<T>,
+): Promise<T> {
+  if (proxy.credentialRef === null) return consumer(createProxyRuntimeConfiguration(proxy, null));
+  await assertProxySecretReference(store, projectId, proxy.id, proxy.credentialRef);
+  try {
+    return await store.withSecret(
+      { projectId, scopeId: proxy.id, purpose: "proxy_connection" },
+      proxy.credentialRef,
+      async (bytes) => {
+        try {
+          return await consumer(createProxyRuntimeConfiguration(proxy, decodeProxyCredential(bytes)));
+        } finally {
+          bytes.fill(0);
+        }
+      },
+    );
+  } catch (error) {
+    if (error instanceof SecretStoreError && error.code === "SECRET_NOT_FOUND") throw new ProxyOperationError("PROXY_SECRET_MISSING", "The Proxy credential is missing from the Secret Store");
+    throw error;
+  }
 }
 
 async function authorizeRuntimeUrl(
@@ -587,7 +722,7 @@ function sessionValidationPolicy(input: { validationUrl: string; markerSelector?
 }
 
 function sessionAuthPolicy(
-  input: { loginUrl: string; allowedOrigins: readonly string[]; validationUrl: string; markerSelector?: string | null; markerText?: string | null },
+  input: { loginUrl: string; allowedOrigins: readonly string[]; validationUrl: string; markerSelector?: string | null; markerText?: string | null; proxy?: ProxyRuntimeConfiguration },
   profile: Awaited<ReturnType<ProfileStoragePort["getProfile"]>>,
   testMode: boolean,
   fixtureOrigins: readonly string[],
@@ -602,7 +737,15 @@ function sessionAuthPolicy(
   const validation = sessionValidationPolicy(input);
   const allowedOrigins = [...new Set(input.allowedOrigins.map(normalizedSessionOrigin))];
   if (!allowedOrigins.includes(loginUrl.origin) || !allowedOrigins.includes(validation.expectedOrigin)) throw new SessionOperationError("SESSION_METADATA_INVALID", "The login and validation origins must be explicitly approved");
-  return { initialUrl: input.loginUrl, allowedOrigins, validation, navigationTimeoutMs: 120_000, testMode, authorizeUrl: (url) => authorizeAuthenticationUrl(url, profile, allowedOrigins, testMode, fixtureOrigins) };
+  return {
+    initialUrl: input.loginUrl,
+    allowedOrigins,
+    validation,
+    navigationTimeoutMs: 120_000,
+    testMode,
+    authorizeUrl: (url) => authorizeAuthenticationUrl(url, profile, allowedOrigins, testMode, fixtureOrigins),
+    ...(input.proxy === undefined ? {} : { proxy: input.proxy }),
+  };
 }
 
 function updateSessionMetadata(
@@ -866,6 +1009,7 @@ async function executeProjectCommand(
   secretStores: Map<string, SecretStorePort>,
   secretStoreFactory: SecretStoreFactory,
   runtime: BrowserRuntimePort,
+  proxyConnectivity: ProxyConnectivityPort | undefined,
   engine: RenderEnginePort,
   activeRenders: Map<string, ActiveRender>,
   activeInteractions: Map<string, ActiveInteraction>,
@@ -954,7 +1098,7 @@ async function executeProjectCommand(
       : validationOutcomeWithReason(current, now, status === "corrupt" ? "corrupt" : "unavailable", reason);
     return storage.updateSession({ projectId: current.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: next });
   };
-  const sessionResult = (action: "open" | "reauthenticate" | "save" | "get" | "validate" | "restore", metadata: SessionMetadata, browser: BrowserAuthenticationSession | null): Record<string, unknown> => ({
+  const sessionResult = (action: "open" | "reauthenticate" | "save" | "get" | "validate" | "restore" | "setProxyAffinity", metadata: SessionMetadata, browser: BrowserAuthenticationSession | null): Record<string, unknown> => ({
     resultType: "session.metadata",
     action,
     session: safeSessionMetadata(metadata),
@@ -974,14 +1118,27 @@ async function executeProjectCommand(
       const next = await persistedValidationOutcome(current, "corrupt", "secret_missing");
       return sessionResult(action, next, null);
     }
-    const policy = sessionAuthPolicy({
+    const profile = await storage.getProfile(project.projectPath);
+    const policyInput = {
       loginUrl: current.validationPolicy.validationUrl,
       allowedOrigins: [current.validationPolicy.expectedOrigin],
       validationUrl: current.validationPolicy.validationUrl,
       markerSelector: current.validationPolicy.markerSelector,
       markerText: current.validationPolicy.markerText,
-    }, await storage.getProfile(project.projectPath), renderTestMode, fixtureOrigins);
+    };
     const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+    let selectedProxy: ProxyMetadata | null = null;
+    if (current.affinity.proxyId !== null) {
+      selectedProxy = await storage.getProxy({ projectId: project.projectId, proxyId: current.affinity.proxyId });
+      const credentialAvailable = selectedProxy.credentialRef === null || await store.hasSecret({ projectId: project.projectId, ref: selectedProxy.credentialRef });
+      const eligibility = getProxyEligibility(selectedProxy, now(), credentialAvailable);
+      if (!eligibility.eligible) {
+        if (eligibility.reasonCode === "PROXY_DISABLED") throw new ProxyOperationError("PROXY_DISABLED", "The bound Proxy is disabled");
+        if (eligibility.reasonCode === "PROXY_COOLDOWN") throw new ProxyOperationError("PROXY_COOLDOWN", "The bound Proxy is in cooldown");
+        if (eligibility.reasonCode === "PROXY_SECRET_MISSING") throw new ProxyOperationError("PROXY_SECRET_MISSING", "The bound Proxy credential is unavailable");
+        throw new ProxyOperationError("PROXY_AFFINITY_UNAVAILABLE", "The bound Proxy has not passed a successful health check");
+      }
+    }
     let browser: BrowserAuthenticationSession | null = null;
     let browserStatus: Record<string, unknown> | null = null;
     try {
@@ -990,7 +1147,10 @@ async function executeProjectCommand(
         current.secretRef,
         async (secretBytes) => {
           try {
-            browser = await runtime.restoreAuthenticationSession(current.sessionId, secretBytes, policy);
+            const restore = async (proxy?: ProxyRuntimeConfiguration): Promise<BrowserAuthenticationSession> => runtime.restoreAuthenticationSession(current.sessionId, secretBytes, sessionAuthPolicy({ ...policyInput, ...(proxy === undefined ? {} : { proxy }) }, profile, renderTestMode, fixtureOrigins));
+            browser = selectedProxy === null
+              ? await restore()
+              : await withProxyRuntimeConfiguration(store, project.projectId, selectedProxy, restore);
             const outcome = await browser.validate();
             browserStatus = sessionBrowserStatus(browser);
             return outcome;
@@ -1024,21 +1184,41 @@ async function executeProjectCommand(
       if (browserForCleanup !== null) await browserForCleanup.close().catch(() => undefined);
     }
   };
-  const executeSessionCommand = async (command: Extract<CommandEnvelope, { commandType: "session.open" | "session.reauthenticate" | "session.save" | "session.get" | "session.list" | "session.validate" | "session.restore" | "session.delete" }>): Promise<unknown> => {
+  const executeSessionCommand = async (command: Extract<CommandEnvelope, { commandType: "session.open" | "session.reauthenticate" | "session.save" | "session.get" | "session.list" | "session.validate" | "session.restore" | "session.delete" | "session.setProxyAffinity" }>): Promise<unknown> => {
     if (command.commandType === "session.open" || command.commandType === "session.reauthenticate") {
       const sessionId = command.commandType === "session.open" ? randomUUID() : command.payload.sessionId;
       assertAuthenticationSlot(sessionId);
       return withSessionProject(command.payload.projectPath, true, async (project) => {
         const profile = await storage.getProfile(project.projectPath);
-        const policy = sessionAuthPolicy({
+        const contextProfile = runtime.getContextProfile();
+        let previousMetadata: SessionMetadata | null = null;
+        if (command.commandType === "session.reauthenticate") {
+          previousMetadata = await storage.getSession({ projectId: project.projectId, sessionId });
+          if (previousMetadata.profileId !== contextProfile.profileId || previousMetadata.browserProfileVersion !== contextProfile.version) throw new SessionOperationError("SESSION_PROFILE_INCOMPATIBLE", "The Session was created with another Browser Profile");
+        }
+        const requestedProxyId = command.payload.proxyId === undefined ? previousMetadata?.affinity.proxyId ?? null : command.payload.proxyId;
+        let selectedProxy: ProxyMetadata | null = null;
+        let proxyStore: SecretStorePort | null = null;
+        if (requestedProxyId !== null) {
+          selectedProxy = await storage.getProxy({ projectId: project.projectId, proxyId: requestedProxyId });
+          proxyStore = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+          const credentialAvailable = selectedProxy.credentialRef === null || await proxyStore.hasSecret({ projectId: project.projectId, ref: selectedProxy.credentialRef });
+          const eligibility = getProxyEligibility(selectedProxy, now(), credentialAvailable);
+          if (!eligibility.eligible) {
+            if (eligibility.reasonCode === "PROXY_DISABLED") throw new ProxyOperationError("PROXY_DISABLED", "The selected Proxy is disabled");
+            if (eligibility.reasonCode === "PROXY_COOLDOWN") throw new ProxyOperationError("PROXY_COOLDOWN", "The selected Proxy is in cooldown");
+            if (eligibility.reasonCode === "PROXY_SECRET_MISSING") throw new ProxyOperationError("PROXY_SECRET_MISSING", "The selected Proxy credential is unavailable");
+            throw new ProxyOperationError("PROXY_AFFINITY_UNAVAILABLE", "The selected Proxy has not passed a successful health check");
+          }
+        }
+        const policyInput = {
           loginUrl: command.payload.loginUrl,
           allowedOrigins: command.payload.allowedOrigins,
           validationUrl: command.payload.validationUrl,
           markerSelector: command.payload.markerSelector ?? null,
           markerText: command.payload.markerText ?? null,
-        }, profile, renderTestMode, fixtureOrigins);
-        const contextProfile = runtime.getContextProfile();
-        let previousMetadata: SessionMetadata | null = null;
+        };
+        const policy = sessionAuthPolicy(policyInput, profile, renderTestMode, fixtureOrigins);
         let metadata: SessionMetadata;
         if (command.commandType === "session.open") {
           metadata = await storage.createSession({
@@ -1056,21 +1236,22 @@ async function executeProjectCommand(
             failureReason: "none",
             state: "ready",
             validationPolicy: policy.validation,
-            affinity: { version: 1, browserProfileId: contextProfile.profileId, browserProfileVersion: contextProfile.version, proxyId: null },
+            affinity: { version: 1, browserProfileId: contextProfile.profileId, browserProfileVersion: contextProfile.version, proxyId: requestedProxyId },
             capabilities: SESSION_STORAGE_CAPABILITIES,
           });
         } else {
-          previousMetadata = await storage.getSession({ projectId: project.projectId, sessionId });
-          if (previousMetadata.profileId !== contextProfile.profileId || previousMetadata.browserProfileVersion !== contextProfile.version) throw new SessionOperationError("SESSION_PROFILE_INCOMPATIBLE", "The Session was created with another Browser Profile");
-          metadata = updateSessionMetadata(previousMetadata, now, { state: "login_browser_open", validationPolicy: policy.validation });
-          metadata = await storage.updateSession({ projectId: project.projectId, sessionId, expectedRevision: previousMetadata.revision, metadata });
+          metadata = updateSessionMetadata(previousMetadata!, now, { state: "login_browser_open", validationPolicy: policy.validation, affinity: { ...previousMetadata!.affinity, proxyId: requestedProxyId } });
+          metadata = await storage.updateSession({ projectId: project.projectId, sessionId, expectedRevision: previousMetadata!.revision, metadata });
         }
         try {
           if (command.commandType === "session.open") {
             const opening = updateSessionMetadata(metadata, now, { state: "login_browser_open" });
             metadata = await storage.updateSession({ projectId: project.projectId, sessionId, expectedRevision: metadata.revision, metadata: opening });
           }
-          const browserSession = await runtime.openManualLoginSession(sessionId, policy);
+          const openBrowserSession = async (proxy?: ProxyRuntimeConfiguration): Promise<BrowserAuthenticationSession> => runtime.openManualLoginSession(sessionId, sessionAuthPolicy({ ...policyInput, ...(proxy === undefined ? {} : { proxy }) }, profile, renderTestMode, fixtureOrigins));
+          const browserSession = selectedProxy === null
+            ? await openBrowserSession()
+            : await withProxyRuntimeConfiguration(proxyStore!, project.projectId, selectedProxy, openBrowserSession);
           activeAuthentications.set(sessionId, { projectId: project.projectId, projectPath: project.projectPath, sessionId, browserSession, previousMetadata });
           return sessionResult(command.commandType === "session.open" ? "open" : "reauthenticate", metadata, browserSession);
         } catch (error) {
@@ -1082,6 +1263,23 @@ async function executeProjectCommand(
           }
           throw error;
         }
+      });
+    }
+    if (command.commandType === "session.setProxyAffinity") {
+      if (activeAuthenticationFor(command.payload.sessionId) !== undefined) throw new SessionOperationError("SESSION_STATE_CONFLICT", "Close the active Authentication Browser before changing Session Proxy Affinity");
+      return withSessionProject(command.payload.projectPath, false, async (project) => {
+        const current = await storage.getSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
+        if (command.payload.proxyId !== null) {
+          const proxy = await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId });
+          if (!proxy.enabled || proxy.healthState === "disabled") throw new ProxyOperationError("PROXY_DISABLED", "The selected Proxy is disabled");
+        }
+        const changed = current.affinity.proxyId !== command.payload.proxyId;
+        const next = updateSessionMetadata(current, now, {
+          affinity: { ...current.affinity, proxyId: command.payload.proxyId },
+          ...(changed && current.state === "valid" ? { state: "reauth_required", validationResult: "not_validated", failureReason: "validation_required" } : {}),
+        });
+        const persisted = changed ? await storage.updateSession({ projectId: project.projectId, sessionId: current.sessionId, expectedRevision: current.revision, metadata: next }) : current;
+        return sessionResult("setProxyAffinity", persisted, null);
       });
     }
     if (command.commandType === "session.save") {
@@ -1190,6 +1388,198 @@ async function executeProjectCommand(
       }
       await storage.deleteSession({ projectId: project.projectId, sessionId: command.payload.sessionId });
       return { resultType: "session.delete", sessionId: command.payload.sessionId };
+    });
+  };
+  const executeProxyCommand = async (command: Extract<CommandEnvelope, { commandType: "proxy.create" | "proxy.get" | "proxy.list" | "proxy.update" | "proxy.enable" | "proxy.disable" | "proxy.delete" | "proxy.import" | "proxy.test" | "proxy.eligibility" }>): Promise<unknown> => {
+    return withOpenProject(command.payload.projectPath, async () => {
+      const project = storage.getCurrent();
+      if (project === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "The selected Project is not open");
+      const store = getOrCreateSecretStore(secretStores, secretStoreFactory, project.projectPath, project.projectId, now);
+      const requestedRef = (draft: ProxyDraft): SecretRef | null | undefined => {
+        if (draft.credentialRef === undefined) return undefined;
+        if (draft.credentialRef === null) return null;
+        try { return parseSecretRef(draft.credentialRef).serialized; }
+        catch { throw new ProxyOperationError("PROXY_SECRET_INVALID", "The Proxy credential reference is invalid"); }
+      };
+      const acquireCredential = async (input: { readonly proxyId: string; readonly draft: ProxyDraft; readonly credential?: ProxyCredential; readonly previousRef?: SecretRef | null }): Promise<{ readonly ref: SecretRef | null; readonly createdRef: SecretRef | null }> => {
+        const explicitRef = requestedRef(input.draft);
+        if (input.credential !== undefined) {
+          if (explicitRef !== undefined && explicitRef !== null) throw new ProxyOperationError("PROXY_SECRET_INVALID", "A Proxy command cannot contain both credential and credentialRef");
+          const credential = normalizeProxyCredential(input.credential);
+          if (credential === null) throw new ProxyOperationError("PROXY_SECRET_INVALID", "The Proxy credential is invalid");
+          const createdRef = await createProxyCredentialSecret(store, project.projectId, input.proxyId, credential);
+          return { ref: createdRef, createdRef };
+        }
+        if (explicitRef !== undefined) {
+          if (explicitRef === null) return { ref: null, createdRef: null };
+          await assertProxySecretReference(store, project.projectId, input.proxyId, explicitRef);
+          return { ref: explicitRef, createdRef: null };
+        }
+        return { ref: input.previousRef ?? null, createdRef: null };
+      };
+      const buildMetadata = (draft: ProxyDraft, proxyId: string, credentialRef: SecretRef | null, existing?: ProxyMetadata): ProxyMetadata => {
+        if (draft.id !== undefined && draft.id !== proxyId) throw new ProxyOperationError("PROXY_CONFIG_INVALID", "The Proxy identifier does not match the command target");
+        const created = createProxyMetadata({ ...draft, id: proxyId, credentialRef, now: now() });
+        if (existing === undefined) return created;
+        const updated: ProxyMetadata = { ...created, createdAt: existing.createdAt, revision: existing.revision + 1 };
+        assertProxyMetadata(updated);
+        return updated;
+      };
+      const removeSecret = async (ref: SecretRef | null): Promise<void> => {
+        if (ref === null) return;
+        await store.deleteSecret({ projectId: project.projectId, ref }).catch((error) => {
+          if (!(error instanceof SecretStoreError && error.code === "SECRET_NOT_FOUND")) throw error;
+        });
+      };
+      const resetEnabledState = (proxy: ProxyMetadata, enabled: boolean): ProxyMetadata => {
+        const updated: ProxyMetadata = {
+          ...proxy,
+          enabled,
+          healthState: enabled ? "degraded" : "disabled",
+          cooldownUntil: null,
+          lastErrorCode: null,
+          lastErrorSummary: null,
+          updatedAt: now(),
+          revision: proxy.revision + 1,
+        };
+        assertProxyMetadata(updated);
+        return updated;
+      };
+      if (command.commandType === "proxy.create") {
+        const draft = command.payload.proxy as ProxyDraft;
+        const credential = await acquireCredential({ proxyId: draft.id!, draft, ...(command.payload.credential === undefined ? {} : { credential: command.payload.credential }) });
+        try {
+          const metadata = buildMetadata(draft, draft.id!, credential.ref);
+          const created = await storage.createProxy({ projectId: project.projectId, metadata });
+          return { resultType: "proxy.metadata", action: "create", proxy: created };
+        } catch (error) {
+          await removeSecret(credential.createdRef);
+          throw error;
+        }
+      }
+      if (command.commandType === "proxy.get") {
+        return { resultType: "proxy.metadata", action: "get", proxy: await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId }) };
+      }
+      if (command.commandType === "proxy.list") {
+        return { resultType: "proxy.list", proxies: await storage.listProxies({ projectId: project.projectId }) };
+      }
+      if (command.commandType === "proxy.update") {
+        const existing = await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId });
+        const draft = command.payload.proxy as ProxyDraft;
+        const credential = await acquireCredential({ proxyId: existing.id, draft, previousRef: existing.credentialRef, ...(command.payload.credential === undefined ? {} : { credential: command.payload.credential }) });
+        try {
+          const updated = await storage.updateProxy({ projectId: project.projectId, proxyId: existing.id, expectedRevision: command.payload.expectedRevision, metadata: buildMetadata(draft, existing.id, credential.ref, existing) });
+          if (existing.credentialRef !== null && credential.createdRef !== null) await removeSecret(existing.credentialRef);
+          return { resultType: "proxy.metadata", action: "update", proxy: updated };
+        } catch (error) {
+          await removeSecret(credential.createdRef);
+          throw error;
+        }
+      }
+      if (command.commandType === "proxy.enable" || command.commandType === "proxy.disable") {
+        const existing = await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId });
+        const updated = await storage.updateProxy({ projectId: project.projectId, proxyId: existing.id, expectedRevision: command.payload.expectedRevision, metadata: resetEnabledState(existing, command.commandType === "proxy.enable") });
+        return { resultType: "proxy.metadata", action: command.commandType === "proxy.enable" ? "enable" : "disable", proxy: updated };
+      }
+      if (command.commandType === "proxy.delete") {
+        const existing = await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId });
+        await storage.deleteProxy({ projectId: project.projectId, proxyId: existing.id });
+        await removeSecret(existing.credentialRef);
+        return { resultType: "proxy.delete", proxyId: existing.id };
+      }
+      if (command.commandType === "proxy.import") {
+        const parsed = parseProxyImport({ format: command.payload.format, text: command.payload.content });
+        const errors: Array<{ record: number; field: string | null; code: ProxyOperationError["code"]; message: string }> = parsed.errors.map((error) => ({ record: error.record, field: error.field, code: error.code, message: error.message }));
+        const items: Array<{ record: number; metadata: ProxyMetadata }> = [];
+        const createdRefs: Array<{ record: number; ref: SecretRef }> = [];
+        const preparedFailureCount = { value: 0 };
+        const existingProxies = await storage.listProxies({ projectId: project.projectId });
+        const existingById = new Map(existingProxies.map((proxy) => [proxy.id, proxy]));
+        try {
+          for (const item of parsed.records) {
+            const proxyId = item.draft.id ?? deriveImportedProxyId(item.draft);
+            try {
+              const credential = await acquireCredential({ proxyId, draft: item.draft, previousRef: existingById.get(proxyId)?.credentialRef ?? null, ...(item.credential === null ? {} : { credential: item.credential }) });
+              try {
+                items.push({ record: item.record, metadata: buildMetadata(item.draft, proxyId, credential.ref) });
+                if (credential.createdRef !== null) createdRefs.push({ record: item.record, ref: credential.createdRef });
+              } catch (error) {
+                await removeSecret(credential.createdRef);
+                throw error;
+              }
+            } catch (error) {
+              preparedFailureCount.value += 1;
+              const proxyErrorValue = error instanceof ProxyOperationError ? error : new ProxyOperationError("PROXY_IMPORT_INVALID", "The Proxy import record could not be prepared");
+              errors.push({ record: item.record, field: null, code: proxyErrorValue.code, message: proxyErrorValue.message });
+            }
+          }
+          const persisted = await storage.importProxies({ projectId: project.projectId, items });
+          const persistenceErrorRecords = new Set(persisted.errors.map((error) => error.record));
+          for (const created of createdRefs) if (persistenceErrorRecords.has(created.record)) await removeSecret(created.ref);
+          for (const item of items) {
+            const previousRef = existingById.get(item.metadata.id)?.credentialRef ?? null;
+            if (!persistenceErrorRecords.has(item.record) && previousRef !== null && previousRef !== item.metadata.credentialRef) await removeSecret(previousRef);
+          }
+          errors.push(...persisted.errors.map((error) => ({ record: error.record, field: null, code: error.code, message: error.message })));
+          return {
+            resultType: "proxy.import",
+            summary: { total: parsed.records.length + parsed.errors.length, imported: persisted.imported, updated: persisted.updated, skipped: persisted.skipped, failed: parsed.errors.length + preparedFailureCount.value + persisted.failed },
+            errors,
+          };
+        } catch (error) {
+          for (const created of createdRefs) await removeSecret(created.ref);
+          throw error;
+        }
+      }
+      if (command.commandType === "proxy.eligibility") {
+        let proxy = await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId });
+        const evaluationTime = command.payload.now ?? now();
+        const expired = expireProxyCooldown(proxy, evaluationTime);
+        if (expired.revision !== proxy.revision) {
+          proxy = await storage.updateProxy({ projectId: project.projectId, proxyId: proxy.id, expectedRevision: proxy.revision, metadata: expired });
+        }
+        const credentialAvailable = proxy.credentialRef === null || await store.hasSecret({ projectId: project.projectId, ref: proxy.credentialRef });
+        return { resultType: "proxy.eligibility", proxyId: proxy.id, eligibility: getProxyEligibility(proxy, evaluationTime, credentialAvailable) };
+      }
+      const proxy = await storage.getProxy({ projectId: project.projectId, proxyId: command.payload.proxyId });
+      if (!proxy.enabled) throw new ProxyOperationError("PROXY_DISABLED", "The selected Proxy is disabled");
+      if (proxy.healthState === "cooldown" && proxy.cooldownUntil !== null && Date.parse(proxy.cooldownUntil) > Date.parse(now())) throw new ProxyOperationError("PROXY_COOLDOWN", "The selected Proxy is in cooldown");
+      const connectivity = proxyConnectivity ?? (runtime.testProxy === undefined ? undefined : { testProxy: runtime.testProxy.bind(runtime) });
+      if (connectivity === undefined) throw new ProxyOperationError("PROXY_UNREACHABLE", "No approved Proxy connectivity tester is available");
+      const targetUrlSafe = (() => { try { const url = new URL(command.payload.targetUrl); return `${url.origin}${url.pathname || "/"}`; } catch { throw new ProxyOperationError("PROXY_CONFIG_INVALID", "The Proxy test target is invalid"); } })();
+      let result: Awaited<ReturnType<ProxyConnectivityPort["testProxy"]>>;
+      try {
+        result = await withProxyRuntimeConfiguration(store, project.projectId, proxy, async (configuration) => connectivity.testProxy({
+          proxy,
+          credential: configuration.username === undefined ? null : { username: configuration.username, password: configuration.password! },
+          targetUrl: targetUrlSafe,
+          ...(command.payload.ipCheckUrl === undefined ? {} : { ipCheckUrl: command.payload.ipCheckUrl }),
+          timeoutMs: command.payload.timeoutMs,
+        }));
+      } catch (error) {
+        if (error instanceof ProxyOperationError || error instanceof SecretStoreError) throw error;
+        const errorCode = error instanceof RenderOperationError && error.code === "NAVIGATION_TIMEOUT" ? "PROXY_CONNECT_TIMEOUT" : "PROXY_UNREACHABLE";
+        result = { proxyId: proxy.id, protocol: proxy.protocol, status: "failure", checkedAt: now(), latencyMs: null, targetUrlSafe, targetEndpointId: "target", ipCheckStatus: "unavailable", observedIp: null, errorCode, errorSummary: "The Proxy connectivity check failed" };
+      }
+      const safeResult = {
+        ...result,
+        proxyId: proxy.id,
+        protocol: proxy.protocol,
+        targetUrlSafe,
+        targetEndpointId: /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(result.targetEndpointId) ? result.targetEndpointId : "target",
+        latencyMs: result.latencyMs === null || !Number.isInteger(result.latencyMs) || result.latencyMs < 0 ? null : result.latencyMs,
+        ipCheckStatus: ["verified", "unavailable", "invalid"].includes(result.ipCheckStatus) ? result.ipCheckStatus : "invalid",
+        observedIp: result.observedIp !== null && /^[0-9a-f:.]{1,128}$/i.test(result.observedIp) ? result.observedIp : null,
+        errorCode: result.errorCode === null ? null : sanitizeProxyErrorCode(result.errorCode),
+        errorSummary: result.errorSummary === null ? null : sanitizeProxyErrorSummary(result.errorSummary),
+      };
+      const updated = await storage.updateProxy({
+        projectId: project.projectId,
+        proxyId: proxy.id,
+        expectedRevision: proxy.revision,
+        metadata: recordProxyHealthCheck(proxy, { status: safeResult.status, checkedAt: safeResult.checkedAt, latencyMs: safeResult.latencyMs, errorCode: safeResult.errorCode, errorSummary: safeResult.errorSummary }, now()),
+      });
+      return { resultType: "proxy.test", result: safeResult, proxy: updated };
     });
   };
   const executeOtpCommand = async (command: Extract<CommandEnvelope, { commandType: "otp.start" | "otp.provide" | "otp.resend" | "otp.cancel" | "otp.status" | "elementPicker.start" | "elementPicker.select" | "elementPicker.stop" }>): Promise<unknown> => {
@@ -1464,6 +1854,19 @@ async function executeProjectCommand(
     case "session.restore":
     case "session.delete":
       return executeSessionCommand(command);
+    case "session.setProxyAffinity":
+      return executeSessionCommand(command);
+    case "proxy.create":
+    case "proxy.get":
+    case "proxy.list":
+    case "proxy.update":
+    case "proxy.enable":
+    case "proxy.disable":
+    case "proxy.delete":
+    case "proxy.import":
+    case "proxy.test":
+    case "proxy.eligibility":
+      return executeProxyCommand(command);
     case "otp.start":
     case "otp.provide":
     case "otp.resend":
@@ -1692,7 +2095,7 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
               runtime: dependencies.runtime,
               platform: dependencies.platform,
             }
-          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, renderEngine, activeRenders, activeInteractions, activeAuthentications, activeOtpFlows, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
+          : await executeProjectCommand(command, storage, secretStores, secretStoreFactory, browserRuntime, dependencies.proxyConnectivity, renderEngine, activeRenders, activeInteractions, activeAuthentications, activeOtpFlows, interactionPlanProvider, renderTestMode, fixtureOrigins, heartbeatIntervalMs, now);
         const completed = response(rawCommand, result, null);
         const completionMetadata = completed.status === "success" ? resultLogMetadata(completed.result) : {};
         logger.log({
@@ -1720,6 +2123,8 @@ export function createApplicationService(dependencies: ApplicationServiceDepende
                   ? renderError(error)
               : error instanceof SessionOperationError
                 ? sessionError(error)
+              : error instanceof ProxyOperationError
+                ? proxyError(error)
               : error instanceof AuthenticationContractError
                 ? authenticationContractError(error)
               : error instanceof OtpFlowError

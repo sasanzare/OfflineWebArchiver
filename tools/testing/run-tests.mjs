@@ -28,16 +28,16 @@ const renderingTests = [
 ];
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
-  ["package:archive-core", ["unit/archive-core.test.js"]],
+  ["package:archive-core", ["unit/archive-core.test.js", "unit/proxy.test.js"]],
   ["package:queue", ["unit/queue.test.js", "integration/queue-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
   ["package:recovery", ["unit/recovery.test.js", "integration/recovery-lifecycle.test.js", "concurrency/recovery-concurrency.test.js", "process-kill/recovery-process-kill.test.js"]],
   ["package:scope-engine", ["unit/scope-engine.test.js"]],
   ["package:project-format", ["unit/project-format.test.js"]],
-  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "concurrency/queue-concurrency.test.js"]],
+  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "integration/proxy-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
   ["package:observability", ["unit/observability.test.js"]],
   ["package:secrets", ["secrets/secret-store.test.js"]],
   ["package:platform", ["unit/platform.test.js"]],
-  ["package:application-service", ["integration/application-service.test.js", "integration/render-lifecycle.test.js"]],
+  ["package:application-service", ["integration/application-service.test.js", "integration/render-lifecycle.test.js", "integration/proxy-lifecycle.test.js", "integration/session-lifecycle.test.js"]],
   ["package:browser-runtime", ["unit/authentication-route.test.js", "browser/browser-runtime.test.js", "browser/session.test.js", "browser/otp-flow.test.js", "browser/service-worker-policy.test.js", "process-kill/browser-process-kill.test.js"]],
   ["package:rendering", ["rendering/render-engine.test.js", "integration/render-lifecycle.test.js", "integration/render-persistence-faults.test.js"]],
   ["package:test-support", ["unit/test-support.test.js"]],
@@ -87,7 +87,7 @@ const result = spawnSync(
   {
     cwd: repositoryRoot,
     stdio: "inherit",
-    env: { ...process.env, OWAB_LOG_LEVEL: "error" },
+    env: { ...process.env, OWAB_LOG_LEVEL: "error", OWAB_TEST_MODE: "1" },
   },
 );
 if (result.error !== undefined) throw result.error;

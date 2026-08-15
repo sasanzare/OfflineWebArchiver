@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONTRACT_VERSION = "1.10.0" as const;
+export const CONTRACT_VERSION = "1.11.0" as const;
 
 export const COMMAND_TYPES = [
   "system.describe",
@@ -23,6 +23,7 @@ export const COMMAND_TYPES = [
   "session.validate",
   "session.restore",
   "session.delete",
+  "session.setProxyAffinity",
   "otp.start",
   "otp.provide",
   "otp.resend",
@@ -31,6 +32,16 @@ export const COMMAND_TYPES = [
   "elementPicker.start",
   "elementPicker.select",
   "elementPicker.stop",
+  "proxy.create",
+  "proxy.get",
+  "proxy.list",
+  "proxy.update",
+  "proxy.enable",
+  "proxy.disable",
+  "proxy.delete",
+  "proxy.import",
+  "proxy.test",
+  "proxy.eligibility",
   "profile.create",
   "profile.get",
   "profile.update",
@@ -289,6 +300,26 @@ export const ERROR_CODES = [
   "AUTHENTICATION_SESSION_INVALID",
   "ELEMENT_PICKER_NOT_ACTIVE",
   "ELEMENT_PICKER_NAVIGATION_CHANGED",
+  "PROXY_CONFIG_INVALID",
+  "PROXY_PROTOCOL_UNSUPPORTED",
+  "PROXY_AUTH_FAILED",
+  "PROXY_CONNECT_TIMEOUT",
+  "PROXY_DNS_FAILED",
+  "PROXY_TLS_FAILED",
+  "PROXY_UNREACHABLE",
+  "PROXY_HEALTHCHECK_FAILED",
+  "PROXY_COOLDOWN",
+  "PROXY_DISABLED",
+  "PROXY_SECRET_MISSING",
+  "PROXY_SECRET_INVALID",
+  "PROXY_AFFINITY_MISMATCH",
+  "PROXY_AFFINITY_UNAVAILABLE",
+  "PROXY_DIRECT_FALLBACK_BLOCKED",
+  "PROXY_IMPORT_INVALID",
+  "PROXY_NOT_FOUND",
+  "PROXY_ALREADY_EXISTS",
+  "PROXY_REVISION_CONFLICT",
+  "PROXY_UNAVAILABLE",
 ] as const;
 
 const identifierSchema = z
@@ -384,7 +415,7 @@ export const ProjectInfoCommandSchema = z.object({
 const secretRefSchema = z.string().min(1).max(256).regex(/^secret:\/\/v1\/project\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 const secretProjectPayload = z.object({ projectPath: localPathSchema }).strict();
 const secretKindSchema = z.enum(["proxy_credential", "authentication_credential", "session_storage", "api_credential", "portable_export_key", "generic_project_secret"]);
-const secretScopeSchema = z.object({ scopeType: z.enum(["application", "project", "profile", "session", "login_flow"]), projectId: z.string().uuid(), scopeId: z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/) }).strict();
+const secretScopeSchema = z.object({ scopeType: z.enum(["application", "project", "proxy", "profile", "session", "login_flow"]), projectId: z.string().uuid(), scopeId: z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/) }).strict();
 const secretBackendSchema = z.enum(["portable_vault", "os_protected", "memory_test"]);
 const secretLifecycleStateSchema = z.enum(["active", "rotation_required", "disabled", "deleted", "migration_required"]);
 
@@ -395,6 +426,7 @@ export const SecretDeleteCommandSchema = z.object({ ...commandBase, commandType:
 
 const sessionIdSchema = z.string().uuid();
 const sessionProfileIdSchema = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+const proxyIdSchema = identifierSchema;
 const sessionNavigationUrlSchema = z.string().min(1).max(2_048).url().refine((value) => {
   return /^(?:https?):\/\/[^/?#@]+(?:\/[^?#]*)?$/i.test(value);
 }, "Session URLs must be HTTPS/HTTP URLs without credentials, query values, or fragments");
@@ -411,6 +443,7 @@ const sessionOpenPayload = {
   projectPath: localPathSchema,
   loginUrl: sessionNavigationUrlSchema,
   allowedOrigins: z.array(sessionOriginSchema).min(1).max(20),
+  proxyId: proxyIdSchema.nullable().optional(),
   ...sessionValidationInputSchema.shape,
 };
 const sessionStateSchema = z.enum(["ready", "login_browser_open", "authentication_in_progress", "authenticated_unpersisted", "saving", "valid", "validation_required", "invalid", "expired", "reauth_required", "corrupt", "deleted"]);
@@ -444,6 +477,40 @@ export const SessionListCommandSchema = z.object({ ...commandBase, commandType: 
 export const SessionValidateCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.validate"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
 export const SessionRestoreCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.restore"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema }).strict() }).strict();
 export const SessionDeleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.delete"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, confirmation: z.literal("DELETE-SESSION") }).strict() }).strict();
+export const SessionSetProxyAffinityCommandSchema = z.object({ ...commandBase, commandType: z.literal("session.setProxyAffinity"), payload: z.object({ projectPath: localPathSchema, sessionId: sessionIdSchema, proxyId: proxyIdSchema.nullable() }).strict() }).strict();
+
+const proxyProtocolSchema = z.enum(["http", "https", "socks5"]);
+const proxyHealthStateSchema = z.enum(["healthy", "degraded", "cooldown", "disabled"]);
+const proxyCredentialContractSchema = z.object({
+  username: z.string().min(1).max(256).refine((value) => !/[\u0000-\u001f\u007f]/.test(value)),
+  password: z.string().min(1).max(4_096).refine((value) => !/[\u0000-\u001f\u007f]/.test(value)),
+}).strict();
+const proxyDraftContractSchema = z.object({
+  id: proxyIdSchema.optional(),
+  label: z.string().trim().min(1).max(120).nullable().optional(),
+  protocol: proxyProtocolSchema,
+  host: z.string().trim().min(1).max(253),
+  port: z.number().int().min(1).max(65_535),
+  bypass: z.array(z.string().trim().min(1).max(253)).max(100).optional(),
+  credentialRef: secretRefSchema.nullable().optional(),
+  weight: z.number().int().min(1).max(1_000).optional(),
+  priority: z.number().int().min(0).max(1_000).optional(),
+  maxConcurrency: z.number().int().min(1).max(1_000).optional(),
+  enabled: z.boolean().optional(),
+}).strict();
+const proxyCreateDraftContractSchema = proxyDraftContractSchema.extend({ id: proxyIdSchema });
+const proxyProjectPayload = z.object({ projectPath: localPathSchema }).strict();
+
+export const ProxyCreateCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.create"), payload: z.object({ projectPath: localPathSchema, proxy: proxyCreateDraftContractSchema, credential: proxyCredentialContractSchema.optional() }).strict() }).strict();
+export const ProxyGetCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.get"), payload: z.object({ ...proxyProjectPayload.shape, proxyId: proxyIdSchema }).strict() }).strict();
+export const ProxyListCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.list"), payload: proxyProjectPayload }).strict();
+export const ProxyUpdateCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.update"), payload: z.object({ projectPath: localPathSchema, proxyId: proxyIdSchema, expectedRevision: z.number().int().positive(), proxy: proxyDraftContractSchema, credential: proxyCredentialContractSchema.optional() }).strict() }).strict();
+export const ProxyEnableCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.enable"), payload: z.object({ projectPath: localPathSchema, proxyId: proxyIdSchema, expectedRevision: z.number().int().positive() }).strict() }).strict();
+export const ProxyDisableCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.disable"), payload: z.object({ projectPath: localPathSchema, proxyId: proxyIdSchema, expectedRevision: z.number().int().positive() }).strict() }).strict();
+export const ProxyDeleteCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.delete"), payload: z.object({ projectPath: localPathSchema, proxyId: proxyIdSchema }).strict() }).strict();
+export const ProxyImportCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.import"), payload: z.object({ projectPath: localPathSchema, format: z.enum(["csv", "json"]), content: z.string().max(2_000_000), operationId: identifierSchema }).strict() }).strict();
+export const ProxyTestCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.test"), payload: z.object({ projectPath: localPathSchema, proxyId: proxyIdSchema, targetUrl: baseUrlSchema, ipCheckUrl: baseUrlSchema.nullable().optional(), timeoutMs: z.number().int().min(100).max(120_000).default(30_000) }).strict() }).strict();
+export const ProxyEligibilityCommandSchema = z.object({ ...commandBase, commandType: z.literal("proxy.eligibility"), payload: z.object({ projectPath: localPathSchema, proxyId: proxyIdSchema, now: timestampSchema.optional() }).strict() }).strict();
 
 const locatorFrameContractSchema = z.object({
   strategy: z.enum(["css", "name", "url"]),
@@ -749,6 +816,17 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("commandType", [
   SessionValidateCommandSchema,
   SessionRestoreCommandSchema,
   SessionDeleteCommandSchema,
+  SessionSetProxyAffinityCommandSchema,
+  ProxyCreateCommandSchema,
+  ProxyGetCommandSchema,
+  ProxyListCommandSchema,
+  ProxyUpdateCommandSchema,
+  ProxyEnableCommandSchema,
+  ProxyDisableCommandSchema,
+  ProxyDeleteCommandSchema,
+  ProxyImportCommandSchema,
+  ProxyTestCommandSchema,
+  ProxyEligibilityCommandSchema,
   OtpStartCommandSchema,
   OtpProvideCommandSchema,
   OtpResendCommandSchema,
@@ -960,9 +1038,61 @@ export const SecretListResultSchema = z.object({ resultType: z.literal("secret.l
 export const SecretVaultLockResultSchema = z.object({ resultType: z.literal("secret.vault.lock"), status: SecretBackendStatusContractSchema }).strict();
 export const SecretDeleteResultSchema = z.object({ resultType: z.literal("secret.delete"), ref: secretRefSchema }).strict();
 const PauseStatusContractSchema = z.object({ projectId: z.string().uuid(), runId: z.string().uuid(), controlState: z.enum(["active", "pause_requested", "paused", "resuming", "recovering", "stopped", "completed", "failed"]), runState: z.enum(["running", "pausing", "paused", "waiting_for_network", "waiting_for_auth", "waiting_for_rate_limit", "cancelling", "cancelled", "completed", "failed"]), requestedAt: timestampSchema.nullable(), pausedAt: timestampSchema.nullable(), activeLeaseCount: z.number().int().nonnegative() }).strict();
-export const SessionMetadataResultSchema = z.object({ resultType: z.literal("session.metadata"), action: z.enum(["open", "reauthenticate", "save", "get", "validate", "restore"]), session: sessionMetadataContractSchema, browser: sessionBrowserStatusSchema.nullable() }).strict();
+export const SessionMetadataResultSchema = z.object({ resultType: z.literal("session.metadata"), action: z.enum(["open", "reauthenticate", "save", "get", "validate", "restore", "setProxyAffinity"]), session: sessionMetadataContractSchema, browser: sessionBrowserStatusSchema.nullable() }).strict();
 export const SessionListResultSchema = z.object({ resultType: z.literal("session.list"), sessions: z.array(sessionMetadataContractSchema).max(200) }).strict();
 export const SessionDeleteResultSchema = z.object({ resultType: z.literal("session.delete"), sessionId: sessionIdSchema }).strict();
+const proxyMetadataContractSchema = z.object({
+  id: proxyIdSchema,
+  label: z.string().max(120).nullable(),
+  protocol: proxyProtocolSchema,
+  host: z.string().min(1).max(253),
+  port: z.number().int().min(1).max(65_535),
+  bypass: z.array(z.string().min(1).max(253)).max(100),
+  credentialRef: secretRefSchema.nullable(),
+  weight: z.number().int().min(1).max(1_000),
+  priority: z.number().int().min(0).max(1_000),
+  maxConcurrency: z.number().int().min(1).max(1_000),
+  enabled: z.boolean(),
+  healthState: proxyHealthStateSchema,
+  lastHealthCheckAt: timestampSchema.nullable(),
+  lastSuccessAt: timestampSchema.nullable(),
+  lastFailureAt: timestampSchema.nullable(),
+  latencyMs: z.number().int().nonnegative().nullable(),
+  successCount: z.number().int().nonnegative(),
+  failureCount: z.number().int().nonnegative(),
+  consecutiveFailureCount: z.number().int().nonnegative(),
+  successRate: z.number().min(0).max(1),
+  cooldownUntil: timestampSchema.nullable(),
+  lastErrorCode: z.string().max(120).nullable(),
+  lastErrorSummary: z.string().max(240).nullable(),
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
+  revision: z.number().int().positive(),
+}).strict();
+const proxyConnectivityContractSchema = z.object({
+  proxyId: proxyIdSchema,
+  protocol: proxyProtocolSchema,
+  status: z.enum(["success", "failure"]),
+  checkedAt: timestampSchema,
+  latencyMs: z.number().int().nonnegative().nullable(),
+  targetUrlSafe: z.string().min(1).max(2_048),
+  targetEndpointId: identifierSchema,
+  ipCheckStatus: z.enum(["verified", "unavailable", "invalid"]),
+  observedIp: z.string().max(128).nullable(),
+  errorCode: z.string().max(120).nullable(),
+  errorSummary: z.string().max(240).nullable(),
+}).strict();
+const proxyEligibilityContractSchema = z.object({
+  eligible: z.boolean(),
+  reasonCode: z.enum(["ELIGIBLE", "PROXY_DISABLED", "PROXY_COOLDOWN", "PROXY_HEALTHCHECK_FAILED", "PROXY_SECRET_MISSING", "PROXY_CONFIG_INVALID"]),
+}).strict();
+const proxyImportErrorContractSchema = z.object({ record: z.number().int().nonnegative(), field: z.string().max(80).nullable(), code: z.enum(ERROR_CODES), message: z.string().min(1).max(800) }).strict();
+export const ProxyMetadataResultSchema = z.object({ resultType: z.literal("proxy.metadata"), action: z.enum(["create", "get", "update", "enable", "disable"]), proxy: proxyMetadataContractSchema }).strict();
+export const ProxyListResultSchema = z.object({ resultType: z.literal("proxy.list"), proxies: z.array(proxyMetadataContractSchema).max(1_000) }).strict();
+export const ProxyDeleteResultSchema = z.object({ resultType: z.literal("proxy.delete"), proxyId: proxyIdSchema }).strict();
+export const ProxyImportResultSchema = z.object({ resultType: z.literal("proxy.import"), summary: z.object({ total: z.number().int().nonnegative(), imported: z.number().int().nonnegative(), updated: z.number().int().nonnegative(), skipped: z.number().int().nonnegative(), failed: z.number().int().nonnegative() }).strict(), errors: z.array(proxyImportErrorContractSchema).max(10_000) }).strict();
+export const ProxyTestResultSchema = z.object({ resultType: z.literal("proxy.test"), result: proxyConnectivityContractSchema, proxy: proxyMetadataContractSchema }).strict();
+export const ProxyEligibilityResultSchema = z.object({ resultType: z.literal("proxy.eligibility"), proxyId: proxyIdSchema, eligibility: proxyEligibilityContractSchema }).strict();
 export const OtpFlowResultSchema = z.object({ resultType: z.literal("otp.flow"), action: z.enum(["start", "provide", "resend", "cancel", "status"]), sessionId: sessionIdSchema, flow: otpFlowSnapshotContractSchema, run: PauseStatusContractSchema.nullable() }).strict();
 export const ElementPickerResultSchema = z.object({ resultType: z.literal("elementPicker.result"), action: z.enum(["start", "select", "stop"]), sessionId: sessionIdSchema, selection: z.object({ version: z.literal(1), kind: loginElementKindSchema, locator: ElementLocatorContractSchema }).strict().nullable() }).strict();
 
@@ -1144,6 +1274,12 @@ export const ResultContractSchema = z.discriminatedUnion("resultType", [
   SessionMetadataResultSchema,
   SessionListResultSchema,
   SessionDeleteResultSchema,
+  ProxyMetadataResultSchema,
+  ProxyListResultSchema,
+  ProxyDeleteResultSchema,
+  ProxyImportResultSchema,
+  ProxyTestResultSchema,
+  ProxyEligibilityResultSchema,
   OtpFlowResultSchema,
   ElementPickerResultSchema,
   ProfileResultSchema,
@@ -1255,6 +1391,15 @@ export const ApplicationConfigurationSchema = z.object({
   applicationVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
   contractVersion: z.literal(CONTRACT_VERSION),
   logLevel: z.enum(["debug", "info", "warn", "error"]),
+  proxyPool: z.object({
+    mode: z.enum(["direct", "single-proxy", "proxy-pool"]).default("direct"),
+    failOpenToDirect: z.literal(false).default(false),
+    healthCheckBeforeRun: z.boolean().default(true),
+    cooldownAfterFailures: z.number().int().min(1).max(100).default(3),
+    stickyAuthenticatedSessions: z.boolean().default(true),
+    allowAuthenticatedMultiProxy: z.boolean().default(false),
+    defaultPerProxyWorkerConcurrency: z.number().int().min(1).max(1_000).default(1),
+  }).strict().optional(),
 }).strict();
 
 export type ErrorContract = z.infer<typeof ErrorContractSchema>;
@@ -1268,6 +1413,9 @@ export type SecretBackendStatusContract = z.infer<typeof SecretBackendStatusCont
 export type SecretStoreCapabilityContract = z.infer<typeof SecretStoreCapabilityContractSchema>;
 export type SessionMetadataContract = z.infer<typeof sessionMetadataContractSchema>;
 export type SessionBrowserStatusContract = z.infer<typeof sessionBrowserStatusSchema>;
+export type ProxyMetadataContract = z.infer<typeof proxyMetadataContractSchema>;
+export type ProxyConnectivityContract = z.infer<typeof proxyConnectivityContractSchema>;
+export type ProxyEligibilityContract = z.infer<typeof proxyEligibilityContractSchema>;
 export type ElementLocatorContract = z.infer<typeof ElementLocatorContractSchema>;
 export type LoginFlowContract = z.infer<typeof LoginFlowContractSchema>;
 export type OtpFlowSnapshotContract = z.infer<typeof otpFlowSnapshotContractSchema>;

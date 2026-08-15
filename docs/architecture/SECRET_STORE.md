@@ -24,7 +24,15 @@ Persisted metadata is limited to identity, kind, scope, timestamps, lifecycle/ve
 
 All resolution calls require a project and an access purpose. The store checks purpose/kind compatibility and scope before decrypting. List, inspect, service, CLI, and renderer-facing results contain metadata only.
 
-The production transport intentionally does not carry raw values or passphrases. Electron main may receive a future narrow privileged write-only input, but Phase 11 does not implement login, OTP, session capture, or proxy UI.
+The production transport intentionally does not carry raw values or passphrases. Electron main may receive a future narrow privileged write-only input. Phase 15 proxy commands accept a credential only at the Application Service write boundary, store it under `scopeType: "proxy"`, `kind: "proxy_credential"`, and `purpose: "proxy_connection"`, and persist only the resulting opaque reference. Proxy list, metadata, health, import summaries, logs, and evidence never contain the credential.
+
+## Proxy credential lifecycle
+
+Raw proxy credentials are encoded into a short-lived Secret Store write and
+cleared after persistence. Connectivity checks resolve the reference only
+inside the scoped callback that constructs the Browser Runtime configuration.
+Updating or importing a credential creates the replacement reference before
+deleting the previous one; failed operations clean up newly created references.
 
 ## Backends
 

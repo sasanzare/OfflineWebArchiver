@@ -6,4 +6,5 @@ This directory contains the security controls that constrain Scope, Browser runt
 
 - [Runtime Network Policy](runtime-network.md) - Request authorization and redirect revalidation.
 - [Security Boundaries](security-boundaries.md) - Active controls and incomplete boundaries.
+- [Proxy Security](proxy-security.md) - Credential, routing, health, and fail-closed controls for Phase 15.
 - [Authentication Session Security](authentication-sessions.md) - No-capture, protected-storage, validation, and isolation controls.

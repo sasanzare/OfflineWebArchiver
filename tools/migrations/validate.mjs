@@ -14,7 +14,7 @@ configureDatabase(database);
 applyPendingMigrations(database, "0.8.0", () => "2026-08-01T12:00:00.000Z");
 const state = inspectMigrationState(database);
 const tables = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map((row) => row.name);
-for (const required of ["schema_migrations", "project_metadata", "project_revisions", "runs", "project_events", "site_profiles", "site_profile_revisions", "scope_rules", "scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations", "run_control", "job_leases", "job_checkpoints", "run_checkpoints", "artifact_checkpoints", "completed_outputs", "recovery_operations", "recovery_events", "execution_sessions", "render_results", "render_events", "render_failures", "interaction_profiles", "interaction_traces", "browser_sessions"]) {
+for (const required of ["schema_migrations", "project_metadata", "project_revisions", "runs", "project_events", "site_profiles", "site_profile_revisions", "scope_rules", "scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations", "run_control", "job_leases", "job_checkpoints", "run_checkpoints", "artifact_checkpoints", "completed_outputs", "recovery_operations", "recovery_events", "execution_sessions", "render_results", "render_events", "render_failures", "interaction_profiles", "interaction_traces", "browser_sessions", "proxies"]) {
   if (!tables.includes(required)) throw new Error(`Missing migration table ${required}`);
 }
 for (const forbidden of ["workers", "proxy_credentials", "authentication_secrets"]) {

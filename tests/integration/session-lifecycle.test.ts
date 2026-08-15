@@ -14,6 +14,7 @@ import {
   type BrowserRuntimePort,
   type BrowserSessionPolicy,
   type BrowserAuthenticationPolicy,
+  type ProxyConnectivityPort,
   type SecretStorePort,
 } from "@offline-web-archive/archive-core";
 import { createApplicationService } from "@offline-web-archive/application-service";
@@ -76,6 +77,8 @@ class FakeBrowserRuntime implements BrowserRuntimePort {
   public restoredStatus: BrowserAuthenticationValidation["status"] = "valid";
   public manualOpenCount = 0;
   public restoreCount = 0;
+  public lastManualProxyServer: string | null = null;
+  public lastRestoredProxyServer: string | null = null;
 
   public getContextProfile(): BrowserContextProfileDescriptor {
     return PROFILE;
@@ -91,13 +94,15 @@ class FakeBrowserRuntime implements BrowserRuntimePort {
     };
   }
 
-  public async openManualLoginSession(sessionId: string, _policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession> {
+  public async openManualLoginSession(sessionId: string, policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession> {
     this.manualOpenCount += 1;
+    this.lastManualProxyServer = policy.proxy?.server ?? null;
     return new FakeAuthenticationSession(sessionId, "manual", this.validation(this.manualStatus));
   }
 
-  public async restoreAuthenticationSession(sessionId: string, _storageState: Uint8Array, _policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession> {
+  public async restoreAuthenticationSession(sessionId: string, _storageState: Uint8Array, policy: BrowserAuthenticationPolicy): Promise<BrowserAuthenticationSession> {
     this.restoreCount += 1;
+    this.lastRestoredProxyServer = policy.proxy?.server ?? null;
     return new FakeAuthenticationSession(sessionId, "restored", this.validation(this.restoredStatus));
   }
 
@@ -233,6 +238,66 @@ test("Session URLs reject credential-bearing and unapproved origins at the contr
     const response = await service.execute({ contractVersion: CONTRACT_VERSION, commandId: "bad-session", commandType: "session.open", correlationId: "bad-session-correlation", timestamp: "2026-08-07T12:00:00.000Z", payload: { projectPath: path.join(root, "project"), loginUrl: "https://user:password@example.test/login", validationUrl: "https://example.test/account", allowedOrigins: ["https://example.test"] } }, { transport: "cli", authorized: true });
     assert.equal(response.status, "error");
     if (response.status === "error") assert.equal(response.error.code, "CONTRACT_INVALID_PAYLOAD");
+  } finally {
+    await service.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("authenticated Session Proxy Affinity is explicit, preserved, and fail-closed", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "owa-session-proxy-affinity-"));
+  const projectPath = path.join(root, "project");
+  const runtime = new FakeBrowserRuntime();
+  const stores = new Map<string, SecretStorePort>();
+  const now = () => "2026-08-15T12:00:00.000Z";
+  const proxyConnectivity: ProxyConnectivityPort = {
+    async testProxy(input) {
+      return { proxyId: input.proxy.id, protocol: input.proxy.protocol, status: "success", checkedAt: now(), latencyMs: 10, targetUrlSafe: input.targetUrl, targetEndpointId: "target", ipCheckStatus: "unavailable", observedIp: null, errorCode: null, errorSummary: null };
+    },
+  };
+  const service = createApplicationService({
+    configuration: { applicationName: "Offline Web Archive Builder", applicationVersion: "0.8.0", contractVersion: CONTRACT_VERSION, logLevel: "error", proxyPool: { mode: "single-proxy", failOpenToDirect: false, healthCheckBeforeRun: true, cooldownAfterFailures: 3, stickyAuthenticatedSessions: true, allowAuthenticatedMultiProxy: false, defaultPerProxyWorkerConcurrency: 1 } },
+    runtime: { name: "Node.js", version: "24.0.0" },
+    platform: { operatingSystem: "windows", architecture: "x64" },
+    browserRuntime: runtime,
+    proxyConnectivity,
+    now,
+    secretStoreFactory: ({ projectId }) => {
+      const existing = stores.get(projectId);
+      if (existing !== undefined) return existing;
+      const created = persistentMemoryStore(projectId, now);
+      stores.set(projectId, created);
+      return created;
+    },
+  });
+  try {
+    assert.equal((await send(service, "project.create", { destinationPath: projectPath, name: "Affinity Project", slug: "affinity-project" })).status, "success");
+    assert.equal((await send(service, "profile.create", { projectPath, name: "Affinity Profile", seedUrl: "http://127.0.0.1:43121/" })).status, "success");
+    assert.equal((await send(service, "proxy.create", { projectPath, proxy: { id: "affined", protocol: "http", host: "127.0.0.1", port: 8123 } })).status, "success");
+    const health = await send(service, "proxy.test", { projectPath, proxyId: "affined", targetUrl: "http://127.0.0.1:43121/health" });
+    assert.equal(health.status, "success");
+    const opened = await send(service, "session.open", { projectPath, loginUrl: "http://127.0.0.1:43121/login", validationUrl: "http://127.0.0.1:43121/account", allowedOrigins: ["http://127.0.0.1:43121"], proxyId: "affined" });
+    assert.equal(opened.status, "success");
+    assert.equal(runtime.lastManualProxyServer, "http://127.0.0.1:8123");
+    const sessionId = opened.status === "success" && opened.result.resultType === "session.metadata" ? opened.result.session.sessionId : "";
+    const activeAffinityChange = await send(service, "session.setProxyAffinity", { projectPath, sessionId, proxyId: null });
+    assert.equal(activeAffinityChange.status, "error");
+    if (activeAffinityChange.status === "error") assert.equal(activeAffinityChange.error.code, "SESSION_STATE_CONFLICT");
+    const saved = await send(service, "session.save", { projectPath, sessionId, confirmation: "SAVE-SESSION" });
+    assert.equal(saved.status, "success");
+    const disabled = await send(service, "proxy.disable", { projectPath, proxyId: "affined", expectedRevision: 2 });
+    assert.equal(disabled.status, "success");
+    const blockedRestore = await send(service, "session.restore", { projectPath, sessionId });
+    assert.equal(blockedRestore.status, "error");
+    if (blockedRestore.status === "error") assert.equal(blockedRestore.error.code, "PROXY_DISABLED");
+    const explicitChange = await send(service, "session.setProxyAffinity", { projectPath, sessionId, proxyId: null });
+    assert.equal(explicitChange.status, "success");
+    if (explicitChange.status === "success" && explicitChange.result.resultType === "session.metadata") {
+      assert.equal(explicitChange.result.session.state, "reauth_required");
+      assert.equal(explicitChange.result.session.requiresReauthentication, true);
+      assert.equal(explicitChange.result.session.affinity.proxyId, null);
+    }
+    assert.equal(runtime.lastRestoredProxyServer, null);
   } finally {
     await service.close();
     await rm(root, { recursive: true, force: true });

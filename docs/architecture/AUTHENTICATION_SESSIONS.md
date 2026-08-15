@@ -86,10 +86,19 @@ ordinary export, logs, diagnostics, CLI output, Desktop IPC, or UI state.
 
 Each Session belongs to exactly one Project and is bound to the current Browser
 Context Profile descriptor. Durable affinity records the profile identifier,
-profile version, affinity schema version, and a nullable future `proxyId`; Phase
-12 does not implement proxy selection, rotation, health, or worker routing.
+profile version, affinity schema version, and nullable `proxyId`. Phase 15
+resolves a bound proxy through the Application Service before opening,
+restoring, or reauthenticating a Session. The proxy must be enabled, healthy,
+and backed by an available Secret Store reference when credentials are needed.
+Cooldown, disabled, missing-secret, and connectivity failures fail closed.
 Profile incompatibility fails closed rather than restoring into an unknown
 Context.
+
+Changing affinity is an explicit `session.setProxyAffinity` command. A live
+Authentication Browser cannot be rebound implicitly; after an explicit change,
+the Session requires reauthentication before authenticated work resumes. A
+restore never falls back to direct routing when the recorded proxy is no
+longer eligible.
 
 ## Supported surfaces
 

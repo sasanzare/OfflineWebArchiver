@@ -8,7 +8,7 @@ import {
 
 export const PROJECT_FORMAT_NAME = "offline-web-archive-project" as const;
 export const PROJECT_FORMAT_VERSION = "1.1.0" as const;
-export const PROJECT_SCHEMA_VERSION = 9 as const;
+export const PROJECT_SCHEMA_VERSION = 10 as const;
 export const MINIMUM_APPLICATION_VERSION = "0.8.0" as const;
 export const PROJECT_MANIFEST_FILE = "project.json" as const;
 export const PROJECT_DATABASE_PATH = "database/crawl.db" as const;
@@ -120,7 +120,7 @@ export const ProjectManifestSchema = z
         crawlQueue: z.boolean(),
         browserRendering: z.literal(false),
         authentication: z.boolean(),
-        proxies: z.literal(false),
+        proxies: z.boolean(),
         archiveGeneration: z.literal(false),
       })
       .strict(),
@@ -227,7 +227,7 @@ export function createProjectManifest(input: {
       crawlQueue: true,
       browserRendering: false,
       authentication: true,
-      proxies: false,
+      proxies: true,
       archiveGeneration: false,
     },
     lifecycle: { state: "ready", lastValidatedAt: input.createdAt },

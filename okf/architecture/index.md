@@ -5,6 +5,7 @@
 This directory contains the architecture components and cross-layer contract boundary.
 
 - [Application Service](application-service.md) - Orchestration boundary for local commands and rendering.
+- [Proxy Manager](proxy-manager.md) - Protocol-aware proxy metadata, health, Secret Store, and Session affinity boundary.
 - [Browser Runtime](browser-runtime.md) - Owned Chromium runtime and lifecycle constraints.
 - [Authentication Sessions](authentication-sessions.md) - Manual Login Contexts, protected Storage State, and Session isolation.
 - [OTP Flow and Element Picker](otp-flow-element-picker.md) - Versioned Login Flow descriptors, visible OTP state machine, and temporary native picker.

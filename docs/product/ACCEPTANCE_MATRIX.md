@@ -529,8 +529,39 @@ without promoting the unresolved Phase 13 native/release prerequisite.
 | AC-P14-013 | NFR-PORT-001, NFR-TEST-001 | Phase 13 prerequisite and release promotion | Reconcile Phase 14 against the clean committed Windows 11 x64 Phase 13 evidence gate | Phase 14 is promoted only after the unresolved Phase 13 prerequisite/native evidence gate is closed | accepted Phase 13 bundle/reconciliation; `.artifacts/phase14-evidence/final-native-windows-11-x64` | High | PASS |
 
 Phase 14 is `COMPLETE`: AC-P14-001 through AC-P14-013 pass on the accepted
-clean committed Windows 11 x64 baseline. Phase 15 is ready but is not started
-by this acceptance decision.
+clean committed Windows 11 x64 baseline.
+
+### Product Phase 15 execution acceptance
+
+The following execution rows reconcile the generic proxy requirements above
+with the current user-directed Phase 15 boundary. Their final status is bound
+to the exact clean-HEAD Phase 15 evidence bundle.
+
+| ID | Requirement IDs | Area | Verification | Evidence | Criticality | Status |
+|---|---|---|---|---|---|---|
+| AC-P15-001 | FR-PROXY-001 | HTTP proxy | Validate HTTP proxy identity and Browser Runtime routing | `tests/browser/browser-runtime.test.ts` | Critical | PASS |
+| AC-P15-002 | FR-PROXY-001 | HTTPS proxy | Validate HTTPS proxy CONNECT/TLS routing | `tests/browser/browser-runtime.test.ts` | Critical | PASS |
+| AC-P15-003 | FR-PROXY-001 | SOCKS5 proxy | Validate SOCKS5 routing | `tests/browser/browser-runtime.test.ts` | Critical | PASS |
+| AC-P15-004 | FR-PROXY-001 | CRUD persistence | Create, read, update, list, disable, and delete metadata with revision checks | `tests/integration/proxy-lifecycle.test.ts` | Critical | PASS |
+| AC-P15-005 | FR-PROXY-002 | Import | Parse CSV/JSON deterministically with bounded per-record failures | `tests/unit/proxy.test.ts`; `tests/integration/proxy-lifecycle.test.ts` | High | PASS |
+| AC-P15-006 | NFR-SEC-002 | Secret Reference only | Persist only an opaque Secret Store reference; never raw credentials | `packages/application-service/src/index.ts`; proxy leakage assertions | Critical | PASS |
+| AC-P15-007 | FR-PROXY-003 | Connectivity/IP | Test outbound connectivity and report safe IP verification metadata | `packages/browser-runtime/src/index.ts`; browser fixture | Critical | PASS |
+| AC-P15-008 | FR-PROXY-003 | Health metrics | Persist latency, success, failure, and safe last-error metadata | proxy integration and persistence tests | High | PASS |
+| AC-P15-009 | FR-PROXY-003 | Health states | Apply deterministic healthy/degraded/cooldown/disabled transitions | `tests/unit/proxy.test.ts` | Critical | PASS |
+| AC-P15-010 | FR-PROXY-003 | Eligibility | Reject unhealthy, cooldown, disabled, and missing-secret proxies | proxy unit/integration tests | Critical | PASS |
+| AC-P15-011 | NFR-SEC-003 | Fail closed | Proxy-required operations fail closed when the configured proxy is unavailable | Session and proxy integration tests | Critical | PASS |
+| AC-P15-012 | NFR-SEC-003 | No direct fallback | A failed proxy never causes an unintended direct request | Browser dead-proxy fixture and security check | Critical | PASS |
+| AC-P15-013 | FR-AUTH-002 | Session affinity | Preserve authenticated Session proxy affinity and require explicit reauth on change | `tests/integration/session-lifecycle.test.ts` | Critical | PASS |
+| AC-P15-014 | NFR-SEC-002, NFR-PRIV-001 | Credential leakage | Scan DB, transport, logs, imports, and evidence for raw proxy credentials | proxy lifecycle and secret-leakage gate | Critical | PASS |
+| AC-P15-015 | FR-PROJECT-002, FR-PROJECT-003 | Migration | Upgrade Phase 14 schema/project data losslessly to schema 10 | migration/project lifecycle tests | Critical | PASS |
+| AC-P15-016 | NFR-TEST-001 | Regression | Run the full Phase 1–14 regression without weakening prior gates | Phase 15 evidence runner | Critical | PASS |
+| AC-P15-017 | NFR-PORT-001, NFR-TEST-001 | Native/browser evidence | Validate the supported Windows 11 x64 environment and real Chromium proxy fixtures | Phase 15 evidence bundle | Critical | PASS |
+| AC-P15-018 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Knowledge reconciliation | Reconcile implementation report, ADR, risks, acceptance, HANDOFF, and OKF | docs/OKF validators and Phase 15 evidence bundle | High | PASS |
+
+Phase 15 is `COMPLETE` within its declared boundary when the final evidence
+validator passes at the committed HEAD. Worker Pool scheduling, rate-limit
+coordination, automatic proxy rotation, downloader, replay, and rewrite remain
+outside this acceptance decision and are reserved for Phase 16 or later.
 
 ### Phase 12 reconciliation for Phase 13 closure
 

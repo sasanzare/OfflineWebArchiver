@@ -36,6 +36,19 @@ const draft = {
   queryPolicy: { unknown: "identity", rules: [] }, fragmentPolicy: "ignore-all", redirectPolicy: { allowApprovedExternal: false, allowHttpsDowngrade: false },
   canonicalPolicy: { external: "ignore" }, networkPolicy: { allowedIpClasses: ["public"] }, limits: { maxDepth: 10, maxPages: 100, maxRedirects: 5, maxBatchSize: 10 },
 };
+const proxyId = "proxy-contract-fixture";
+const proxyDraft = {
+  id: proxyId,
+  label: "Contract proxy",
+  protocol: "http",
+  host: "proxy.example.com",
+  port: 8080,
+  bypass: ["localhost"],
+  weight: 1,
+  priority: 0,
+  maxConcurrency: 2,
+  enabled: true,
+};
 const commands = [
   createSystemDescribeCommand(metadata),
   createProjectCommand("project.create", { destinationPath: "C:\\Projects\\sample", name: "Sample", slug: "sample" }, metadata),
@@ -45,6 +58,17 @@ const commands = [
   createProjectCommand("project.export", { projectPath: "/projects/sample", archivePath: "/exports/sample.zip" }, metadata),
   createProjectCommand("project.import", { archivePath: "/exports/sample.zip", destinationPath: "/projects/imported" }, metadata),
   createProjectCommand("project.info", { projectPath: "/projects/sample" }, metadata),
+  createProjectCommand("session.setProxyAffinity", { projectPath: "/projects/sample", sessionId: "00000000-0000-4000-8000-000000000608", proxyId }, metadata),
+  createProjectCommand("proxy.create", { projectPath: "/projects/sample", proxy: proxyDraft }, metadata),
+  createProjectCommand("proxy.get", { projectPath: "/projects/sample", proxyId }, metadata),
+  createProjectCommand("proxy.list", { projectPath: "/projects/sample" }, metadata),
+  createProjectCommand("proxy.update", { projectPath: "/projects/sample", proxyId, expectedRevision: 1, proxy: { ...proxyDraft, id: undefined, port: 8081 } }, metadata),
+  createProjectCommand("proxy.enable", { projectPath: "/projects/sample", proxyId, expectedRevision: 1 }, metadata),
+  createProjectCommand("proxy.disable", { projectPath: "/projects/sample", proxyId, expectedRevision: 1 }, metadata),
+  createProjectCommand("proxy.delete", { projectPath: "/projects/sample", proxyId }, metadata),
+  createProjectCommand("proxy.import", { projectPath: "/projects/sample", format: "csv", content: "protocol,host,port\nhttp,proxy.example.com,8080\n", operationId: "proxy-import-contract" }, metadata),
+  createProjectCommand("proxy.test", { projectPath: "/projects/sample", proxyId, targetUrl: "https://example.com/", ipCheckUrl: "https://example.com/", timeoutMs: 5_000 }, metadata),
+  createProjectCommand("proxy.eligibility", { projectPath: "/projects/sample", proxyId, now: timestamp }, metadata),
   createProjectCommand("profile.create", { projectPath: "/projects/sample", name: "Profile", seedUrl: "https://example.com/" }, metadata),
   createProjectCommand("profile.get", { projectPath: "/projects/sample" }, metadata),
   createProjectCommand("profile.update", { projectPath: "/projects/sample", expectedRevisionId: "00000000-0000-4000-8000-000000000001", draft }, metadata),

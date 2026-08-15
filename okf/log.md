@@ -91,3 +91,17 @@ bundle. It is not a copy of Git history or a task diary.
   the same HEAD with full/focused/browser, quality, security, docs, OKF, and
   zero-finding sensitive scans; Phase 13 and Phase 14 are complete and Phase 15
   is ready but not started.
+
+### Phase 15 knowledge update
+
+- Added the Phase 15 Proxy Manager and Health Monitor boundary: HTTP/HTTPS/SOCKS5
+  metadata, Secret Store-backed credentials, SQLite schema 10 migration,
+  contract 1.11, deterministic health/cooldown eligibility, Browser Runtime
+  connectivity checks, and explicit authenticated Session affinity.
+- Added local protocol fixtures and redaction/fail-closed coverage. The
+  generated HTTPS certificate exception is test-only and requires
+  `OWAB_TEST_MODE=1`; production TLS validation remains strict.
+- Added the Phase 15 implementation report, ADR, security review, acceptance
+  rows, risks, OKF concepts/registries, and exact-HEAD evidence runner. Worker
+  scheduling, rate-limit coordination, automatic rotation, downloader, replay,
+  and rewrite remain the Phase 16 or later boundary.

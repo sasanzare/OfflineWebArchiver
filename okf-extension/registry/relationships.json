@@ -90,6 +90,13 @@
     { "id": "OKF-REL-087", "name": "Phase 14 authentication continuation is evidenced by integration and browser tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P14-AUTH", "targetId": "OKF-EV-P14-INTEGRATION", "type": "evidenced-by" },
     { "id": "OKF-REL-088", "name": "Phase 14 privacy boundary is evidenced by security review", "status": "VERIFIED", "sourceId": "OKF-NODE-P14-PRIVACY", "targetId": "OKF-EV-P14-SECURITY", "type": "evidenced-by" },
     { "id": "OKF-REL-089", "name": "Phase 14 depends on the existing Session boundary", "status": "VERIFIED", "sourceId": "OKF-PHASE-014", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" },
-    { "id": "OKF-REL-090", "name": "Phase 14 promotion is supported by the Phase 13 release gate", "status": "VERIFIED", "sourceId": "OKF-NODE-P14-GATE", "targetId": "OKF-EV-P14-GATE", "type": "evidenced-by" }
+    { "id": "OKF-REL-090", "name": "Phase 14 promotion is supported by the Phase 13 release gate", "status": "VERIFIED", "sourceId": "OKF-NODE-P14-GATE", "targetId": "OKF-EV-P14-GATE", "type": "evidenced-by" },
+    { "id": "OKF-REL-091", "name": "Phase 15 record is evidenced by the implementation report", "status": "VERIFIED", "sourceId": "OKF-PHASE-015", "targetId": "OKF-EV-P15-DOCS", "type": "evidenced-by" },
+    { "id": "OKF-REL-092", "name": "Phase 15 proxy identity and persistence are evidenced by Core and SQLite validation", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-PROXY", "targetId": "OKF-EV-P15-PERSISTENCE", "type": "evidenced-by" },
+    { "id": "OKF-REL-093", "name": "Phase 15 health policy is evidenced by domain and Browser Runtime tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-HEALTH", "targetId": "OKF-EV-P15-BROWSER", "type": "evidenced-by" },
+    { "id": "OKF-REL-094", "name": "Phase 15 credential and routing security are evidenced by the security review", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-SECURITY", "targetId": "OKF-EV-P15-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-095", "name": "Phase 15 authenticated affinity is evidenced by Application Service integration", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-AFFINITY", "targetId": "OKF-EV-P15-APPLICATION", "type": "evidenced-by" },
+    { "id": "OKF-REL-096", "name": "Phase 15 validation is executed by the exact-HEAD evidence runner", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-GATE", "targetId": "OKF-EV-P15-RUNNER", "type": "evidenced-by" },
+    { "id": "OKF-REL-097", "name": "Phase 15 depends on the existing Secret Store and trust-zone boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-015", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" }
   ]
 }
