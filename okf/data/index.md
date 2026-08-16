@@ -11,5 +11,6 @@ This directory contains the selected portable Project, SQLite, and persistence C
 - [Canonical Path Safety](canonical-path-safety.md) - Shared portable path and collision rules used by filesystem consumers.
 - [Proxy Metadata](proxy-metadata.md) - Schema 10 proxy identity, health counters, and opaque credential references.
 - [Asset Source and Content](assets.md) - URL/source identity, verified content identity, deduplication, and Page↔Asset provenance.
+- [Route, Original Resource, and External Dependency Maps](route-and-dependency-maps.md) - Deterministic local route traceability and unresolved-reference provenance.
 
 The index does not replace implementation authorities or the current registry data.

@@ -1,0 +1,3 @@
+@import "../theme/base.css";
+.font { src: url("../fonts/site.woff2") format("woff2"); }
+.image { background-image: url(https://example.test/images/background.png#hero); }

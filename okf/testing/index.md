@@ -10,3 +10,4 @@ This directory contains the repository's durable test strategy.
 - [Phase 15 Validation](phase-15-validation.md) - Proxy protocol, health, affinity, browser, security, and exact-HEAD evidence.
 - [Phase 16 Validation](phase-16-validation.md) - Worker limits, shared cooldowns, proxy affinity, persistence, and Browser Runtime Context ownership.
 - [Phase 17 Validation](phase-17-validation.md) - Asset identity, deduplication, Range resume, concurrency, and filesystem safety fixtures.
+- [Phase 18 Validation](phase-18-validation.md) - HTML/CSS rewriting, route/dependency maps, collision, path-safety, and atomic-output fixtures.

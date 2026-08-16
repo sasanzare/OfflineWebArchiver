@@ -116,6 +116,7 @@ export * from "./service-worker.js";
 export * from "./authentication.js";
 export * from "./proxy.js";
 export * from "./assets.js";
+export * from "./rewrite.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"

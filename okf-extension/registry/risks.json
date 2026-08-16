@@ -109,6 +109,10 @@
     { "id": "R-111", "name": "Proxy credential leakage", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-112", "name": "Proxy direct fallback or Session affinity loss", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-113", "name": "Proxy protocol and TLS portability variance", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
-    { "id": "R-114", "name": "Proxy health and eligibility drift", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" }
+    { "id": "R-114", "name": "Proxy health and eligibility drift", "status": "VERIFIED", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-115", "name": "Rewrite mapping integrity and false local success", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-116", "name": "Base and canonical provenance confusion", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-117", "name": "Route collision and ambiguous fallback", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-118", "name": "Rewrite resource exhaustion", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }
   ]
 }

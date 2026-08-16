@@ -2,7 +2,7 @@
 
 ## Product Phase 8 artifacts and Phase 10 compatibility
 
-Project format remains `1.1.0`. Render HTML and optional screenshot files live under fixed portable paths `pages/<job-id>/rendered.html` and `pages/<job-id>/screenshot.png`; SQLite schema 7 owns Render and Interaction metadata and SHA-256 descriptors. Browser binaries, manifests, caches, profiles, Interaction plans, and Playwright dependencies are runtime/package resources and are never exported inside a portable Project unless a later explicitly versioned export contract permits them.
+Project format remains `1.1.0`. Render HTML and optional screenshot files live under fixed portable paths `pages/<job-id>/rendered.html` and `pages/<job-id>/screenshot.png`. Phase 18 may add the separate derived artifact `pages/<job-id>/rewritten-v1.html`; it never replaces `rendered.html`, contains no machine-specific absolute path, and can be regenerated from the original page plus explicit mappings. SQLite schema 12 owns the current Project/Asset/Render metadata and SHA-256 descriptors. Browser binaries, manifests, caches, profiles, Interaction plans, and Playwright dependencies are runtime/package resources and are never exported inside a portable Project unless a later explicitly versioned export contract permits them.
 
 ## Product Phase 7 compatibility
 
@@ -20,6 +20,8 @@ profile/config.json       created after Site Profile creation
 database/crawl.db
 database/backups/          created only when migration backup is needed
 pages/
+  <job-id>/rendered.html
+  <job-id>/rewritten-v1.html  (optional Phase 18 derived output)
 assets/css/
 assets/js/
 assets/images/

@@ -74,6 +74,7 @@ import { acquireProjectLock, type ProjectLock } from "./locking.js";
 import { createSqliteQueueRepository } from "./queue.js";
 import { createSqliteRecoveryRepository } from "./recovery.js";
 import { createSqliteRenderRepository } from "./render.js";
+export * from "./rewrite.js";
 import { createSqliteInteractionRepository } from "./interaction.js";
 import { createSqliteProxyRepository } from "./proxy.js";
 import { createSqliteSchedulerRepository } from "./scheduler.js";

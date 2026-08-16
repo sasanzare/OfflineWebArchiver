@@ -107,6 +107,13 @@
     { "id": "OKF-REL-104", "name": "Phase 17 downloader is evidenced by Core and deterministic fixtures", "status": "VERIFIED", "sourceId": "OKF-NODE-P17-DOWNLOADER", "targetId": "OKF-EV-P17-DOMAIN", "type": "evidenced-by" },
     { "id": "OKF-REL-105", "name": "Phase 17 persistence is evidenced by migration and concurrency tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P17-STORAGE", "targetId": "OKF-EV-P17-PERSISTENCE", "type": "evidenced-by" },
     { "id": "OKF-REL-106", "name": "Phase 17 path policy is evidenced by security and filesystem tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P17-PATH", "targetId": "OKF-EV-P17-SECURITY", "type": "evidenced-by" },
-    { "id": "OKF-REL-107", "name": "Phase 17 depends on Phase 16 scheduler and affinity boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-017", "targetId": "OKF-PHASE-016", "type": "depends-on" }
+    { "id": "OKF-REL-107", "name": "Phase 17 depends on Phase 16 scheduler and affinity boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-017", "targetId": "OKF-PHASE-016", "type": "depends-on" },
+    { "id": "OKF-REL-108", "name": "Phase 18 depends on Phase 17 Asset and canonical path boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-018", "targetId": "OKF-PHASE-017", "type": "depends-on" },
+    { "id": "OKF-REL-109", "name": "Phase 18 record is evidenced by the implementation report", "status": "VERIFIED", "sourceId": "OKF-PHASE-018", "targetId": "OKF-EV-P18-DOCS", "type": "evidenced-by" },
+    { "id": "OKF-REL-110", "name": "Phase 18 Rewriter is evidenced by Core source and focused tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-REWRITER", "targetId": "OKF-EV-P18-REWRITER", "type": "evidenced-by" },
+    { "id": "OKF-REL-111", "name": "Phase 18 maps are evidenced by deterministic serialization tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-MAPS", "targetId": "OKF-EV-P18-MAPS", "type": "evidenced-by" },
+    { "id": "OKF-REL-112", "name": "Phase 18 security boundary is evidenced by hostile-reference tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-SECURITY", "targetId": "OKF-EV-P18-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-113", "name": "Phase 18 rewritten artifact is evidenced by Persistence integration", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-PERSISTENCE", "targetId": "OKF-EV-P18-PERSISTENCE", "type": "evidenced-by" },
+    { "id": "OKF-REL-114", "name": "Phase 18 gate records the explicit runtime/replay boundary", "status": "PARTIAL", "sourceId": "OKF-NODE-P18-GATE", "targetId": "OKF-EV-P18-DOCS", "type": "evidenced-by" }
   ]
 }

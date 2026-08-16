@@ -18,3 +18,10 @@ Phase 16 is indexed by `OKF-PHASE-016`, `OKF-CHG-P16-001`, and the
 and local knowledge-gate nodes map to `AC-P16-001` through `AC-P16-012`.
 Exact clean-HEAD release promotion and authorized target-site evidence remain
 separate later gates.
+
+Phase 18 is indexed by `OKF-PHASE-018`, `OKF-CHG-P18-001`, and the
+`OKF-NODE-P18-*` records. The Rewriter, route/dependency maps, security,
+separate Persistence artifact, and local knowledge-gate nodes map to
+`AC-P18-001` through `AC-P18-013`. The records cover the deterministic
+stored-content boundary only; Phase 19 runtime/replay and target-site evidence
+remain separate later gates.

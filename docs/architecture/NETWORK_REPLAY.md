@@ -8,11 +8,12 @@ Strict Offline Mode.
 
 The contract deliberately excludes sensitive request/response headers from
 replay identity and metadata. It exposes a bounded safe URL only. It does not
-implement a response store, downloader, API capture, HTML rewrite, or full
-offline runtime in Phase 13.
+implement a response store, downloader, API capture, or full offline runtime.
+Phase 18 now provides stored-content HTML/CSS rewriting and dependency metadata
+separately; it does not change this runtime contract.
 
-Replay and rewrite are separate: replay controls network fulfillment, while a
-later rewriter maps captured references to canonical Project paths. Service
-Worker policy is selected by Site Profile and must be explicitly reconciled
-with Context replay before implementation.
+Replay and rewrite are separate: Phase 18 maps stored references to canonical
+Project resources, while Phase 19 will control network fulfillment and runtime
+replay. Service Worker policy is selected by Site Profile and must be explicitly
+reconciled with Context replay before implementation.
 

@@ -131,3 +131,16 @@ bundle. It is not a copy of Git history or a task diary.
 - Added the Phase 17 history, architecture, recovery, security, testing, and
   data Concepts. Discovery, production adapter wiring, rewriting, replay, and
   target-site evidence remain explicitly outside this phase.
+
+### Phase 18 knowledge update
+
+- Added the deterministic HTML/CSS Rewriter boundary with explicit Page and
+  completed Phase 17 Asset mappings, first-base resolution, canonical
+  provenance, special-scheme classification, srcset support, and no-script
+  execution.
+- Added Route Map, Original Resource Map, and External Dependency Map Concepts
+  covering extensionless/SPA routes, collision records, unresolved dependency
+  provenance, and the Phase 19 handoff.
+- Added the separate atomic rewritten-v1.html artifact concept and confirmed
+  that SQLite schema 12, Project format 1.1.0, and transport contract 1.11.0
+  do not require a migration for these regenerable derived outputs.

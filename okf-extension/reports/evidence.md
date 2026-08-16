@@ -26,4 +26,12 @@ Phase 16 evidence (`OKF-EV-P16-*`) covers the Core Worker Pool policy, shared
 Origin cooldown and Retry-After handling, sticky/fail-closed affinity, SQLite
 schema 11 scheduler state, Browser Runtime multi-Context ownership, security
 review, and documentation. Authorized target-site all-path capture, exact
-clean-HEAD promotion, downloader, replay, and rewrite evidence is not claimed.
+    clean-HEAD promotion, downloader, replay, and rewrite evidence is not
+    claimed by the Phase 16 records.
+
+Phase 18 evidence (OKF-EV-P18-*) covers deterministic stored-content HTML/CSS
+rewriting, original Page/Asset mapping, Route Map and External Dependency Map
+generation, base/canonical/special-scheme behavior, collision/path safety,
+security review, separate atomic rewritten output, and documentation. It does
+not claim Network Replay, Strict Offline runtime, Local Runtime serving,
+Service Worker runtime enforcement, or target-site evidence.

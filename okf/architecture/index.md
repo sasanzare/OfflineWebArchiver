@@ -8,6 +8,7 @@ This directory contains the architecture components and cross-layer contract bou
 - [Proxy Manager](proxy-manager.md) - Protocol-aware proxy metadata, health, Secret Store, and Session affinity boundary.
 - [Worker Pool Scheduling](worker-pool-scheduling.md) - Bounded worker reservation, shared Origin cooldown, proxy assignment, and backpressure.
 - [Asset Downloader](asset-downloader.md) - Scheduler-bound explicit Asset execution, resumable streaming, and atomic content promotion.
+- [HTML Rewriter](html-rewriter.md) - Deterministic stored-content HTML/CSS transformation and Phase 19 handoff boundary.
 - [Browser Runtime](browser-runtime.md) - Owned Chromium runtime and lifecycle constraints.
 - [Authentication Sessions](authentication-sessions.md) - Manual Login Contexts, protected Storage State, and Session isolation.
 - [OTP Flow and Element Picker](otp-flow-element-picker.md) - Versioned Login Flow descriptors, visible OTP state machine, and temporary native picker.

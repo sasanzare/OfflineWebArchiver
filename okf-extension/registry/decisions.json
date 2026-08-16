@@ -109,6 +109,7 @@
     { "id": "OD-081", "name": "Central canonical path and symlink safety", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-056-canonical-path-safety.md" },
     { "id": "OD-082", "name": "Proxy Manager and Health Monitor boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-058-proxy-manager-and-health-monitor.md" },
     { "id": "OD-083", "name": "Worker Pool and shared Origin cooldown boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-059-worker-pool-and-rate-limit-compliance.md" },
-    { "id": "OD-084", "name": "Asset storage and downloader boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-060-asset-storage-and-downloader-boundary.md" }
+    { "id": "OD-084", "name": "Asset storage and downloader boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-060-asset-storage-and-downloader-boundary.md" },
+    { "id": "OD-085", "name": "HTML Rewriter, Route Map, and Dependency Map boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md" }
   ]
 }

@@ -21,8 +21,11 @@ authorized target-site multi-proxy evidence remain separate gates. Windows 10
 is legacy/compatibility and Linux/macOS native evidence is deferred to future
 versions. Product Phase 17 is indexed as `VERIFIED` within its explicit Asset
 descriptor, scheduler-bound network, durable source/content, Range-resume, and
-canonical path boundary; production adapter wiring, discovery, rewriting,
-replay, and target-site evidence remain separate gates. The manifest remains
+canonical path boundary. Product Phase 18 is indexed as VERIFIED within the
+deterministic stored-content HTML/CSS rewrite, Route Map, Original Resource Map,
+External Dependency Map, and separate atomic derived-output boundary; production
+adapter wiring, discovery, replay/runtime serving, and target-site evidence
+remain separate gates. The manifest remains
 activated at Phase 8; later phases are recorded for traceability without
 advancing the activated release.
 
@@ -72,3 +75,7 @@ validation and reporting may consume both layers.
 - Phase 16 security review: `docs/architecture/PHASE_16_SECURITY_REVIEW.md`
 - Phase 17 implementation report: `docs/project/PHASE_17_IMPLEMENTATION_REPORT.md`
 - Phase 17 security review: `docs/architecture/PHASE_17_SECURITY_REVIEW.md`
+- Phase 18 implementation report: `docs/project/PHASE_18_IMPLEMENTATION_REPORT.md`
+- Phase 18 architecture: `docs/architecture/HTML_REWRITER.md`
+- Phase 18 security review: `docs/architecture/PHASE_18_SECURITY_REVIEW.md`
+- Phase 18 ADR: `docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md`

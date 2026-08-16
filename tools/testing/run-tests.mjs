@@ -4,7 +4,7 @@ import path from "node:path";
 import { repositoryRoot, runTypeScriptBuild } from "../build/typescript.mjs";
 
 const suite = process.argv[2] ?? "all";
-const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "phase17", "browser", "rendering", "electron", "cli", "secrets", "okf"]);
+const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "phase17", "phase18", "browser", "rendering", "electron", "cli", "secrets", "okf"]);
 const recoveryTests = [
   "unit/recovery.test.js",
   "integration/recovery-lifecycle.test.js",
@@ -32,14 +32,18 @@ const phase17Tests = [
   "integration/asset-path-safety.test.js",
   "concurrency/asset-concurrency.test.js",
 ];
+const phase18Tests = [
+  "unit/rewrite.test.js",
+  "integration/rewrite-persistence.test.js",
+];
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
-  ["package:archive-core", ["unit/archive-core.test.js", "unit/assets.test.js", "unit/proxy.test.js", "unit/scheduler.test.js"]],
+  ["package:archive-core", ["unit/archive-core.test.js", "unit/assets.test.js", "unit/proxy.test.js", "unit/scheduler.test.js", "unit/rewrite.test.js"]],
   ["package:queue", ["unit/queue.test.js", "integration/queue-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
   ["package:recovery", ["unit/recovery.test.js", "integration/recovery-lifecycle.test.js", "concurrency/recovery-concurrency.test.js", "process-kill/recovery-process-kill.test.js"]],
   ["package:scope-engine", ["unit/scope-engine.test.js"]],
   ["package:project-format", ["unit/project-format.test.js"]],
-  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "integration/proxy-lifecycle.test.js", "integration/scheduler-lifecycle.test.js", "integration/asset-download.test.js", "concurrency/queue-concurrency.test.js", "concurrency/asset-concurrency.test.js"]],
+  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "integration/proxy-lifecycle.test.js", "integration/scheduler-lifecycle.test.js", "integration/asset-download.test.js", "integration/rewrite-persistence.test.js", "concurrency/queue-concurrency.test.js", "concurrency/asset-concurrency.test.js"]],
   ["package:observability", ["unit/observability.test.js"]],
   ["package:secrets", ["secrets/secret-store.test.js"]],
   ["package:platform", ["unit/platform.test.js"]],
@@ -81,6 +85,8 @@ const selected = suite === "all"
     ? renderingTests.map((name) => path.join(testRoot, name))
   : suite === "phase17"
     ? phase17Tests.map((name) => path.join(testRoot, name))
+  : suite === "phase18"
+    ? phase18Tests.map((name) => path.join(testRoot, name))
   : packageTests.has(suite)
     ? packageTests.get(suite).map((name) => path.join(testRoot, name))
     : await collect(path.join(testRoot, suite));

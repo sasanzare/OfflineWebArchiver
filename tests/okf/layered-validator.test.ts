@@ -68,8 +68,8 @@ test("OWA policy diagnostics remain quality-layer diagnostics and permit URL sou
 test("production discovery is official-only and independently inventoryable", async () => {
   const { discoverOkf } = await load<{ discoverOkf(root: string): Promise<Artifact[]> }>("tools/okf/discovery.mjs");
   const items = await discoverOkf(process.cwd());
-  assert.equal(items.length, 84);
-  assert.equal(items.filter((item) => item.kind === "concept").length, 73);
+  assert.equal(items.length, 89);
+  assert.equal(items.filter((item) => item.kind === "concept").length, 78);
   assert.equal(items.filter((item) => item.kind === "directory-index").length, 9);
   assert.equal(items.filter((item) => item.kind === "root-index").length, 1);
   assert.equal(items.some((item) => item.path.startsWith("okf-extension/")), false);

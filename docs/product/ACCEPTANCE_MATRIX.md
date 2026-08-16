@@ -616,6 +616,35 @@ Phase 17 is implemented and locally validated within these rows. Phase 9
 discovery, live authorized target-site capture, production network-adapter
 wiring, rewrite, replay, and release promotion remain separate gates.
 
+### Product Phase 18 execution acceptance
+
+These rows reconcile the deterministic Phase 18 transformation boundary.
+PASS means the stated stored-content/mapping capability is implemented and
+covered by local deterministic tests and repository validation. It does not
+claim Phase 19 Network Replay, Strict Offline runtime, Local Runtime serving,
+Phase 20 reporting, discovery, production target-site evidence, or clean-HEAD
+release promotion.
+
+| ID | Requirement IDs | Area | Verification | Evidence | Criticality | Status |
+|---|---|---|---|---|---|---|
+| AC-P18-001 | FR-ARCHIVE-001 | HTML reference surfaces | Token-preserving rewrite covers supported navigation, asset, media, form, SVG, icon, manifest, preload-like, and srcset references without executing content | `packages/archive-core/src/rewrite.ts`; `tests/unit/rewrite.test.ts` | Critical | PASS |
+| AC-P18-002 | FR-ARCHIVE-001 | URL resolution and semantics | Resolve relative, absolute, protocol-relative, query, and fragment references using original page/base semantics | URL resolution and HTML rewrite unit tests | Critical | PASS |
+| AC-P18-003 | FR-ASSET-001, FR-ARCHIVE-001 | Stored Asset mapping | Completed Phase 17 content mappings resolve to persisted canonical local resource paths, including CDN-origin assets | Phase 17 mapping adapter and rewrite fixtures | Critical | PASS |
+| AC-P18-004 | FR-ARCHIVE-001 | Missing/external dependency observability | Unmapped resources remain explicit External Dependency entries with classification and bounded provenance | Dependency map assertions in rewrite tests | High | PASS |
+| AC-P18-005 | FR-ARCHIVE-001 | CSS resource rewriting | CSS url() and @import references resolve against the original CSS URL with quoted/unquoted and special-scheme handling | CSS fixture and rewriteCss tests | High | PASS |
+| AC-P18-006 | FR-ARCHIVE-002 | Deterministic Route Map | Generate stable Original URL, normalized URL, local route, Page identity, route type, and resolution state entries | Route Map unit tests and serialized fixture | Critical | PASS |
+| AC-P18-007 | FR-ARCHIVE-002 | Extensionless and SPA routes | Preserve extensionless routes and explicit SPA fallback metadata without inventing unrecorded routes | Route Map SPA/extensionless tests | High | PASS |
+| AC-P18-008 | FR-ARCHIVE-001, FR-ARCHIVE-002 | Original URL provenance | Preserve original URL-to-local relationships for Pages and completed Assets; canonical metadata does not define route identity | Original Resource Map tests and canonical-link fixture | High | PASS |
+| AC-P18-009 | FR-ARCHIVE-001 | External Dependency Map | Record source Page, raw/resolved/normalized identity, element/attribute, resource kind, and policy classification in stable order | Dependency map serialization tests | High | PASS |
+| AC-P18-010 | FR-PROJECT-004, NFR-PORT-002, NFR-SEC-003 | Canonical path safety | Reject traversal, absolute/drive/UNC, reserved, non-NFC, and unsafe local mappings; no reference becomes privileged filesystem access | Path-safety and hostile-reference tests | Critical | PASS |
+| AC-P18-011 | NFR-SEC-003 | Untrusted archive boundary | Preserve inline JavaScript, classify special schemes, block file URLs, and perform no script execution or privileged IPC | Special-scheme and source-inspection tests | Critical | PASS |
+| AC-P18-012 | NFR-REL-002 | Safe derived output and idempotence | Write rewritten-v1.html separately and atomically while retaining rendered.html; reruns are deterministic | `tests/integration/rewrite-persistence.test.ts`; idempotence tests | Critical | PASS |
+| AC-P18-013 | NFR-TEST-001, NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Validation and knowledge reconciliation | Run Phase 18 focused/regression gates and synchronize report, ADR, architecture, security, OKF, and HANDOFF | `npm run test:phase18`; repository validators; HANDOFF | High | PASS |
+
+Phase 18 is implemented and locally validated within these rows. Phase 19
+Network Replay, strict offline enforcement, isolated runtime serving, and
+Service Worker runtime behavior remain separate gates.
+
 ### Phase 12 reconciliation for Phase 13 closure
 
 | Acceptance ID | Reconciled status | Phase 13 basis |
