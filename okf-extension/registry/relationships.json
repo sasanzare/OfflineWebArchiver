@@ -97,6 +97,11 @@
     { "id": "OKF-REL-094", "name": "Phase 15 credential and routing security are evidenced by the security review", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-SECURITY", "targetId": "OKF-EV-P15-SECURITY", "type": "evidenced-by" },
     { "id": "OKF-REL-095", "name": "Phase 15 authenticated affinity is evidenced by Application Service integration", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-AFFINITY", "targetId": "OKF-EV-P15-APPLICATION", "type": "evidenced-by" },
     { "id": "OKF-REL-096", "name": "Phase 15 validation is executed by the exact-HEAD evidence runner", "status": "VERIFIED", "sourceId": "OKF-NODE-P15-GATE", "targetId": "OKF-EV-P15-RUNNER", "type": "evidenced-by" },
-    { "id": "OKF-REL-097", "name": "Phase 15 depends on the existing Secret Store and trust-zone boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-015", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" }
+    { "id": "OKF-REL-097", "name": "Phase 15 depends on the existing Secret Store and trust-zone boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-015", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" },
+    { "id": "OKF-REL-098", "name": "Phase 16 record is evidenced by the implementation report", "status": "VERIFIED", "sourceId": "OKF-PHASE-016", "targetId": "OKF-EV-P16-DOCS", "type": "evidenced-by" },
+    { "id": "OKF-REL-099", "name": "Phase 16 Worker Pool policy is evidenced by Core and SQLite validation", "status": "VERIFIED", "sourceId": "OKF-NODE-P16-SCHEDULER", "targetId": "OKF-EV-P16-PERSISTENCE", "type": "evidenced-by" },
+    { "id": "OKF-REL-100", "name": "Phase 16 affinity and anti-evasion policy is evidenced by security review", "status": "VERIFIED", "sourceId": "OKF-NODE-P16-AFFINITY", "targetId": "OKF-EV-P16-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-101", "name": "Phase 16 Browser Runtime boundary is evidenced by the browser suite", "status": "VERIFIED", "sourceId": "OKF-NODE-P16-BROWSER", "targetId": "OKF-EV-P16-BROWSER", "type": "evidenced-by" },
+    { "id": "OKF-REL-102", "name": "Phase 16 depends on Phase 15 proxy eligibility and the existing trust zones", "status": "VERIFIED", "sourceId": "OKF-PHASE-016", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" }
   ]
 }

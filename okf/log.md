@@ -105,3 +105,15 @@ bundle. It is not a copy of Git history or a task diary.
   rows, risks, OKF concepts/registries, and exact-HEAD evidence runner. Worker
   scheduling, rate-limit coordination, automatic rotation, downloader, replay,
   and rewrite remain the Phase 16 or later boundary.
+
+## 2026-08-16
+
+### Phase 16 knowledge update
+
+- Added the Worker Pool and rate-limit scheduling boundary: versioned global,
+  Origin, proxy, in-flight, and token-bucket limits; shared `429`/`Retry-After`
+  cooldowns; sticky Session affinity; proxy circuit breaking; Browser Runtime
+  permits; and SQLite schema 11 scheduler state.
+- Added the Phase 16 implementation report, ADR, security review, validation
+  concept, and explicit non-goals for discovery, downloading, rewriting, API
+  capture/replay, and target-site acceptance.

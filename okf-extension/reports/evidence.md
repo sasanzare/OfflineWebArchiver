@@ -20,5 +20,10 @@ Chromium HTTP/HTTPS/SOCKS5 connectivity, health/cooldown/eligibility,
 authenticated Session affinity, security review, documentation, and the
 repository-owned exact-HEAD runner. The HTTPS certificate exception is
 generated-fixture-only and gated by `OWAB_TEST_MODE=1`; no production TLS
-validation is weakened. Worker scheduling, rate-limit coordination, rotation,
-downloader, replay, and rewrite evidence is not claimed.
+validation is weakened.
+
+Phase 16 evidence (`OKF-EV-P16-*`) covers the Core Worker Pool policy, shared
+Origin cooldown and Retry-After handling, sticky/fail-closed affinity, SQLite
+schema 11 scheduler state, Browser Runtime multi-Context ownership, security
+review, and documentation. Authorized target-site all-path capture, exact
+clean-HEAD promotion, downloader, replay, and rewrite evidence is not claimed.

@@ -1,13 +1,13 @@
 # 25-Phase Plan
 
-## Current phase position — 2026-08-15
+## Current phase position — 2026-08-16
 
-Product Phases 13 and 14 are complete on the accepted clean committed Windows 11 x64 baseline. Phase 15 Proxy Manager and Health Monitor is implemented within its declared boundary with contract `1.11.0` and SQLite schema `10`; its exact clean-HEAD result is recorded by the Phase 15 evidence bundle. The independent Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 discovery-related completion remains conditional. Phase 16 worker/rate-limit scheduling is explicitly not implemented.
+Product Phases 13 and 14 are complete on the accepted clean committed Windows 11 x64 baseline. Phase 15 Proxy Manager and Health Monitor is implemented within its declared boundary with contract `1.11.0` and SQLite schema `10`; its exact clean-HEAD result is recorded by the Phase 15 evidence bundle. Product Phase 16 Worker Pool and rate-limit scheduling is implemented within its declared boundary with SQLite schema `11`; local focused evidence is recorded in the Phase 16 report. The independent Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 discovery-related completion remains conditional.
 
-**Document status:** Proposed baseline  
-**Owner:** Product Owner  
-**Current product status:** **Phase 9 remains the open discovery prerequisite; Phase 10 partial; Phase 11 conditional; Phase 13 complete; Phase 14 complete; Phase 15 implemented/validated; Phase 16 not started**
-**Last updated:** 2026-08-15
+**Document status:** Proposed baseline
+**Owner:** Product Owner
+**Current product status:** **Phase 9 remains the open discovery prerequisite; Phase 10 partial; Phase 11 conditional; Phase 13 complete; Phase 14 complete; Phase 15 implemented/validated; Phase 16 implemented/validated within its declared boundary**
+**Last updated:** 2026-08-16
 
 This is the authoritative concise delivery sequence. The attached Product Phase 11
 specification adds a cross-cutting Secret Store foundation before later
@@ -31,10 +31,21 @@ rows 13 and 14. For the current user-directed delivery, the attached Phase 14
 request is authoritative: Phase 14 is OTP Flow and Element Picker, and the next
 requested phase is Phase 15 Proxy Manager and Health Monitor. Phase 15 now
 delivers the proxy inventory, health, connectivity, Secret Store, and Session
-affinity boundary; the legacy table is retained as historical planning context
-and is not silently rewritten. This change does not implement worker/rate-limit
-scheduling, replay/runtime/download/rewrite work beyond the proxy connectivity
-boundary; those remain a Phase 16 or later decision.
+affinity boundary. The current user-directed Phase 16 adds Worker Pool and
+rate-limit scheduling; the legacy table is retained as historical planning
+context and is not silently rewritten. This change does not implement
+discovery, downloader, API capture/replay, runtime serving, or rewrite work
+beyond the scheduler boundary.
+
+### Current user-directed phase mapping
+
+The legacy 25-phase table below retains the earlier Phase 15/16 labels. For the
+current task sequence, the user-directed mapping is authoritative:
+
+| Current phase | Current name | State | Authoritative record |
+|---:|---|---|---|
+| 15 | Proxy Manager and Health Monitor | Implemented/validated | [Phase 15 report](PHASE_15_IMPLEMENTATION_REPORT.md) |
+| 16 | Worker Pool and Rate-Limit Compliance | Implemented/validated within declared boundary | [Phase 16 report](PHASE_16_IMPLEMENTATION_REPORT.md) |
 
 > **OKF maintenance is a continuous Definition of Done requirement, not a
 > separate product feature phase.**

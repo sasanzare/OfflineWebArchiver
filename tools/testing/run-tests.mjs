@@ -28,12 +28,12 @@ const renderingTests = [
 ];
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
-  ["package:archive-core", ["unit/archive-core.test.js", "unit/proxy.test.js"]],
+  ["package:archive-core", ["unit/archive-core.test.js", "unit/proxy.test.js", "unit/scheduler.test.js"]],
   ["package:queue", ["unit/queue.test.js", "integration/queue-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
   ["package:recovery", ["unit/recovery.test.js", "integration/recovery-lifecycle.test.js", "concurrency/recovery-concurrency.test.js", "process-kill/recovery-process-kill.test.js"]],
   ["package:scope-engine", ["unit/scope-engine.test.js"]],
   ["package:project-format", ["unit/project-format.test.js"]],
-  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "integration/proxy-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
+  ["package:persistence-sqlite", ["unit/persistence-sqlite.test.js", "integration/project-lifecycle.test.js", "integration/profile-lifecycle.test.js", "integration/queue-lifecycle.test.js", "integration/render-persistence-faults.test.js", "integration/proxy-lifecycle.test.js", "integration/scheduler-lifecycle.test.js", "concurrency/queue-concurrency.test.js"]],
   ["package:observability", ["unit/observability.test.js"]],
   ["package:secrets", ["secrets/secret-store.test.js"]],
   ["package:platform", ["unit/platform.test.js"]],

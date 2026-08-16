@@ -13,10 +13,14 @@ as `PARTIAL`, Product Phase 12 as `PARTIAL`, and the historical Phase 13/14
 records with their preserved status. Product Phase 15 is indexed as `VERIFIED`
 within the Proxy Manager and Health Monitor boundary: the exact-HEAD evidence
 runner, real Chromium protocol fixtures, security review, and documentation
-records are registered. Windows 10 is legacy/compatibility and Linux/macOS
-native evidence is deferred to future versions; neither is a current Phase 15
-gate. The manifest remains activated at Phase 8; later phases are recorded for
-traceability without advancing the activated release.
+records are registered. Product Phase 16 is indexed as `VERIFIED` within its
+local Worker Pool and rate-limit scheduling boundary: focused Core/SQLite/
+Browser Runtime evidence, schema 11 persistence, security review, and
+documentation records are registered. Exact clean-HEAD release promotion and
+authorized target-site multi-proxy evidence remain separate gates. Windows 10
+is legacy/compatibility and Linux/macOS native evidence is deferred to future
+versions. The manifest remains activated at Phase 8; later phases are recorded
+for traceability without advancing the activated release.
 
 Official validation and extension validation are logically separate. Official
 validation scans only `okf/`; extension validation may consume both the official
@@ -60,3 +64,5 @@ validation and reporting may consume both layers.
 - Phase 14 security review: `docs/architecture/PHASE_14_SECURITY_REVIEW.md`
 - Phase 15 implementation report: `docs/project/PHASE_15_IMPLEMENTATION_REPORT.md`
 - Phase 15 security review: `docs/architecture/PHASE_15_SECURITY_REVIEW.md`
+- Phase 16 implementation report: `docs/project/PHASE_16_IMPLEMENTATION_REPORT.md`
+- Phase 16 security review: `docs/architecture/PHASE_16_SECURITY_REVIEW.md`

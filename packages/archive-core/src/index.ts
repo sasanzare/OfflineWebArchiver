@@ -108,6 +108,7 @@ export const PLANNED_CORE_CAPABILITIES = [
 export * from "./secrets.js";
 export * from "./sessions.js";
 export * from "./concurrency.js";
+export * from "./scheduler.js";
 export * from "./network.js";
 export * from "./path-safety.js";
 export * from "./run-state.js";
@@ -909,6 +910,8 @@ export interface BrowserSessionPolicy {
   authorizeUrl(url: string): Promise<RuntimeNetworkDecision>;
   serviceWorkerPolicy?: ServiceWorkerPolicy;
   proxy?: ProxyRuntimeConfiguration;
+  networkBudget?: import("./scheduler.js").OriginNetworkRequestBudget;
+  onOriginResponse?: (input: import("./scheduler.js").OriginResponseObservation) => void | Promise<void>;
 }
 
 export interface BrowserRuntimePort {

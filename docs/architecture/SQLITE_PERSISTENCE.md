@@ -21,7 +21,7 @@ with Interaction, Session, and Crawl Run metadata ledgers. Migrations
 `007_add_browser_interaction`, `008_add_browser_sessions`, and
 `009_add_crawl_run_state` are forward-only and leave prior migrations unchanged.
 
-`@offline-web-archive/persistence-sqlite` implements Project, Profile, Queue, Recovery, Render, Interaction, Session, and Crawl Run metadata repositories. Application Service orchestrates it; Desktop and CLI use contract 1.10.0. Login Flow configuration is optional Profile JSON and contains only locator/policy descriptors; OTP and phone inputs have no SQLite schema or migration. Secret payloads remain outside SQLite in the dedicated Secret Store; only safe metadata/status crosses the service boundary. Archive Core, Recovery/Queue/Rendering/Interaction/Secret pure policy, Scope Engine, and Project Format remain free of SQLite/Electron imports.
+`@offline-web-archive/persistence-sqlite` implements Project, Profile, Queue, Recovery, Render, Interaction, Session, Crawl Run, proxy, and scheduler-state metadata repositories. Application Service orchestrates it; Desktop and CLI use contract 1.11.0. Login Flow configuration is optional Profile JSON and contains only locator/policy descriptors; OTP and phone inputs have no SQLite schema or migration. Secret payloads remain outside SQLite in the dedicated Secret Store; only safe metadata/status crosses the service boundary. Archive Core, Recovery/Queue/Rendering/Interaction/Scheduler/Secret pure policy, Scope Engine, and Project Format remain free of SQLite/Electron imports.
 
 The adapter uses Node 24 `node:sqlite`, extensions disabled, defensive mode, `foreign_keys=ON`, `journal_mode=WAL`, `synchronous=FULL`, `busy_timeout=5000`, and `trusted_schema=OFF`. Validation connections add `query_only=ON`; close checkpoints WAL; backup/export use the SQLite backup API.
 
@@ -52,5 +52,16 @@ SQLite. Proxy credential material remains in the dedicated Secret Store.
 The `SqliteProjectStorage` adapter exposes proxy CRUD/import operations through
 short transactions with Project ownership and revision checks. Existing
 schema-9 Projects migrate forward without rewriting prior ledgers; the
-manifest advertises proxy support only at schema 10. Browser Runtime and the
-future Worker Pool are separate adapters and do not read the table directly.
+manifest advertises proxy support at schema 10 and scheduler state at schema
+11. Browser Runtime and Worker Pool use Core ports and do not read proxy or
+scheduler tables directly.
+
+## Schema 11 scheduler state ledger
+
+Migration `011_add_scheduler_state` adds the Project/Run-scoped
+`origin_rate_limits` table and a due-origin index. It stores a canonical Origin,
+optional bounded cooldown timestamp, last HTTP status, and update timestamp.
+It has no request headers, bodies, cookies, credentials, or proxy secret bytes.
+The scheduler restores this state before dispatch and writes it with short
+`BEGIN IMMEDIATE` transactions; a failed write is surfaced rather than
+silently dropping a cooldown.

@@ -28,6 +28,8 @@ import {
   type NavigationObservation,
   type PageStabilitySnapshot,
   type OtpBrowserInteraction,
+  canonicalOrigin,
+  type OriginNetworkPermit,
 } from "@offline-web-archive/archive-core";
 import { executePlaywrightInteractionPlan, type PlaywrightInteractionHandlers } from "./interaction.js";
 import { decideAuthenticationRequest } from "./authentication-policy.js";
@@ -161,6 +163,7 @@ function isManifest(value: unknown): value is BrowserResourceManifest {
 
 class PlaywrightPageSession implements BrowserPageSession {
   private readonly activeRequests = new Set<Request>();
+  private readonly networkPermits = new Map<string, OriginNetworkPermit[]>();
   private readonly consoleEntries: BrowserEvidenceSnapshot["consoleEntries"][number][] = [];
   private readonly pageErrors: BrowserEvidenceSnapshot["pageErrors"][number][] = [];
   private readonly failedRequests: BrowserEvidenceSnapshot["failedRequests"][number][] = [];
@@ -214,10 +217,12 @@ class PlaywrightPageSession implements BrowserPageSession {
     });
     page.on("requestfinished", (request) => {
       this.activeRequests.delete(request);
+      this.releaseNetworkPermit(request);
       this.lastNetworkActivityAtMs = Date.now();
     });
     page.on("requestfailed", (request) => {
       this.activeRequests.delete(request);
+      this.releaseNetworkPermit(request);
       this.lastNetworkActivityAtMs = Date.now();
       this.pushBounded(this.failedRequests, {
         index: this.failedRequests.length,
@@ -227,6 +232,17 @@ class PlaywrightPageSession implements BrowserPageSession {
         failureSafe: sanitizeText(request.failure()?.errorText ?? "request failed", 240),
         occurredAt: new Date().toISOString(),
       });
+    });
+    page.on("response", (response) => {
+      if (response.status() !== 429 && response.status() !== 503) return;
+      try {
+        const origin = canonicalOrigin(response.url());
+        const headers = response.headers();
+        const observation = { origin, status: response.status(), retryAfter: headers["retry-after"] ?? null } as const;
+        void Promise.resolve(this.policy.onOriginResponse?.(observation)).catch(() => undefined);
+      } catch {
+        // Non-HTTP and malformed response URLs do not participate in the Origin budget.
+      }
     });
     page.on("dialog", (dialog) => this.trackInteractionHandler(this.dialogHandler === null ? dialog.dismiss() : this.dialogHandler(dialog)));
     page.on("download", (download) => void download.cancel().catch(() => undefined));
@@ -257,6 +273,33 @@ class PlaywrightPageSession implements BrowserPageSession {
     return request.resourceType() === "websocket" || request.resourceType() === "eventsource";
   }
 
+  private networkPermitKey(method: string, url: string): string { return `${method}:${url}`; }
+
+  private releaseNetworkPermit(request: Request): void {
+    const key = this.networkPermitKey(request.method(), request.url());
+    const permits = this.networkPermits.get(key);
+    const permit = permits?.shift();
+    permit?.release();
+    if (permits !== undefined && permits.length === 0) this.networkPermits.delete(key);
+  }
+
+  private releaseNetworkPermitValue(permit: OriginNetworkPermit): void {
+    for (const [key, permits] of this.networkPermits.entries()) {
+      const index = permits.indexOf(permit);
+      if (index < 0) continue;
+      permits.splice(index, 1);
+      permit.release();
+      if (permits.length === 0) this.networkPermits.delete(key);
+      return;
+    }
+    permit.release();
+  }
+
+  private releaseAllNetworkPermits(): void {
+    for (const permits of this.networkPermits.values()) for (const permit of permits) permit.release();
+    this.networkPermits.clear();
+  }
+
   private async pageOperation<T>(operation: () => Promise<T>): Promise<T> {
     if (!this.browserConnected()) throw new RenderOperationError("BROWSER_CRASHED", "The Browser process disconnected during the active Page Job", true);
     if (this.crashed) throw new RenderOperationError("PAGE_CRASHED", "The browser Page crashed during the active Page Job", true);
@@ -281,6 +324,7 @@ class PlaywrightPageSession implements BrowserPageSession {
     this.cdpSession = session;
     session.on("Fetch.requestPaused", (event) => {
       const mainFrameNavigation = event.resourceType === "Document";
+      let permit: OriginNetworkPermit | null = null;
       void (async () => {
         const method = event.request.method;
         if (method !== "GET" && method !== "HEAD") {
@@ -303,15 +347,37 @@ class PlaywrightPageSession implements BrowserPageSession {
           await session.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "BlockedByClient" }).catch(() => undefined);
           return;
         }
+        if (this.policy.networkBudget !== undefined && !this.isLongLivedRequest(event.resourceType)) {
+          try {
+            permit = await this.policy.networkBudget.acquire({ origin: canonicalOrigin(event.request.url) });
+            const key = this.networkPermitKey(method, event.request.url);
+            const entries = this.networkPermits.get(key) ?? [];
+            entries.push(permit);
+            this.networkPermits.set(key, entries);
+          } catch {
+            this.blockedRequests += 1;
+            if (mainFrameNavigation) this.navigationBlocked = true;
+            await session.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "BlockedByClient" }).catch(() => undefined);
+            return;
+          }
+        }
         if (mainFrameNavigation) this.navigationAuthorizationPending = false;
-        await session.send("Fetch.continueRequest", { requestId: event.requestId }).catch(() => undefined);
+        try {
+          await session.send("Fetch.continueRequest", { requestId: event.requestId });
+        } catch {
+          if (permit !== null) this.releaseNetworkPermitValue(permit);
+          await session.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "BlockedByClient" }).catch(() => undefined);
+        }
       })().catch(async () => {
+        if (permit !== null) this.releaseNetworkPermitValue(permit);
         if (mainFrameNavigation) this.navigationAuthorizationPending = false;
         await session.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "BlockedByClient" }).catch(() => undefined);
       });
     });
     await session.send("Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Request" }] });
   }
+
+  private isLongLivedRequest(resourceType: string): boolean { return resourceType === "WebSocket" || resourceType === "EventSource"; }
 
   public async navigate(url: string, timeoutMs: number): Promise<NavigationObservation> {
     const blockedBeforeNavigation = this.blockedRequests;
@@ -652,7 +718,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
   let restoredBrowser: Browser | null = null;
   let activeAuthenticationSession: PlaywrightAuthenticationSession | null = null;
   let state: BrowserHealth["state"] = "stopped";
-  let activeJobId: string | null = null;
+  const activeJobIds = new Set<string>();
   let startedAt: string | null = null;
   let lastCrashAt: string | null = null;
   let pagesRendered = 0;
@@ -703,7 +769,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
   const health = (): BrowserHealth => ({
     state,
     connected: browser?.isConnected() ?? false,
-    activeJobId,
+    activeJobId: activeJobIds.values().next().value ?? null,
     restartCountInWindow: restartTimes.filter((value) => Date.now() - value <= RESTART_WINDOW_MS).length,
     startedAt,
     lastCrashAt,
@@ -719,6 +785,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
     state = "stopped";
     startedAt = null;
     pagesRendered = 0;
+    activeJobIds.clear();
   };
 
   const closeAuthenticationBrowser = async (): Promise<void> => {
@@ -841,7 +908,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
       }
     },
     async restart() {
-      if (activeJobId !== null || activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime cannot restart while an active Browser Context is open");
+      if (activeJobIds.size > 0 || activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime cannot restart while an active Browser Context is open");
       const recent = restartTimes.filter((value) => Date.now() - value <= RESTART_WINDOW_MS);
       restartTimes.splice(0, restartTimes.length, ...recent);
       if (recent.length >= MAX_RESTARTS_PER_WINDOW) throw new RenderOperationError("BROWSER_RESTART_LIMITED", "The Browser Runtime restart budget is exhausted", true);
@@ -851,12 +918,14 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
       return api.start();
     },
     async createPageSession(jobId, policy) {
-      if (activeJobId !== null) throw new RenderOperationError("BROWSER_BUSY", "Phase 8 permits one active Page Job per Browser Runtime");
       if (browser?.isConnected() !== true) await api.start();
       const age = startedAt === null ? 0 : Date.now() - Date.parse(startedAt);
-      if (pagesRendered >= maximumPages || age >= maximumLifetimeMs) await api.restart();
+      if (pagesRendered >= maximumPages || age >= maximumLifetimeMs) {
+        if (activeJobIds.size > 0) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime reached its rotation limit while other Worker Contexts are active", true);
+        await api.restart();
+      }
       if (browser?.isConnected() !== true) throw new RenderOperationError("BROWSER_UNHEALTHY", "The Browser Runtime is not connected", true);
-      activeJobId = jobId;
+      activeJobIds.add(jobId);
       try {
         const playwrightProxy = toPlaywrightProxy(policy.proxy);
         const context = await browser.newContext({
@@ -879,13 +948,13 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
         const page = await context.newPage();
         const { proxy: _proxy, ...safePolicy } = policy;
         const session = new PlaywrightPageSession(jobId, context, page, safePolicy, () => browser?.isConnected() === true, () => {
-          activeJobId = null;
+          activeJobIds.delete(jobId);
           pagesRendered += 1;
         });
         await session.installRouting();
         return session;
       } catch (error) {
-        activeJobId = null;
+        activeJobIds.delete(jobId);
         if (error instanceof RenderOperationError) throw error;
         throw new RenderOperationError("BROWSER_CONTEXT_FAILED", "A fresh isolated Browser Context could not be created", true);
       }
@@ -898,7 +967,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
       return createAuthenticationContext(sessionId, policy, "restored", storageState);
     },
     async testProxy(input: ProxyConnectivityRequest): Promise<ProxyConnectivityResult> {
-      if (activeJobId !== null || activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime is busy with another isolated Context");
+      if (activeJobIds.size > 0 || activeAuthenticationSession !== null) throw new RenderOperationError("BROWSER_BUSY", "The Browser Runtime is busy with another isolated Context");
       if (browser?.isConnected() !== true) await api.start();
       if (browser?.isConnected() !== true) throw new RenderOperationError("BROWSER_UNHEALTHY", "The Browser Runtime is not connected", true);
       const targetUrlSafe = safeProxyTargetUrl(input.targetUrl);

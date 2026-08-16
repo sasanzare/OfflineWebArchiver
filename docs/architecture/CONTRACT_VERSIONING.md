@@ -8,7 +8,7 @@ Contract `1.10.0` preserves the strict Browser, Render, Interaction, Secret Stor
 
 Version 1.4.0 adds interrupted/paused states, Fencing Generation, recovery summary/report, Lease metadata without tokens, Checkpoint/Artifact Checkpoint, Pause/Resume, and completed-output descriptors. Older contract semantics are not silently upgraded; validation rejects malformed ownership, paths, times, payloads, and bounds.
 
-Current transport contract is `1.10.0`. It preserves Project/Profile/Scope/Queue/Recovery commands, Browser/Render/Interaction/Session metadata commands/results, and safe Secret Store metadata operations, and adds `otp.*` and `elementPicker.*` commands. Scope Engine `1`, Profile schema `1`, Locator/Login Flow/Picker schema `1`, Queue state machine `2`, Lease/Checkpoint/Recovery model `1`, Crawl Run state `1`, Render Engine/Context/Stability model `1`, Interaction Profile/Trace schema `1`, Secret Reference/Vault/Envelope schema `1`, Project format `1.1.0`, Project schema `9`, SQLite schema `9`, and application `0.8.0` remain independent version axes.
+Current transport contract is `1.11.0`. It preserves Project/Profile/Scope/Queue/Recovery commands, Browser/Render/Interaction/Session metadata commands/results, proxy metadata commands, and safe Secret Store metadata operations. Worker scheduling is a Core/Browser Runtime/persistence boundary and does not add raw credentials, network payloads, or an unbounded transport surface. Scope Engine `1`, Profile schema `1`, Locator/Login Flow/Picker schema `1`, Queue state machine `2`, Lease/Checkpoint/Recovery model `1`, Crawl Run state `1`, Render Engine/Context/Stability model `1`, Interaction Profile/Trace schema `1`, Secret Reference/Vault/Envelope schema `1`, Project format `1.1.0`, Project schema `11`, SQLite schema `11`, and application `0.8.0` remain independent version axes.
 
 Contract `1.2.0` was the Phase 5 Profile/Scope baseline, `1.1.0` the Phase 4 Project baseline, and `1.0.0` the Phase 3 system-description baseline. Current responses use strict result discriminators, stable errors, and correlated events. Unknown fields, invalid paths/IDs/timestamps/states/discriminators, oversized result/error payloads, and unsupported versions fail closed.
 
@@ -23,5 +23,6 @@ carry raw credentials. Session open/reauth payloads may identify a `proxyId`,
 while affinity changes remain explicit and require reauthentication when they
 affect an authenticated Session. Project format and SQLite schema advance to
 10 through the forward-only `010_add_proxies` migration. Worker scheduling,
-rate-limit tokens, automatic rotation, and downloader/replay commands remain
-outside this contract.
+rate-limit tokens are implemented below the transport boundary; automatic
+rotation, downloader/replay commands, and API capture remain outside this
+contract.

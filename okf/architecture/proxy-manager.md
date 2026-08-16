@@ -20,5 +20,7 @@ is explicit and fail-closed: open, restore, and reauthentication require an
 eligible bound proxy; `session.setProxyAffinity` requires reauthentication
 after a change. See [Proxy Security](../security/proxy-security.md), [Proxy Metadata](../data/proxy-metadata.md), and [Phase 15 Validation](../testing/phase-15-validation.md).
 
-Worker scheduling, automatic rotation, and rate-limit coordination are outside
-this component and remain a Phase 16 boundary.
+Worker scheduling, automatic rotation, and rate-limit coordination remain
+outside this component. The implemented Phase 16 scheduler consumes this
+component's eligibility and affinity metadata; it does not own proxy
+credentials. See [Worker Pool Scheduling](worker-pool-scheduling.md).

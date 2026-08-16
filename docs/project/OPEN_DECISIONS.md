@@ -1,7 +1,7 @@
 # Open Decision Register
 
-**Document status:** Proposed baseline  
-**Owner:** Product Owner coordinates; each row names its decision authority  
+**Document status:** Proposed baseline
+**Owner:** Product Owner coordinates; each row names its decision authority
 **Last updated:** 2026-07-31
 
 Phase 1 deliberately does not invent business, legal, authorization, target, or
@@ -148,3 +148,9 @@ Detailed OKF-specific questions are maintained in
 | Decision ID | Question | Why it matters | Options | Current choice | Evidence needed | Owner | Due | Status | Notes | ADR |
 |---|---|---|---|---|---|---|---|---|---|---|
 | OD-082 | Where do proxy policy, credentials, health, and routing live? | A proxy path can leak credentials or silently bypass authenticated routing | Put all behavior in Application Service; store credentials in SQLite; split Core, Secret Store, SQLite, and Browser Runtime | Core owns pure proxy policy; Secret Store owns bytes; SQLite stores metadata/health; Browser Runtime owns Playwright routing; configured proxy paths fail closed | Phase 15 exact-HEAD evidence, protocol fixtures, leakage/security checks | Architecture/Security Owner | Resolved Phase 15 | Resolved Phase 15 | Contract 1.11, SQLite schema 10, migration 010; worker scheduling and rate compliance remain Phase 16 | ADR-058 |
+
+## Product Phase 16 Worker Pool and Rate-Limit Compliance decisions
+
+| Decision ID | Question | Why it matters | Options | Current choice | Evidence needed | Owner | Due | Status | Notes | ADR |
+|---|---|---|---|---|---|---|---|---|---|---|
+| OD-083 | Where are Worker limits, Origin cooldowns, and proxy affinity enforced? | Per-proxy limits can multiply target traffic and alternate routing can break authenticated Sessions or bypass `429` cooldowns | Per-proxy counters; Browser-only throttling; Core policy plus Browser permits and durable Origin state | Archive Core owns versioned global/Origin/proxy/in-flight/token limits and fail-closed affinity; Browser Runtime owns GET/HEAD permits; SQLite schema 11 stores Project/Run/Origin cooldown metadata | Focused scheduler, Browser Runtime, migration, persistence, security, and later authorized all-path evidence | Architecture/Security Owner | Resolved Phase 16 boundary | Resolved Phase 16 boundary | Transport remains 1.11; downloader, discovery, API capture/replay, and target acceptance remain later work | ADR-059 |

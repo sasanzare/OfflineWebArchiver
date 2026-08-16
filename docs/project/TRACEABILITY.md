@@ -61,9 +61,9 @@ validation, [fixture category](../testing/TEST_FIXTURE_STRATEGY.md), and
 | FR-OTP-002 | AC-OTP-003 | P13 → P20 | FX-021..024, FX-046 | R-020, R-021 |
 | FR-PROXY-001 | AC-PROXY-001, AC-PROXY-002, AC-PROXY-003, AC-PROXY-004 | P14 → P14, P20 | FX-027..030 | R-022, R-024 |
 | FR-PROXY-002 | AC-PROXY-005 | P14 → P15 | FX-031..033 | R-023, R-024 |
-| FR-PROXY-003 | AC-PROXY-006, AC-PROXY-007 | P14, P15 → P17, P20, P24 | FX-032, FX-033; TS-008, TS-009 | R-018, R-023 |
-| FR-RATE-001 | AC-RATE-001, AC-RATE-002, AC-RATE-003 | P15 → P15, P20 | FX-031, FX-034, load scheduler | R-010, R-025 |
-| FR-RATE-002 | AC-RATE-004, AC-RATE-005 | P15 → P20, P24 | FX-034, FX-035; TS-020 | R-025, R-026 |
+| FR-PROXY-003 | AC-PROXY-006, AC-PROXY-007 | P14, P15 → P16, P17, P20, P24 | FX-032, FX-033; scheduler affinity and fail-closed tests; TS-008, TS-009 | R-018, R-023 |
+| FR-RATE-001 | AC-RATE-001, AC-RATE-002, AC-RATE-003 | P16 → P16, P20 | FX-031, FX-034, scheduler limit tests | R-010, R-025 |
+| FR-RATE-002 | AC-RATE-004, AC-RATE-005 | P16 → P16, P20, P24 | FX-034, FX-035; scheduler cooldown and Retry-After tests; TS-020 | R-025, R-026 |
 | FR-ASSET-001 | AC-ASSET-001 | P9 → P18 | FX-009, FX-043 | R-016, R-034, R-035 |
 | FR-ASSET-002 | AC-ASSET-002 | P9 → P17 | FX-012, FX-039, FX-040 | R-016, R-034 |
 | FR-ARCHIVE-001 | AC-REWRITE-001 | P10 → P18, P25 | HTML/CSS rewrite corpus; FX-043, FX-044 | R-029, R-031 |
@@ -89,14 +89,14 @@ validation, [fixture category](../testing/TEST_FIXTURE_STRATEGY.md), and
 
 | Requirement | Acceptance criteria | Planned implementation → validation | Test category / activity | Principal risks |
 |---|---|---|---|---|
-| NFR-SEC-001 | AC-RATE-006, AC-AUTHZ-001, AC-SCOPE-002 | P5, P15, P20 → P20, P24 | FX-034, FX-048; all-path anti-evasion capture | R-025..027, R-037 |
+| NFR-SEC-001 | AC-RATE-006, AC-AUTHZ-001, AC-SCOPE-002 | P5, P16, P20 → P16, P20, P24 | FX-034, scheduler anti-evasion test, FX-048; all-path capture | R-025..027, R-037 |
 | NFR-SEC-002 | AC-SECURITY-001 | P12–P16, P20 → P20, P25 | FX-018..030, FX-045, FX-046 | R-021, R-022, R-030, R-033 |
 | NFR-SEC-003 | AC-SECURITY-003, AC-RUNTIME-001 | P11, P20 → P20, P25 | FX-042, FX-047 | R-004, R-029 |
 | NFR-SEC-004 | AC-SECURITY-004 | P20 → P20 | Sanitized event schema and tamper fixture | R-021, R-027, R-032 |
 | NFR-PRIV-001 | AC-PRIVACY-001 | P20 → P20, P24 | FX-017, FX-045, FX-046; deletion clock | R-021, R-030, R-037 |
 | NFR-REL-001 | AC-REL-001 | P6, P17 → P17, P24 | FX-036..040 | R-011, R-014..016 |
 | NFR-REL-002 | AC-REL-002 | P4, P17 → P17, P25 | Migration/corruption corpus; FX-037, FX-040 | R-012, R-013, R-016, R-034 |
-| NFR-PERF-001 | AC-PERF-001 | P8, P15, P19 → P18, P25 | FX-010, FX-031, FX-034; saturation | R-008, R-010, R-025 |
+| NFR-PERF-001 | AC-PERF-001 | P8, P16, P19 → P16, P18, P25 | FX-010, FX-031, scheduler backpressure, FX-034; saturation | R-008, R-010, R-025 |
 | NFR-PERF-002 | AC-PERF-002 | P18 → P24, P25 | Approximately 600-page local/target benchmarks | R-001, R-010, R-034, R-035 |
 | NFR-PORT-001 | AC-PORT-001 | P21–P23 → P25 | Clean OS packaged vertical slices | R-001..006, R-032, R-033 |
 | NFR-PORT-002 | AC-PORT-002 | P4, P10, P25 → P25 | FX-041 and cross-platform product matrix | R-006, R-031 |

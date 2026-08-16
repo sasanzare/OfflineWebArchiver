@@ -49,13 +49,5 @@ export function effectiveOriginRequestBudget(policy: WorkerNetworkConcurrencyPol
   return policy.requestRatePerOrigin;
 }
 
-export function parseRetryAfter(value: string | null, nowMs: number, maximumMs: number): number | null {
-  if (value === null) return null;
-  const seconds = Number(value.trim());
-  const delay = Number.isFinite(seconds) && seconds >= 0
-    ? seconds * 1_000
-    : Date.parse(value) - nowMs;
-  if (!Number.isFinite(delay) || delay < 0) return null;
-  return Math.min(Math.floor(delay), maximumMs);
-}
+export * from "./scheduler.js";
 

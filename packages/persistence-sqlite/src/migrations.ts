@@ -645,6 +645,21 @@ CREATE INDEX proxies_project_updated
 ON proxies(project_id, updated_at DESC, proxy_id);
 `;
 
+const ADD_SCHEDULER_STATE_SQL = `
+CREATE TABLE origin_rate_limits (
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  origin TEXT NOT NULL CHECK (length(origin) BETWEEN 1 AND 512),
+  cooldown_until TEXT,
+  last_status INTEGER CHECK (last_status IS NULL OR last_status BETWEEN 100 AND 599),
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (project_id, run_id, origin)
+) STRICT;
+
+CREATE INDEX origin_rate_limits_due
+ON origin_rate_limits(project_id, run_id, cooldown_until, origin);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -660,6 +675,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "008_add_browser_sessions", sequence: 8, sql: ADD_BROWSER_SESSIONS_SQL, checksum: checksum(ADD_BROWSER_SESSIONS_SQL) }),
   Object.freeze({ id: "009_add_crawl_run_state", sequence: 9, sql: ADD_CRAWL_RUN_STATE_SQL, checksum: checksum(ADD_CRAWL_RUN_STATE_SQL) }),
   Object.freeze({ id: "010_add_proxies", sequence: 10, sql: ADD_PROXIES_SQL, checksum: checksum(ADD_PROXIES_SQL) }),
+  Object.freeze({ id: "011_add_scheduler_state", sequence: 11, sql: ADD_SCHEDULER_STATE_SQL, checksum: checksum(ADD_SCHEDULER_STATE_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

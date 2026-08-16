@@ -33,6 +33,7 @@ import {
   type RecoveryRepositoryPort,
   type RenderRepositoryPort,
   type ProxyRepositoryPort,
+  type SchedulerStateRepositoryPort,
 } from "@offline-web-archive/archive-core";
 import {
   normalizeSiteProfileDraft,
@@ -73,6 +74,7 @@ import { createSqliteRecoveryRepository } from "./recovery.js";
 import { createSqliteRenderRepository } from "./render.js";
 import { createSqliteInteractionRepository } from "./interaction.js";
 import { createSqliteProxyRepository } from "./proxy.js";
+import { createSqliteSchedulerRepository } from "./scheduler.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -90,6 +92,7 @@ export { createSqliteRecoveryRepository, type RecoveryFaultPoint, type SqliteRec
 export { createSqliteRenderRepository, type SqliteRenderRepositoryOptions } from "./render.js";
 export { createSqliteInteractionRepository, type SqliteInteractionRepositoryOptions } from "./interaction.js";
 export { createSqliteProxyRepository, type SqliteProxyRepositoryOptions } from "./proxy.js";
+export { createSqliteSchedulerRepository, type SqliteSchedulerRepositoryOptions, originRateLimitStateFromSnapshot } from "./scheduler.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -204,7 +207,7 @@ const BROWSER_SESSION_SELECT = `
   FROM browser_sessions
 `;
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort & SchedulerStateRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -635,6 +638,11 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const proxyForCurrent = (): ProxyRepositoryPort => {
     if (current === null) throw new ProxyOperationError("PROXY_NOT_FOUND", "Open the selected Project before using Proxies");
     return createSqliteProxyRepository(current.database, { now });
+  };
+
+  const schedulerForCurrent = (): SchedulerStateRepositoryPort => {
+    if (current === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "Open the selected Project before using scheduler state");
+    return createSqliteSchedulerRepository(current.database, { now });
   };
 
   const sessionForCurrent = (): SessionRepositoryPort => {
@@ -1420,6 +1428,18 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async importProxies(input) {
       return proxyForCurrent().importProxies(input);
+    },
+
+    async getOriginRateLimit(input) {
+      return schedulerForCurrent().getOriginRateLimit(input);
+    },
+
+    async saveOriginRateLimit(input) {
+      return schedulerForCurrent().saveOriginRateLimit(input);
+    },
+
+    async listOriginRateLimits(input) {
+      return schedulerForCurrent().listOriginRateLimits(input);
     },
 
     async getCompatibility(projectPath) {

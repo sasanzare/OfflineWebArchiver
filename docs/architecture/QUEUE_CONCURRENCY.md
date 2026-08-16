@@ -11,3 +11,15 @@ Real Worker Thread tests open separate SQLite connections and race identical enq
 Transactions are deliberately short and contain no network or browser work. Reads are bounded. A Project close ends its owned connection and lock; separately started SQLite operations finish on their own connection, and reopening verifies the durable ledger. Cross-process lock contention and long-running transactions remain monitored risks.
 
 Claims do not expire. If a process crashes after claim, the Job stays `processing`; Product Phase 7 must introduce Lease/Heartbeat semantics without permitting a stale owner to commit.
+
+## Product Phase 16 Worker Pool boundary
+
+The Worker Pool scheduler now consumes normalized Jobs through an Archive Core
+port and enforces global, per-origin, per-proxy, in-flight, and optional
+request-rate bounds before Browser Runtime execution. Durable Queue/Recovery
+ownership remains unchanged: `createDurableWorkerQueuePort()` adapts claim,
+heartbeat, complete, and fail calls without duplicating the Queue state machine.
+
+Origin cooldown persistence is Project/Run scoped in SQLite schema 11. The
+scheduler does not perform discovery, downloading, rewriting, API replay, or
+long-running target acceptance; those concerns remain separate boundaries.

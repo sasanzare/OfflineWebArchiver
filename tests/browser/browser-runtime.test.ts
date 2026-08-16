@@ -6,7 +6,7 @@ import { CONTEXT_PROFILE, createPlaywrightBrowserRuntime, PLAYWRIGHT_VERSION } f
 import { startHttpProxyFixture, startProxyFixtureTarget, startSocks5ProxyFixture } from "../support/proxy-fixtures.js";
 import { startRenderFixtureServer } from "../support/render-fixture-server.js";
 
-test("repository-owned Chromium has a deterministic one-Job lifecycle and explicit restart", async () => {
+test("repository-owned Chromium has deterministic multi-Worker Context lifecycle and explicit restart", async () => {
   const fixture = await startRenderFixtureServer();
   const runtime = createPlaywrightBrowserRuntime({ browserRoot: path.resolve(".runtime", "browsers"), maximumPagesPerProcess: 2, maximumLifetimeMs: 60_000 });
   const policy = {
@@ -30,9 +30,11 @@ test("repository-owned Chromium has a deterministic one-Job lifecycle and explic
     const page = await runtime.createPageSession("job-browser-1", policy);
     const navigation = await page.navigate(fixture.url("javascript"), 2_000);
     assert.equal(navigation.statusCode, 200);
-    await assert.rejects(runtime.createPageSession("job-browser-2", policy), (error: unknown) => error instanceof RenderOperationError && error.code === "BROWSER_BUSY");
+    const concurrentPage = await runtime.createPageSession("job-browser-2", policy);
+    await concurrentPage.navigate(fixture.url("static"), 2_000);
     await assert.rejects(runtime.restart(), (error: unknown) => error instanceof RenderOperationError && error.code === "BROWSER_BUSY");
     await page.close();
+    await concurrentPage.close();
 
     const blockedRedirect = await runtime.createPageSession("job-browser-redirect-block", policy);
     let redirectError: unknown;
