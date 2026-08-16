@@ -49,15 +49,15 @@ test("a failed migration transaction rolls back its schema changes", () => {
   database.close();
 });
 
-test("schema 11 installs Lease, Checkpoint, Recovery, Render, Interaction, Session, Run State, Proxy, and scheduler ledgers", () => {
+test("schema 12 installs Lease, Checkpoint, Recovery, Render, Interaction, Session, Run State, Proxy, scheduler, and Asset ledgers", () => {
   const database = new DatabaseSync(":memory:", { allowExtension: false, defensive: true });
   configureDatabase(database);
   applyPendingMigrations(database, "0.8.0", () => "2026-08-01T12:00:00.000Z");
   const tables = new Set((database.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((row) => row.name));
-  for (const name of ["scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations", "job_leases", "job_checkpoints", "run_checkpoints", "artifact_checkpoints", "completed_outputs", "recovery_operations", "recovery_events", "execution_sessions", "run_control", "render_results", "render_events", "render_failures", "interaction_profiles", "interaction_traces", "browser_sessions", "proxies", "origin_rate_limits"]) assert.equal(tables.has(name), true, name);
+  for (const name of ["scope_decisions", "page_jobs", "job_attempts", "job_transitions", "job_discoveries", "queue_operations", "job_leases", "job_checkpoints", "run_checkpoints", "artifact_checkpoints", "completed_outputs", "recovery_operations", "recovery_events", "execution_sessions", "run_control", "render_results", "render_events", "render_failures", "interaction_profiles", "interaction_traces", "browser_sessions", "proxies", "origin_rate_limits", "asset_contents", "asset_sources", "page_asset_relations"]) assert.equal(tables.has(name), true, name);
   assert.equal(tables.has("workers"), false);
   const indexes = new Set((database.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as { name: string }[]).map((row) => row.name));
-  for (const name of ["page_jobs_claim_order", "page_jobs_retry_due", "page_jobs_state", "job_attempts_job_number", "job_transitions_job_time", "job_discoveries_child_time", "queue_operations_project_time", "render_results_job_created", "render_events_job_sequence", "render_failures_job_time", "interaction_profiles_project_revision", "interaction_traces_job_time", "interaction_traces_fencing", "browser_sessions_project_state", "browser_sessions_project_validation", "proxies_project_health", "proxies_project_updated", "origin_rate_limits_due"]) assert.equal(indexes.has(name), true, name);
+  for (const name of ["page_jobs_claim_order", "page_jobs_retry_due", "page_jobs_state", "job_attempts_job_number", "job_transitions_job_time", "job_discoveries_child_time", "queue_operations_project_time", "render_results_job_created", "render_events_job_sequence", "render_failures_job_time", "interaction_profiles_project_revision", "interaction_traces_job_time", "interaction_traces_fencing", "browser_sessions_project_state", "browser_sessions_project_validation", "proxies_project_health", "proxies_project_updated", "origin_rate_limits_due", "asset_sources_run_state", "asset_sources_claim", "page_asset_relations_page", "page_asset_relations_source"]) assert.equal(indexes.has(name), true, name);
   const jobColumns = (database.prepare("PRAGMA table_info(page_jobs)").all() as { name: string }[]).map((row) => row.name);
   for (const required of ["fencing_generation", "recovery_state"]) assert.equal(jobColumns.includes(required), true, required);
   assert.equal(database.prepare("PRAGMA foreign_keys").get()!["foreign_keys"], 1);
@@ -66,7 +66,7 @@ test("schema 11 installs Lease, Checkpoint, Recovery, Render, Interaction, Sessi
   const runCheckpointColumns = (database.prepare("PRAGMA table_info(run_checkpoints)").all() as { name: string }[]).map((row) => row.name);
   assert.equal(runControlColumns.includes("run_state"), true);
   assert.equal(runCheckpointColumns.includes("run_state"), true);
-  assert.equal(database.prepare("PRAGMA user_version").get()!["user_version"], 11);
+  assert.equal(database.prepare("PRAGMA user_version").get()!["user_version"], 12);
   database.close();
 });
 

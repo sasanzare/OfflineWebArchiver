@@ -9,8 +9,10 @@ classification. Browser Runtime remains the only Playwright owner; SQLite
 stores the durable origin cooldown snapshot.
 
 The scheduler is deliberately an execution boundary, not a crawler. It does
-not discover links, download archive assets, rewrite HTML, capture/replay API
-responses, or serve archived content.
+not discover links, rewrite HTML, capture/replay API responses, or serve
+archived content. Product Phase 17 Asset downloads are scheduler executors and
+must receive the reservation and Origin budget; the scheduler itself does not
+own Asset identity or storage.
 
 ## Enforced dimensions
 
@@ -89,5 +91,7 @@ identifier for the existing transport/UI surface.
 - Persistence evidence: `tests/integration/scheduler-lifecycle.test.ts`.
 - Browser lifecycle evidence: `tests/browser/browser-runtime.test.ts`.
 
-Full target-site, multi-day soak, downloader, discovery, replay, and
-cross-platform release evidence remain later-phase or release-scope work.
+Full target-site, multi-day soak, discovery, replay, rewrite, and cross-platform
+release evidence remain later-phase or release-scope work. The Phase 17
+downloader has focused deterministic evidence but its production network
+adapter is still an explicit integration boundary.

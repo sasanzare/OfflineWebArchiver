@@ -19,8 +19,12 @@ Browser Runtime evidence, schema 11 persistence, security review, and
 documentation records are registered. Exact clean-HEAD release promotion and
 authorized target-site multi-proxy evidence remain separate gates. Windows 10
 is legacy/compatibility and Linux/macOS native evidence is deferred to future
-versions. The manifest remains activated at Phase 8; later phases are recorded
-for traceability without advancing the activated release.
+versions. Product Phase 17 is indexed as `VERIFIED` within its explicit Asset
+descriptor, scheduler-bound network, durable source/content, Range-resume, and
+canonical path boundary; production adapter wiring, discovery, rewriting,
+replay, and target-site evidence remain separate gates. The manifest remains
+activated at Phase 8; later phases are recorded for traceability without
+advancing the activated release.
 
 Official validation and extension validation are logically separate. Official
 validation scans only `okf/`; extension validation may consume both the official
@@ -66,3 +70,5 @@ validation and reporting may consume both layers.
 - Phase 15 security review: `docs/architecture/PHASE_15_SECURITY_REVIEW.md`
 - Phase 16 implementation report: `docs/project/PHASE_16_IMPLEMENTATION_REPORT.md`
 - Phase 16 security review: `docs/architecture/PHASE_16_SECURITY_REVIEW.md`
+- Phase 17 implementation report: `docs/project/PHASE_17_IMPLEMENTATION_REPORT.md`
+- Phase 17 security review: `docs/architecture/PHASE_17_SECURITY_REVIEW.md`

@@ -27,7 +27,17 @@ owa:
 
 # Project Format
 
-Project format 1.1.0 remains compatible with 1.0.0 and provides a portable `profile/config.json` plus the declared `crawlQueue` feature. Queue, Lease, Checkpoint, Recovery, and Render rows live in SQLite schema 6. Final HTML and optional PNG artifacts use fixed Project-relative paths.
+Project format 1.1.0 remains compatible with 1.0.0 and provides a portable
+`profile/config.json` plus the declared `crawlQueue` feature. Queue, Lease,
+Checkpoint, Recovery, Render, scheduler, proxy, and Asset rows now live in
+SQLite schema 12. Migration 012 adds the Asset source/content/relation ledgers
+without changing the Project format or transport contract versions. Final
+content objects and partial files use fixed canonical Project-relative paths.
 
-All persisted internal paths are portable relative paths. Host paths, tokens, and secrets are not Queue fields, and Browser resources never enter Project data. Auth and proxy roots remain future capability only. The format is implemented by the [Database](database.md) and [Persistence](persistence.md) layers and consumed by the [Queue](../workflow/queue.md).
-
+All persisted internal paths are portable relative paths. Host paths, tokens,
+and secrets are not Queue or Asset fields, and Browser resources never enter
+Project data. Asset source provenance is metadata-only; byte content is stored
+under the deterministic content-object layout after verification. The format is
+implemented by the [Database](database.md) and [Persistence](persistence.md)
+layers and consumed by the [Queue](../workflow/queue.md) and explicit Asset
+downloader boundary.

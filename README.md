@@ -1,6 +1,6 @@
 # Offline Web Archive Builder
 
-Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phases 13 and 14 are complete on the accepted native Windows 11 x64 baseline: Phase 13 supplies architecture/security hardening and Phase 14 supplies versioned Login Flow/Locator contracts, a temporary native Element Picker, and visible single/segmented OTP participation. Product Phase 15 supplies proxy metadata/health/affinity, and Product Phase 16 supplies the bounded Worker Pool and shared rate-limit scheduler. The independent Phase 9 discovery prerequisite remains absent, so earlier Phase 10/11 discovery-related completion claims remain conditional.
+Offline Web Archive Builder is a portable desktop application foundation for creating authorized offline archives. Product Phases 13 and 14 are complete on the accepted native Windows 11 x64 baseline: Phase 13 supplies architecture/security hardening and Phase 14 supplies versioned Login Flow/Locator contracts, a temporary native Element Picker, and visible single/segmented OTP participation. Product Phase 15 supplies proxy metadata/health/affinity, Product Phase 16 supplies the bounded Worker Pool and shared rate-limit scheduler, and Product Phase 17 supplies the explicit-asset downloader, content deduplication, resumable storage, and canonical path safety boundary. The independent Phase 9 discovery prerequisite remains absent, so Phase 17 consumes explicit descriptors and does not claim automatic site discovery.
 
 The current product release targets **Windows 11 x64**. Windows 10 is a
 legacy/compatibility target and is non-blocking for the current release. Linux
@@ -8,7 +8,7 @@ and macOS remain future-version targets; the portable architecture and Core
 abstractions are retained for that future work, but those platforms are not
 current Phase 13 acceptance gates.
 
-Current versions are application/workspaces `0.8.0`, transport contract `1.11.0`, Project format `1.1.0`, Project schema `11`, SQLite schema `11`, Worker Pool contract `1`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Session metadata/storage-state/affinity `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, Locator contract `1`, Login Flow contract `1`, Element Picker contract `1`, OTP policy `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store, Session, OTP, proxy, and scheduler surfaces are metadata-only where exposed at transport boundaries and use privileged protected storage. Phone and OTP values are ephemeral and are not persisted or emitted in results, logs, traces, screenshots, diagnostics, or reports. Without Phase 9 it does not discover or enqueue links. The product does not implement production asset downloading, HTML rewrite, API capture/replay, a full archive runtime, or a full crawl/archive.
+Current versions are application/workspaces `0.8.0`, transport contract `1.11.0`, Project format `1.1.0`, Project schema `12`, SQLite schema `12`, Asset pipeline contract `1`, Worker Pool contract `1`, Queue state machine `2`, Render Engine `1`, Browser Context profile `1`, Interaction Profile `1`, Interaction Trace `1`, Secret Reference `1`, Session metadata/storage-state/affinity `1`, Crawl Run state `1`, Replay/Offline policy `1`, Service Worker policy `1`, Canonical Path policy `1`, Locator contract `1`, Login Flow contract `1`, Element Picker contract `1`, OTP policy `1`, Vault `1`, and Encryption Envelope `1`, alongside Playwright `1.56.1` and Chromium `141.0.7390.37` revision `1194`. The interaction surface is bounded and approved-plan-only; the Secret Store, Session, OTP, proxy, scheduler, and Asset surfaces are metadata-only where exposed at transport boundaries and use privileged protected storage. Phone and OTP values are ephemeral and are not persisted or emitted in results, logs, traces, screenshots, diagnostics, or reports. Without Phase 9 it does not discover or enqueue links. Phase 17 accepts explicit Asset descriptors through an injected scheduler-bound network adapter; HTML rewrite, API capture/replay, a full archive runtime, and a full crawl/archive remain outside the current boundary.
 
 ## Safety and authorization
 
@@ -24,7 +24,7 @@ packages/browser-runtime Playwright/Chromium lifecycle and interception adapter
 packages/rendering       browser-independent Render policy and orchestration
 packages/recovery        pure Lease/Checkpoint/Recovery/partial-file policy
 packages/queue           pure Queue state/idempotency policy
-packages/persistence-sqlite  SQLite schema 11 and repositories
+packages/persistence-sqlite  SQLite schema 12, Asset repositories, and file store
 packages/application-service use-case and ownership orchestration
 packages/contracts       runtime-validated contract 1.10.0
 packages/secrets         encrypted Secret Store adapters and sensitive-data policy
@@ -97,10 +97,13 @@ Run `npm run project -- --help` for all Project/Profile/Scope/Queue/Recovery/Run
 - [Phase 12 implementation report](docs/project/PHASE_12_IMPLEMENTATION_REPORT.md)
 - [Phase 13 implementation report](docs/project/PHASE_13_IMPLEMENTATION_REPORT.md)
 - [Phase 14 OTP Flow and Element Picker report](docs/project/PHASE_14_OTP_FLOW_ELEMENT_PICKER.md)
+- [Phase 17 Asset Downloader report](docs/project/PHASE_17_IMPLEMENTATION_REPORT.md)
 - [Phase 13 native evidence execution matrix](docs/project/PHASE_13_EVIDENCE_EXECUTION_MATRIX.md)
 - [Post-Phase-12 baseline audit](docs/project/POST_PHASE_12_BASELINE_AUDIT.md)
 - [Phase 13 security review](docs/architecture/PHASE_13_SECURITY_REVIEW.md)
 - [Phase 14 security review](docs/architecture/PHASE_14_SECURITY_REVIEW.md)
+- [Asset Downloader architecture](docs/architecture/ASSET_DOWNLOADER.md)
+- [Phase 17 security review](docs/architecture/PHASE_17_SECURITY_REVIEW.md)
 - [Authentication Sessions architecture](docs/architecture/AUTHENTICATION_SESSIONS.md)
 - [Secret Store architecture](docs/architecture/SECRET_STORE.md)
 - [Phase 11 security review](docs/architecture/PHASE_11_SECURITY_REVIEW.md)
@@ -136,4 +139,4 @@ for the ownership boundaries, source/provenance workflow, CI behavior, and
 review checklist. Hosted CI execution and branch protection are not claimed as
 verified from the local repository.
 
-The clean committed Windows 11 x64 Phase 13 gate and Phase 14 revalidation both pass. Phase 15 is implemented and validated within its declared proxy boundary; Phase 16 is implemented and locally validated within its Worker Pool/rate-limit boundary. Linux and macOS native validation remains future-version work and is non-blocking for the current release. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist. Exact clean-HEAD promotion and authorized target-site acceptance remain later gates.
+The clean committed Windows 11 x64 Phase 13 gate and Phase 14 revalidation both pass. Phase 15 is implemented and validated within its declared proxy boundary; Phase 16 is implemented and locally validated within its Worker Pool/rate-limit boundary; Phase 17 is implemented and locally validated within its explicit-asset, scheduler-bound downloader boundary. Linux and macOS native validation remains future-version work and is non-blocking for the current release. Product Phase 9 remains a separate prerequisite for full discovery/crawl behavior; Product Phase 10 must not be marked complete until that prerequisite and its evidence exist. Production HTTP/Browser adapter wiring, exact clean-HEAD promotion, and authorized target-site acceptance remain later gates.

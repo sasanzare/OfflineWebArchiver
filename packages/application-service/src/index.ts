@@ -102,6 +102,8 @@ import {
   type SiteProfileDraft,
 } from "@offline-web-archive/scope-engine";
 
+export * from "./asset-downloader.js";
+
 export type LocalTransport = "cli" | "electron-ipc";
 
 export interface TransportContext {

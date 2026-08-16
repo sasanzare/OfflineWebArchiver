@@ -102,6 +102,11 @@
     { "id": "OKF-REL-099", "name": "Phase 16 Worker Pool policy is evidenced by Core and SQLite validation", "status": "VERIFIED", "sourceId": "OKF-NODE-P16-SCHEDULER", "targetId": "OKF-EV-P16-PERSISTENCE", "type": "evidenced-by" },
     { "id": "OKF-REL-100", "name": "Phase 16 affinity and anti-evasion policy is evidenced by security review", "status": "VERIFIED", "sourceId": "OKF-NODE-P16-AFFINITY", "targetId": "OKF-EV-P16-SECURITY", "type": "evidenced-by" },
     { "id": "OKF-REL-101", "name": "Phase 16 Browser Runtime boundary is evidenced by the browser suite", "status": "VERIFIED", "sourceId": "OKF-NODE-P16-BROWSER", "targetId": "OKF-EV-P16-BROWSER", "type": "evidenced-by" },
-    { "id": "OKF-REL-102", "name": "Phase 16 depends on Phase 15 proxy eligibility and the existing trust zones", "status": "VERIFIED", "sourceId": "OKF-PHASE-016", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" }
+    { "id": "OKF-REL-102", "name": "Phase 16 depends on Phase 15 proxy eligibility and the existing trust zones", "status": "VERIFIED", "sourceId": "OKF-PHASE-016", "targetId": "OKF-NODE-P13-TRUST", "type": "depends-on" },
+    { "id": "OKF-REL-103", "name": "Phase 17 record is evidenced by the implementation report", "status": "VERIFIED", "sourceId": "OKF-PHASE-017", "targetId": "OKF-EV-P17-DOCS", "type": "evidenced-by" },
+    { "id": "OKF-REL-104", "name": "Phase 17 downloader is evidenced by Core and deterministic fixtures", "status": "VERIFIED", "sourceId": "OKF-NODE-P17-DOWNLOADER", "targetId": "OKF-EV-P17-DOMAIN", "type": "evidenced-by" },
+    { "id": "OKF-REL-105", "name": "Phase 17 persistence is evidenced by migration and concurrency tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P17-STORAGE", "targetId": "OKF-EV-P17-PERSISTENCE", "type": "evidenced-by" },
+    { "id": "OKF-REL-106", "name": "Phase 17 path policy is evidenced by security and filesystem tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P17-PATH", "targetId": "OKF-EV-P17-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-107", "name": "Phase 17 depends on Phase 16 scheduler and affinity boundaries", "status": "VERIFIED", "sourceId": "OKF-PHASE-017", "targetId": "OKF-PHASE-016", "type": "depends-on" }
   ]
 }

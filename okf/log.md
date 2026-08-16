@@ -117,3 +117,17 @@ bundle. It is not a copy of Git history or a task diary.
 - Added the Phase 16 implementation report, ADR, security review, validation
   concept, and explicit non-goals for discovery, downloading, rewriting, API
   capture/replay, and target-site acceptance.
+
+### Phase 17 knowledge update
+
+- Added the explicit-descriptor Asset Downloader boundary with separate URL
+  source identity, SHA-256 content identity, many-to-many Page↔Asset
+  provenance, scheduler/proxy/session integration, and a Persistence-owned
+  filesystem capability port.
+- Recorded SQLite schema 12 and migration 012 for Asset sources, content,
+  relations, validators, progress, and fenced ownership. Added canonical
+  partial/object/lock path knowledge, atomic promotion, symlink-ancestor
+  rejection, and deterministic Range-resume recovery evidence.
+- Added the Phase 17 history, architecture, recovery, security, testing, and
+  data Concepts. Discovery, production adapter wiring, rewriting, replay, and
+  target-site evidence remain explicitly outside this phase.

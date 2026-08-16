@@ -13,16 +13,19 @@ This section supersedes the historical Phase 14 checkpoint retained below.
 Offline Web Archive Builder is a local authorized archiving monorepo. Product
 Phase 13 architecture/security hardening and Product Phase 14 OTP Flow/Element
 Picker remain complete on the accepted native Windows 11 x64 baseline. Product
-Phase 15 Proxy Manager and Health Monitor remains implemented within its
-declared boundary. Product Phase 16 Worker Pool and Rate-Limit Compliance is
-implemented and locally validated within its declared boundary; exact clean
-HEAD release promotion is not claimed for the current uncommitted worktree.
+Phase 15 Proxy Manager and Health Monitor and Product Phase 16 Worker Pool and
+Rate-Limit Compliance remain implemented within their declared boundaries.
+Product Phase 17 Asset Downloader, Deduplication, and Path Safety is
+implemented and locally validated within its explicit-descriptor and injected
+network boundary.
 
 ## Current Objective
 
-Implement and validate Product Phase 16 Worker Pool and Rate-Limit Compliance
-while preserving the Phase 13/14 promotion baseline and Phase 15 proxy,
-Secret Store, and Session-affinity boundaries.
+Maintain and validate Product Phase 17 Asset Downloader, Deduplication, and
+Path Safety while preserving the Phase 13/14 promotion baseline and the Phase
+15/16 proxy, Secret Store, Session-affinity, scheduler, and lease/fencing
+boundaries. Complete remaining broad gates only where they are in scope; do not
+claim Phase 9 discovery or target-site/rewrite/replay behavior.
 
 ## Current Phase or Milestone
 
@@ -30,19 +33,23 @@ Secret Store, and Session-affinity boundaries.
 - Phase 14: COMPLETE
 - Phase 15: COMPLETE within declared boundary
 - Phase 16: IMPLEMENTED/VALIDATED within declared boundary
+- Phase 17: IMPLEMENTED/VALIDATED within explicit-descriptor and injected-network boundary
 
 ## Repository State
 
 - Repository path: `D:\All projects\OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `e1f562e` (`docs(phase15): record final evidence checkpoint`)
-- Current HEAD at task start: `e1f562e`
+- Base or starting commit: `1e5636e3ebcc685bf5c42d2626603d3de566eee9` (`feat(phase16): complete worker pool and rate-limit compliance`)
+- Current HEAD at task start: `1e5636e3ebcc685bf5c42d2626603d3de566eee9`
+- Ending HEAD: `1e5636e3ebcc685bf5c42d2626603d3de566eee9` (unchanged; no commit was created)
 - Phase 15 implementation commit: `1fa68547f4a42b28f3bce0c4e8b0c81dfdc029fe`
 - Final Phase 15 evidence HEAD: recorded exactly in
   `.artifacts/phase15-evidence/final-native-windows-11-x64/summary.json`
-- Working tree at task start: unstaged Phase 16 source/test changes and new
-  scheduler files; no staged changes; no unrelated changes observed.
-- Current working tree remains intentionally uncommitted; staged changes: none.
+- Working tree at Phase 17 start: clean; no staged, unstaged, or untracked
+  source changes observed.
+- Current worktree contains only the uncommitted Phase 17 implementation,
+  tests, documentation, OKF, and HANDOFF changes listed below; no files are
+  staged. Phase 16 remains the unchanged starting HEAD.
 
 ## Completed Work
 
@@ -73,33 +80,46 @@ Secret Store, and Session-affinity boundaries.
   lifecycle coverage.
 - Synchronized Phase 16 architecture, security review, report, ADR, acceptance,
   traceability, risks, canonical OKF concepts, and extension registries.
+- Implemented Archive Core Asset identity, URL redaction, supported asset types,
+  deterministic source/content/partial/lock paths, Content-Range parsing, and
+  validator-gated resume decisions.
+- Added SQLite schema 12 and forward-only migration `012_add_asset_downloader`
+  for Asset contents, sources, Page↔Asset relations, validators, progress,
+  claims, fencing, and safe provenance metadata.
+- Implemented the scheduler-bound Application Service Asset Downloader with
+  streaming writes, bounded size/hash verification, redirects and reauth,
+  Range/200/416 handling, durable Recovery checkpoints, content locks, atomic
+  promotion, deduplication, and stale-owner rejection.
+- Moved filesystem operations behind Core `AssetFileStorePort` and implemented
+  the stream/symlink/lock/atomic adapter in Persistence so architecture checks
+  continue to pass.
+- Added seven deterministic Phase 17 tests for identity, persistence,
+  deduplication, Page↔Asset relations, Range recovery, concurrency, and path
+  safety; synchronized project reports, ADR, acceptance, architecture/security
+  docs, canonical OKF v0.2 Concepts, extension registries, and README.
 
 ## Work in Progress
 
-No Phase 16 implementation work remains within the declared boundary. Focused
-Core validation has passed `15/15`, persistence validation has passed `25/25`,
-and Browser Runtime/Chromium validation has passed `12/12` after updating the
-lifecycle assertion for concurrent isolated Contexts. Full regression and all
-final quality/documentation/security gates have now passed; exact clean-HEAD
-release promotion remains intentionally unclaimed because the worktree is
-uncommitted.
+Phase 17 implementation and focused validation are complete. The production
+network adapter is intentionally still injected through `AssetNetworkPort`; no
+direct fetch or server was added. The full regression and all applicable Phase
+17 quality, security, documentation, migration, and OKF gates are complete.
 
 ## Remaining Work
 
-Phase 9 remains an independent discovery prerequisite for the earlier Phase
-10/11 completion line. Exact clean-HEAD release promotion for the new Phase 16
-work is not claimed because the worktree is uncommitted; this is a repository
-state limitation, not a scheduler test failure. Authorized target-site
-multi-proxy capture, long-running saturation, discovery, downloader, rewrite,
-and replay remain later boundaries.
+Phase 9 remains an independent discovery prerequisite; Phase 17 consumes
+explicit asset descriptors and does not claim automatic full-site discovery.
+Production HTTP/Browser adapter wiring, authorized target-site capture,
+long-running saturation, HTML/CSS rewriting, replay, and clean-HEAD promotion
+remain outside the validated focused boundary.
 
 ## Exact Next Steps
 
-Before any Phase 16 release promotion, preserve the accepted Phase 13/14/15
-evidence and the current Phase 16 source changes, rerun the final broad
-validation commands listed below on the intended clean source, and only then
-decide whether a clean commit and a Phase 16 release evidence bundle are
-desired. Do not reset, clean, or discard the current uncommitted changes.
+Run and record the remaining full/regression gates that are appropriate for the
+Review the unstaged Phase 17 diff. If the implementation is accepted, the user
+may create the next commit; until then preserve the current Phase 16 baseline,
+do not commit, reset, clean, push, or change branches, and retain the explicit
+adapter/discovery limitations.
 
 ## Files Created
 
@@ -110,8 +130,25 @@ Phase 16 created `packages/archive-core/src/scheduler.ts`,
 `docs/architecture/PHASE_16_SECURITY_REVIEW.md`,
 `docs/project/PHASE_16_IMPLEMENTATION_REPORT.md`,
 `docs/project/adr/ADR-059-worker-pool-and-rate-limit-compliance.md`, and the
-Phase 16 canonical/extension OKF concepts and records. Phase 15 inventory
-remains in the prior committed implementation and evidence.
+Phase 16 canonical/extension OKF concepts and records. Phase 17 additionally
+created:
+
+- `packages/archive-core/src/assets.ts`
+- `packages/application-service/src/asset-downloader.ts`
+- `packages/persistence-sqlite/src/assets.ts`
+- `packages/persistence-sqlite/src/asset-files.ts`
+- `tests/unit/assets.test.ts`
+- `tests/integration/asset-download.test.ts`
+- `tests/integration/asset-path-safety.test.ts`
+- `tests/concurrency/asset-concurrency.test.ts`
+- `docs/project/PHASE_17_IMPLEMENTATION_REPORT.md`
+- `docs/architecture/ASSET_DOWNLOADER.md`
+- `docs/architecture/PHASE_17_SECURITY_REVIEW.md`
+- `docs/project/adr/ADR-060-asset-storage-and-downloader-boundary.md`
+- Phase 17 canonical/extension OKF Concepts, history, evidence, and registry
+  records.
+
+Phase 15 inventory remains in the prior committed implementation and evidence.
 
 ## Files Modified
 
@@ -120,6 +157,11 @@ and network policy, SQLite adapter/migrations, Project format schema assertions,
 Browser Runtime/persistence tests, test runner mappings, README, Phase Plan,
 Acceptance Matrix, traceability, risk register, architecture/security/contract
 docs, canonical and extension OKF indexes/registries/log, and this HANDOFF.
+Phase 17 modified `package.json`, the Archive Core/Application Service/
+Persistence/Project Format boundaries, migration and schema assertions, the
+test runner, README, Phase Plan, Acceptance Matrix, canonical-path and partial-
+file architecture records, Project decisions, OKF indexes/Concepts/log, OKF
+extension README/registries, and this HANDOFF.
 
 ## Important Architecture and Design Decisions
 
@@ -137,61 +179,81 @@ docs, canonical and extension OKF indexes/registries/log, and this HANDOFF.
 - Configured proxy routing is fail-closed. Authenticated Session affinity is
   preserved by the scheduler, shared Origin cooldown cannot be bypassed by
   proxy selection, and direct mode rejects proxy-bound Jobs.
+- Phase 17 keeps Project format `1.1.0` and transport `1.11.0`, advances SQLite
+  and Project schema assertions to `12`, and adds immutable migration
+  `012_add_asset_downloader`.
+- Asset source identity and content identity are separate. Meaningful query
+  parameters remain in the canonical URL identity; sensitive values are
+  redacted. SHA-256 of verified persisted bytes selects the deduplicated
+  content object, while source rows preserve provenance and Page↔Asset
+  relations.
+- Application Service has no filesystem primitive imports for Asset work.
+  `AssetFileStorePort` is defined in Core and implemented by Persistence, which
+  owns trusted-root resolution, streaming file handles, locks, symlink checks,
+  and atomic promotion.
+- Every Asset outbound request is a scheduler executor with Origin budget,
+  response observation, proxy/session affinity, redirect reauthorization, and
+  no direct fallback. Explicit descriptors are required; Phase 9 discovery is
+  not implemented or claimed.
 - Phone/OTP values remain ephemeral and absent from durable/evidence outputs.
 
 ## Commands Executed
 
 The official Phase 13/14/15 evidence records remain available and were not
-overwritten. Phase 16 commands executed include `npm test`,
-`npm run test:unit`, `npm run test:integration`, `npm run test:concurrency`,
-`node tools/testing/run-tests.mjs package:archive-core`,
-`node tools/testing/run-tests.mjs package:persistence-sqlite`,
-`node tools/testing/run-tests.mjs package:browser-runtime`,
-`npm run test:secret-leakage`, `npm run typecheck`, `npm run build`, lint,
-format, architecture, contracts, migrations, project-format, security, docs,
-OKF, browser verification, and `git diff --check`.
+overwritten. Phase 17 executed `npm run test:phase17`, the full `npm test`
+regression, `npm run test:secret-leakage`, `npm run typecheck`,
+`npm run build`, `npm run lint`, `npm run format:check`,
+`npm run test:architecture`, `npm run contracts:check`,
+`npm run migrations:validate`, `npm run project-format:validate`,
+`npm run security:check`, `npm run docs:validate`,
+`npm run okf:validate:conformance`, `npm run okf:validate`, `npm run test:okf`,
+and `git diff --check`. The generated TypeScript/build cache was cleaned only
+through the repository-owned `npm run clean` targets after an ACL-related
+compiler cache failure; no source or user data was removed.
 
 ## Validation and Test Results
 
-- Full regression: `195/195 PASS`.
-- Unit: `83/83 PASS`; integration: `30/30 PASS`; concurrency: `6/6 PASS`.
-- Phase 16 Core focused suite: `15/15 PASS`.
-- Phase 16 SQLite/persistence focused suite: `25/25 PASS` after updating the
-  legacy teardown to drop the schema 11 scheduler table.
-- Browser Runtime/Chromium suite: `12/12 PASS`; this includes concurrent
-  isolated Context lifecycle and restart refusal while active.
-- Secret Store leakage suite: `12/12 PASS`; browser provisioning verification:
+- Full regression: `202/202 PASS`, `0 failed`, `0 skipped`.
+- Phase 17 focused suite: `7/7 PASS`.
+- Secret Store/secret-leakage suite: `12/12 PASS`.
+- OKF validator tests: `43/43 PASS`.
+- Typecheck, build, lint, format, architecture, contracts, migrations,
+  Project format, security, docs, OKF conformance, and OKF policy validation:
   `PASS`.
-- Typecheck/build/lint/format/architecture/contracts/migrations/project-format/
-  security/docs/OKF: `PASS`; `git diff --check`: `PASS`.
-- Post-final documentation revalidation: `docs:validate` and `okf:validate` both
-  passed after the last documentation cleanup.
-- An earlier focused Core run exposed a test-only fake-sleep starvation issue;
-  the test was corrected to use a real asynchronous wait for in-flight
-  concurrency and then passed. No production failure remained from that issue.
+- Architecture validation covered 121 production TypeScript files; migration
+  validation covered 12 immutable migrations at schema 12; documentation
+  validation covered 158 required artifacts, 469 active relative links, and 98
+  readable archived Markdown files.
+- `git diff --check`: `PASS`, with only normal LF-to-CRLF working-copy warnings.
+- The final downloader hardening also passed Phase 17 focused tests, typecheck,
+  and lint: redirect URLs are redacted before being returned to callers.
 
 ## Known Issues and Blockers
 
-The sandboxed esbuild/Chromium subprocess restriction requires elevated
-execution for some build/test commands; the initial sandbox attempts for
-`test:secret-leakage` and `browser:verify` returned `EPERM`, then both passed
-with the necessary execution permission. Deferred Linux/macOS native evidence,
-the independent missing Phase 9 discovery engine, exact clean-HEAD promotion,
-and authorized target-site all-path evidence remain known scope limitations.
+The normal sandboxed esbuild/Chromium subprocess restriction requires elevated
+execution for some build/test commands; the recorded commands passed with the
+necessary execution permission. The working tree is intentionally uncommitted,
+so clean-HEAD release promotion is not claimed. Deferred Linux/macOS native
+evidence, the independent missing Phase 9 discovery engine, production
+HTTP/Browser adapter integration, and authorized target-site all-path evidence
+remain scope limitations.
 
 ## Risks and Assumptions
 
 Future promoted commits must rerun the same clean-source native evidence gates;
-the accepted Phase 13/14/15 bundles prove only their recorded Git HEAD. A Phase
-16 release bundle must additionally bind scheduler, cooldown, persistence, and
-Browser Runtime evidence to one clean unchanged HEAD.
+the accepted Phase 13/14/15 bundles prove only their recorded Git HEAD. A later
+Phase 17 release bundle must additionally bind Asset, scheduler, persistence,
+path-safety, and network-adapter evidence to one clean unchanged HEAD.
 
 ## Database or Migration State
 
-SQLite schema `11` is implemented with forward-only migrations `010_add_proxies`
-and `011_add_scheduler_state`; the `proxies` table contains no raw credential
-columns and `origin_rate_limits` contains only safe cooldown metadata. Project
-format schema is `11`; transport contract is `1.11.0`.
+SQLite schema is `12` with forward-only migrations `010_add_proxies`,
+`011_add_scheduler_state`, and `012_add_asset_downloader`. The `proxies` table
+contains no raw credential columns, `origin_rate_limits` contains only safe
+cooldown metadata, and Asset tables contain source/content/provenance,
+validators, progress, claims, and hashes but no credentials or response
+payloads. Project format remains `1.1.0`, Project schema is `12`, and transport
+contract remains `1.11.0`.
 
 ## Configuration and Environment Notes
 
@@ -201,15 +263,16 @@ Node `v24.17.0`; npm `11.17.0`; Playwright `1.56.1`; official Chromium
 
 ## Uncommitted or Partially Applied Changes
 
-Phase 16 source, tests, and documentation remain uncommitted and intentionally
-preserved. No destructive rollback, branch change, push, reset, rebase, or
-amend has occurred.
+Phase 17 source, tests, documentation, OKF records, and this HANDOFF remain
+uncommitted and intentionally preserved. No branch change, push, reset, rebase,
+amend, or history rewrite has occurred; no files are staged.
 
 ## Recovery or Rollback Notes
 
 No push, force-push, reset, rebase, or history rewrite occurred. Generated
-evidence is ignored under `.artifacts/`; source rollback should use ordinary
-forward Git commits rather than destructive cleanup.
+evidence is ignored under `.artifacts/`; only owned generated build/cache paths
+were cleaned during validation. Source rollback should use ordinary forward
+Git commits rather than destructive cleanup.
 
 ## Related Documentation
 
@@ -230,14 +293,22 @@ forward Git commits rather than destructive cleanup.
 - `docs/architecture/PHASE_16_SECURITY_REVIEW.md`
 - `docs/project/adr/ADR-059-worker-pool-and-rate-limit-compliance.md`
 - `okf/history/phase-16.md`
+- `docs/project/PHASE_17_IMPLEMENTATION_REPORT.md`
+- `docs/architecture/ASSET_DOWNLOADER.md`
+- `docs/architecture/PHASE_17_SECURITY_REVIEW.md`
+- `docs/project/adr/ADR-060-asset-storage-and-downloader-boundary.md`
+- `okf/history/phase-17.md`
 
 ## Notes for the Next Agent
 
-The Phase 15 evidence summary and validator bind to their accepted clean HEAD;
-the current Phase 16 worktree is intentionally dirty because this task must
-not commit. Preserve the Phase 16 scheduler boundary: no direct fallback for
-proxy-bound work, no alternate-proxy cooldown bypass, no secret/payload state in
-SQLite, and no claim of discovery/downloader/replay/target-site completion.
+The Phase 16 source and documentation are committed at the Phase 17 starting
+HEAD. Preserve its scheduler boundary: no direct fallback for proxy-bound
+work, no alternate-proxy cooldown bypass, no secret/payload state in SQLite,
+and no claim of discovery, replay, or target-site completion. Phase 17 is
+implemented and validated, but the final tree is intentionally uncommitted.
+Review the exact diff and run the existing clean-source evidence/promotion
+procedure only after an authorized commit exists; do not begin Phase 18 or 19
+work in this handoff.
 
 ## Historical Handoff (superseded)
 

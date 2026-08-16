@@ -660,6 +660,79 @@ CREATE INDEX origin_rate_limits_due
 ON origin_rate_limits(project_id, run_id, cooldown_until, origin);
 `;
 
+const ADD_ASSET_DOWNLOADER_SQL = `
+CREATE TABLE asset_contents (
+  content_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  sha256 TEXT NOT NULL CHECK (length(sha256) = 64),
+  byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+  storage_relative_path TEXT NOT NULL CHECK (length(storage_relative_path) BETWEEN 1 AND 2048),
+  content_type TEXT,
+  created_at TEXT NOT NULL,
+  verified_at TEXT,
+  UNIQUE (project_id, sha256),
+  UNIQUE (project_id, storage_relative_path)
+) STRICT;
+
+CREATE TABLE asset_sources (
+  asset_source_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  project_revision_id TEXT NOT NULL REFERENCES project_revisions(revision_id) ON DELETE RESTRICT,
+  page_job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  original_url TEXT NOT NULL CHECK (length(original_url) BETWEEN 1 AND 8192),
+  normalized_url TEXT NOT NULL CHECK (length(normalized_url) BETWEEN 1 AND 8192),
+  identity_hash TEXT NOT NULL CHECK (length(identity_hash) = 64),
+  asset_type TEXT NOT NULL CHECK (asset_type IN ('css', 'javascript', 'image', 'svg', 'font', 'audio', 'video', 'json', 'manifest', 'favicon', 'binary')),
+  source_relative_path TEXT NOT NULL CHECK (length(source_relative_path) BETWEEN 1 AND 2048),
+  state TEXT NOT NULL CHECK (state IN ('pending', 'downloading', 'interrupted', 'completed', 'failed')),
+  status_code INTEGER CHECK (status_code IS NULL OR status_code BETWEEN 100 AND 599),
+  content_type TEXT,
+  byte_length INTEGER CHECK (byte_length IS NULL OR byte_length >= 0),
+  sha256 TEXT CHECK (sha256 IS NULL OR length(sha256) = 64),
+  content_id TEXT REFERENCES asset_contents(content_id) ON DELETE RESTRICT,
+  storage_relative_path TEXT CHECK (storage_relative_path IS NULL OR length(storage_relative_path) BETWEEN 1 AND 2048),
+  etag TEXT,
+  last_modified TEXT,
+  validator TEXT,
+  expected_bytes INTEGER CHECK (expected_bytes IS NULL OR expected_bytes >= 0),
+  resume_offset INTEGER NOT NULL DEFAULT 0 CHECK (resume_offset >= 0),
+  partial_relative_path TEXT CHECK (partial_relative_path IS NULL OR length(partial_relative_path) BETWEEN 1 AND 2048),
+  redirect_chain_json TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(redirect_chain_json)),
+  claim_job_id TEXT REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  claimed_by TEXT,
+  fencing_generation INTEGER NOT NULL DEFAULT 0 CHECK (fencing_generation >= 0),
+  error_code TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  completed_at TEXT,
+  UNIQUE (project_id, run_id, normalized_url),
+  UNIQUE (project_id, source_relative_path)
+) STRICT;
+
+CREATE TABLE page_asset_relations (
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  page_job_id TEXT NOT NULL REFERENCES page_jobs(job_id) ON DELETE RESTRICT,
+  asset_source_id TEXT NOT NULL REFERENCES asset_sources(asset_source_id) ON DELETE RESTRICT,
+  relation_kind TEXT NOT NULL CHECK (length(relation_kind) BETWEEN 1 AND 120),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (project_id, run_id, page_job_id, asset_source_id, relation_kind)
+) STRICT;
+
+CREATE INDEX asset_sources_run_state
+ON asset_sources(project_id, run_id, state, updated_at, asset_source_id);
+
+CREATE INDEX asset_sources_claim
+ON asset_sources(project_id, run_id, claim_job_id, fencing_generation, state);
+
+CREATE INDEX page_asset_relations_page
+ON page_asset_relations(project_id, run_id, page_job_id, created_at, asset_source_id);
+
+CREATE INDEX page_asset_relations_source
+ON page_asset_relations(project_id, run_id, asset_source_id, page_job_id);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -676,6 +749,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "009_add_crawl_run_state", sequence: 9, sql: ADD_CRAWL_RUN_STATE_SQL, checksum: checksum(ADD_CRAWL_RUN_STATE_SQL) }),
   Object.freeze({ id: "010_add_proxies", sequence: 10, sql: ADD_PROXIES_SQL, checksum: checksum(ADD_PROXIES_SQL) }),
   Object.freeze({ id: "011_add_scheduler_state", sequence: 11, sql: ADD_SCHEDULER_STATE_SQL, checksum: checksum(ADD_SCHEDULER_STATE_SQL) }),
+  Object.freeze({ id: "012_add_asset_downloader", sequence: 12, sql: ADD_ASSET_DOWNLOADER_SQL, checksum: checksum(ADD_ASSET_DOWNLOADER_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

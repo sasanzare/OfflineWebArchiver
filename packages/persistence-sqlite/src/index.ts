@@ -11,6 +11,8 @@ import {
   RenderOperationError,
   SessionOperationError,
   ProxyOperationError,
+  type AssetRepositoryPort,
+  type AssetFileStorePort,
   createSessionMetadata,
   assertSessionMetadata,
   assertSessionProjectOwnership,
@@ -60,7 +62,7 @@ import {
   serializeProjectManifest,
   type ProjectManifest,
 } from "@offline-web-archive/project-format";
-import { atomicPromoteDirectory, atomicWriteFile, assertNotSymlink, pathExists, resolveProjectRelativePath } from "./atomic.js";
+import { atomicPromoteDirectory, atomicPromoteFile, atomicWriteFile, assertNotSymlink, ensureDirectoryPath, ensureProjectRelativeDirectory, pathExists, resolveProjectRelativePath } from "./atomic.js";
 import {
   createProjectArchive,
   DEFAULT_ARCHIVE_LIMITS,
@@ -75,6 +77,8 @@ import { createSqliteRenderRepository } from "./render.js";
 import { createSqliteInteractionRepository } from "./interaction.js";
 import { createSqliteProxyRepository } from "./proxy.js";
 import { createSqliteSchedulerRepository } from "./scheduler.js";
+import { createSqliteAssetRepository } from "./assets.js";
+import { createSqliteAssetFileStore } from "./asset-files.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -84,7 +88,7 @@ import {
   validateMigrationDefinitions,
 } from "./migrations.js";
 
-export { atomicPromoteDirectory, atomicWriteFile, assertNoSymlinkInPath, assertNotSymlink, pathExists, resolveProjectRelativePath } from "./atomic.js";
+export { atomicPromoteDirectory, atomicPromoteFile, atomicWriteFile, assertNoSymlinkInPath, assertNotSymlink, ensureDirectoryPath, ensureProjectRelativeDirectory, pathExists, resolveProjectRelativePath } from "./atomic.js";
 export { createProjectArchive, DEFAULT_ARCHIVE_LIMITS, exportPathIsAllowed, extractAndVerifyProjectArchive, inspectZipArchive, sha256 } from "./archive.js";
 export { acquireProjectLock } from "./locking.js";
 export { createSqliteQueueRepository, type SqliteQueueRepositoryOptions } from "./queue.js";
@@ -93,6 +97,8 @@ export { createSqliteRenderRepository, type SqliteRenderRepositoryOptions } from
 export { createSqliteInteractionRepository, type SqliteInteractionRepositoryOptions } from "./interaction.js";
 export { createSqliteProxyRepository, type SqliteProxyRepositoryOptions } from "./proxy.js";
 export { createSqliteSchedulerRepository, type SqliteSchedulerRepositoryOptions, originRateLimitStateFromSnapshot } from "./scheduler.js";
+export { createSqliteAssetRepository, type SqliteAssetRepositoryOptions } from "./assets.js";
+export { createSqliteAssetFileStore } from "./asset-files.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -207,7 +213,7 @@ const BROWSER_SESSION_SELECT = `
   FROM browser_sessions
 `;
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort & SchedulerStateRepositoryPort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort & SchedulerStateRepositoryPort & AssetRepositoryPort & AssetFileStorePort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -593,6 +599,7 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const now = options.now ?? (() => new Date().toISOString());
   const id = options.id ?? randomUUID;
   const archiveLimits = options.archiveLimits ?? DEFAULT_ARCHIVE_LIMITS;
+  const assetFileStore = createSqliteAssetFileStore();
   let current: CurrentProject | null = null;
 
   const log = (eventName: string, projectId: string, metadata: Readonly<Record<string, unknown>> = {}): void => {
@@ -643,6 +650,11 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const schedulerForCurrent = (): SchedulerStateRepositoryPort => {
     if (current === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "Open the selected Project before using scheduler state");
     return createSqliteSchedulerRepository(current.database, { now });
+  };
+
+  const assetForCurrent = (): AssetRepositoryPort => {
+    if (current === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "Open the selected Project before using Assets");
+    return createSqliteAssetRepository(current.database, { now, id });
   };
 
   const sessionForCurrent = (): SessionRepositoryPort => {
@@ -849,6 +861,7 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   };
 
   return Object.freeze({
+    ...assetFileStore,
     async create(input) {
       const destination = path.resolve(input.destinationPath);
       const parent = path.dirname(destination);
@@ -1440,6 +1453,46 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async listOriginRateLimits(input) {
       return schedulerForCurrent().listOriginRateLimits(input);
+    },
+
+    async ensureAssetSource(input) {
+      return assetForCurrent().ensureAssetSource(input);
+    },
+
+    async getAssetSource(input) {
+      return assetForCurrent().getAssetSource(input);
+    },
+
+    async beginAssetDownload(input) {
+      return assetForCurrent().beginAssetDownload(input);
+    },
+
+    async assertAssetFinalizationOwnership(input) {
+      return assetForCurrent().assertAssetFinalizationOwnership(input);
+    },
+
+    async saveAssetProgress(input) {
+      return assetForCurrent().saveAssetProgress(input);
+    },
+
+    async finalizeAssetDownload(input) {
+      return assetForCurrent().finalizeAssetDownload(input);
+    },
+
+    async markAssetInterrupted(input) {
+      return assetForCurrent().markAssetInterrupted(input);
+    },
+
+    async getAssetContent(input) {
+      return assetForCurrent().getAssetContent(input);
+    },
+
+    async listPageAssets(input) {
+      return assetForCurrent().listPageAssets(input);
+    },
+
+    async listAssetPages(input) {
+      return assetForCurrent().listAssetPages(input);
     },
 
     async getCompatibility(projectPath) {

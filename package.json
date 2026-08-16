@@ -22,6 +22,7 @@
     "test:concurrency": "node tools/testing/run-tests.mjs concurrency",
     "test:process-kill": "node tools/testing/run-tests.mjs process-kill",
     "test:recovery": "node tools/testing/run-tests.mjs recovery",
+    "test:phase17": "node tools/testing/run-tests.mjs phase17",
     "test:browser": "node tools/testing/run-tests.mjs browser",
     "test:rendering": "node tools/testing/run-tests.mjs rendering",
     "test:architecture": "node tools/architecture/validate.mjs",

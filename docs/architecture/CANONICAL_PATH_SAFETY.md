@@ -9,6 +9,7 @@ and a case-folded collision key.
 
 Persistence additionally checks the resolved path and existing ancestors for
 symbolic links before writing or verifying a completed output. ZIP import,
-Project Format, Recovery, and future Downloader/Rewriter/Runtime code must use
-the helper rather than local mapping rules.
+Project Format, Recovery, and the Phase 17 Asset File Store delegate to the
+helper rather than local mapping rules. Future Rewriter/Runtime code must use
+the same boundary.
 

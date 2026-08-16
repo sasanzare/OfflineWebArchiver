@@ -8,7 +8,7 @@ import {
 
 export const PROJECT_FORMAT_NAME = "offline-web-archive-project" as const;
 export const PROJECT_FORMAT_VERSION = "1.1.0" as const;
-export const PROJECT_SCHEMA_VERSION = 11 as const;
+export const PROJECT_SCHEMA_VERSION = 12 as const;
 export const MINIMUM_APPLICATION_VERSION = "0.8.0" as const;
 export const PROJECT_MANIFEST_FILE = "project.json" as const;
 export const PROJECT_DATABASE_PATH = "database/crawl.db" as const;

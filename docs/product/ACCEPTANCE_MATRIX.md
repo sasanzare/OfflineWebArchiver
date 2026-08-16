@@ -588,6 +588,34 @@ Phase 16 is implemented and locally validated within these rows. Exact clean
 HEAD release promotion and authorized target-site all-path capture remain later
 gates and must not be inferred from focused fixture evidence.
 
+### Product Phase 17 execution acceptance
+
+These rows reconcile the current explicit-asset Phase 17 boundary. `PASS` is
+local implementation and deterministic fixture evidence for the stated
+capability; it does not claim Phase 9 discovery, a live target-site run, a
+production HTTP/Browser adapter, rewriting, replay, or clean-HEAD promotion.
+
+| ID | Requirement IDs | Area | Verification | Evidence | Criticality | Status |
+|---|---|---|---|---|---|---|
+| AC-P17-001 | FR-ASSET-001, FR-ASSET-002 | Explicit Asset descriptor and supported types | Create descriptors for CSS, JavaScript, image, SVG, font, audio, video, JSON, manifest, favicon, and binary inputs | `packages/archive-core/src/assets.ts`; `tests/unit/assets.test.ts` | Critical | PASS |
+| AC-P17-002 | FR-SCOPE-001, FR-ASSET-001 | URL/source identity | Preserve meaningful query parameters, strip fragments, reject credentials, and redact sensitive query values | Core identity tests and SQLite source persistence | Critical | PASS |
+| AC-P17-003 | FR-ASSET-001, FR-ASSET-002 | Content identity and deduplication | Different source URLs return identical bytes | `tests/integration/asset-download.test.ts` | Critical | PASS |
+| AC-P17-004 | FR-ASSET-001 | Page↔Asset provenance | Relate one Asset source to multiple Page Jobs without duplicating content | Asset concurrency/integration tests | High | PASS |
+| AC-P17-005 | FR-PROJECT-004, NFR-PORT-002 | Canonical storage paths | Generate source, object, partial, and lock paths through the shared canonical mapper | `tests/unit/assets.test.ts`; Project format validation | Critical | PASS |
+| AC-P17-006 | FR-PROJECT-004, NFR-SEC-003 | Filesystem escape and symlink safety | Reject root escape, symlink targets, and symlink ancestors for temp and final paths | `tests/integration/asset-path-safety.test.ts` | Critical | PASS |
+| AC-P17-007 | FR-RECOVERY-001, FR-QUEUE-003 | Lease, fencing, and concurrency | A second active owner is rejected and stale/incomplete output cannot finalize | `tests/concurrency/asset-concurrency.test.ts`; Asset SQLite repository | Critical | PASS |
+| AC-P17-008 | FR-ASSET-002 | HTTP Range resume | Interrupt a durable partial and append only a compatible `206` response at the stored offset | `tests/integration/asset-download.test.ts` | Critical | PASS |
+| AC-P17-009 | FR-ASSET-002 | Safe restart semantics | Restart on `200`, incompatible `Content-Range`, changed validator, and bounded `416` behavior | Core resume policy and downloader implementation | Critical | PASS |
+| AC-P17-010 | FR-RATE-001, FR-PROXY-003, NFR-SEC-003 | Scheduler/proxy/session integration | Acquire Origin budget, observe responses, preserve affinity, and avoid direct fallback | Phase 16 scheduler ports and downloader integration fixture | Critical | PASS |
+| AC-P17-011 | FR-RECOVERY-001, FR-ASSET-002, NFR-REL-002 | Crash/recovery checkpointing | Persist bounded progress and completed output descriptors before declaring completion | Downloader, Recovery adapter, and focused fixture | Critical | PASS |
+| AC-P17-012 | FR-ASSET-002, NFR-REL-002 | Final integrity and atomic promotion | Enforce size ceiling, stream SHA-256, verify regular final bytes, and finalize SQLite after promotion | Downloader/File Store implementation and integration fixture | Critical | PASS |
+| AC-P17-013 | FR-PROJECT-002, FR-PROJECT-003 | SQLite/project schema evolution | Apply forward-only migration 012 and expose Project schema 12 while retaining Project format 1.1.0 and transport 1.11.0 | migration and Project format validators; persistence tests | Critical | PASS |
+| AC-P17-014 | NFR-TEST-001, NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Validation and knowledge reconciliation | Run focused Phase 17 tests and synchronize report, ADR, architecture, security, OKF, and HANDOFF | `npm run test:phase17`; docs/OKF validators; HANDOFF | High | PASS |
+
+Phase 17 is implemented and locally validated within these rows. Phase 9
+discovery, live authorized target-site capture, production network-adapter
+wiring, rewrite, replay, and release promotion remain separate gates.
+
 ### Phase 12 reconciliation for Phase 13 closure
 
 | Acceptance ID | Reconciled status | Phase 13 basis |
