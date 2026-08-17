@@ -1,20 +1,21 @@
 # 25-Phase Plan
 
-## Current phase position — 2026-08-16
+## Current phase position — 2026-08-17
 
-Product Phases 13 and 14 are complete on the accepted clean committed Windows 11 x64 baseline. Phase 15 Proxy Manager and Health Monitor is implemented within its declared boundary with contract `1.11.0` and SQLite schema `10`; its exact clean-HEAD result is recorded by the Phase 15 evidence bundle. Product Phase 16 Worker Pool and rate-limit scheduling is implemented within its declared boundary with SQLite schema `11`; local focused evidence is recorded in the Phase 16 report. Product Phase 17 Asset Downloader, Deduplication, and Path Safety is implemented within its explicit-descriptor and injected-network boundary with SQLite schema `12`; focused evidence is recorded in the Phase 17 report. Product Phase 18 HTML Rewriter, Route Map, and Dependency Map is implemented and validated within its deterministic transformation, explicit mapping, and atomic derived-output boundary; focused evidence is recorded in the Phase 18 report. The independent Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 discovery-related completion remains conditional.
+Product Phases 13 and 14 are complete on the accepted clean committed Windows 11 x64 baseline. Phase 15 Proxy Manager and Health Monitor is implemented within its declared boundary with contract `1.11.0` and SQLite schema `10`; its exact clean-HEAD result is recorded by the Phase 15 evidence bundle. Product Phase 16 Worker Pool and rate-limit scheduling is implemented within its declared boundary with SQLite schema `11`; local focused evidence is recorded in the Phase 16 report. Product Phase 17 Asset Downloader, Deduplication, and Path Safety is implemented within its explicit-descriptor and injected-network boundary with SQLite schema `12`; focused evidence is recorded in the Phase 17 report. Product Phase 18 HTML Rewriter, Route Map, and Dependency Map is implemented and validated within its deterministic transformation, explicit mapping, and atomic derived-output boundary; focused evidence is recorded in the Phase 18 report. Product Phase 19 API Capture, Network Replay, and Isolated Local Runtime is implemented and locally validated within its selective GET, strict-offline, map-bounded, and preview-isolation boundary; focused evidence is recorded in the Phase 19 report. The independent Phase 9 Discovery Engine prerequisite is absent, so Phase 10/11 discovery-related completion remains conditional.
 
 **Document status:** Proposed baseline
 **Owner:** Product Owner
-**Current product status:** **Phase 9 remains the open discovery prerequisite; Phase 10 partial; Phase 11 conditional; Phase 13 complete; Phase 14 complete; Phase 15 implemented/validated; Phase 16 implemented/validated within its declared boundary; Phase 17 implemented/validated within its declared boundary; Phase 18 implemented/validated within its declared boundary**
-**Last updated:** 2026-08-16
+**Current product status:** **Phase 9 remains the open discovery prerequisite; Phase 10 partial; Phase 11 conditional; Phase 13 complete; Phase 14 complete; Phases 15–18 implemented/validated within declared boundaries; Phase 19 implemented/validated within its declared boundary; Phase 20 not started**
+**Last updated:** 2026-08-17
 
 This is the authoritative concise delivery sequence. The attached Product Phase 11
 specification adds a cross-cutting Secret Store foundation before later
 authentication/session work; this repository records that implementation without
-claiming the missing Phase 9/10 gate. The older Local Runtime Server row remains a
-planned feature whose final placement must be reconciled by the Product Owner
-before it is treated as a replacement for the Phase 11 security foundation.
+claiming the missing Phase 9/10 gate. The older Local Runtime Server row remains
+historical planning context; the current user-directed Phase 19 record is
+authoritative for the implemented map-bounded runtime boundary and does not
+replace the Phase 11 security foundation.
 A future detailed proposal
 may expand it but must link here or explicitly supersede a row; no detailed
 proposal exists in the Phase 1 repository. Every gate also requires the
@@ -34,10 +35,10 @@ delivers the proxy inventory, health, connectivity, Secret Store, and Session
 affinity boundary. The current user-directed Phase 16 adds Worker Pool and
 rate-limit scheduling; the legacy table is retained as historical planning
 context and is not silently rewritten. This change does not implement
-discovery, production downloader wiring, API capture/replay, runtime serving, or
-Service Worker runtime behavior. Phase 18 now provides deterministic rewrite and
-map generation over explicit stored mappings; the later runtime/replay boundary
-remains separate.
+discovery, production target-site acceptance, or Phase 20 hardening/reporting.
+Phase 18 provides deterministic rewrite and map generation over explicit stored
+mappings; Phase 19 now consumes those maps for selective replay and isolated
+runtime serving.
 
 ### Current user-directed phase mapping
 
@@ -50,6 +51,7 @@ current task sequence, the user-directed mapping is authoritative:
 | 16 | Worker Pool and Rate-Limit Compliance | Implemented/validated within declared boundary | [Phase 16 report](PHASE_16_IMPLEMENTATION_REPORT.md) |
 | 17 | Asset Downloader, Deduplication, and Path Safety | Implemented/validated within explicit-descriptor and injected-network boundary | [Phase 17 report](PHASE_17_IMPLEMENTATION_REPORT.md) |
 | 18 | HTML Rewriter, Route Map, and Dependency Map | Implemented/validated within deterministic transformation, explicit mapping, and atomic derived-output boundary | [Phase 18 report](PHASE_18_IMPLEMENTATION_REPORT.md) |
+| 19 | API Capture, Network Replay, and Isolated Local Runtime | Implemented/validated within selective GET capture, strict-offline replay, map-bounded loopback serving, and untrusted-preview isolation | [Phase 19 report](PHASE_19_IMPLEMENTATION_REPORT.md) |
 
 > **OKF maintenance is a continuous Definition of Done requirement, not a
 > separate product feature phase.**

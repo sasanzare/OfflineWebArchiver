@@ -733,6 +733,55 @@ CREATE INDEX page_asset_relations_source
 ON page_asset_relations(project_id, run_id, asset_source_id, page_job_id);
 `;
 
+const ADD_NETWORK_REPLAY_SQL = `
+CREATE TABLE replay_snapshots (
+  snapshot_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  project_revision_id TEXT NOT NULL REFERENCES project_revisions(revision_id) ON DELETE RESTRICT,
+  capture_version INTEGER NOT NULL CHECK (capture_version = 1),
+  method TEXT NOT NULL CHECK (method = 'GET'),
+  original_url TEXT NOT NULL CHECK (length(original_url) BETWEEN 1 AND 8192),
+  normalized_url TEXT NOT NULL CHECK (length(normalized_url) BETWEEN 1 AND 8192),
+  request_headers_json TEXT NOT NULL CHECK (json_valid(request_headers_json)),
+  request_identity_key TEXT NOT NULL CHECK (length(request_identity_key) BETWEEN 1 AND 32768),
+  status INTEGER NOT NULL CHECK (status BETWEEN 100 AND 599),
+  content_type TEXT NOT NULL CHECK (length(content_type) BETWEEN 1 AND 512),
+  response_headers_json TEXT NOT NULL CHECK (json_valid(response_headers_json)),
+  body_sha256 TEXT NOT NULL CHECK (length(body_sha256) = 64),
+  body_bytes INTEGER NOT NULL CHECK (body_bytes >= 0),
+  body_relative_path TEXT NOT NULL CHECK (length(body_relative_path) BETWEEN 1 AND 2048),
+  captured_at TEXT NOT NULL,
+  page_id TEXT,
+  worker_id TEXT,
+  state TEXT NOT NULL CHECK (state IN ('complete', 'rejected', 'incomplete')),
+  UNIQUE (project_id, run_id, project_revision_id, request_identity_key, body_sha256)
+) STRICT;
+
+CREATE INDEX replay_snapshots_lookup
+ON replay_snapshots(project_id, run_id, project_revision_id, request_identity_key, state, captured_at, snapshot_id);
+
+CREATE TABLE replay_runtime_events (
+  event_id TEXT PRIMARY KEY NOT NULL,
+  project_id TEXT NOT NULL REFERENCES project_metadata(project_id) ON DELETE RESTRICT,
+  run_id TEXT NOT NULL REFERENCES runs(run_id) ON DELETE RESTRICT,
+  project_revision_id TEXT NOT NULL REFERENCES project_revisions(revision_id) ON DELETE RESTRICT,
+  event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 80),
+  method TEXT NOT NULL CHECK (length(method) BETWEEN 1 AND 16),
+  safe_url TEXT NOT NULL CHECK (length(safe_url) BETWEEN 1 AND 2048),
+  normalized_identity TEXT CHECK (normalized_identity IS NULL OR length(normalized_identity) BETWEEN 1 AND 32768),
+  resource_type TEXT CHECK (resource_type IS NULL OR length(resource_type) BETWEEN 1 AND 80),
+  initiating_page TEXT CHECK (initiating_page IS NULL OR length(initiating_page) BETWEEN 1 AND 2048),
+  reason TEXT NOT NULL CHECK (length(reason) BETWEEN 1 AND 160),
+  match_state TEXT NOT NULL CHECK (length(match_state) BETWEEN 1 AND 80),
+  strict_offline INTEGER NOT NULL CHECK (strict_offline IN (0, 1)),
+  occurred_at TEXT NOT NULL
+) STRICT;
+
+CREATE INDEX replay_runtime_events_scope
+ON replay_runtime_events(project_id, run_id, project_revision_id, occurred_at, event_id);
+`;
+
 function checksum(sql: string): string {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
@@ -750,6 +799,7 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
   Object.freeze({ id: "010_add_proxies", sequence: 10, sql: ADD_PROXIES_SQL, checksum: checksum(ADD_PROXIES_SQL) }),
   Object.freeze({ id: "011_add_scheduler_state", sequence: 11, sql: ADD_SCHEDULER_STATE_SQL, checksum: checksum(ADD_SCHEDULER_STATE_SQL) }),
   Object.freeze({ id: "012_add_asset_downloader", sequence: 12, sql: ADD_ASSET_DOWNLOADER_SQL, checksum: checksum(ADD_ASSET_DOWNLOADER_SQL) }),
+  Object.freeze({ id: "013_add_network_replay", sequence: 13, sql: ADD_NETWORK_REPLAY_SQL, checksum: checksum(ADD_NETWORK_REPLAY_SQL) }),
 ]);
 
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS.length;

@@ -30,7 +30,7 @@ owa:
 Project format 1.1.0 remains compatible with 1.0.0 and provides a portable
 `profile/config.json` plus the declared `crawlQueue` feature. Queue, Lease,
 Checkpoint, Recovery, Render, scheduler, proxy, and Asset rows now live in
-SQLite schema 12. Migration 012 adds the Asset source/content/relation ledgers
+SQLite schema 13. Migration 012 adds the Asset source/content/relation ledgers
 without changing the Project format or transport contract versions. Final
 content objects and partial files use fixed canonical Project-relative paths.
 

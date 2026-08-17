@@ -595,7 +595,9 @@ const profileDraftFields = {
   redirectPolicy: z.object({ allowApprovedExternal: z.boolean(), allowHttpsDowngrade: z.boolean() }).strict(),
   canonicalPolicy: z.object({ external: z.enum(["ignore", "reject"]) }).strict(),
   networkPolicy: z.object({ allowedIpClasses: z.array(z.enum(["public", "loopback", "private", "link-local", "multicast", "reserved", "unspecified"])).max(7) }).strict(),
-  serviceWorkerPolicy: z.object({ version: z.literal(1), mode: z.enum(["block", "allow"]) }).strict().default({ version: 1, mode: "block" }),
+  serviceWorkerPolicy: z.object({ version: z.literal(1), mode: z.enum(["block", "allow", "profile-specific"]), profileMode: z.enum(["block", "allow"]).optional() }).strict().superRefine((value, context) => {
+    if (value.mode === "profile-specific" && value.profileMode === undefined) context.addIssue({ code: "custom", message: "Profile-specific Service Worker policy requires profileMode" });
+  }).default({ version: 1, mode: "block" }),
   loginFlow: LoginFlowContractSchema.nullable().optional(),
   limits: z.object({ maxDepth: z.number().int().nonnegative().max(1_000).nullable(), maxPages: z.number().int().nonnegative().max(10_000_000).nullable(), maxRedirects: z.number().int().nonnegative().max(20), maxBatchSize: z.number().int().positive().max(500) }).strict(),
 };

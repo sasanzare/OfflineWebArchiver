@@ -33,5 +33,14 @@ Phase 18 evidence (OKF-EV-P18-*) covers deterministic stored-content HTML/CSS
 rewriting, original Page/Asset mapping, Route Map and External Dependency Map
 generation, base/canonical/special-scheme behavior, collision/path safety,
 security review, separate atomic rewritten output, and documentation. It does
-not claim Network Replay, Strict Offline runtime, Local Runtime serving,
-Service Worker runtime enforcement, or target-site evidence.
+not claim target-site evidence.
+
+Phase 19 evidence (OKF-EV-P19-*) covers the selective GET capture policy,
+deterministic project/run/revision replay identity, redacted headers and
+sensitive-query/body filtering, SQLite replay snapshots and atomic response
+bodies, Browser Runtime Context/CDP interception, exact mapped loopback Local
+Runtime serving, Strict Offline fail-closed behavior, explicit Service Worker
+policy resolution, security review, and focused unit/integration/browser
+validation. It does not claim production Application Service preview
+orchestration, authorized target-site evidence, cross-platform evidence, or
+Phase 20 behavior.

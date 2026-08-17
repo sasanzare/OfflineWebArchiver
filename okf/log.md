@@ -144,3 +144,11 @@ bundle. It is not a copy of Git history or a task diary.
 - Added the separate atomic rewritten-v1.html artifact concept and confirmed
   that SQLite schema 12, Project format 1.1.0, and transport contract 1.11.0
   do not require a migration for these regenerable derived outputs.
+
+### Phase 19 knowledge update
+
+- Added the selective API Capture/Network Replay contracts, SQLite schema 13
+  replay metadata/body boundary, exact-origin Local Runtime, explicit Service
+  Worker profile resolution, and untrusted-preview security records.
+- Added Phase 19 architecture/data/testing concepts, history, and navigation;
+  focused local validation passed 7/7 tests on 2026-08-17.

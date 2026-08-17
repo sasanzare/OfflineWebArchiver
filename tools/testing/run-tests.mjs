@@ -4,7 +4,7 @@ import path from "node:path";
 import { repositoryRoot, runTypeScriptBuild } from "../build/typescript.mjs";
 
 const suite = process.argv[2] ?? "all";
-const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "phase17", "phase18", "browser", "rendering", "electron", "cli", "secrets", "okf"]);
+const suites = new Set(["all", "unit", "integration", "concurrency", "process-kill", "recovery", "phase17", "phase18", "phase19", "browser", "rendering", "electron", "cli", "secrets", "okf"]);
 const recoveryTests = [
   "unit/recovery.test.js",
   "integration/recovery-lifecycle.test.js",
@@ -18,6 +18,7 @@ const browserTests = [
   "browser/session.test.js",
   "browser/otp-flow.test.js",
   "browser/service-worker-policy.test.js",
+  "browser/network-replay.test.js",
   "process-kill/browser-process-kill.test.js",
 ];
 const renderingTests = [
@@ -35,6 +36,13 @@ const phase17Tests = [
 const phase18Tests = [
   "unit/rewrite.test.js",
   "integration/rewrite-persistence.test.js",
+];
+const phase19Tests = [
+  "unit/network-replay.test.js",
+  "integration/replay-persistence.test.js",
+  "integration/local-runtime.test.js",
+  "browser/service-worker-policy.test.js",
+  "browser/network-replay.test.js",
 ];
 const packageTests = new Map([
   ["package:contracts", ["unit/contracts.test.js"]],
@@ -87,6 +95,8 @@ const selected = suite === "all"
     ? phase17Tests.map((name) => path.join(testRoot, name))
   : suite === "phase18"
     ? phase18Tests.map((name) => path.join(testRoot, name))
+  : suite === "phase19"
+    ? phase19Tests.map((name) => path.join(testRoot, name))
   : packageTests.has(suite)
     ? packageTests.get(suite).map((name) => path.join(testRoot, name))
     : await collect(path.join(testRoot, suite));

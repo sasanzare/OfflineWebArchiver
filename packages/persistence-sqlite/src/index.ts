@@ -36,6 +36,7 @@ import {
   type RenderRepositoryPort,
   type ProxyRepositoryPort,
   type SchedulerStateRepositoryPort,
+  type ReplaySnapshotRepositoryPort,
 } from "@offline-web-archive/archive-core";
 import {
   normalizeSiteProfileDraft,
@@ -80,6 +81,7 @@ import { createSqliteProxyRepository } from "./proxy.js";
 import { createSqliteSchedulerRepository } from "./scheduler.js";
 import { createSqliteAssetRepository } from "./assets.js";
 import { createSqliteAssetFileStore } from "./asset-files.js";
+import { createSqliteReplayRepository } from "./replay.js";
 import {
   applyPendingMigrations,
   configureDatabase,
@@ -100,6 +102,7 @@ export { createSqliteProxyRepository, type SqliteProxyRepositoryOptions } from "
 export { createSqliteSchedulerRepository, type SqliteSchedulerRepositoryOptions, originRateLimitStateFromSnapshot } from "./scheduler.js";
 export { createSqliteAssetRepository, type SqliteAssetRepositoryOptions } from "./assets.js";
 export { createSqliteAssetFileStore } from "./asset-files.js";
+export { createSqliteReplayRepository, type SqliteReplayRepositoryOptions } from "./replay.js";
 export {
   applyPendingMigrations,
   configureDatabase,
@@ -214,7 +217,7 @@ const BROWSER_SESSION_SELECT = `
   FROM browser_sessions
 `;
 
-export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort & SchedulerStateRepositoryPort & AssetRepositoryPort & AssetFileStorePort;
+export type SqliteProjectStorage = ProjectStoragePort & ProfileStoragePort & QueueRepositoryPort & RecoveryRepositoryPort & RenderRepositoryPort & InteractionProfileRepositoryPort & InteractionTraceRepositoryPort & SessionRepositoryPort & ProxyRepositoryPort & SchedulerStateRepositoryPort & AssetRepositoryPort & AssetFileStorePort & ReplaySnapshotRepositoryPort;
 
 export interface SqliteProjectStorageOptions {
   applicationVersion: string;
@@ -656,6 +659,11 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
   const assetForCurrent = (): AssetRepositoryPort => {
     if (current === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "Open the selected Project before using Assets");
     return createSqliteAssetRepository(current.database, { now, id });
+  };
+
+  const replayForCurrent = (): ReplaySnapshotRepositoryPort => {
+    if (current === null) throw new ProjectOperationError("PROJECT_NOT_OPEN", "Open the selected Project before using replay snapshots");
+    return createSqliteReplayRepository(current.database, { projectRoot: current.root, now, id });
   };
 
   const sessionForCurrent = (): SessionRepositoryPort => {
@@ -1494,6 +1502,26 @@ export function createSqliteProjectStorage(options: SqliteProjectStorageOptions)
 
     async listAssetPages(input) {
       return assetForCurrent().listAssetPages(input);
+    },
+
+    async capture(input) {
+      return replayForCurrent().capture(input);
+    },
+
+    async lookup(input) {
+      return replayForCurrent().lookup(input);
+    },
+
+    async readBody(input) {
+      return replayForCurrent().readBody(input);
+    },
+
+    async recordRuntimeEvent(input) {
+      return replayForCurrent().recordRuntimeEvent(input);
+    },
+
+    async listRuntimeEvents(input) {
+      return replayForCurrent().listRuntimeEvents(input);
     },
 
     async getCompatibility(projectPath) {

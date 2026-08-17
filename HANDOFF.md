@@ -3,29 +3,37 @@
 ## Authoritative Remediation Handoff
 
 This section supersedes the historical Phase 14 checkpoint retained below and
-records the Phase 18 implementation state.
+records the Phase 19 implementation state. Older phase inventories below are
+historical unless explicitly marked current.
 
 ## Last Updated
 
-2026-08-16
+2026-08-17
 
 ## Project Summary
 
 Offline Web Archive Builder is a local authorized archiving monorepo. Product
 Phases 13 and 14 remain complete on the accepted native Windows 11 x64
-baseline. Product Phases 15, 16, and 17 remain implemented and validated
-within their declared boundaries. Product Phase 18 adds deterministic
-stored-content HTML/CSS rewriting, Route Map, Original Resource Map, External
-Dependency Map, and a separate atomic derived HTML artifact.
+baseline. Product Phases 15 through 18 remain implemented and validated within
+their declared boundaries. Product Phase 18 adds deterministic stored-content
+HTML/CSS rewriting, Route Map, Original Resource Map, External Dependency Map,
+and a separate atomic derived HTML artifact. Product Phase 19 supplies
+selective API capture, deterministic replay, Strict Offline enforcement, and an
+isolated non-privileged Local Runtime within its declared boundary.
+
+Phase 19 implementation is now present within its declared boundary: selective
+GET capture, scoped replay snapshots, BrowserContext/CDP replay enforcement,
+Strict Offline miss handling, explicit Service Worker modes, and a map-bounded
+loopback Local Runtime. Focused Phase 19, real Chromium, full regression, and
+documentation/security gates pass within the local declared boundary.
 
 ## Current Objective
 
-Complete and preserve Product Phase 18 within the deterministic transformation,
-explicit stored-mapping, and atomic derived-output boundary while preserving
-the Phase 13/14 promotion baseline and the Phase 15/16/17 proxy, scheduler,
-lease/fencing, Asset, and canonical-path boundaries. Do not claim Phase 9
-discovery, production target-site capture, Phase 19 replay/runtime behavior,
-or Phase 20 validation/reporting.
+Record and hand off Product Phase 19 — API Capture, Network Replay, and
+Isolated Local Runtime — after implementation and validation, while preserving
+the Phase 13/14 promotion baseline and the Phase 15/16/17/18 proxy, scheduler,
+lease/fencing, Asset, canonical-path, and deterministic-map boundaries. Do not
+implement Phase 20 validation/reporting or later release work.
 
 ## Current Phase or Milestone
 
@@ -35,26 +43,28 @@ or Phase 20 validation/reporting.
 - Phase 16: IMPLEMENTED/VALIDATED within declared boundary
 - Phase 17: IMPLEMENTED/VALIDATED within explicit-descriptor and injected-network boundary
 - Phase 18: IMPLEMENTED/VALIDATED within deterministic rewrite/map and atomic derived-output boundary
+- Phase 19: IMPLEMENTED/VALIDATED within declared boundary; no clean-HEAD
+  promotion claim
 
 ## Repository State
 
 - Repository path: `D:\All projects\OfflineWebArchiver`
 - Current branch: `main`
-- Base or starting commit: `8b32ae3d80e246061d54824f8d122fa97fa63ece` (Phase 17 implementation commit)
-- Current HEAD at task start: `8b32ae3d80e246061d54824f8d122fa97fa63ece`
-- Ending HEAD: `8b32ae3d80e246061d54824f8d122fa97fa63ece` (unchanged; no commit was created)
+- Base or starting commit: `c52426811a6f3a58e735863e47e21e353c16c391` (Phase 18 implementation commit)
+- Current HEAD at task start: `c52426811a6f3a58e735863e47e21e353c16c391`
+- Ending HEAD: `c52426811a6f3a58e735863e47e21e353c16c391`; no Phase 19 commit was
+  created in this task
 - Phase 15 implementation commit: `1fa68547f4a42b28f3bce0c4e8b0c81dfdc029fe`
 - Final Phase 15 evidence HEAD: recorded exactly in
   `.artifacts/phase15-evidence/final-native-windows-11-x64/summary.json`
-- Working tree at Phase 18 start: clean; no staged, unstaged, or untracked
-  source changes observed.
-- Current worktree contains the uncommitted Phase 18 implementation, tests,
-  documentation, OKF, acceptance/risk/decision updates, and this HANDOFF.
+- Working tree at Phase 19 start: clean; it now contains the uncommitted
+  Phase 19 source, tests, documentation, OKF, and validation changes listed
+  below.
 - Staged changes: none.
-- Unstaged changes: all Phase 18 files listed below; no unrelated user changes
-  were observed.
-- Untracked files: new Phase 18 source, fixtures, tests, architecture/project
-  documents, and canonical OKF Concepts listed below.
+- Unstaged changes: Phase 19 source, tests, documentation, OKF, and validator
+  updates.
+- Untracked files: new Phase 19 source, tests, reports, ADRs, architecture
+  documents, and canonical OKF concepts.
 
 ## Completed Work
 
@@ -114,29 +124,42 @@ or Phase 20 validation/reporting.
 - Added Phase 18 fixtures, 9 focused tests, the Phase 18 report/architecture/
   security review/ADR, acceptance and risk reconciliation, canonical OKF
   Concepts/registries, and synchronized README/Phase Plan.
+- Implemented Phase 19 selective JSON/GET capture policy, secret-safe
+  deterministic replay identity, content-addressed atomic response bodies,
+  SQLite schema 13 migration 013, scoped replay lookup/runtime events, and
+  BrowserContext plus CDP Fetch fulfill/abort enforcement.
+- Implemented Strict Offline fail-closed misses, exact assigned loopback-origin
+  Local Runtime serving for Route/Original Resource maps, SPA entry fallback,
+  path/symlink safety, explicit Service Worker block/allow/profile-specific
+  policy, and replay evidence/leakage events.
+- Added Phase 19 unit, SQLite integration, Local Runtime integration, browser
+  replay, architecture/security/doc/OKF records, acceptance/traceability/risk/
+  decision updates, and the focused test-runner gate.
+- Fixed a backward-compatibility issue by emitting replay evidence fields only
+  when Replay is enabled; normal legacy Render evidence retains its prior shape.
 
 ## Work in Progress
 
-Phase 18 implementation and focused validation are complete. The rewriter is
-pure and consumes explicit mappings; it does not fetch unresolved resources or
-execute archived content. The full regression and all applicable Phase 18
-quality, security, documentation, migration, and OKF gates are complete.
+Phase 19 preflight, implementation, and validation are complete within the
+declared boundary. The repository started and ended at committed Phase 18 HEAD
+`c524268...`; current SQLite schema is 13, Project format remains 1.1.0,
+transport remains 1.11.0, and Playwright remains 1.56.1. Focused Phase 19 is
+7/7, real Chromium rendering is 9/9, Browser Runtime is 13/13, Electron is
+1/1, and full regression is 217/217. No commit has been created.
 
 ## Remaining Work
 
 Phase 9 remains an independent discovery prerequisite; Phase 17 consumes
-explicit Asset descriptors and Phase 18 consumes completed mappings. Production
-HTTP/Browser adapter wiring, authorized target-site capture, long-running
-saturation, Network Replay, Strict Offline runtime, Local Runtime serving,
-Service Worker runtime enforcement, Phase 20 validation/reporting, and
-clean-HEAD promotion remain outside this boundary.
+explicit Asset descriptors and Phase 18 consumes completed mappings. No
+in-scope implementation or validation remains. Production Application Service
+preview orchestration, target-site all-path capture, cross-platform native
+evidence, and Phase 20 remain outside this task.
 
 ## Exact Next Steps
 
-Review the unstaged Phase 18 diff and, if accepted, create the next authorized
-commit. Then the next product task is Phase 19 — API Capture, Network Replay &
-Isolated Local Runtime. Preserve the current branch and do not commit, reset,
-clean, push, or change branches in this task.
+Review the final uncommitted Phase 19 diff and, in a separately authorized
+workflow, create the normal forward commit and promotion evidence. Do not
+commit, reset, clean, push, stash, rebase, or change branches in this task.
 
 ## Files Created
 
@@ -175,6 +198,24 @@ created:
 - `docs/project/PHASE_18_IMPLEMENTATION_REPORT.md`
 - `docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md`
 - Phase 18 canonical OKF Concepts, history, evidence, and registry records.
+- `packages/archive-core/src/runtime.ts`
+- `packages/browser-runtime/src/network-replay.ts`
+- `packages/browser-runtime/src/local-runtime.ts`
+- `packages/persistence-sqlite/src/replay.ts`
+- `tests/unit/network-replay.test.ts`
+- `tests/integration/replay-persistence.test.ts`
+- `tests/integration/local-runtime.test.ts`
+- `tests/browser/network-replay.test.ts`
+- `docs/architecture/LOCAL_RUNTIME.md`
+- `docs/architecture/PHASE_19_SECURITY_REVIEW.md`
+- `docs/project/PHASE_19_IMPLEMENTATION_REPORT.md`
+- `docs/project/adr/ADR-062-api-capture-replay-and-isolated-runtime.md`
+- `okf/architecture/local-runtime.md`
+- `okf/data/replay-snapshots.md`
+- `okf/testing/phase-19-validation.md`
+- `okf/history/phase-19.md`
+- Phase 19 canonical/extension OKF concepts, history, evidence, and registry
+  records.
 
 Phase 15 inventory remains in the prior committed implementation and evidence.
 
@@ -195,6 +236,12 @@ the test runner, README, Phase Plan, Acceptance Matrix, Risk Register, Open
 Decisions, Project Format and architecture/security records, Phase 18 tests and
 fixtures, canonical OKF Concepts/log/indexes, extension registries/reports, the
 shared mistakes log, and this HANDOFF.
+Phase 19 modified the Archive Core/Application Service/Browser Runtime/
+Persistence/Contracts/Project Format/Scope boundaries, SQLite migrations and
+schema assertions, test runner and validation tools, README, Phase Plan,
+Acceptance Matrix, traceability, Risk Register, Open Decisions, architecture/
+security/report/ADR records, Phase 19 tests, canonical/extension OKF records,
+the shared mistakes log, and this HANDOFF.
 
 ## Important Architecture and Design Decisions
 
@@ -240,43 +287,65 @@ shared mistakes log, and this HANDOFF.
   original rendered.html. No SQLite, Project Format, or transport version
   changed; maps and HTML are regenerable derived outputs.
 - Phone/OTP values remain ephemeral and absent from durable/evidence outputs.
+- Phase 19 captures only policy-approved GET JSON responses. Mutating methods,
+  sensitive URLs/bodies, unsafe response headers, oversized bodies, and
+  non-replayable statuses are rejected without durable payload persistence.
+- Replay identity is scoped by Project, Run, Project Revision, method,
+  normalized URL, and selected safe request headers. Response bodies are
+  content-addressed by SHA-256 and written atomically under the Project root;
+  SQLite stores only verified metadata and relative body paths.
+- Replay enforcement uses BrowserContext routing together with the same CDP
+  Fetch.requestPaused interception used by the Browser Runtime. Strict Offline
+  aborts unknown external requests; the exact assigned loopback origin is the
+  only Local Runtime exception.
+- The Local Runtime serves only explicitly mapped Route/Original Resource
+  paths (including the declared SPA entry fallback), binds to 127.0.0.1 on an
+  ephemeral port, and has no privileged IPC or preload surface.
+- SQLite schema is now 13 through immutable migration `013_add_network_replay`;
+  Project schema is 13 while Project Format remains 1.1.0 and transport remains
+  1.11.0.
 
 ## Commands Executed
 
 The official Phase 13/14/15 evidence records remain available and were not
-overwritten. Phase 18 executed `npm run test:phase18`, `npm run test:unit`,
-`npm run test:integration`, `npm run test:concurrency`,
-`npm run test:recovery`, `npm run test:phase17`, and the full
-`npm test` regression. It also executed `npm run typecheck`,
-`npm run build`, `npm run lint`, `npm run format:check`,
-`npm run test:architecture`, `npm run contracts:check`,
+overwritten. Phase 19 executed `npm test`, `npm run test:phase19`,
+`npm run test:browser`, `npm run test:electron`, `npm run test:phase18`,
+`npm run test:phase17`, `npm run test:unit`, `npm run test:integration`,
+`npm run test:rendering`, `npm run test:concurrency`, `npm run test:recovery`,
+`npm run test:process-kill`, `npm run typecheck`, `npm run build`, `npm run lint`,
+`npm run format:check`, `npm run test:architecture`, `npm run contracts:check`,
 `npm run migrations:validate`, `npm run project-format:validate`,
-`npm run security:check`, `npm run docs:validate`,
-`npm run okf:validate`, `npm run okf:validate:conformance`,
-`npm run test:secrets`, `npm run test:secret-leakage`, JSON registry
-parsing, and `git diff --check`. The two secret commands were rerun
-serially after an intentional parallel-runner attempt hit the shared
-`.build-tests` directory race; the serial results passed.
+`npm run security:check`, `npm run docs:validate`, `npm run okf:validate`,
+`npm run okf:validate:conformance`, `npm run test:okf`, `npm run test:secrets`,
+and `npm run test:secret-leakage`. The test commands requiring esbuild or real
+Chromium were run serially with the managed Windows escalation after the
+sandbox reported `spawn EPERM`; serial results are the authoritative results.
+The shared `.build-tests` directory is not safe for concurrent runner jobs.
 
 ## Validation and Test Results
 
-- Full regression: `211/211 PASS`, `0 failed`, `0 skipped`.
-- Phase 18 focused suite: `9/9 PASS`.
-- Unit: `94/94 PASS`; integration: `34/34 PASS`; concurrency:
-  `7/7 PASS`; recovery: `11/11 PASS`.
-- Phase 17 focused suite: `7/7 PASS`.
-- Secret Store and secret-leakage suites: `12/12 PASS` each.
+- Phase 19 focused suite: `7/7 PASS`.
+- Real Chromium rendering gate: `9/9 PASS` after preserving the legacy
+  evidence shape when Replay is disabled.
+- Full regression: `217/217 PASS`, `0 failed`, `0 cancelled`, `0 skipped`.
+- Dedicated Browser Runtime gate: `13/13 PASS`; dedicated Electron gate:
+  `1/1 PASS`.
+- Phase 18 focused suite: `9/9 PASS`; Phase 17 focused suite: `7/7 PASS`.
+- Unit suite: `97/97 PASS`; Integration: `36/36 PASS`.
+- Concurrency: `7/7 PASS`; recovery: `11/11 PASS`; process-kill: `4/4 PASS`;
+  Secret Store and secret-leakage suites: `12/12 PASS` each.
 - Typecheck, build, lint, format, architecture, contracts, migrations,
-  Project format, security, docs, OKF conformance, and OKF policy validation:
-  `PASS`.
-- Architecture validation covered 123 production TypeScript files; contracts
-  validated 67 commands plus envelopes; migration validation covered 12
-  immutable migrations at schema 12; Project Format validated 7 unsafe-path
+  Project Format, security, docs, OKF conformance, and OKF policy validation
+  have passed on the Phase 19 worktree.
+- Architecture validation covered 131 production TypeScript files; contracts
+  validated 67 commands plus envelopes; migration validation covered 13
+  immutable migrations at schema 13; Project Format validated 7 unsafe-path
   probes.
-- Documentation validation covered 158 required artifacts, 506 active relative
-  links, and 98 readable archived Markdown files. OKF official and extension
-  layers reported 0 errors, 0 warnings, and 0 info.
-- `git diff --check`: `PASS`, with only normal LF-to-CRLF working-copy warnings.
+- Documentation validation covered 158 required artifacts and 551 active
+  relative links; OKF official and extension validators passed. `git diff
+  --check` passed with only normal LF-to-CRLF working-copy warnings.
+- `npm run okf:validate` and conformance both passed with zero errors/warnings;
+  `npm run test:okf` passed `43/43`.
 
 ## Known Issues and Blockers
 
@@ -285,34 +354,41 @@ environment; the recorded final commands passed with the necessary permission.
 The working tree is intentionally uncommitted, so clean-HEAD release promotion
 is not claimed. Deferred Linux/macOS native evidence, the independent missing
 Phase 9 discovery engine, production HTTP/Browser adapter integration,
-authorized target-site all-path evidence, dynamic JavaScript URL discovery,
-Network Replay, and isolated runtime serving remain scope limitations. The
-repository test runner uses a shared .build-tests directory; runner commands
-must be invoked serially.
+authorized target-site all-path evidence, dynamic JavaScript URL discovery, and
+production Application Service preview orchestration remain scope limitations.
+Phase 19 Replay and Local Runtime are implemented only within the explicit
+fixture/map-bounded boundary; Phase 20 validation/reporting is not started.
+The repository test runner uses a shared .build-tests directory; runner
+commands must be invoked serially.
 
 ## Risks and Assumptions
 
 Future promoted commits must rerun the same clean-source native evidence gates;
 the accepted Phase 13/14/15 bundles prove only their recorded Git HEAD. A later
-Phase 18 release bundle must additionally bind rewrite, map, canonical-path,
-security, and runtime handoff evidence to one clean unchanged HEAD. Risk
-records R-115 through R-118 cover false local success, base/canonical
-provenance confusion, route collisions, and bounded resource exhaustion.
+Phase 19 release bundle must additionally bind replay identity, body integrity,
+loopback-origin/path safety, and strict-offline evidence to one clean unchanged
+HEAD. Risk records R-115 through R-118 cover Phase 18 false local success,
+base/canonical provenance confusion, route collisions, and bounded resource
+exhaustion; Phase 19 risks R-119 through R-123 cover capture scope, replay
+isolation, runtime leakage, and service-worker/profile behavior.
 
 ## Database or Migration State
 
-SQLite schema is `12` with forward-only migrations `010_add_proxies`,
-`011_add_scheduler_state`, and `012_add_asset_downloader`. The `proxies` table
-contains no raw credential columns, `origin_rate_limits` contains only safe
-cooldown metadata, and Asset tables contain source/content/provenance,
-validators, progress, claims, and hashes but no credentials or response
-payloads. Project format remains `1.1.0`, Project schema is `12`, and transport
-contract remains `1.11.0`.
+SQLite schema is `13` with forward-only migrations `010_add_proxies`,
+`011_add_scheduler_state`, `012_add_asset_downloader`, and
+`013_add_network_replay`. The `proxies` table contains no raw credential
+columns, `origin_rate_limits` contains only safe cooldown metadata, Asset
+tables contain source/content/provenance, validators, progress, claims, and
+hashes, and Replay tables contain only scoped metadata plus relative
+content-addressed body paths. Project format remains `1.1.0`, Project schema is
+`13`, and transport contract remains `1.11.0`.
 
 Phase 18 adds no SQLite migration and no Project or transport schema change.
-HTML Rewrite, Route Map, External Dependency Map, and Original Resource Map
-are version 1 derived contracts; rewritten-v1.html is optional and
-regenerable from original rendered HTML and explicit mappings.
+Phase 19 migration 013 is immutable and forward-only; replay body files are
+written atomically under `api/responses/<sha256>.bin`. HTML Rewrite, Route Map,
+External Dependency Map, and Original Resource Map are version 1 derived
+contracts; rewritten-v1.html is optional and regenerable from original
+rendered HTML and explicit mappings.
 
 ## Configuration and Environment Notes
 
@@ -322,11 +398,11 @@ Node `v24.17.0`; npm `11.17.0`; Playwright `1.56.1`; official Chromium
 
 ## Uncommitted or Partially Applied Changes
 
-Phase 18 source, tests, documentation, OKF records, acceptance/risk/decision
-records, and this HANDOFF remain uncommitted and intentionally preserved. No
-branch change, push, reset, rebase, amend, stash, or history rewrite has
-occurred; no files are staged. Existing Phase 17 user-visible changes are
-preserved as part of the current worktree.
+Phase 19 source, tests, documentation, OKF records, acceptance/risk/decision
+records, the shared mistakes-log lesson, and this HANDOFF remain uncommitted
+and intentionally preserved. No branch change, push, reset, rebase, amend,
+stash, or history rewrite has occurred; no files are staged. Existing Phase
+17/18 user-visible changes are preserved as part of the current worktree.
 
 ## Recovery or Rollback Notes
 
@@ -364,18 +440,27 @@ Git commits rather than destructive cleanup.
 - `docs/architecture/PHASE_18_SECURITY_REVIEW.md`
 - `docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md`
 - `okf/history/phase-18.md`
+- `docs/project/PHASE_19_IMPLEMENTATION_REPORT.md`
+- `docs/architecture/NETWORK_REPLAY.md`
+- `docs/architecture/LOCAL_RUNTIME.md`
+- `docs/architecture/PHASE_19_SECURITY_REVIEW.md`
+- `docs/project/adr/ADR-062-api-capture-replay-and-isolated-runtime.md`
+- `okf/history/phase-19.md`
+- `okf/testing/phase-19-validation.md`
 
 ## Notes for the Next Agent
 
 The Phase 17 starting HEAD is commit
-8b32ae3d80e246061d54824f8d122fa97fa63ece; Phase 18 changes are intentionally
-uncommitted. Preserve the scheduler, Asset, canonical-path, and untrusted
-archive boundaries: no direct fallback for proxy-bound work, no alternate
-cooldown bypass, no secret/payload state in SQLite, no arbitrary JavaScript
-rewriting, and no claim of discovery, replay, runtime, or target-site
-completion. Review the exact diff and run the clean-source evidence/promotion
-procedure only after an authorized commit exists. The exact next product task
-is Phase 19 — API Capture, Network Replay & Isolated Local Runtime.
+8b32ae3d80e246061d54824f8d122fa97fa63ece; Phase 19 changes are intentionally
+uncommitted. Preserve the scheduler, Asset, canonical-path, replay, Local
+Runtime, and untrusted archive boundaries: no direct fallback for proxy-bound
+work, no alternate cooldown bypass, no secret/payload state in SQLite, no
+arbitrary JavaScript rewriting, and no claim of discovery, target-site
+completion, production preview orchestration, or Phase 20 completion. Review
+the exact diff and run the clean-source evidence/promotion procedure only
+after an authorized commit exists. The exact next step is review of this
+uncommitted diff, followed by an independently authorized forward commit and
+promotion evidence workflow.
 
 ## Historical Handoff (superseded)
 

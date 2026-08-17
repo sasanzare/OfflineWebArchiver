@@ -110,6 +110,9 @@
     { "id": "OD-082", "name": "Proxy Manager and Health Monitor boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-058-proxy-manager-and-health-monitor.md" },
     { "id": "OD-083", "name": "Worker Pool and shared Origin cooldown boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-059-worker-pool-and-rate-limit-compliance.md" },
     { "id": "OD-084", "name": "Asset storage and downloader boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-060-asset-storage-and-downloader-boundary.md" },
-    { "id": "OD-085", "name": "HTML Rewriter, Route Map, and Dependency Map boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md" }
+    { "id": "OD-085", "name": "HTML Rewriter, Route Map, and Dependency Map boundary", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md" },
+    { "id": "OD-086", "name": "Selective GET capture and scoped replay identity", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-062-api-capture-replay-and-isolated-runtime.md" },
+    { "id": "OD-087", "name": "SQLite replay metadata and content-addressed response bodies", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-062-api-capture-replay-and-isolated-runtime.md" },
+    { "id": "OD-088", "name": "Exact-origin Local Runtime and explicit Service Worker resolution", "status": "VERIFIED", "recordPath": "docs/project/adr/ADR-062-api-capture-replay-and-isolated-runtime.md" }
   ]
 }

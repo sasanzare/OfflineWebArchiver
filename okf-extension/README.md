@@ -23,8 +23,12 @@ versions. Product Phase 17 is indexed as `VERIFIED` within its explicit Asset
 descriptor, scheduler-bound network, durable source/content, Range-resume, and
 canonical path boundary. Product Phase 18 is indexed as VERIFIED within the
 deterministic stored-content HTML/CSS rewrite, Route Map, Original Resource Map,
-External Dependency Map, and separate atomic derived-output boundary; production
-adapter wiring, discovery, replay/runtime serving, and target-site evidence
+External Dependency Map, and separate atomic derived-output boundary. Product
+Phase 19 is indexed as PARTIAL within the selective GET API capture,
+deterministic replay identity, SQLite snapshot/body persistence, Browser Runtime
+interception, exact mapped loopback Local Runtime, Strict Offline, and explicit
+Service Worker policy boundary. Production Application Service preview
+orchestration, target-site evidence, cross-platform evidence, and Phase 20
 remain separate gates. The manifest remains
 activated at Phase 8; later phases are recorded for traceability without
 advancing the activated release.
@@ -79,3 +83,6 @@ validation and reporting may consume both layers.
 - Phase 18 architecture: `docs/architecture/HTML_REWRITER.md`
 - Phase 18 security review: `docs/architecture/PHASE_18_SECURITY_REVIEW.md`
 - Phase 18 ADR: `docs/project/adr/ADR-061-html-rewriter-route-and-dependency-maps.md`
+- Phase 19 implementation report: `docs/project/PHASE_19_IMPLEMENTATION_REPORT.md`
+- Phase 19 security review: `docs/architecture/PHASE_19_SECURITY_REVIEW.md`
+- Phase 19 ADR: `docs/project/adr/ADR-062-api-capture-replay-and-isolated-runtime.md`

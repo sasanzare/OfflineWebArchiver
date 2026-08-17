@@ -27,10 +27,11 @@ owa:
 
 # Database
 
-SQLite schema 12 adds the Project-owned Asset source/content/relation ledgers
-through forward-only migration `012_add_asset_downloader`, alongside schema 11
-scheduler state and the schema 10 `proxies` metadata ledger. Migration 011
-adds the Project/Run/Origin cooldown ledger; earlier schema history remains
+SQLite schema 13 adds the Project-owned Asset source/content/relation through
+forward-only migration `012_add_asset_downloader` and replay snapshots/events
+through `013_add_network_replay`, alongside schema 11 scheduler state and the
+schema 10 `proxies` metadata ledger. Migration 011 adds the Project/Run/Origin
+cooldown ledger; earlier schema history remains
 preserved: schema 6 covers Render Result, Event, and Failure; schema 5
 covers Lease, Checkpoint, and Recovery; schema 4 covers Queue; schema 3 covers
 Profile; and schemas 1 and 2 cover Project history.
@@ -48,7 +49,9 @@ vocabulary and is separate from legacy pause-control fields. Migration
 stores Asset source identity, redacted URL metadata, validators, bounded
 progress, fenced ownership, content-object identity, and many-to-many
 Page↔Asset relations; it stores no credentials, response bodies, or cookies.
-The [Project Format](project-format.md) and [Persistence](persistence.md)
-Concepts describe the data boundary. Discovery, rewriting, API capture/replay,
-and worker orchestration remain separate concerns. Proxy credential bytes
-remain in the Secret Store.
+Replay metadata stores only selected safe request/response descriptors and
+content hashes; response bytes remain content-addressed files under the Project
+root and are verified before fulfillment. The [Project Format](project-format.md)
+and [Persistence](persistence.md) Concepts describe the data boundary.
+Discovery, rewriting, and worker orchestration remain separate concerns. Proxy
+credential bytes remain in the Secret Store.

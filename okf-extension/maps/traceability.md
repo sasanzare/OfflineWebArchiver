@@ -23,5 +23,12 @@ Phase 18 is indexed by `OKF-PHASE-018`, `OKF-CHG-P18-001`, and the
 `OKF-NODE-P18-*` records. The Rewriter, route/dependency maps, security,
 separate Persistence artifact, and local knowledge-gate nodes map to
 `AC-P18-001` through `AC-P18-013`. The records cover the deterministic
-stored-content boundary only; Phase 19 runtime/replay and target-site evidence
-remain separate later gates.
+stored-content boundary only.
+
+Phase 19 is indexed by `OKF-PHASE-019`, `OKF-CHG-P19-001`, and the
+`OKF-NODE-P19-*` records. The replay core, persistence, Browser Runtime,
+Local Runtime, Service Worker policy, security, tests, and documentation nodes
+map to `AC-P19-001` through `AC-P19-014` and risks `R-119` through `R-123`.
+The records cover the implemented local boundary; production Application
+Service preview orchestration, target-site, cross-platform, and Phase 20
+evidence remain separate gates.

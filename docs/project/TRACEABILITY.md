@@ -258,3 +258,13 @@ applicable phase and must be reflected in `HANDOFF.md`.
 claim that the Secret Store behavior is missing. The Phase 11 implementation is
 available as a foundation while Product Phase 9 and the remaining Product Phase
 10 evidence are completed.
+
+## Product Phase 19 API Capture, Replay, and Local Runtime traceability
+
+| Capability | Acceptance | Requirements | Evidence | Risks | Decision / record |
+|---|---|---|---|---|---|
+| Scoped replay identity and selective GET capture | AC-P19-001..003 | FR-ARCHIVE-001, NFR-SEC-002, NFR-SEC-003, NFR-PRIV-001 | `packages/archive-core/src/network.ts`; `tests/unit/network-replay.test.ts` | R-119, R-120 | ADR-062; OD-086 |
+| Atomic response persistence, body integrity, and isolation | AC-P19-004..005 | FR-PROJECT-003, NFR-REL-002 | `packages/persistence-sqlite/src/replay.ts`; `tests/integration/replay-persistence.test.ts` | R-120, R-121 | ADR-062; OD-087 |
+| Browser Context/CDP strict replay and leakage events | AC-P19-006..007, AC-P19-012 | NFR-SEC-003, NFR-TEST-001 | `packages/browser-runtime/src/network-replay.ts`; `tests/browser/network-replay.test.ts`; `tests/browser/service-worker-policy.test.ts` | R-029, R-096, R-122 | ADR-062; OD-086, OD-088 |
+| Exact-origin map-bounded Local Runtime | AC-P19-008..010 | FR-ARCHIVE-002, FR-PROJECT-004, NFR-PORT-002, NFR-SEC-003 | `packages/browser-runtime/src/local-runtime.ts`; `packages/archive-core/src/runtime.ts`; `tests/integration/local-runtime.test.ts` | R-029, R-123 | ADR-062; `docs/architecture/LOCAL_RUNTIME.md` |
+| Untrusted preview isolation and phase gate | AC-P19-011, AC-P19-013..014 | NFR-SEC-003, NFR-TEST-001, NFR-KNOW-001..004 | Desktop security baseline; `npm run test:phase19`; Phase 19 report/OKF/HANDOFF | R-122, RISK-KNOW-001 | ADR-052, ADR-062 |

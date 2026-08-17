@@ -19,6 +19,7 @@ This directory contains the architecture components and cross-layer contract bou
 - [Platform Adapter](platform.md) - Normalized runtime facts and allowlisted configuration.
 - [Trust Zones and IPC](trust-zones-and-ipc.md) - Privilege zones, renderer/archive boundaries, and command authorization.
 - [Network Replay](network-replay.md) - Versioned replay key and request-decision contract.
+- [Isolated Local Runtime](local-runtime.md) - Exact-origin, map-bounded serving for untrusted archive preview.
 - [Service Worker Policy](service-worker-policy.md) - Safe-default Service Worker behavior.
 - [Canonical Path Safety](../data/canonical-path-safety.md) - Shared portable path and collision rules.
 

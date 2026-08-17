@@ -14,6 +14,7 @@ const packageRules = new Map([
   ["packages/browser-runtime/", new Set([
     "node:crypto",
     "node:fs/promises",
+    "node:http",
     "node:path",
     "playwright-core",
     "@offline-web-archive/archive-core",

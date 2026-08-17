@@ -7,6 +7,11 @@
 
 `packages/browser-runtime` is the only production package that imports Playwright. It implements the Archive Core `BrowserRuntimePort`; Desktop, CLI, Rendering, and Application Service never receive raw Playwright objects.
 
+The same package contains the non-privileged Phase 19 Local Runtime adapter. It
+is a separate loopback-only HTTP server with an exact assigned origin and
+map-bounded resource reader; it does not expose the Application Service, Project
+database, Secret Store, transport commands, or privileged preview capabilities.
+
 The Phase 10 adapter in `packages/browser-runtime/src/interaction.ts` is the only owner of `Page`, `Locator`, `Keyboard`, `Mouse`, `Dialog`, and Popup operations. Approved Interaction Plans use real `locator.focus/click/hover`, `page.mouse.move/wheel`, `page.keyboard.press/type`, Tab/Shift+Tab, and bounded waits. The adapter permits only validated target descriptors, explicit navigation/read-only classifications, bounded budgets, and read-only DOM snapshots. It does not inject JavaScript events, assign DOM values, expose handles, or enable POST-like side effects.
 
 The fixed Context profile remains resolved once per Page Job: `en-US`, `UTC`, `1280x720`, device scale factor `1`, fixed User Agent policy, and an explicit Accept-Language value. Interaction traces record only the non-sensitive context digest and redacted metadata. Phase 9 discovery references are accepted as a bounded target strategy, but no Phase 9 Discovery Engine is present in this baseline.

@@ -29,14 +29,18 @@ import {
   type PageStabilitySnapshot,
   type OtpBrowserInteraction,
   canonicalOrigin,
+  resolveServiceWorkerPolicy,
   type OriginNetworkPermit,
 } from "@offline-web-archive/archive-core";
 import { executePlaywrightInteractionPlan, type PlaywrightInteractionHandlers } from "./interaction.js";
 import { decideAuthenticationRequest } from "./authentication-policy.js";
 import { createPlaywrightAuthenticationInteraction, PlaywrightElementPicker } from "./authentication-interaction.js";
+import { createPlaywrightNetworkReplayAdapter, type PlaywrightNetworkReplayAdapter, type PlaywrightReplayCdpSession } from "./network-replay.js";
+export { createLocalRuntimeServer, type LocalRuntimeEvent, type LocalRuntimeServer, type LocalRuntimeServerOptions } from "./local-runtime.js";
 
 export { authenticationRequestMetadata, decideAuthenticationRequest } from "./authentication-policy.js";
 export { createPlaywrightAuthenticationInteraction, PlaywrightElementPicker } from "./authentication-interaction.js";
+export { createPlaywrightNetworkReplayAdapter, PlaywrightNetworkReplayAdapter } from "./network-replay.js";
 
 export const PLAYWRIGHT_VERSION = "1.56.1" as const;
 export const BROWSER_MANIFEST_VERSION = 1 as const;
@@ -168,6 +172,7 @@ class PlaywrightPageSession implements BrowserPageSession {
   private readonly pageErrors: BrowserEvidenceSnapshot["pageErrors"][number][] = [];
   private readonly failedRequests: BrowserEvidenceSnapshot["failedRequests"][number][] = [];
   private readonly redirects: BrowserEvidenceSnapshot["redirects"][number][] = [];
+  private readonly replayEvents: import("@offline-web-archive/archive-core").ReplayRuntimeEvent[] = [];
   private lastNetworkActivityAtMs = Date.now();
   private blockedRequests = 0;
   private navigationBlocked = false;
@@ -182,6 +187,7 @@ class PlaywrightPageSession implements BrowserPageSession {
   private dialogHandler: ((dialog: import("playwright-core").Dialog) => Promise<void>) | null = null;
   private popupHandler: ((popup: Page) => Promise<void>) | null = null;
   private readonly pendingInteractionHandlers = new Set<Promise<void>>();
+  private readonly replayAdapter: PlaywrightNetworkReplayAdapter | null;
 
   public constructor(
     public readonly jobId: string,
@@ -192,6 +198,13 @@ class PlaywrightPageSession implements BrowserPageSession {
     private readonly onClosed: () => void,
   ) {
     this.crashSignal = new Promise((resolve) => { this.resolveCrash = resolve; });
+    this.replayAdapter = policy.networkReplay === undefined ? null : createPlaywrightNetworkReplayAdapter({
+      ...policy.networkReplay,
+      onEvent: async (event) => {
+        this.pushBounded(this.replayEvents, event);
+        await policy.networkReplay?.onEvent?.(event);
+      },
+    });
     page.on("crash", () => {
       this.crashed = true;
       this.resolveCrash();
@@ -234,6 +247,7 @@ class PlaywrightPageSession implements BrowserPageSession {
       });
     });
     page.on("response", (response) => {
+      if (this.replayAdapter !== null && this.policy.networkReplay?.capture !== undefined) void this.replayAdapter.captureResponse(response);
       if (response.status() !== 429 && response.status() !== 503) return;
       try {
         const origin = canonicalOrigin(response.url());
@@ -320,6 +334,7 @@ class PlaywrightPageSession implements BrowserPageSession {
   }
 
   public async installRouting(): Promise<void> {
+    if (this.replayAdapter !== null) await this.context.route("**/*", async (route) => { await this.replayAdapter?.handleRoute(route); });
     const session = await this.context.newCDPSession(this.page);
     this.cdpSession = session;
     session.on("Fetch.requestPaused", (event) => {
@@ -327,6 +342,25 @@ class PlaywrightPageSession implements BrowserPageSession {
       let permit: OriginNetworkPermit | null = null;
       void (async () => {
         const method = event.request.method;
+        if (this.replayAdapter !== null) {
+          const replayOutcome = await this.replayAdapter.handleCdpRequest({
+            session: session as unknown as PlaywrightReplayCdpSession,
+            requestId: event.requestId,
+            method,
+            url: event.request.url,
+            headers: event.request.headers,
+            resourceType: event.resourceType,
+          });
+          if (replayOutcome !== "defer") {
+            if (replayOutcome === "aborted") {
+              this.blockedRequests += 1;
+              if (mainFrameNavigation) this.navigationBlocked = true;
+            } else if (mainFrameNavigation) {
+              this.navigationAuthorizationPending = false;
+            }
+            return;
+          }
+        }
         if (method !== "GET" && method !== "HEAD") {
           this.blockedRequests += 1;
           if (mainFrameNavigation) this.navigationBlocked = true;
@@ -511,7 +545,18 @@ class PlaywrightPageSession implements BrowserPageSession {
     };
   }
   public getEvidence(): BrowserEvidenceSnapshot {
-    return { consoleEntries: [...this.consoleEntries], pageErrors: [...this.pageErrors], failedRequests: [...this.failedRequests], redirects: [...this.redirects], blockedRequests: this.blockedRequests, evidenceTruncated: this.evidenceTruncated };
+    return {
+      consoleEntries: [...this.consoleEntries],
+      pageErrors: [...this.pageErrors],
+      failedRequests: [...this.failedRequests],
+      redirects: [...this.redirects],
+      ...(this.replayAdapter === null ? {} : {
+        replayEvents: [...this.replayEvents],
+        externalLeakageCount: this.replayEvents.filter((event) => event.eventType === "external-network-leakage").length,
+      }),
+      blockedRequests: this.blockedRequests,
+      evidenceTruncated: this.evidenceTruncated,
+    };
   }
   public isCrashed(): boolean { return this.crashed; }
   public async close(): Promise<void> {
@@ -936,7 +981,7 @@ export function createPlaywrightBrowserRuntime(options: PlaywrightBrowserRuntime
           colorScheme: CONTEXT_PROFILE.colorScheme,
           reducedMotion: CONTEXT_PROFILE.reducedMotion,
           javaScriptEnabled: CONTEXT_PROFILE.javaScriptEnabled,
-          serviceWorkers: policy.serviceWorkerPolicy?.mode ?? CONTEXT_PROFILE.serviceWorkers,
+          serviceWorkers: policy.serviceWorkerPolicy === undefined ? CONTEXT_PROFILE.serviceWorkers : resolveServiceWorkerPolicy(policy.serviceWorkerPolicy),
           acceptDownloads: CONTEXT_PROFILE.acceptDownloads,
           extraHTTPHeaders: { "Accept-Language": CONTEXT_PROFILE.acceptLanguage },
           userAgent: CONTEXT_PROFILE.userAgent,

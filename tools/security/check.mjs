@@ -14,6 +14,7 @@ const queuePersistence = await readFile(path.join(repositoryRoot, "packages/pers
 const recoveryDomain = await readFile(path.join(repositoryRoot, "packages/recovery/src/index.ts"), "utf8");
 const recoveryPersistence = await readFile(path.join(repositoryRoot, "packages/persistence-sqlite/src/recovery.ts"), "utf8");
 const browserRuntime = await readFile(path.join(repositoryRoot, "packages/browser-runtime/src/index.ts"), "utf8");
+const localRuntime = await readFile(path.join(repositoryRoot, "packages/browser-runtime/src/local-runtime.ts"), "utf8");
 const interactionCore = await readFile(path.join(repositoryRoot, "packages/archive-core/src/interaction.ts"), "utf8");
 const interactionRuntime = await readFile(path.join(repositoryRoot, "packages/browser-runtime/src/interaction.ts"), "utf8");
 const renderEngine = await readFile(path.join(repositoryRoot, "packages/rendering/src/index.ts"), "utf8");
@@ -62,6 +63,10 @@ for (const token of ["lease_token_hash", "fencingGeneration", "assertLease", "va
 for (const token of ["chromiumSandbox: true", "Fetch.enable", "Fetch.failRequest", "BlockedByClient", "method !== \"GET\"", "serviceWorkers: CONTEXT_PROFILE.serviceWorkers", "executableSha256", "systemBrowserFallback: false", "launchDownloadAllowed: false"]) {
   if (!browserRuntime.includes(token)) errors.push(`Browser Runtime security control is missing: ${token}`);
 }
+for (const token of ["createServer", "listen(0, \"127.0.0.1\"", "validateRuntimeOrigin", "RUNTIME_HOST_NOT_ASSIGNED_ORIGIN", "RUNTIME_RESOURCE_NOT_IN_MAP"]) {
+  if (!localRuntime.includes(token)) errors.push(`Local Runtime security control is missing: ${token}`);
+}
+if (/0\.0\.0\.0|\[::\]/.test(localRuntime)) errors.push("Local Runtime exposes a non-loopback bind address");
 for (const token of ["INTERACTION_HARD_LIMITS", "INTERACTION_SIDE_EFFECT_BLOCKED", "redactInteractionTrace", "INTERACTION_OUTCOME_UNCERTAIN", "INTERACTION_PLAN_NOT_APPROVED", "INTERACTION_KEY_INVALID"]) {
   if (!interactionCore.includes(token)) errors.push(`Interaction Core security control is missing: ${token}`);
 }
@@ -132,7 +137,7 @@ for (const { file, text } of productionFiles) {
 for (const { file, text } of productionFiles.filter(({ file }) => /^(?:apps|packages)[\\/]/.test(path.relative(repositoryRoot, file)))) {
   const name = relative(file);
   if (/node:child_process/.test(text)) errors.push(`${name}: runtime package exposes process execution`);
-  if (/\b(?:createServer|listen|fetch)\s*\(/.test(text)) errors.push(`${name}: runtime package exposes an undeclared network service`);
+  if (name !== "packages/browser-runtime/src/local-runtime.ts" && /\b(?:createServer|listen|fetch)\s*\(/.test(text)) errors.push(`${name}: runtime package exposes an undeclared network service`);
   if (/telemetry|analytics/i.test(text)) errors.push(`${name}: runtime package mentions unapproved telemetry`);
 }
 if (errors.length > 0) {

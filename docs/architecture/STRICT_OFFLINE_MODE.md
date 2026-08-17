@@ -7,8 +7,9 @@ Strict Offline Mode is version 1 and has three observable outcomes:
 - `abort`: an unknown external dependency was blocked with
   `STRICT_OFFLINE_UNKNOWN_DEPENDENCY`.
 
-Non-strict live network access is an explicit future policy outcome and must be
-recorded for coverage and leakage metrics. Unknown dependencies must never be
-silently treated as successful offline renders. The current code provides the
-pure decision contract only; no replay engine is claimed.
+Non-strict live network access remains an explicit policy outcome and is
+recorded as a bounded runtime event. Unknown dependencies must never be
+silently treated as successful offline renders. Phase 19 implements the replay
+lookup, body integrity, Context/CDP fulfillment and abort path; a missing or
+ambiguous snapshot still fails closed when strict mode is enabled.
 

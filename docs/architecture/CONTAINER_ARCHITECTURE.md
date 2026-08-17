@@ -14,7 +14,7 @@ Application Service composes the pure Scope Engine and Queue policy with Project
 | CLI | Node process | Parse bounded Project/Profile/Scope/Queue commands, compose service, format output/exits | Privileged terminal |
 | Application Service | Caller process | Validate/orchestrate/translate contracts | No UI |
 | SQLite adapter | Caller main/CLI process | Project filesystem, schema 7 Queue/Lease/Checkpoint/Recovery/Render/Interaction repositories and transactions, migrations, output verification, ZIP, locks | Local I/O boundary |
-| Browser Runtime | Owned Chromium child process | Executable validation, Process/Context/Page lifecycle, request authorization, safe evidence | Privileged browser boundary |
+| Browser Runtime | Owned Chromium child process plus separate loopback adapter | Executable validation, Process/Context/Page lifecycle, request authorization, safe evidence; Phase 19 map-bounded Local Runtime serving | Privileged browser boundary; Local Runtime is non-privileged |
 | Rendering Engine | Caller main/CLI process | Bounded navigation/stability/extraction policy through Core port | Browser-independent policy boundary |
 
-Desktop and CLI do not communicate. Queue claims are synthetic in-process operations, not Worker processes. No loopback service, database daemon, browser automation process, network client, Worker Pool, Lease, or Heartbeat exists. A future utility process requires a new ADR and contract-preserving threat review.
+Desktop and CLI do not communicate. Queue claims are synthetic in-process operations, not Worker processes. Phase 19 adds only the assigned Project Revision's non-privileged loopback Local Runtime; there is no database daemon, public network service, browser automation process, network client, Worker Pool, Lease, or Heartbeat. A future utility process requires a new ADR and contract-preserving threat review.

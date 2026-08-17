@@ -1,19 +1,28 @@
 # Network Replay Contract
 
-`packages/archive-core/src/network.ts` defines replay contract version 1. The
-future Browser Runtime implementation will intercept at Browser Context scope,
-canonicalize HTTP/HTTPS GET and HEAD requests, look up a deterministic method
-plus URL key, fulfill exact matches, and record/abort misses according to
-Strict Offline Mode.
+Phase 19 implements replay contract version 1 across three boundaries:
 
-The contract deliberately excludes sensitive request/response headers from
-replay identity and metadata. It exposes a bounded safe URL only. It does not
-implement a response store, downloader, API capture, or full offline runtime.
-Phase 18 now provides stored-content HTML/CSS rewriting and dependency metadata
-separately; it does not change this runtime contract.
+- Archive Core owns deterministic identity. The key is scoped by Project, Run,
+  Project Revision, method, normalized HTTP(S) URL, and a small allowlist of
+  request headers (`accept`, `accept-language`, and `content-type`). Tracking
+  parameters are removed; sensitive query parameters are rejected rather than
+  persisted.
+- Persistence owns SQLite metadata and content-addressed bodies under
+  `api/responses/<sha256>.bin`. Bodies are written atomically before the
+  `complete` row is committed. Lookup distinguishes no-capture, ambiguous,
+  revision-scoped, and integrity-failure results.
+- Browser Runtime owns Playwright Context routing and CDP Fetch enforcement.
+  Exact Local Runtime requests are allowed, matching snapshots are fulfilled,
+  unsupported methods and strict-offline misses are aborted, and non-strict
+  misses are observable before the existing authorization policy decides.
 
-Replay and rewrite are separate: Phase 18 maps stored references to canonical
-Project resources, while Phase 19 will control network fulfillment and runtime
-replay. Service Worker policy is selected by Site Profile and must be explicitly
-reconciled with Context replay before implementation.
+Capture is selective and deny-by-default: only JSON-like GET responses from
+`fetch`/`xhr` are eligible, with an 8 MiB limit. POST/PUT/PATCH/DELETE are never
+captured or replayed. Sensitive headers and recognizable JSON secret fields are
+rejected; response headers use an allowlist and exclude cookies, transfer and
+encoding metadata. Runtime events contain bounded safe URLs and reasons only.
+
+Phase 19 does not implement automatic discovery, a target-site run, a full
+archive build, or Phase 20 validation/reporting. Phase 18 rewrite maps remain
+the explicit source of Local Runtime route/resource ownership.
 

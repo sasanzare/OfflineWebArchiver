@@ -645,6 +645,34 @@ Phase 18 is implemented and locally validated within these rows. Phase 19
 Network Replay, strict offline enforcement, isolated runtime serving, and
 Service Worker runtime behavior remain separate gates.
 
+### Product Phase 19 execution acceptance
+
+These rows reconcile the selective capture, replay, isolated runtime, and
+preview-security boundary. PASS is limited to the implemented local boundary;
+it does not claim a full crawl/archive, target-site acceptance, or Phase 20.
+
+| ID | Requirement IDs | Area | Verification | Evidence | Criticality | Status |
+|---|---|---|---|---|---|---|
+| AC-P19-001 | FR-ARCHIVE-001, NFR-SEC-003 | Replay identity scope | Include Project, Run, Revision, method, normalized URL, and selected headers; normalize tracking/query order and reject sensitive query names | `tests/unit/network-replay.test.ts`; `packages/archive-core/src/network.ts` | Critical | PASS |
+| AC-P19-002 | FR-ARCHIVE-001, NFR-SEC-003 | Capture method policy | Capture only approved GET JSON-like fetch/XHR responses; never capture or replay POST/PUT/PATCH/DELETE | Core eligibility tests; Chromium replay test | Critical | PASS |
+| AC-P19-003 | NFR-SEC-002, NFR-PRIV-001 | Capture sanitization | Reject sensitive headers/body markers and persist only bounded allowlisted response metadata | Core unit and replay persistence tests | Critical | PASS |
+| AC-P19-004 | FR-PROJECT-003, NFR-REL-002 | Replay persistence | Store SHA-256 body bytes atomically under `api/responses/` and commit complete metadata only after the body exists | `packages/persistence-sqlite/src/replay.ts`; SQLite integration | Critical | PASS |
+| AC-P19-005 | FR-PROJECT-003, NFR-REL-002 | Replay isolation | Scope lookup and body reads to Project, Run, Revision, snapshot ownership, and integrity digest; surface ambiguity | Replay persistence integration test | Critical | PASS |
+| AC-P19-006 | NFR-SEC-003 | Context/CDP enforcement | Fulfill matches and abort mutations, invalid identities, integrity failures, and strict external misses at Browser Context/CDP request stages | `packages/browser-runtime/src/network-replay.ts`; Chromium replay test | Critical | PASS |
+| AC-P19-007 | NFR-SEC-003, NFR-TEST-001 | Leakage observability | Emit bounded safe URL, reason, match state, strict flag, and scoped identifiers without raw bodies or sensitive headers | Browser evidence assertions; runtime event schema | High | PASS |
+| AC-P19-008 | FR-ARCHIVE-002, FR-PROJECT-004 | Local Runtime origin | Bind only to `127.0.0.1` on an assigned exact origin; reject host/origin mismatch and non-GET/HEAD methods | Local Runtime integration test | Critical | PASS |
+| AC-P19-009 | FR-ARCHIVE-002, NFR-PORT-002 | Map-bounded serving | Resolve Route Map, Original Resource Map, explicit resources, and SPA entry fallback only; unknown/collided/unresolved paths are not served | Runtime unit/integration tests | Critical | PASS |
+| AC-P19-010 | FR-PROJECT-004, NFR-SEC-003 | Path and symlink safety | Reuse canonical relative path validation and reject Project-root escapes, symlink ancestors, and non-regular files | Runtime code; Local Runtime/path tests | Critical | PASS |
+| AC-P19-011 | NFR-SEC-003 | Untrusted preview isolation | Keep archive preview separate from trusted UI with no preload/IPC/Node/external navigation capability | Desktop security baseline; trust-zone review | Critical | PASS |
+| AC-P19-012 | NFR-SEC-003, NFR-TEST-001 | Service Worker policy | Default to block and require explicit allow/profile-specific resolution; do not infer a browser default | Service Worker unit and Chromium tests | High | PASS |
+| AC-P19-013 | NFR-REL-002, NFR-TEST-001 | Focused regression | Run the Phase 19 unit, integration, Service Worker, and pinned-Chromium replay suite serially | `npm run test:phase19` | High | PASS |
+| AC-P19-014 | NFR-KNOW-001, NFR-KNOW-002, NFR-KNOW-003, NFR-KNOW-004 | Knowledge reconciliation | Synchronize implementation report, ADR, architecture/security docs, acceptance/risk/decision/traceability records, OKF, and HANDOFF | Repository documentation and OKF validators | High | PASS |
+
+Phase 19 is implemented and locally validated within these rows. Full
+Application Service preview orchestration, authorized target-site evidence,
+cross-platform native evidence, and Phase 20 hardening/reporting remain later
+gates.
+
 ### Phase 12 reconciliation for Phase 13 closure
 
 | Acceptance ID | Reconciled status | Phase 13 basis |

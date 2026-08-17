@@ -91,9 +91,10 @@ the existing Project-root resolver and atomic-write helper. A failed rewrite
 cannot replace the original rendered page.
 
 Phase 19 can consume the rewritten page, Route Map, OriginalResourceMap, and
-ExternalDependencyMap to build replay/runtime behavior. Network Replay,
-BrowserContext interception, strict offline enforcement, Service Worker
-runtime handling, and Local Runtime serving remain outside this component.
+ExternalDependencyMap to build replay/runtime behavior. Phase 19 consumes these
+maps through the separate Network Replay and Local Runtime adapters; this
+component still does not own BrowserContext interception, strict offline
+enforcement, Service Worker runtime handling, or filesystem serving.
 
 ## Related records
 

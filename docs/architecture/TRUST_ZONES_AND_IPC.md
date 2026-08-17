@@ -25,11 +25,14 @@ descriptor. It does not install a preload bridge, expose a capability token,
 read form values, or provide any path from the page to Secret Store or SQLite
 payloads. Untrusted archived content cannot invoke these commands.
 
-The future archive runtime must have no preload, no IPC bridge, no Node
-integration, and no external navigation. It may read only explicitly approved
-archive content through a non-privileged runtime contract. It cannot read
-Project databases, Secret Store payloads, Session Storage State, or invoke
-privileged commands. A separate window/context is mandatory.
+The Phase 19 archive runtime follows that boundary: it has no preload, no IPC
+bridge, no Node integration, and no external navigation. It reads only
+explicitly approved Route/Original Resource mapped content through the
+loopback-only Local Runtime contract. It cannot read Project databases, replay
+body storage directly, Secret Store payloads, Session Storage State, or invoke
+privileged commands. Network Replay is enforced by the Browser Runtime at
+Context/CDP request interception, not by archive page code. A separate
+window/context is mandatory.
 
 Evidence: [ADR-052](../project/adr/ADR-052-trust-zones-and-privilege-boundaries.md),
 [desktop main](../../apps/desktop/src/main/index.ts), and the desktop smoke and

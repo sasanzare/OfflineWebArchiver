@@ -24,6 +24,7 @@
     "test:recovery": "node tools/testing/run-tests.mjs recovery",
     "test:phase17": "node tools/testing/run-tests.mjs phase17",
     "test:phase18": "node tools/testing/run-tests.mjs phase18",
+    "test:phase19": "node tools/testing/run-tests.mjs phase19",
     "test:browser": "node tools/testing/run-tests.mjs browser",
     "test:rendering": "node tools/testing/run-tests.mjs rendering",
     "test:architecture": "node tools/architecture/validate.mjs",

@@ -1,6 +1,7 @@
 import type { CrawlRunState } from "./run-state.js";
 import type { ServiceWorkerPolicy } from "./service-worker.js";
 import type { ProxyConnectivityRequest, ProxyConnectivityResult, ProxyRuntimeConfiguration } from "./proxy.js";
+import type { NetworkReplayPolicy, ReplayCaptureSink, ReplayLookupPort, ReplayRuntimeEvent } from "./network.js";
 
 export const IMPLEMENTED_CORE_CAPABILITIES = [
   "system.describe",
@@ -117,6 +118,7 @@ export * from "./authentication.js";
 export * from "./proxy.js";
 export * from "./assets.js";
 export * from "./rewrite.js";
+export * from "./runtime.js";
 
 export type ProjectOperationErrorCode =
   | "PROJECT_ALREADY_EXISTS"
@@ -241,6 +243,12 @@ export interface ProjectStoragePort {
   importProject(input: ImportProjectInput): Promise<ProjectImportResult>;
   getCompatibility(projectPath: string): Promise<ProjectCompatibility>;
   getCurrent(): ProjectSummary | null;
+}
+
+/** Project-owned Phase 19 persistence boundary; it exposes no privileged file primitive. */
+export interface ReplaySnapshotRepositoryPort extends ReplayLookupPort, ReplayCaptureSink {
+  recordRuntimeEvent(event: ReplayRuntimeEvent): Promise<void>;
+  listRuntimeEvents(input: { readonly projectId: string; readonly runId: string; readonly projectRevisionId: string; readonly limit: number }): Promise<readonly ReplayRuntimeEvent[]>;
 }
 
 export class ProjectOperationError extends Error {
@@ -833,6 +841,8 @@ export interface BrowserEvidenceSnapshot {
   pageErrors: readonly BrowserPageErrorEntry[];
   failedRequests: readonly BrowserFailedRequestEntry[];
   redirects: readonly BrowserRedirectEntry[];
+  replayEvents?: readonly import("./network.js").ReplayRuntimeEvent[];
+  externalLeakageCount?: number;
   blockedRequests: number;
   evidenceTruncated: boolean;
 }
@@ -914,6 +924,7 @@ export interface BrowserSessionPolicy {
   proxy?: ProxyRuntimeConfiguration;
   networkBudget?: import("./scheduler.js").OriginNetworkRequestBudget;
   onOriginResponse?: (input: import("./scheduler.js").OriginResponseObservation) => void | Promise<void>;
+  networkReplay?: NetworkReplayPolicy;
 }
 
 export interface BrowserRuntimePort {

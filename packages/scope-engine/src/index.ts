@@ -75,7 +75,10 @@ const policyFields = {
   serviceWorkerPolicy: z.object({
     version: z.literal(SERVICE_WORKER_POLICY_VERSION),
     mode: z.enum(SERVICE_WORKER_POLICY_MODES),
-  }).strict().default({ version: SERVICE_WORKER_POLICY_VERSION, mode: "block" }),
+    profileMode: z.enum(["block", "allow"]).optional(),
+  }).strict().superRefine((value, context) => {
+    if (value.mode === "profile-specific" && value.profileMode === undefined) context.addIssue({ code: "custom", message: "Profile-specific Service Worker policy requires profileMode" });
+  }).default({ version: SERVICE_WORKER_POLICY_VERSION, mode: "block" }),
   loginFlow: z.custom<LoginFlow>((value) => {
     try {
       parseLoginFlow(value);
@@ -263,7 +266,11 @@ export function normalizeSiteProfileDraft(value: unknown): SiteProfileDraft {
       rules: initial.data.queryPolicy.rules.map((item) => ({ ...item, key: item.key.toLowerCase() })).sort((a, b) => ordinalCompare(a.key, b.key)),
     },
     networkPolicy: { allowedIpClasses: [...new Set(initial.data.networkPolicy.allowedIpClasses)].sort() },
-    serviceWorkerPolicy: normalizeServiceWorkerPolicy(initial.data["serviceWorkerPolicy"]),
+    serviceWorkerPolicy: normalizeServiceWorkerPolicy(initial.data["serviceWorkerPolicy"] === undefined ? undefined : {
+      version: initial.data["serviceWorkerPolicy"].version,
+      mode: initial.data["serviceWorkerPolicy"].mode,
+      ...(initial.data["serviceWorkerPolicy"].profileMode === undefined ? {} : { profileMode: initial.data["serviceWorkerPolicy"].profileMode }),
+    }),
   } satisfies SiteProfileDraft;
   if (initial.data.loginFlow !== undefined && initial.data.loginFlow !== null) {
     (normalized as SiteProfileDraft & { loginFlow?: LoginFlow | null }).loginFlow = parseLoginFlow(initial.data.loginFlow);

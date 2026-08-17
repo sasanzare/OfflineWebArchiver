@@ -59,6 +59,7 @@ import {
   type ProxyMetadata,
   type ProxyRepositoryPort,
   type ProxyRuntimeConfiguration,
+  type ServiceWorkerPolicy,
   type ProxyDraft,
   assertProxyMetadata,
   createProxyMetadata,
@@ -101,6 +102,21 @@ import {
   type ProfileStoragePort,
   type SiteProfileDraft,
 } from "@offline-web-archive/scope-engine";
+
+type ServiceWorkerPolicyInput = {
+  readonly version: 1;
+  readonly mode: "block" | "allow" | "profile-specific";
+  readonly profileMode?: "block" | "allow" | undefined;
+};
+
+function toBrowserServiceWorkerPolicy(policy: ServiceWorkerPolicyInput | undefined): ServiceWorkerPolicy | undefined {
+  if (policy === undefined) return undefined;
+  return {
+    version: policy.version,
+    mode: policy.mode,
+    ...(policy.profileMode === undefined ? {} : { profileMode: policy.profileMode }),
+  };
+}
 
 export * from "./asset-downloader.js";
 
@@ -869,7 +885,7 @@ async function executeRenderStart(
       testMode,
       allowedFixtureOrigins: fixtureOrigins,
       maxEvidenceEntries: policy.maxEvidenceEntries,
-      serviceWorkerPolicy: profile.serviceWorkerPolicy,
+      ...(profile.serviceWorkerPolicy === undefined ? {} : { serviceWorkerPolicy: toBrowserServiceWorkerPolicy(profile.serviceWorkerPolicy)! }),
       authorizeUrl: (url) => authorizeRuntimeUrl(url, profile, testMode, fixtureOrigins),
     });
     await persistStage("page-created", 0.15);
@@ -971,7 +987,7 @@ async function executeInteractionRun(
     const installation = await runtime.validateInstallation();
     if (!installation.valid) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The approved Chromium runtime did not pass validation", true);
     await runtime.start();
-    page = await runtime.createPageSession(claim.job.jobId, { testMode, allowedFixtureOrigins: fixtureOrigins, maxEvidenceEntries: 100, serviceWorkerPolicy: siteProfile.serviceWorkerPolicy, authorizeUrl: (url) => authorizeRuntimeUrl(url, siteProfile, testMode, fixtureOrigins) });
+    page = await runtime.createPageSession(claim.job.jobId, { testMode, allowedFixtureOrigins: fixtureOrigins, maxEvidenceEntries: 100, ...(siteProfile.serviceWorkerPolicy === undefined ? {} : { serviceWorkerPolicy: toBrowserServiceWorkerPolicy(siteProfile.serviceWorkerPolicy)! }), authorizeUrl: (url) => authorizeRuntimeUrl(url, siteProfile, testMode, fixtureOrigins) });
     const executeInteractionPlan = page.executeInteractionPlan;
     const getContextProfile = page.getContextProfile;
     if (executeInteractionPlan === undefined || getContextProfile === undefined) throw new InteractionOperationError("INTERACTION_BROWSER_FAILED", "The selected Browser Runtime does not expose the Phase 10 Interaction adapter");

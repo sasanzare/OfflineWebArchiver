@@ -3,7 +3,7 @@ type: Architecture Component
 title: Trust Zones and IPC
 description: Defines the trusted UI, privileged service, and untrusted archive boundaries for local desktop transport.
 tags: [architecture, security, ipc, trust-zones]
-status: draft
+status: stable
 owa:
   implementation_status: implemented
   verification_status: partial
@@ -11,7 +11,7 @@ owa:
   acceptance_ids: [AC-P13-004, AC-P13-005]
   decision_ids: [OD-077]
   risk_ids: [R-089, R-090, R-101]
-  evidence_ids: [OKF-EV-P13-BOUNDARY, OKF-EV-P13-SECURITY]
+  evidence_ids: [OKF-EV-P13-BOUNDARY, OKF-EV-P13-SECURITY, OKF-EV-P19-SECURITY, OKF-EV-P19-BROWSER]
 ---
 
 # Trust Zones and IPC
@@ -23,7 +23,8 @@ sender, frame, origin, navigation, path, and command-type checks remain
 independent gates. The current product does not load archived HTML/JS, so no
 archive content receives trusted-window privileges.
 
-The future archive runtime must use a separate window/process baseline with
-context isolation, no Node integration, sandboxing, no preload bridge, no
-webview, no external navigation, and no IPC to the privileged service. This
-document records the boundary without implementing that later runtime.
+The Phase 19 archive runtime uses a separate Browser Context/window baseline
+with context isolation, no Node integration, no preload bridge, no webview, no
+external navigation, and no IPC to the privileged service. The exact loopback
+Local Runtime serves only approved Route/Original Resource map entries; this
+does not make the Local Runtime a privileged Application Service.

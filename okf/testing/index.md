@@ -11,3 +11,4 @@ This directory contains the repository's durable test strategy.
 - [Phase 16 Validation](phase-16-validation.md) - Worker limits, shared cooldowns, proxy affinity, persistence, and Browser Runtime Context ownership.
 - [Phase 17 Validation](phase-17-validation.md) - Asset identity, deduplication, Range resume, concurrency, and filesystem safety fixtures.
 - [Phase 18 Validation](phase-18-validation.md) - HTML/CSS rewriting, route/dependency maps, collision, path-safety, and atomic-output fixtures.
+- [Phase 19 Validation](phase-19-validation.md) - Selective capture, deterministic replay, strict-offline enforcement, Local Runtime isolation, and Service Worker behavior.

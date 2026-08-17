@@ -114,6 +114,14 @@
     { "id": "OKF-REL-111", "name": "Phase 18 maps are evidenced by deterministic serialization tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-MAPS", "targetId": "OKF-EV-P18-MAPS", "type": "evidenced-by" },
     { "id": "OKF-REL-112", "name": "Phase 18 security boundary is evidenced by hostile-reference tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-SECURITY", "targetId": "OKF-EV-P18-SECURITY", "type": "evidenced-by" },
     { "id": "OKF-REL-113", "name": "Phase 18 rewritten artifact is evidenced by Persistence integration", "status": "VERIFIED", "sourceId": "OKF-NODE-P18-PERSISTENCE", "targetId": "OKF-EV-P18-PERSISTENCE", "type": "evidenced-by" },
-    { "id": "OKF-REL-114", "name": "Phase 18 gate records the explicit runtime/replay boundary", "status": "PARTIAL", "sourceId": "OKF-NODE-P18-GATE", "targetId": "OKF-EV-P18-DOCS", "type": "evidenced-by" }
+    { "id": "OKF-REL-114", "name": "Phase 18 gate records the explicit runtime/replay boundary", "status": "PARTIAL", "sourceId": "OKF-NODE-P18-GATE", "targetId": "OKF-EV-P18-DOCS", "type": "evidenced-by" },
+    { "id": "OKF-REL-115", "name": "Phase 19 depends on Phase 18 rewrite and resource maps", "status": "VERIFIED", "sourceId": "OKF-PHASE-019", "targetId": "OKF-PHASE-018", "type": "depends-on" },
+    { "id": "OKF-REL-116", "name": "Phase 19 record is evidenced by the implementation report", "status": "VERIFIED", "sourceId": "OKF-PHASE-019", "targetId": "OKF-EV-P19-DOCS", "type": "evidenced-by" },
+    { "id": "OKF-REL-117", "name": "Phase 19 replay policy is evidenced by Core tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P19-REPLAY", "targetId": "OKF-EV-P19-CORE", "type": "evidenced-by" },
+    { "id": "OKF-REL-118", "name": "Phase 19 replay persistence is evidenced by SQLite tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P19-PERSISTENCE", "targetId": "OKF-EV-P19-PERSISTENCE", "type": "evidenced-by" },
+    { "id": "OKF-REL-119", "name": "Phase 19 Local Runtime is evidenced by mapped-resource tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P19-RUNTIME", "targetId": "OKF-EV-P19-RUNTIME", "type": "evidenced-by" },
+    { "id": "OKF-REL-120", "name": "Phase 19 browser enforcement is evidenced by pinned Chromium", "status": "VERIFIED", "sourceId": "OKF-NODE-P19-REPLAY", "targetId": "OKF-EV-P19-BROWSER", "type": "evidenced-by" },
+    { "id": "OKF-REL-121", "name": "Phase 19 security boundary is evidenced by review and Service Worker tests", "status": "VERIFIED", "sourceId": "OKF-NODE-P19-SECURITY", "targetId": "OKF-EV-P19-SECURITY", "type": "evidenced-by" },
+    { "id": "OKF-REL-122", "name": "Phase 19 gate records remaining orchestration and target-site limits", "status": "PARTIAL", "sourceId": "OKF-NODE-P19-GATE", "targetId": "OKF-EV-P19-DOCS", "type": "evidenced-by" }
   ]
 }

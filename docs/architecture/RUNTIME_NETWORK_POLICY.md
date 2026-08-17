@@ -4,7 +4,7 @@
 
 The queued normalized URL is re-evaluated through the stored Product Phase 5 Profile before dispatch. Runtime authorization accepts only `GET` and `HEAD`, performs DNS resolution, classifies every returned address, and requires all addresses to be public. Literal private, loopback, link-local, reserved, credential-bearing, and unsupported-scheme inputs fail closed. The final URL is scope-revalidated.
 
-CDP Fetch interception authorizes each request before continuation, including redirect targets. Redirects cannot inherit the prior target's authorization. Production mode never allows loopback; deterministic test mode allows only the exact ephemeral fixture origins supplied by the test harness and requires resolved loopback addresses. This exception cannot be selected through Desktop or CLI payloads.
+CDP Fetch interception authorizes each request before continuation, including redirect targets. Redirects cannot inherit the prior target's authorization. Ordinary production target navigation never blanket-allows loopback; the Phase 19 archive preview is a separate exact-origin exception for the assigned `127.0.0.1` Local Runtime and is not selected by an arbitrary Desktop/CLI URL. Deterministic test mode allows only the exact ephemeral fixture origins supplied by the test harness and requires resolved loopback addresses.
 
 The runtime does not accept request headers, cookies, request bodies, proxy configuration, or caller-provided executable/launch arguments. Safe URLs remove credentials, fragments, and query values; console/error/request evidence is redacted and globally bounded to 100 entries by default.
 

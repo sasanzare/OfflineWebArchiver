@@ -113,6 +113,11 @@
     { "id": "R-115", "name": "Rewrite mapping integrity and false local success", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-116", "name": "Base and canonical provenance confusion", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
     { "id": "R-117", "name": "Route collision and ambiguous fallback", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
-    { "id": "R-118", "name": "Rewrite resource exhaustion", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }
+    { "id": "R-118", "name": "Rewrite resource exhaustion", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-119", "name": "Replay identity collision", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-120", "name": "Sensitive capture leakage", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-121", "name": "Replay body integrity and retention", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-122", "name": "Browser/runtime isolation bypass", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" },
+    { "id": "R-123", "name": "Local Runtime path escape", "status": "PARTIAL", "recordPath": "docs/project/RISK_REGISTER.md" }
   ]
 }
